@@ -50,7 +50,6 @@ class LLInventoryModel;
 class LLInventoryObserver;
 class LLItemInfo;
 class LLTabContainer;
-class LLWorldMapView;
 
 class LLFloaterWorldMap : public LLFloater
 {
@@ -112,7 +111,7 @@ public:
 	// teleport to the tracked item, if there is one
 	void			teleport();
 
-protected:
+private:
 	static void		onPanBtn( void* userdata );
 
 	static void		onGoHome(void* data);
@@ -122,8 +121,6 @@ protected:
 
 	static void		onAvatarComboPrearrange( LLUICtrl* ctrl, void* data );
 	static void		onAvatarComboCommit( LLUICtrl* ctrl, void* data );
-
-	static void		onCommitBackground(void* data, bool from_click);
 
 	static void		onComboTextEntry( LLLineEditor* ctrl, void* data );
 	static void		onSearchTextEntry( LLLineEditor* ctrl, void* data );
@@ -161,10 +158,10 @@ protected:
 
 	void			cacheLandmarkPosition();
 
-protected:
-	LLTabContainer*	mTabs;
+private:
+	LLPanel*			mPanel;		// Panel displaying the map
 
-	// Sets sMapScale, in pixels per region
+	// Ties to LLWorldMapView::sMapScale, in pixels per region
 	F32						mCurZoomVal;
 	LLFrameTimer			mZoomTimer;
 
