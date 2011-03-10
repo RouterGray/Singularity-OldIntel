@@ -89,6 +89,7 @@ public:
 	void			drawAgents();
 	void			drawItems();
 	void			drawFrustum();
+	void			drawClassicMap();
 	void			drawMipmap(S32 width, S32 height);
 	bool			drawMipmapLevel(S32 width, S32 height, S32 level, bool load = true);
 

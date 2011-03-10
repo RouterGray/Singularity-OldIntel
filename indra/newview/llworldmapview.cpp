@@ -55,6 +55,8 @@
 
 #include "llglheaders.h"
 
+#include "hippogridmanager.h"
+
 // [RLVa:KB]
 #include "rlvhandler.h"
 // [/RLVa:KB]
@@ -342,7 +344,11 @@ void LLWorldMapView::draw()
 
 #if 1
 	// Draw the image tiles
-	drawMipmap(width, height);
+	if(gHippoGridManager->getConnectedGrid()->isSecondLife())
+		drawMipmap(width, height);
+	else
+		drawClassicMap();
+	
 	gGL.flush();
 
 	gGL.setAlphaRejectSettings(LLRender::CF_DEFAULT);
@@ -669,6 +675,100 @@ void LLWorldMapView::drawMipmap(S32 width, S32 height)
 	sVisibleTilesLoaded = drawMipmapLevel(width, height, level);
 
 	return;
+}
+
+void LLWorldMapView::drawClassicMap()
+{
+	// Draw one image per layer
+	for (U32 layer_idx=0; layer_idx<LLWorldMap::getInstance()->mMapLayers[LLWorldMap::getInstance()->mCurrentMap].size(); ++layer_idx)
+	{
+		if (!LLWorldMap::getInstance()->mMapLayers[LLWorldMap::getInstance()->mCurrentMap][layer_idx].LayerDefined)
+		{
+			continue;
+		}
+		LLWorldMapLayer *layer = &LLWorldMap::getInstance()->mMapLayers[LLWorldMap::getInstance()->mCurrentMap][layer_idx];
+		LLViewerImage *current_image = layer->LayerImage;
+
+		if (current_image->isMissingAsset())
+		{
+			continue; // better to draw nothing than the missing asset image
+		}
+		
+		LLVector3d origin_global((F64)layer->LayerExtents.mLeft * REGION_WIDTH_METERS, (F64)layer->LayerExtents.mBottom * REGION_WIDTH_METERS, 0.f);
+
+		// Find x and y position relative to camera's center.
+		LLVector3d rel_region_pos = origin_global - camera_global;
+		F32 relative_x = (rel_region_pos.mdV[0] / REGION_WIDTH_METERS) * sMapScale;
+		F32 relative_y = (rel_region_pos.mdV[1] / REGION_WIDTH_METERS) * sMapScale;
+
+		F32 pix_width = sMapScale*(layer->LayerExtents.getWidth() + 1);
+		F32 pix_height = sMapScale*(layer->LayerExtents.getHeight() + 1);
+
+		// When the view isn't panned, 0,0 = center of rectangle
+		F32 bottom =	sPanY + half_height + relative_y;
+		F32 left =		sPanX + half_width + relative_x;
+		F32 top =		bottom + pix_height;
+		F32 right =		left + pix_width;
+		F32 pixel_area = pix_width*pix_height;
+		// discard layers that are outside the rectangle
+		// and discard small layers
+		if (top < 0.f ||
+			bottom > height ||
+			right < 0.f ||
+			left > width ||
+			(pixel_area < 4*4))
+		{
+			current_image->setBoostLevel(0);
+			continue;
+		}
+		
+		current_image->setBoostLevel(LLViewerImageBoostLevel::BOOST_MAP_VISIBLE);
+		current_image->setKnownDrawSize(llround(pix_width * LLUI::sGLScaleFactor.mV[VX]), llround(pix_height * LLUI::sGLScaleFactor.mV[VY]));
+		
+		if (!current_image->getHasGLTexture())
+		{
+			continue; // better to draw nothing than the default image
+		}
+
+// 		LLTextureView::addDebugImage(current_image);
+		
+		// Draw using the texture.  If we don't clamp we get artifact at
+		// the edge.
+		gGL.getTexUnit(0)->bind(current_image);
+
+		// Draw map image into RGB
+		//gGL.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		gGL.flush();
+		gGL.setColorMask(true, false);
+		gGL.color4f(1.f, 1.f, 1.f, layer_alpha);
+
+		gGL.begin(LLRender::QUADS);
+			gGL.texCoord2f(0.0f, 1.0f);
+			gGL.vertex3f(left, top, -1.0f);
+			gGL.texCoord2f(0.0f, 0.0f);
+			gGL.vertex3f(left, bottom, -1.0f);
+			gGL.texCoord2f(1.0f, 0.0f);
+			gGL.vertex3f(right, bottom, -1.0f);
+			gGL.texCoord2f(1.0f, 1.0f);
+			gGL.vertex3f(right, top, -1.0f);
+		gGL.end();
+
+		// draw an alpha of 1 where the sims are visible
+		gGL.flush();
+		gGL.setColorMask(false, true);
+		gGL.color4f(1.f, 1.f, 1.f, 1.f);
+
+		gGL.begin(LLRender::QUADS);
+			gGL.texCoord2f(0.0f, 1.0f);
+			gGL.vertex2f(left, top);
+			gGL.texCoord2f(0.0f, 0.0f);
+			gGL.vertex2f(left, bottom);
+			gGL.texCoord2f(1.0f, 0.0f);
+			gGL.vertex2f(right, bottom);
+			gGL.texCoord2f(1.0f, 1.0f);
+			gGL.vertex2f(right, top);
+		gGL.end();
+	}
 }
 
 // Return true if all the tiles required to render that level have been fetched or are truly missing
