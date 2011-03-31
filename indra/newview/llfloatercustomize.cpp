@@ -55,7 +55,7 @@
 #include "llinventoryview.h"
 #include "lltextbox.h"
 #include "lllineeditor.h"
-#include "llviewerimagelist.h"
+#include "llviewertexturelist.h"
 #include "llfocusmgr.h"
 #include "llviewerwindow.h"
 #include "llviewercamera.h"
@@ -746,7 +746,7 @@ void LLPanelEditWearable::onInvisibilityCommit(LLUICtrl* ctrl, void* userdata)
 	bool new_invis_state = checkbox_ctrl->get();
 	if (new_invis_state)
 	{
-		LLViewerImage* image = gImageList.getImage(IMG_INVISIBLE);
+		LLViewerTexture* image = LLViewerTextureManager::getFetchedTexture(IMG_INVISIBLE);
 		const LLTextureEntry* current_te = avatar->getTE(te);
 		if (current_te)
 		{
@@ -765,7 +765,7 @@ void LLPanelEditWearable::onInvisibilityCommit(LLUICtrl* ctrl, void* userdata)
 		}
 		if (prev_id.notNull())
 		{
-			LLViewerImage* image = gImageList.getImage(prev_id);
+			LLViewerTexture* image = LLViewerTextureManager::getFetchedTexture(prev_id);
 			avatar->setLocTexTE(te, image, TRUE);
 			avatar->wearableUpdated(self->mType, FALSE);
 		}
@@ -871,10 +871,10 @@ void LLPanelEditWearable::onTextureCommit( LLUICtrl* ctrl, void* userdata )
 		ETextureIndex te = (ETextureIndex)(self->mTextureList[ctrl->getName()]);
 
 		// Set the new version
-		LLViewerImage* image = gImageList.getImage( texture_ctrl->getImageAssetID() );
+		LLViewerTexture* image = LLViewerTextureManager::getFetchedTexture( texture_ctrl->getImageAssetID() );
 		if (image->getID().isNull())
 		{
-			image = gImageList.getImage(IMG_DEFAULT_AVATAR);
+			image = LLViewerTextureManager::getFetchedTexture(IMG_DEFAULT_AVATAR);
 		}
 		self->mTextureList[ctrl->getName()] = te;
 		if (gAgent.getWearable(self->mType))
@@ -1280,8 +1280,8 @@ public:
 
 public:
 	LLViewerVisualParam* mParam;
-	LLVisualParamHint*	mHintMin;
-	LLVisualParamHint*	mHintMax;
+	LLPointer<LLVisualParamHint>	mHintMin;
+	LLPointer<LLVisualParamHint>	mHintMax;
 	static S32 			sUpdateDelayFrames;
 	
 protected:
@@ -1355,8 +1355,8 @@ LLScrollingPanelParam::LLScrollingPanelParam( const std::string& name,
 
 LLScrollingPanelParam::~LLScrollingPanelParam()
 {
-	delete mHintMin;
-	delete mHintMax;
+	mHintMin = NULL;
+	mHintMax = NULL;
 }
 
 void LLScrollingPanelParam::updatePanel(BOOL allow_modify)
@@ -2338,7 +2338,7 @@ void LLFloaterCustomize::initWearablePanels()
 LLFloaterCustomize::~LLFloaterCustomize()
 {
 	llinfos << "Destroying LLFloaterCustomize" << llendl;
-	delete mResetParams;
+	mResetParams = NULL;
 	gInventory.removeObserver(mInventoryObserver);
 	delete mInventoryObserver;
 }
