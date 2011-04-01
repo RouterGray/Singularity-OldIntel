@@ -45,7 +45,8 @@ F32 LLVolumeLODGroup::mDetailThresholds[NUM_LODS] = {BASE_THRESHOLD,
 													 100*BASE_THRESHOLD};
 
 //static
-F32 LLVolumeLODGroup::mDetailScales[NUM_LODS] = {1.f, 1.5f, 2.5f, 4.f};
+F32 LLVolumeLODGroup::mDetailScales[NUM_LODS] = {1.f, 1.35f, 2.01f, 4.f};
+// 6, 8, 12, 24 vertices -SG
 
 
 //============================================================================
