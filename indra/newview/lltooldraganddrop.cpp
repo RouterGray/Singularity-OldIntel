@@ -2029,7 +2029,7 @@ EAcceptance LLToolDragAndDrop::willObjectAcceptInventory(LLViewerObject* obj, LL
 	//							  gAgent.getGroupID())
 	//			 && (obj->mPermModify || obj->mFlagAllowInventoryAdd));
 	BOOL worn = FALSE;
-	LLVOAvatar* my_avatar = NULL;
+	LLVOAvatarSelf* my_avatar = NULL;
 	switch(item->getType())
 	{
 	case LLAssetType::AT_OBJECT:
@@ -2858,7 +2858,7 @@ EAcceptance LLToolDragAndDrop::dad3dGiveInventoryObject(
 		// cannot give away no-transfer objects
 		return ACCEPT_NO;
 	}
-	LLVOAvatar* avatar = gAgentAvatarp;
+	LLVOAvatarSelf* avatar = gAgentAvatarp;
 	if(avatar && avatar->isWearingAttachment( item->getUUID() ) )
 	{
 		// You can't give objects that are attached to you

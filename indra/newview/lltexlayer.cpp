@@ -71,7 +71,7 @@ S32 LLTexLayerSetBuffer::sGLByteCount = 0;
 //-----------------------------------------------------------------------------
 // LLBakedUploadData()
 //-----------------------------------------------------------------------------
-LLBakedUploadData::LLBakedUploadData( LLVOAvatar* avatar,
+LLBakedUploadData::LLBakedUploadData( LLVOAvatarSelf* avatar,
 									  LLTexLayerSet* layerset, 
 									  LLTexLayerSetBuffer* layerset_buffer, 
 									  const LLUUID & id ) : 
@@ -218,12 +218,14 @@ void LLTexLayerSetBuffer::popProjection()
 
 BOOL LLTexLayerSetBuffer::needsRender()
 {
-	LLVOAvatar* avatar = mTexLayerSet->getAvatar();
+	llassert(mTexLayerSet->getAvatar() == gAgentAvatarp);
+	if (!isAgentAvatarValid()) return FALSE;
+
 	BOOL upload_now = needsUploadNow();
-	BOOL needs_update = (mNeedsUpdate || upload_now) && !avatar->getIsAppearanceAnimating();
+	BOOL needs_update = (mNeedsUpdate || upload_now) && !gAgentAvatarp->getIsAppearanceAnimating();
 	if (needs_update)
 	{
-		BOOL invalid_skirt = avatar->getBakedTE(mTexLayerSet) == TEX_SKIRT_BAKED && !avatar->isWearingWearableType(LLWearableType::WT_SKIRT);
+		BOOL invalid_skirt = gAgentAvatarp->getBakedTE(mTexLayerSet) == TEX_SKIRT_BAKED && !gAgentAvatarp->isWearingWearableType(LLWearableType::WT_SKIRT);
 		if (invalid_skirt)
 		{
 			// we were trying to create a skirt texture
@@ -233,7 +235,7 @@ BOOL LLTexLayerSetBuffer::needsRender()
 		}
 		else
 		{
-			needs_update &= (avatar->isSelf() || (avatar->isVisible() && !avatar->isCulled()));
+			needs_update &= ((gAgentAvatarp->isVisible() && !gAgentAvatarp->isCulled()));
 			needs_update &= mTexLayerSet->isLocalTextureDataAvailable();
 		}
 	}
@@ -296,12 +298,8 @@ BOOL LLTexLayerSetBuffer::render()
 			{
 				mUploadPending = FALSE;
 				mNeedsUpload = FALSE;
-				LLVOAvatar*	avatar = mTexLayerSet->getAvatar();
-				if (avatar)
-				{
-					avatar->setNewBakedTexture(avatar->getBakedTE(mTexLayerSet), IMG_INVISIBLE);
-					llinfos << "Invisible baked texture set for " << mTexLayerSet->getBodyRegion() << llendl;
-				}
+				mTexLayerSet->getAvatar()->setNewBakedTexture(mTexLayerSet->getAvatar()->getBakedTE(mTexLayerSet), IMG_INVISIBLE);
+				llinfos << "Invisible baked texture set for " << mTexLayerSet->getBodyRegion() << llendl;
 			}
 		}
 	}
@@ -612,7 +610,7 @@ BOOL LLTexLayerSetInfo::parseXml(LLXmlTreeNode* node)
 
 BOOL LLTexLayerSet::sHasCaches = FALSE;
 
-LLTexLayerSet::LLTexLayerSet( LLVOAvatar* avatar )
+LLTexLayerSet::LLTexLayerSet( LLVOAvatarSelf* avatar )
 	:
 	mComposite( NULL ),
 	mAvatar( avatar ),

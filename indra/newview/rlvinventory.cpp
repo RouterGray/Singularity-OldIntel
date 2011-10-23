@@ -364,9 +364,14 @@ void RlvRenameOnWearObserver::done()
 // Checked: 2010-03-14 (RLVa-1.1.3a) | Added: RLVa-1.2.0a
 void RlvRenameOnWearObserver::doneIdle()
 {
-	const LLViewerInventoryCategory* pRlvRoot = NULL; LLVOAvatar* pAvatar = gAgentAvatarp;
+	const LLViewerInventoryCategory* pRlvRoot = NULL;
+	if(!isAgentAvatarValid())
+	{
+		delete this;
+		return;
+	}
 	if ( (RlvSettings::getEnableSharedWear()) || (!RlvSettings::getSharedInvAutoRename()) || (LLStartUp::getStartupState() < STATE_STARTED) || 
-		 (!pAvatar) || ((pRlvRoot = RlvInventory::instance().getSharedRoot()) == NULL) )
+		 ((pRlvRoot = RlvInventory::instance().getSharedRoot()) == NULL) )
 	{
 		delete this;
 		return;
@@ -387,7 +392,7 @@ void RlvRenameOnWearObserver::doneIdle()
 		if (items.empty())
 			continue;
 
-		if ( ((pAttachPt = pAvatar->getWornAttachmentPoint(idAttachItem)) == NULL) ||
+		if ( ((pAttachPt = gAgentAvatarp->getWornAttachmentPoint(idAttachItem)) == NULL) ||
 			 ((idxAttachPt = RlvAttachPtLookup::getAttachPointIndex(pAttachPt)) == 0) )
 		{
 //			RLV_ASSERT(false);

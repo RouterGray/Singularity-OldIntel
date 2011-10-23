@@ -360,8 +360,7 @@ void LLCOFMgr::onLinkAttachmentComplete(const LLUUID& idItem)
 
 void LLCOFMgr::updateAttachments()
 {
-	/*const*/ LLVOAvatar* pAvatar = gAgentAvatarp;
-	if (!pAvatar)
+	if (!isAgentAvatarValid())
 		return;
 
 	const LLUUID idCOF = getCOF();
@@ -375,7 +374,7 @@ void LLCOFMgr::updateAttachments()
 	while (itPendingAttachLink != m_PendingAttachLinks.end())
 	{
 		const LLUUID& idItem = *itPendingAttachLink;
-		if ( (!pAvatar->isWearingAttachment(idItem)) || (isLinkInCOF(idItem)) )
+		if ( (!gAgentAvatarp->isWearingAttachment(idItem)) || (isLinkInCOF(idItem)) )
 		{
 			itPendingAttachLink = m_PendingAttachLinks.erase(itPendingAttachLink);
 			continue;
@@ -389,7 +388,7 @@ void LLCOFMgr::updateAttachments()
 	}
 
 	// Don't remove attachments until avatar is fully loaded (should reduce random attaching/detaching/reattaching at log-on)
-	LLAgentWearables::userUpdateAttachments(items, !pAvatar->isFullyLoaded());
+	LLAgentWearables::userUpdateAttachments(items, !gAgentAvatarp->isFullyLoaded());
 }
 
 // ============================================================================

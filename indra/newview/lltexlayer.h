@@ -260,7 +260,7 @@ class LLTexLayerSet
 {
 	friend class LLTexLayerSetBuffer;
 public:
-	LLTexLayerSet( LLVOAvatar* avatar );
+	LLTexLayerSet( LLVOAvatarSelf* avatar );
 	~LLTexLayerSet();
 
 	//BOOL					parseData(LLXmlTreeNode* node);
@@ -275,7 +275,7 @@ public:
 	void					requestUpdate();
 	void					requestUpload();
 	void					cancelUpload();
-	LLVOAvatar*				getAvatar()								{ return mAvatar; }
+	LLVOAvatarSelf*			getAvatar()								{ return mAvatar; }
 	void					updateComposite();
 	BOOL					isLocalTextureDataAvailable();
 	BOOL					isLocalTextureDataFinal();
@@ -301,7 +301,7 @@ protected:
 	layer_list_t			mMaskLayerList;
 	LLPointer<LLTexLayerSetBuffer>	mComposite;
 	// Backlink only; don't make this an LLPointer.
-	LLVOAvatar*				mAvatar;
+	LLVOAvatarSelf*			mAvatar;
 	BOOL					mUpdatesEnabled;
 	BOOL					mIsVisible;
 
@@ -442,7 +442,7 @@ public:
 	BOOL					setInfo(LLTexGlobalColorInfo *info);
 	
 	void					requstUpdate();
-	LLVOAvatar*				getAvatar()						{ return mAvatar; }
+	LLVOAvatar*			getAvatar()						{ return mAvatar; }
 	LLColor4				getColor();
 	const std::string&		getName()						{ return mInfo->mName; }
 
@@ -540,11 +540,11 @@ public:
 class LLBakedUploadData
 {
 public:
-	LLBakedUploadData( LLVOAvatar* avatar, LLTexLayerSet* layerset, LLTexLayerSetBuffer* layerset_buffer, const LLUUID & id);
+	LLBakedUploadData( LLVOAvatarSelf* avatar, LLTexLayerSet* layerset, LLTexLayerSetBuffer* layerset_buffer, const LLUUID & id);
 	~LLBakedUploadData() {}
 
 	LLUUID					mID;
-	LLVOAvatar*				mAvatar;	 // just backlink, don't LLPointer 
+	LLVOAvatarSelf*			mAvatar;	 // just backlink, don't LLPointer 
 	LLTexLayerSet*			mTexLayerSet;
 	LLTexLayerSetBuffer*	mLayerSetBuffer;
 	LLUUID					mWearableAssets[LLWearableType::WT_COUNT];

@@ -151,16 +151,14 @@ BOOL LLVisualParamHint::needsRender()
 
 void LLVisualParamHint::preRender(BOOL clear_depth)
 {
-	LLVOAvatar* avatarp = gAgentAvatarp;
-
-	mLastParamWeight = avatarp->getVisualParamWeight(mVisualParam);
-	avatarp->setVisualParamWeight(mVisualParam, mVisualParamWeight);
-	avatarp->setVisualParamWeight("Blink_Left", 0.f);
-	avatarp->setVisualParamWeight("Blink_Right", 0.f);
-	avatarp->updateComposites();
-	avatarp->updateVisualParams();
-	avatarp->updateGeometry(avatarp->mDrawable);
-	avatarp->updateLOD();
+	mLastParamWeight = gAgentAvatarp->getVisualParamWeight(mVisualParam);
+	gAgentAvatarp->setVisualParamWeight(mVisualParam, mVisualParamWeight);
+	gAgentAvatarp->setVisualParamWeight("Blink_Left", 0.f);
+	gAgentAvatarp->setVisualParamWeight("Blink_Right", 0.f);
+	gAgentAvatarp->updateComposites();
+	gAgentAvatarp->updateVisualParams();
+	gAgentAvatarp->updateGeometry(gAgentAvatarp->mDrawable);
+	gAgentAvatarp->updateLOD();
 
 	LLViewerDynamicTexture::preRender(clear_depth);
 }
@@ -171,7 +169,6 @@ void LLVisualParamHint::preRender(BOOL clear_depth)
 BOOL LLVisualParamHint::render()
 {
 	LLVisualParamReset::sDirty = TRUE;
-	LLVOAvatar* avatarp = gAgentAvatarp;
 
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
@@ -199,7 +196,7 @@ BOOL LLVisualParamHint::render()
 	const std::string& cam_target_mesh_name = mVisualParam->getCameraTargetName();
 	if( !cam_target_mesh_name.empty() )
 	{
-		cam_target_joint = (LLViewerJointMesh*)avatarp->getJoint( cam_target_mesh_name );
+		cam_target_joint = (LLViewerJointMesh*)gAgentAvatarp->getJoint( cam_target_mesh_name );
 	}
 	if( !cam_target_joint )
 	{
@@ -207,11 +204,11 @@ BOOL LLVisualParamHint::render()
 	}
 	if( !cam_target_joint )
 	{
-		cam_target_joint = (LLViewerJointMesh*)avatarp->getJoint("mHead");
+		cam_target_joint = (LLViewerJointMesh*)gAgentAvatarp->getJoint("mHead");
 	}
 
 	LLQuaternion avatar_rotation;
-	LLJoint* root_joint = avatarp->getRootJoint();
+	LLJoint* root_joint = gAgentAvatarp->getRootJoint();
 	if( root_joint )
 	{
 		avatar_rotation = root_joint->getWorldRotation();
@@ -233,23 +230,23 @@ BOOL LLVisualParamHint::render()
 	
 	LLViewerCamera::getInstance()->setAspect((F32)mFullWidth / (F32)mFullHeight);
 	LLViewerCamera::getInstance()->setOriginAndLookAt(
-		camera_pos,		// camera
-		LLVector3(0.f, 0.f, 1.f),						// up
-		target_pos );	// point of interest
+		camera_pos,			// camera
+		LLVector3::z_axis,	// up
+		target_pos );		// point of interest
 
 	LLViewerCamera::getInstance()->setPerspective(FALSE, mOrigin.mX, mOrigin.mY, mFullWidth, mFullHeight, FALSE);
 
-	if (avatarp->mDrawable.notNull())
+	if (gAgentAvatarp->mDrawable.notNull())
 	{
-		LLDrawPoolAvatar *avatarPoolp = (LLDrawPoolAvatar *)avatarp->mDrawable->getFace(0)->getPool();
+		LLDrawPoolAvatar *avatarPoolp = (LLDrawPoolAvatar *)gAgentAvatarp->mDrawable->getFace(0)->getPool();
 		LLGLDepthTest gls_depth(GL_TRUE, GL_TRUE);
 		gGL.setAlphaRejectSettings(LLRender::CF_ALWAYS);
 		gGL.setSceneBlendType(LLRender::BT_REPLACE);
-		avatarPoolp->renderAvatars(avatarp);  // renders only one avatar
+		avatarPoolp->renderAvatars(gAgentAvatarp);  // renders only one avatar
 		gGL.setSceneBlendType(LLRender::BT_ALPHA);
 		gGL.setAlphaRejectSettings(LLRender::CF_DEFAULT);
 	}
-	avatarp->setVisualParamWeight(mVisualParam, mLastParamWeight);
+	gAgentAvatarp->setVisualParamWeight(mVisualParam, mLastParamWeight);
 	gGL.color4f(1,1,1,1);
 	mGLTexturep->setGLTextureCreated(true);
 	return TRUE;
@@ -304,10 +301,9 @@ BOOL LLVisualParamReset::render()
 {
 	if (sDirty)
 	{
-		LLVOAvatar* avatarp = gAgentAvatarp;
-		avatarp->updateComposites();
-		avatarp->updateVisualParams();
-		avatarp->updateGeometry(avatarp->mDrawable);
+		gAgentAvatarp->updateComposites();
+		gAgentAvatarp->updateVisualParams();
+		gAgentAvatarp->updateGeometry(gAgentAvatarp->mDrawable);
 		sDirty = FALSE;
 	}
 

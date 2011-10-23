@@ -1623,8 +1623,7 @@ BOOL LLFolderBridge::isItemRemovable()
 		return FALSE;
 	}
 
-	LLVOAvatar* avatar = gAgentAvatarp;
-	if( !avatar )
+	if( !isAgentAvatarValid() )
 	{
 		return FALSE;
 	}
@@ -1667,7 +1666,7 @@ BOOL LLFolderBridge::isItemRemovable()
 		}
 		else if (item->getType() == LLAssetType::AT_OBJECT && !item->getIsLinkType())
 		{
-			if( avatar->isWearingAttachment( item->getUUID() ) )
+			if( gAgentAvatarp->isWearingAttachment( item->getUUID() ) )
 			{
 				return FALSE;
 			}
@@ -4028,17 +4027,16 @@ void LLObjectBridge::performAction(LLFolderView* folder, LLInventoryModel* model
 		LLInventoryItem* item = gInventory.getItem(mUUID);
 		if(item)
 		{
-			LLVOAvatar::detachAttachmentIntoInventory(item->getLinkedUUID());
+			LLVOAvatarSelf::detachAttachmentIntoInventory(item->getLinkedUUID());
 		}
 	}
 	else if ("edit" == action)
 	{
 		if (gRlvHandler.hasBehaviour(RLV_BHVR_EDIT))
 			return;
-		LLVOAvatar* avatarp = gAgentAvatarp;
-		if (!avatarp)
+		if (!isAgentAvatarValid())
 			return;
-		LLViewerObject* objectp = avatarp->getWornAttachment(mUUID);
+		LLViewerObject* objectp = gAgentAvatarp->getWornAttachment(mUUID);
 		if (!objectp)
 			return;
 
@@ -4085,12 +4083,11 @@ void LLObjectBridge::performAction(LLFolderView* folder, LLInventoryModel* model
 
 void LLObjectBridge::openItem()
 {
-	LLVOAvatar* avatar = gAgentAvatarp;
-	if (!avatar)
+	if (!isAgentAvatarValid())
 	{
 		return;
 	}
-	if (avatar->isWearingAttachment(mUUID))
+	if (gAgentAvatarp->isWearingAttachment(mUUID))
 	{
 // [RLVa:KB]
 		if ( !(rlv_handler_t::isEnabled()) || (gRlvAttachmentLocks.canDetach(getItem())))
@@ -4105,12 +4102,11 @@ void LLObjectBridge::openItem()
 
 std::string LLObjectBridge::getLabelSuffix() const
 {
-	LLVOAvatar* avatar = gAgentAvatarp;
-	if( avatar && avatar->isWearingAttachment( mUUID ) )
+	if( isAgentAvatarValid() && gAgentAvatarp->isWearingAttachment( mUUID ) )
 	{
-		std::string attachment_point_name = avatar->getAttachedPointName(mUUID);
+		std::string attachment_point_name = gAgentAvatarp->getAttachedPointName(mUUID);
 		LLStringUtil::toLower(attachment_point_name);
-		LLViewerObject* pObj = (rlv_handler_t::isEnabled()) ? avatar->getWornAttachment( mUUID ) : NULL;
+		LLViewerObject* pObj = (rlv_handler_t::isEnabled()) ? gAgentAvatarp->getWornAttachment( mUUID ) : NULL;
 // [RLVa:KB]
 		if ( pObj && (gRlvAttachmentLocks.isLockedAttachment(pObj) || 
 					gRlvAttachmentLocks.isLockedAttachmentPoint(RlvAttachPtLookup::getAttachPointIndex(pObj),RLV_LOCK_REMOVE)))
@@ -4123,10 +4119,10 @@ std::string LLObjectBridge::getLabelSuffix() const
 	else
 	{
 		// <edit> testzone attachpt
-		if(avatar)
+		if(isAgentAvatarValid())
 		{
-			std::map<S32, std::pair<LLUUID,LLUUID> >::iterator iter = avatar->mUnsupportedAttachmentPoints.begin();
-			std::map<S32, std::pair<LLUUID,LLUUID> >::iterator end = avatar->mUnsupportedAttachmentPoints.end();
+			std::map<S32, std::pair<LLUUID,LLUUID> >::iterator iter = gAgentAvatarp->mUnsupportedAttachmentPoints.begin();
+			std::map<S32, std::pair<LLUUID,LLUUID> >::iterator end = gAgentAvatarp->mUnsupportedAttachmentPoints.end();
 			for( ; iter != end; ++iter)
 				if((*iter).second.first == mUUID)
 				{
@@ -4247,8 +4243,7 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 		LLInventoryItem* item = getItem();
 		if(item)
 		{
-			LLVOAvatar *avatarp = gAgentAvatarp;
-			if( !avatarp )
+			if( !isAgentAvatarValid() )
 			{
 				return;
 			}
@@ -4266,7 +4261,7 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 			}
 			else
 			// <edit> testzone attachpt
-			if( avatarp->isWearingUnsupportedAttachment( mUUID ) )
+			if( gAgentAvatarp->isWearingUnsupportedAttachment( mUUID ) )
 			{
 				items.push_back(std::string("Detach From Yourself"));
 			}
@@ -4278,7 +4273,7 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 				items.push_back(std::string("Object Wear"));
 				if (gHippoGridManager->getConnectedGrid()->supportsInvLinks())
 					items.push_back(std::string("Object Add"));
-				if (!avatarp->canAttachMoreObjects())
+				if (!gAgentAvatarp->canAttachMoreObjects())
 				{
 					disabled_items.push_back(std::string("Object Add"));
 				}
@@ -4287,7 +4282,7 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 				// commented out for DEV-32347 - AND Commented back in for non-morons. -HgB
 				items.push_back(std::string("Restore to Last Position"));
 				
-				if (!avatarp->canAttachMoreObjects())
+				if (!gAgentAvatarp->canAttachMoreObjects())
 				{
 					disabled_items.push_back(std::string("Object Wea"));
 					disabled_items.push_back(std::string("Object Add"));
@@ -4310,11 +4305,10 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 				if (attach_menu
 					&& (attach_menu->getChildCount() == 0)
 					&& attach_hud_menu
-					&& (attach_hud_menu->getChildCount() == 0)
-					&& avatarp)
+					&& (attach_hud_menu->getChildCount() == 0))
 				{
-					for (LLVOAvatar::attachment_map_t::iterator iter = avatarp->mAttachmentPoints.begin(); 
-						 iter != avatarp->mAttachmentPoints.end(); )
+					for (LLVOAvatar::attachment_map_t::iterator iter = gAgentAvatarp->mAttachmentPoints.begin(); 
+						 iter != gAgentAvatarp->mAttachmentPoints.end(); )
 					{
 						LLVOAvatar::attachment_map_t::iterator curiter = iter++;
 						LLViewerJointAttachment* attachment = curiter->second;
@@ -4374,10 +4368,9 @@ BOOL LLObjectBridge::renameItem(const std::string& new_name)
 		model->updateItem(new_item);
 		model->notifyObservers();
 
-		LLVOAvatar* avatar = gAgentAvatarp;
-		if( avatar )
+		if( isAgentAvatarValid() )
 		{
-			LLViewerObject* obj = avatar->getWornAttachment( item->getUUID() );
+			LLViewerObject* obj = gAgentAvatarp->getWornAttachment( item->getUUID() );
 			if( obj )
 			{
 				LLSelectMgr::getInstance()->deselectAll();
@@ -5148,7 +5141,7 @@ void remove_inventory_category_from_avatar_step2( BOOL proceed, void* userdata)
 				LLViewerInventoryItem *obj_item = obj_item_array.get(i);
 				if (get_is_item_worn(obj_item->getUUID()))
 				{
-					LLVOAvatar::detachAttachmentIntoInventory(obj_item->getLinkedUUID());
+					LLVOAvatarSelf::detachAttachmentIntoInventory(obj_item->getLinkedUUID());
 				}
 			}
 		}

@@ -763,8 +763,7 @@ void LLPanelEditWearable::onInvisibilityCommit(LLUICtrl* ctrl, void* userdata)
 {
 	LLPanelEditWearable* self = (LLPanelEditWearable*) userdata;
 	LLCheckBoxCtrl* checkbox_ctrl = (LLCheckBoxCtrl*) ctrl;
-	LLVOAvatar *avatar = gAgentAvatarp;
-	if (!avatar)
+	if (!isAgentAvatarValid())
 	{
 		return;
 	}
@@ -775,13 +774,13 @@ void LLPanelEditWearable::onInvisibilityCommit(LLUICtrl* ctrl, void* userdata)
 	if (new_invis_state)
 	{
 		LLViewerTexture* image = LLViewerTextureManager::getFetchedTexture(IMG_INVISIBLE);
-		const LLTextureEntry* current_te = avatar->getTE(te);
+		const LLTextureEntry* current_te = gAgentAvatarp->getTE(te);
 		if (current_te)
 		{
 			self->mPreviousTextureList[(S32)te] = current_te->getID();
 		}
-		avatar->setLocTexTE(te, image, TRUE);
-		avatar->wearableUpdated(self->mType, FALSE);
+		gAgentAvatarp->setLocalTextureTE(te, image, TRUE);
+		gAgentAvatarp->wearableUpdated(self->mType, FALSE);
 	}
 	else
 	{
@@ -794,8 +793,8 @@ void LLPanelEditWearable::onInvisibilityCommit(LLUICtrl* ctrl, void* userdata)
 		if (prev_id.notNull())
 		{
 			LLViewerTexture* image = LLViewerTextureManager::getFetchedTexture(prev_id);
-			avatar->setLocTexTE(te, image, TRUE);
-			avatar->wearableUpdated(self->mType, FALSE);
+			gAgentAvatarp->setLocalTextureTE(te, image, TRUE);
+			gAgentAvatarp->wearableUpdated(self->mType, FALSE);
 		}
 		
 	}
@@ -813,23 +812,24 @@ void LLPanelEditWearable::onColorCommit( LLUICtrl* ctrl, void* userdata )
 	LLPanelEditWearable* self = (LLPanelEditWearable*) userdata;
 	LLColorSwatchCtrl* color_ctrl = (LLColorSwatchCtrl*) ctrl;
 
-	LLVOAvatar* avatar = gAgentAvatarp;
-	if( self && color_ctrl && avatar )
+	if(!isAgentAvatarValid())
+		return;
+	if( self && color_ctrl)
 	{
 		std::map<std::string, S32>::const_iterator cl_itr = self->mColorList.find(ctrl->getName());
 		if(cl_itr != self->mColorList.end())
 		{
 			ETextureIndex te = (ETextureIndex)cl_itr->second;
 
-			LLColor4 old_color = avatar->getClothesColor( te );
+			LLColor4 old_color = gAgentAvatarp->getClothesColor( te );
 			const LLColor4& new_color = color_ctrl->get();
 			if( old_color != new_color )
 			{
 				// Set the new version
-				avatar->setClothesColor( te, new_color, TRUE );
+				gAgentAvatarp->setClothesColor( te, new_color, TRUE );
 
 				LLVisualParamHint::requestHintUpdates();
-				avatar->wearableUpdated(self->mType, FALSE);
+				gAgentAvatarp->wearableUpdated(self->mType, FALSE);
 			}
 		}
 	}
@@ -893,8 +893,7 @@ void LLPanelEditWearable::onTextureCommit( LLUICtrl* ctrl, void* userdata )
 	LLPanelEditWearable* self = (LLPanelEditWearable*) userdata;
 	LLTextureCtrl* texture_ctrl = (LLTextureCtrl*) ctrl;
 
-	LLVOAvatar* avatar = gAgentAvatarp;
-	if( avatar )
+	if( isAgentAvatarValid() )
 	{
 		ETextureIndex te = (ETextureIndex)(self->mTextureList[ctrl->getName()]);
 
@@ -907,8 +906,8 @@ void LLPanelEditWearable::onTextureCommit( LLUICtrl* ctrl, void* userdata )
 		self->mTextureList[ctrl->getName()] = te;
 		if (gAgentWearables.getWearable(self->mType))
 		{
-			avatar->setLocTexTE(te, image, TRUE);
-			avatar->wearableUpdated(self->mType, FALSE);
+			gAgentAvatarp->setLocalTextureTE(te, image, TRUE);
+			gAgentAvatarp->wearableUpdated(self->mType, FALSE);
 		}
 		if (self->mType == LLWearableType::WT_ALPHA && image->getID() != IMG_INVISIBLE)
 		{
@@ -1989,12 +1988,11 @@ void LLFloaterCustomize::onBtnOk( void* userdata )
 	LLFloaterCustomize* floater = (LLFloaterCustomize*) userdata;
 	gAgentWearables.saveAllWearables();
 
-	LLVOAvatar* avatar = gAgentAvatarp;
-	if ( avatar )
+	if ( isAgentAvatarValid() )
 	{
-		avatar->invalidateAll();
+		gAgentAvatarp->invalidateAll();
 		
-		avatar->requestLayerSetUploads();
+		gAgentAvatarp->requestLayerSetUploads();
 
 		gAgent.sendAgentSetAppearance();
 	}

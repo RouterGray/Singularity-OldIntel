@@ -237,6 +237,7 @@ public:
 	void 			idleUpdateLoadingEffect();
 	void 			idleUpdateWindEffect();
 	void 			idleUpdateNameTag(const LLVector3& root_pos_last);
+	LLVector3		idleUpdateNameTagPosition(const LLVector3& root_pos_last);
 	void			clearNameTag();
 	static void		invalidateNameTag(const LLUUID& agent_id);
 	// force all name tags to rebuild, useful when display names turned on/off
@@ -244,8 +245,6 @@ public:
 	void 			idleUpdateRenderCost();
 	void 			idleUpdateBelowWater();
 	void 			idleUpdateBoobEffect();	//Emerald
-	
-	void updateAttachmentVisibility(U32 camera_mode);	//Agent only
 
 	LLFrameTimer 	mIdleTimer;
 	std::string		getIdleTime();
@@ -282,8 +281,12 @@ public:
 	//--------------------------------------------------------------------
 public:
 	BOOL			isFullyLoaded() const;
+	bool visualParamWeightsAreDefault();
+protected:
+	virtual BOOL	getIsCloud();
 	//BOOL			isReallyFullyLoaded();
 	BOOL			updateIsFullyLoaded();
+	BOOL			processFullyLoadedChange(bool loading);
 protected:
 	bool 			sendAvatarTexturesRequest();
 	void			updateRuthTimer(bool loading);
@@ -484,6 +487,15 @@ public:
 private:
 	static S32  sFreezeCounter;
 
+	//--------------------------------------------------------------------
+	// Constants
+	//--------------------------------------------------------------------
+public:
+	virtual LLViewerTexture::EBoostLevel 	getAvatarBoostLevel() const { return LLViewerTexture::BOOST_AVATAR; }
+	virtual LLViewerTexture::EBoostLevel 	getAvatarBakedBoostLevel() const { return LLViewerTexture::BOOST_AVATAR_BAKED; }
+	virtual S32 						getTexImageSize() const;
+	virtual S32 						getTexImageArea() const { return getTexImageSize()*getTexImageSize(); }
+	
 /**                    Rendering
  **                                                                            **
  *******************************************************************************/
@@ -497,8 +509,8 @@ private:
 	// Loading status
 	//--------------------------------------------------------------------
 public:
- 	BOOL            isTextureDefined(U8 te) const;
-	BOOL			isTextureVisible(U8 te) const;
+ 	BOOL            isTextureDefined(LLVOAvatarDefines::ETextureIndex type) const;
+	BOOL			isTextureVisible(LLVOAvatarDefines::ETextureIndex type) const;
 
 protected:
 	BOOL			isFullyBaked();
@@ -533,8 +545,9 @@ protected:
 	// Local Textures
 	//--------------------------------------------------------------------
 protected:
-	void			setLocalTexture(LLVOAvatarDefines::ETextureIndex i, LLViewerFetchedTexture* tex, BOOL baked_version_exits);
-	void			addLocalTextureStats(LLVOAvatarDefines::ETextureIndex i, LLViewerTexture* imagep, F32 texel_area_ratio, BOOL rendered, BOOL covered_by_baked);
+	virtual void	setLocalTexture(LLVOAvatarDefines::ETextureIndex type, LLViewerTexture* tex, BOOL baked_version_exits);
+	virtual void	addLocalTextureStats(LLVOAvatarDefines::ETextureIndex type, LLViewerFetchedTexture* imagep, F32 texel_area_ratio, BOOL rendered, BOOL covered_by_baked);
+
 	//--------------------------------------------------------------------
 	// Layers
 	//--------------------------------------------------------------------
@@ -548,6 +561,9 @@ protected:
 public:
 	virtual void	invalidateComposite(LLTexLayerSet* layerset, BOOL upload_result);
 	virtual void	invalidateAll();
+	virtual void	setCompositeUpdatesEnabled(bool b) {}
+	virtual void 	setCompositeUpdatesEnabled(U32 index, bool b) {}
+	virtual bool 	isCompositeUpdateEnabled(U32 index) { return false; }
 
 	//--------------------------------------------------------------------
 	// Static texture/mesh/baked dictionary
@@ -572,70 +588,13 @@ private:
 
 
 //Most this stuff is Agent only
-
-	//--------------------------------------------------------------------
-	// Textures and Layers
-	//--------------------------------------------------------------------
-protected:
-	void			requestLayerSetUpdate(LLVOAvatarDefines::ETextureIndex i);
-
-
-	LLTexLayerSet*	getLayerSet(LLVOAvatarDefines::ETextureIndex index) const;
-	S32				getLocalDiscardLevel(LLVOAvatarDefines::ETextureIndex index);
-
 	//--------------------------------------------------------------------
 	// Other public functions
 	//--------------------------------------------------------------------
-public:
-	static void		dumpTotalLocalTextureByteCount();
-protected:
-	void			getLocalTextureByteCount( S32* gl_byte_count );
 
 public:
-	void			dumpLocalTextures();
-	const LLUUID&	grabLocalTexture(LLVOAvatarDefines::ETextureIndex index);
-	BOOL			canGrabLocalTexture(LLVOAvatarDefines::ETextureIndex index);
-
-	void			setCompositeUpdatesEnabled(BOOL b);
-
 	void setNameFromChat(const std::string &text);
 	void clearNameFromChat();
-
-public:
-	
-
-	//--------------------------------------------------------------------
-	// texture compositing (used only by the LLTexLayer series of classes)
-	//--------------------------------------------------------------------
-public:
-	BOOL			isLocalTextureDataAvailable( const LLTexLayerSet* layerset );
-	BOOL			isLocalTextureDataFinal( const LLTexLayerSet* layerset );
-	LLVOAvatarDefines::ETextureIndex	getBakedTE( LLTexLayerSet* layerset );
-	void			updateComposites();
-	//BOOL			getLocalTextureRaw( LLVOAvatarDefines::ETextureIndex index, LLImageRaw* image_raw_pp );
-	BOOL			getLocalTextureGL( LLVOAvatarDefines::ETextureIndex index, LLViewerTexture** image_gl_pp );
-	const LLUUID&	getLocalTextureID( LLVOAvatarDefines::ETextureIndex index );
-	LLGLuint		getScratchTexName( LLGLenum format, U32* texture_bytes );
-	BOOL			bindScratchTexture( LLGLenum format );
-	void			forceBakeAllTextures(bool slam_for_debug = false);
-	static void		processRebakeAvatarTextures(LLMessageSystem* msg, void**);
-	void			setNewBakedTexture( LLVOAvatarDefines::ETextureIndex i, const LLUUID& uuid );
-	void			setCachedBakedTexture( LLVOAvatarDefines::ETextureIndex i, const LLUUID& uuid );
-	void			requestLayerSetUploads();
-	void 			requestLayerSetUpload(LLVOAvatarDefines::EBakedTextureIndex i);
-	bool			hasPendingBakedUploads();
-	static void		onLocalTextureLoaded( BOOL succcess, LLViewerFetchedTexture *src_vi, LLImageRaw* src, LLImageRaw* aux_src, S32 discard_level, BOOL final, void* userdata );
-	static void		onChangeSelfInvisible(BOOL newvalue);
-	void			setInvisible(BOOL newvalue);
-
-	void			wearableUpdated(LLWearableType::EType type, BOOL upload_result = TRUE);
-
-	//--------------------------------------------------------------------
-	// texture compositing
-	//--------------------------------------------------------------------
-public:
-	void			setLocTexTE( U8 te, LLViewerTexture* image, BOOL set_by_user );
-	void			setupComposites();
 
 /**                    Textures
  **                                                                            **
@@ -683,7 +642,6 @@ public:
 	void 			processAvatarAppearance(LLMessageSystem* mesgsys);
 	void 			hideSkirt();
 	void			startAppearanceAnimation(BOOL set_by_user, BOOL play_sound);
-	LLPolyMesh*		getMesh(LLPolyMeshSharedData* shared_data);
 	
 	//--------------------------------------------------------------------
 	// Appearance morphing
@@ -701,12 +659,12 @@ public:
 	typedef std::map<std::string, lod_mesh_map_t> mesh_info_t;
 
 	static void getMeshInfo(mesh_info_t* mesh_info);
-
+	LLPolyMesh*		getMesh( LLPolyMeshSharedData *shared_data );
 	//--------------------------------------------------------------------
 	// Clothing colors (convenience functions to access visual parameters)
 	//--------------------------------------------------------------------
 public:
-	void			setClothesColor( LLVOAvatarDefines::ETextureIndex te, const LLColor4& new_color, BOOL set_by_user );
+	void			setClothesColor(LLVOAvatarDefines::ETextureIndex te, const LLColor4& new_color, BOOL upload_bake);
 	LLColor4		getClothesColor(LLVOAvatarDefines::ETextureIndex te);
 	static BOOL		teToColorParams( LLVOAvatarDefines::ETextureIndex te, const char* param_name[3] );
 
@@ -715,7 +673,7 @@ public:
 	//--------------------------------------------------------------------
 public:
 	LLColor4		getGlobalColor(const std::string& color_name ) const;
-	void			onGlobalColorChanged(const LLTexGlobalColor* global_color, BOOL set_by_user );
+	void			onGlobalColorChanged(const LLTexGlobalColor* global_color, BOOL upload_bake);
 private:
 	LLTexGlobalColor* mTexSkinColor;
 	LLTexGlobalColor* mTexHairColor;
@@ -730,13 +688,6 @@ public:
 	U32				getVisibilityRank()  const { return mVisibilityRank; } // unused
 	static S32 		sNumVisibleAvatars; // Number of instances of this class
 	static LLColor4 getDummyColor();
-	
-	//--------------------------------------------------------------------
-	// Customize
-	//--------------------------------------------------------------------
-public:
-	static void		onCustomizeStart();
-	static void		onCustomizeEnd();
 /**                    Appearance
  **                                                                            **
  *******************************************************************************/
@@ -747,19 +698,19 @@ public:
  **/
 
 public:
-	BOOL			isWearingWearableType( LLWearableType::EType type ) const;
+	virtual BOOL			isWearingWearableType(LLWearableType::EType type ) const;
 	
 	//--------------------------------------------------------------------
 	// Attachments
 	//--------------------------------------------------------------------
 public:
 	void 				clampAttachmentPositions();
-	BOOL attachObject(LLViewerObject *viewer_object);
-	BOOL detachObject(LLViewerObject *viewer_object);
+	virtual const LLViewerJointAttachment* attachObject(LLViewerObject *viewer_object);
+	virtual BOOL 		detachObject(LLViewerObject *viewer_object);
 #if MESH_ENABLED
 	void				cleanupAttachedMesh( LLViewerObject* pVO );
 #endif //MESH_ENABLED
-	static LLVOAvatar* findAvatarFromAttachment( LLViewerObject* obj );
+	static LLVOAvatar*  findAvatarFromAttachment(LLViewerObject* obj);
 protected:
 // [RLVa:KB] - Checked: 2009-12-18 (RLVa-1.1.0i) | Added: RLVa-1.1.0i
 	LLViewerJointAttachment* getTargetAttachmentPoint(const LLViewerObject* viewer_object) const;
@@ -776,7 +727,8 @@ public:
 	S32 				getAttachmentCount(); // Warning: order(N) not order(1) // currently used only by -self
 	typedef std::map<S32, LLViewerJointAttachment*> attachment_map_t;
 	attachment_map_t 								mAttachmentPoints;
-	std::vector<LLPointer<LLViewerObject> > 		mPendingAttachment;	
+	std::vector<LLPointer<LLViewerObject> > 		mPendingAttachment;
+
 	//--------------------------------------------------------------------
 	// HUD functions
 	//--------------------------------------------------------------------
@@ -789,25 +741,6 @@ public:
 protected:
 	U32					getNumAttachments() const; // O(N), not O(1)
 
-	//--------------------------------------------------------------------
-	// Old/nonstandard/Agent-only functions
-	//--------------------------------------------------------------------
-public:
-	static BOOL		detachAttachmentIntoInventory(const LLUUID& item_id);
-	BOOL 			isWearingAttachment( const LLUUID& inv_item_id );
-	// <edit> testzone attachpt
-	BOOL 			isWearingUnsupportedAttachment( const LLUUID& inv_item_id );
-	// </edit>
-	LLViewerObject* getWornAttachment( const LLUUID& inv_item_id );
-// [RLVa:KB] - Checked: 2010-03-14 (RLVa-1.2.0a) | Added: RLVa-1.1.0i
-	LLViewerJointAttachment* getWornAttachmentPoint(const LLUUID& inv_item_id) const;
-// [/RLVa:KB]
-	const std::string getAttachedPointName(const LLUUID& inv_item_id);
-
-	// <edit>
-	std::map<S32, std::pair<LLUUID/*inv*/,LLUUID/*object*/> > mUnsupportedAttachmentPoints;
-	// </edit>
-	
 /**                    Wearables
  **                                                                            **
  *******************************************************************************/
@@ -1073,7 +1006,6 @@ private:
 	//--------------------------------------------------------------------
 public:
 	static void			dumpArchetypeXML(void*);
-	static void			dumpScratchTextureByteCount(); //Agent only
 	static void			dumpBakedStatus();
 	const std::string 	getBakedStatusForPrintout() const;
 	void				dumpAvatarTEs(const std::string& context) const;
@@ -1086,7 +1018,6 @@ protected:
 	S32					getUnbakedPixelAreaRank();
 	BOOL				mHasGrey;
 private:
-	LLUUID				mSavedTE[ LLVOAvatarDefines::TEX_NUM_INDICES ];
 	BOOL				mHasBakedHair;
 	F32					mMinPixelArea;
 	F32					mMaxPixelArea;
@@ -1248,15 +1179,15 @@ private:
 //-----------------------------------------------------------------------------------------------
 // Inlines
 //-----------------------------------------------------------------------------------------------
-inline BOOL LLVOAvatar::isTextureDefined(U8 te) const
+inline BOOL LLVOAvatar::isTextureDefined(LLVOAvatarDefines::ETextureIndex type) const
 {
-	return (getTEImage(te)->getID() != IMG_DEFAULT_AVATAR && getTEImage(te)->getID() != IMG_DEFAULT);
+	return (getTEImage(type)->getID() != IMG_DEFAULT_AVATAR && getTEImage(type)->getID() != IMG_DEFAULT);
 }
 
-inline BOOL LLVOAvatar::isTextureVisible(U8 te) const
+inline BOOL LLVOAvatar::isTextureVisible(LLVOAvatarDefines::ETextureIndex type) const
 {
-	return ((isTextureDefined(te) || isSelf())
-			&& (getTEImage(te)->getID() != IMG_INVISIBLE 
+	return ((isTextureDefined(type) || isSelf())
+			&& (getTEImage(type)->getID() != IMG_INVISIBLE 
 				|| LLDrawPoolAlpha::sShowDebugAlpha));
 }
 

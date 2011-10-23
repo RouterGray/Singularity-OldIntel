@@ -231,10 +231,9 @@ void LLPreview::onCommit()
 			// update the object itself.
 			if( item->getType() == LLAssetType::AT_OBJECT )
 			{
-				LLVOAvatar* avatar = gAgentAvatarp;
-				if( avatar )
+				if( isAgentAvatarValid() )
 				{
-					LLViewerObject* obj = avatar->getWornAttachment( item->getUUID() );
+					LLViewerObject* obj = gAgentAvatarp->getWornAttachment( item->getUUID() );
 					if( obj )
 					{
 						LLSelectMgr::getInstance()->deselectAll();

@@ -355,8 +355,7 @@ void RlvForceWear::forceFolder(const LLViewerInventoryCategory* pFolder, EWearAc
 		LLNotificationsUtil::add("CanNotChangeAppearanceUntilLoaded");
 		return;
 	}
-	LLVOAvatar* pAvatar = gAgentAvatarp;
-	if (!pAvatar)
+	if (!isAgentAvatarValid())
 		return;
 
 	// Grab a list of all the items we'll be wearing/attaching
@@ -439,7 +438,7 @@ void RlvForceWear::forceFolder(const LLViewerInventoryCategory* pFolder, EWearAc
 				}
 				else
 				{
-					const LLViewerObject* pAttachObj = pAvatar->getWornAttachment(pItem->getUUID());
+					const LLViewerObject* pAttachObj = gAgentAvatarp->getWornAttachment(pItem->getUUID());
 					if ( (pAttachObj) && (isForceDetachable(pAttachObj, false)) )
 						remAttachment(pAttachObj);
 				}
