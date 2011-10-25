@@ -49,6 +49,7 @@
 #include "llrendertarget.h"
 #include "llwearable.h"
 #include "llvoavatardefines.h"
+#include "lltexglobalcolor.h"
 #include "emeraldboobutils.h"
 #include "llavatarname.h"
 

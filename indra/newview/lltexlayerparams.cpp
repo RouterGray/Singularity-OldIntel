@@ -145,13 +145,6 @@ LLTexLayerParamAlpha::~LLTexLayerParamAlpha()
 	sInstances.remove(this);
 }
 
-/*virtual*/ LLViewerVisualParam* LLTexLayerParamAlpha::cloneParam(LLWearable* wearable) const
-{
-	LLTexLayerParamAlpha *new_param = new LLTexLayerParamAlpha(mTexLayer);
-	*new_param = *this;
-	return new_param;
-}
-
 void LLTexLayerParamAlpha::deleteCaches()
 {
 	mStaticImageTGA = NULL; // deletes image
@@ -188,6 +181,7 @@ void LLTexLayerParamAlpha::setWeight(F32 weight, BOOL upload_bake)
 			}
 			mAvatar->invalidateComposite(mTexLayer->getTexLayerSet(), upload_bake);
 			mTexLayer->invalidateMorphMasks();
+			mAvatar->updateMeshTextures();
 		}
 	}
 }
@@ -323,14 +317,14 @@ BOOL LLTexLayerParamAlpha::render(S32 x, S32 y, S32 width, S32 height)
 				// Create the GL texture, and then hang onto it for future use.
 				if (mNeedsCreateTexture)
 				{
-					mCachedProcessedTexture->createGLTexture(0, mStaticImageRaw);
+					mCachedProcessedTexture->createGLTexture(0, mStaticImageRaw, 0, TRUE, LLViewerTexture::BOOST_AVATAR_SELF);
 					mNeedsCreateTexture = FALSE;
 					gGL.getTexUnit(0)->bind(mCachedProcessedTexture);
 					mCachedProcessedTexture->setAddressMode(LLTexUnit::TAM_CLAMP);
 				}
 
 				LLGLSNoAlphaTest gls_no_alpha_test;
-				gGL.getTexUnit(0)->bind(mCachedProcessedTexture);
+				gGL.getTexUnit(0)->bind(mCachedProcessedTexture, TRUE);
 				gl_rect_2d_simple_tex(width, height);
 				gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
 				stop_glerror();
@@ -419,12 +413,6 @@ LLTexLayerParamColor::~LLTexLayerParamColor()
 {
 }
 
-/*virtual*/ LLViewerVisualParam* LLTexLayerParamColor::cloneParam(LLWearable* wearable) const
-{
-	LLTexLayerParamColor *new_param = new LLTexLayerParamColor(mTexLayer);
-	*new_param = *this;
-	return new_param;
-}
 
 LLColor4 LLTexLayerParamColor::getNetColor() const
 {
@@ -521,7 +509,7 @@ LLTexLayerParamColorInfo::LLTexLayerParamColorInfo() :
 
 BOOL LLTexLayerParamColorInfo::parseXml(LLXmlTreeNode *node)
 {
-	llassert(node->hasName("param") && node->getChildByName("param_color"));
+	llassert( node->hasName( "param" ) && node->getChildByName( "param_color" ) );
 
 	if (!LLViewerVisualParamInfo::parseXml(node))
 		return FALSE;

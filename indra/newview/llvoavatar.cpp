@@ -1131,7 +1131,7 @@ void LLVOAvatar::deleteCachedImages(bool clearAll)
 	}
 	
 	LLVOAvatarSelf::deleteScratchTextures();
-	gTexStaticImageList.deleteCachedImages();
+	LLTexLayerStaticImageList::getInstance()->deleteCachedImages();
 }
 
 

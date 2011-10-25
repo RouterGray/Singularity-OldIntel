@@ -45,6 +45,7 @@
 #include "llviewerobjectlist.h" 
 #include "llviewertexturelist.h" 
 #include "lltexlayer.h"
+#include "lltexlayerparams.h"
 #include "llsurface.h"
 #include "llvlmanager.h"
 #include "llagent.h"
@@ -525,7 +526,7 @@ void output_statistics(void*)
 
 	llinfos << "--------------------------------" << llendl;
 	llinfos << "Avatar Memory (partly overlaps with above stats):" << llendl;
-	gTexStaticImageList.dumpByteCount();
+	LLTexLayerStaticImageList::getInstance()->dumpByteCount();
 	LLVOAvatarSelf::dumpScratchTextureByteCount();
 	LLTexLayerSetBuffer::dumpTotalByteCount();
 	LLVOAvatarSelf::dumpTotalLocalTextureByteCount();
