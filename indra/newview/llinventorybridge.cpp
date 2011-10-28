@@ -4151,9 +4151,20 @@ void rez_attachment(LLViewerInventoryItem* item, LLViewerJointAttachment* attach
 		attachment = RlvAttachPtLookup::getAttachPoint(item);
 	}
 // [/RLVa:KB]
+	const LLUUID& item_id = item->getLinkedUUID();
+
+	// Check for duplicate request.
+	if (isAgentAvatarValid() &&
+		(gAgentAvatarp->attachmentWasRequested(item_id) ||
+		 gAgentAvatarp->isWearingAttachment(item_id)))
+	{
+		llwarns << "duplicate attachment request, ignoring" << llendl;
+		return;
+	}
+	gAgentAvatarp->addAttachmentRequest(item_id);
 
 	S32 attach_pt = 0;
-	if (gAgentAvatarp && attachment)
+	if (isAgentAvatarValid() && attachment)
 	{
 		for (LLVOAvatar::attachment_map_t::iterator iter = gAgentAvatarp->mAttachmentPoints.begin();
 			 iter != gAgentAvatarp->mAttachmentPoints.end(); ++iter)
@@ -4167,11 +4178,12 @@ void rez_attachment(LLViewerInventoryItem* item, LLViewerJointAttachment* attach
 	}
 
 	LLSD payload;
-	payload["item_id"] = item->getLinkedUUID(); // Wear the base object in case this is a link.
+	payload["item_id"] = item_id; // Wear the base object in case this is a link.
 	payload["attachment_point"] = attach_pt;
 	payload["is_add"] = !replace;
 
-	if (replace && attachment && attachment->getNumObjects() > 0)
+	if (replace && 
+		(attachment && attachment->getNumObjects() > 0))
 	{
 // [RLVa:KB] - Checked: 2010-08-25 (RLVa-1.2.1a) | Modified: RLVa-1.2.1a
 		// Block if we can't "replace wear" what's currently there

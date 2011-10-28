@@ -459,12 +459,86 @@ void LLVOAvatarSelf::resetJointPositions( void )
 {
 	return LLVOAvatar::resetJointPositions();
 }
+// virtual
+BOOL LLVOAvatarSelf::setVisualParamWeight(LLVisualParam *which_param, F32 weight, BOOL upload_bake )
+{
+	if (!which_param)
+	{
+		return FALSE;
+	}
+	LLViewerVisualParam *param = (LLViewerVisualParam*) LLCharacter::getVisualParam(which_param->getID());
+	return setParamWeight(param,weight,upload_bake);
+}
+
+// virtual
+BOOL LLVOAvatarSelf::setVisualParamWeight(const char* param_name, F32 weight, BOOL upload_bake )
+{
+	if (!param_name)
+	{
+		return FALSE;
+	}
+	LLViewerVisualParam *param = (LLViewerVisualParam*) LLCharacter::getVisualParam(param_name);
+	return setParamWeight(param,weight,upload_bake);
+}
+
+// virtual
+BOOL LLVOAvatarSelf::setVisualParamWeight(S32 index, F32 weight, BOOL upload_bake )
+{
+	LLViewerVisualParam *param = (LLViewerVisualParam*) LLCharacter::getVisualParam(index);
+	return setParamWeight(param,weight,upload_bake);
+}
+
+BOOL LLVOAvatarSelf::setParamWeight(LLViewerVisualParam *param, F32 weight, BOOL upload_bake )
+{
+	if (!param)
+	{
+		return FALSE;
+	}
+
+	/*if (param->getCrossWearable())
+	{
+		LLWearableType::EType type = (LLWearableType::EType)param->getWearableType();
+		U32 size = gAgentWearables.getWearableCount(type);
+		for (U32 count = 0; count < size; ++count)
+		{
+			LLWearable *wearable = gAgentWearables.getWearable(type,count);
+			if (wearable)
+			{
+				wearable->setVisualParamWeight(param->getID(), weight, upload_bake);
+			}
+		}
+	}*/
+
+	return LLCharacter::setVisualParamWeight(param,weight,upload_bake);
+}
 
 /*virtual*/ 
 void LLVOAvatarSelf::updateVisualParams()
 {
 	LLVOAvatar::updateVisualParams();
 }
+
+/*virtual*/
+void LLVOAvatarSelf::idleUpdateAppearanceAnimation()
+{
+	// Animate all top-level wearable visual parameters
+	/*gAgentWearables.animateAllWearableParams(calcMorphAmount(), FALSE);
+
+	// apply wearable visual params to avatar
+	for (U32 type = 0; type < LLWearableType::WT_COUNT; type++)
+	{
+		LLWearable *wearable = gAgentWearables.getTopWearable((LLWearableType::EType)type);
+		if (wearable)
+		{
+			wearable->writeToAvatar();
+		}
+	}*/
+
+	//allow avatar to process updates
+	LLVOAvatar::idleUpdateAppearanceAnimation();
+
+}
+
 // virtual
 void LLVOAvatarSelf::requestStopMotion(LLMotion* motion)
 {
@@ -813,19 +887,44 @@ BOOL LLVOAvatarSelf::isWearingAttachment( const LLUUID& inv_item_id ) const
 	return FALSE;
 }
 
-// <edit> testzone attachpt
-BOOL LLVOAvatarSelf::isWearingUnsupportedAttachment( const LLUUID& inv_item_id )
+//-----------------------------------------------------------------------------
+BOOL LLVOAvatarSelf::attachmentWasRequested(const LLUUID& inv_item_id) const
 {
-	std::map<S32, std::pair<LLUUID,LLUUID> >::iterator end = mUnsupportedAttachmentPoints.end();
-	for(std::map<S32, std::pair<LLUUID,LLUUID> >::iterator iter = mUnsupportedAttachmentPoints.begin(); iter != end; ++iter)
+	const F32 REQUEST_EXPIRATION_SECONDS = 5.0;  // any request older than this is ignored/removed.
+	std::map<LLUUID,LLTimer>::iterator it = mAttachmentRequests.find(inv_item_id);
+	if (it != mAttachmentRequests.end())
 	{
-		if((*iter).second.first == inv_item_id)
+		const LLTimer& request_time = it->second;
+		F32 request_time_elapsed = request_time.getElapsedTimeF32();
+		if (request_time_elapsed > REQUEST_EXPIRATION_SECONDS)
+		{
+			mAttachmentRequests.erase(it);
+			return FALSE;
+		}
+		else
 		{
 			return TRUE;
 		}
 	}
-	return FALSE;
+	else
+	{
+		return FALSE;
+	}
 }
+
+//-----------------------------------------------------------------------------
+void LLVOAvatarSelf::addAttachmentRequest(const LLUUID& inv_item_id)
+{
+	LLTimer current_time;
+	mAttachmentRequests[inv_item_id] = current_time;
+}
+
+//-----------------------------------------------------------------------------
+void LLVOAvatarSelf::removeAttachmentRequest(const LLUUID& inv_item_id)
+{
+	mAttachmentRequests.erase(inv_item_id);
+}
+
 //-----------------------------------------------------------------------------
 // getWornAttachment()
 //-----------------------------------------------------------------------------
@@ -882,49 +981,24 @@ const LLViewerJointAttachment *LLVOAvatarSelf::attachObject(LLViewerObject *view
 	const LLViewerJointAttachment *attachment = LLVOAvatar::attachObject(viewer_object);
 	if(!attachment)
 	{
-		// <edit> testzone attachpt
-		S32 attachmentID = ATTACHMENT_ID_FROM_STATE(viewer_object->getState());
-		LLUUID item_id;
-		LLNameValue* item_id_nv = viewer_object->getNVPair("AttachItemID");
-		if( item_id_nv )
-		{
-			const char* s = item_id_nv->getString();
-			if(s)
-				item_id.set(s);
-		}
-		if(!item_id.isNull())
-		{
-			mUnsupportedAttachmentPoints[attachmentID] = std::pair<LLUUID,LLUUID>(item_id,viewer_object->getID());
-			if (viewer_object->isSelected())
-			{
-				LLSelectMgr::getInstance()->updateSelectionCenter();
-				LLSelectMgr::getInstance()->updatePointAt();
-			}
-
-			updateAttachmentVisibility(gAgentCamera.getCameraMode());
-				
-			// Then make sure the inventory is in sync with the avatar.
-			gInventory.addChangedMask( LLInventoryObserver::LABEL, item_id );
-			gInventory.notifyObservers();
-		}
-		else
-			llwarns << "No item ID" << llendl;
-		// </edit>
+// <edit>
+		addUnsupportedAttachment(viewer_object);
+// </edit>
 		return 0;
 	}
 	
 	updateAttachmentVisibility(gAgentCamera.getCameraMode());
 		
 // [RLVa:KB] - Checked: 2010-08-22 (RLVa-1.2.1a) | Modified: RLVa-1.2.1a
-		// NOTE: RLVa event handlers should be invoked *after* LLVOAvatar::attachObject() calls LLViewerJointAttachment::addObject()
-		if (rlv_handler_t::isEnabled())
-		{
-			RlvAttachmentLockWatchdog::instance().onAttach(viewer_object, attachment);
-			gRlvHandler.onAttach(viewer_object, attachment);
+	// NOTE: RLVa event handlers should be invoked *after* LLVOAvatar::attachObject() calls LLViewerJointAttachment::addObject()
+	if (rlv_handler_t::isEnabled())
+	{
+		RlvAttachmentLockWatchdog::instance().onAttach(viewer_object, attachment);
+		gRlvHandler.onAttach(viewer_object, attachment);
 
-			if ( (attachment->getIsHUDAttachment()) && (!gRlvAttachmentLocks.hasLockedHUD()) )
-				gRlvAttachmentLocks.updateLockedHUD();
-		}
+		if ( (attachment->getIsHUDAttachment()) && (!gRlvAttachmentLocks.hasLockedHUD()) )
+			gRlvAttachmentLocks.updateLockedHUD();
+	}
 // [/RLVa:KB]
 
 	// Then make sure the inventory is in sync with the avatar.
@@ -934,7 +1008,10 @@ const LLViewerJointAttachment *LLVOAvatarSelf::attachObject(LLViewerObject *view
 	// Should just be the last object added
 	if (attachment->isObjectAttached(viewer_object))
 	{
-		LLCOFMgr::instance().addAttachment(viewer_object->getAttachmentItemID());
+		const LLUUID& attachment_id = viewer_object->getAttachmentItemID();
+		LLCOFMgr::instance().addAttachment(attachment_id);
+		// Clear any pending requests once the attachment arrives.
+		removeAttachmentRequest(attachment_id);
 		updateLODRiggedAttachments();
 	}
 
@@ -990,7 +1067,82 @@ BOOL LLVOAvatarSelf::detachObject(LLViewerObject *viewer_object)
 		}
 		return TRUE;
 	}
-	// <edit> testzone attachpt
+	
+// <edit>
+	if(removeUnsupportedAttachment(viewer_object))
+		return TRUE;
+// </edit>
+	
+
+	return FALSE;
+}
+
+// static
+BOOL LLVOAvatarSelf::detachAttachmentIntoInventory(const LLUUID &item_id)
+{
+	LLInventoryItem* item = gInventory.getLinkedItem(item_id);
+	if ( (item) && (gAgentAvatarp) && (!gAgentAvatarp->isWearingAttachment(item->getUUID())) )
+	{
+		LLCOFMgr::instance().removeAttachment(item->getUUID());
+		return FALSE;
+	}
+//	if (item)
+// [RLVa:KB] - Checked: 2010-09-04 (RLVa-1.2.1c) | Added: RLVa-1.2.1c
+	if ( (item) && ((!rlv_handler_t::isEnabled()) || (gRlvAttachmentLocks.canDetach(item))) )
+// [/RLVa:KB]
+	{
+		gMessageSystem->newMessageFast(_PREHASH_DetachAttachmentIntoInv);
+		gMessageSystem->nextBlockFast(_PREHASH_ObjectData);
+		gMessageSystem->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
+		gMessageSystem->addUUIDFast(_PREHASH_ItemID, item_id);
+		gMessageSystem->sendReliable(gAgent.getRegion()->getHost());
+		
+		// This object might have been selected, so let the selection manager know it's gone now
+		LLViewerObject *found_obj = gObjectList.findObject(item_id);
+		if (found_obj)
+		{
+			LLSelectMgr::getInstance()->remove(found_obj);
+		}
+
+		return TRUE;
+	}
+	return FALSE;
+}
+
+// <edit> testzone attachpt
+void LLVOAvatarSelf::addUnsupportedAttachment(LLViewerObject *viewer_object)
+{
+
+	S32 attachmentID = ATTACHMENT_ID_FROM_STATE(viewer_object->getState());
+	LLUUID item_id;
+	LLNameValue* item_id_nv = viewer_object->getNVPair("AttachItemID");
+	if( item_id_nv )
+	{
+		const char* s = item_id_nv->getString();
+		if(s)
+			item_id.set(s);
+	}
+	if(!item_id.isNull())
+	{
+		mUnsupportedAttachmentPoints[attachmentID] = std::pair<LLUUID,LLUUID>(item_id,viewer_object->getID());
+		if (viewer_object->isSelected())
+		{
+			LLSelectMgr::getInstance()->updateSelectionCenter();
+			LLSelectMgr::getInstance()->updatePointAt();
+		}
+
+		updateAttachmentVisibility(gAgentCamera.getCameraMode());
+				
+			// Then make sure the inventory is in sync with the avatar.
+		gInventory.addChangedMask( LLInventoryObserver::LABEL, item_id );
+		gInventory.notifyObservers();
+	}
+	else
+		llwarns << "No item ID" << llendl;
+
+}
+bool LLVOAvatarSelf::removeUnsupportedAttachment(LLViewerObject *viewer_object)
+{
 	LLUUID item_id;
 	LLNameValue* item_id_nv = viewer_object->getNVPair("AttachItemID");
 	if( item_id_nv )
@@ -1037,40 +1189,22 @@ BOOL LLVOAvatarSelf::detachObject(LLViewerObject *viewer_object)
 	{
 		llwarns << "No item ID" << llendl;
 	}
-	// </edit>
 	return FALSE;
 }
-BOOL LLVOAvatarSelf::detachAttachmentIntoInventory(const LLUUID &item_id)
+BOOL LLVOAvatarSelf::isWearingUnsupportedAttachment( const LLUUID& inv_item_id )
 {
-	LLInventoryItem* item = gInventory.getLinkedItem(item_id);
-	if ( (item) && (gAgentAvatarp) && (!gAgentAvatarp->isWearingAttachment(item->getUUID())) )
+	std::map<S32, std::pair<LLUUID,LLUUID> >::iterator end = mUnsupportedAttachmentPoints.end();
+	for(std::map<S32, std::pair<LLUUID,LLUUID> >::iterator iter = mUnsupportedAttachmentPoints.begin(); iter != end; ++iter)
 	{
-		LLCOFMgr::instance().removeAttachment(item->getUUID());
-		return FALSE;
-	}
-//	if (item)
-// [RLVa:KB] - Checked: 2010-09-04 (RLVa-1.2.1c) | Added: RLVa-1.2.1c
-	if ( (item) && ((!rlv_handler_t::isEnabled()) || (gRlvAttachmentLocks.canDetach(item))) )
-// [/RLVa:KB]
-	{
-		gMessageSystem->newMessageFast(_PREHASH_DetachAttachmentIntoInv);
-		gMessageSystem->nextBlockFast(_PREHASH_ObjectData);
-		gMessageSystem->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
-		gMessageSystem->addUUIDFast(_PREHASH_ItemID, item_id);
-		gMessageSystem->sendReliable(gAgent.getRegion()->getHost());
-		
-		// This object might have been selected, so let the selection manager know it's gone now
-		LLViewerObject *found_obj = gObjectList.findObject(item_id);
-		if (found_obj)
+		if((*iter).second.first == inv_item_id)
 		{
-			LLSelectMgr::getInstance()->remove(found_obj);
+			return TRUE;
 		}
-
-		return TRUE;
 	}
 	return FALSE;
 }
-
+// </edit>
+	
 U32 LLVOAvatarSelf::getNumWearables(LLVOAvatarDefines::ETextureIndex i) const
 {
 	LLWearableType::EType type = LLVOAvatarDictionary::getInstance()->getTEWearableType(i);

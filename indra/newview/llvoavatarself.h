@@ -83,7 +83,15 @@ public:
 	
 				void		resetJointPositions( void );
 	
+	/*virtual*/ BOOL setVisualParamWeight(LLVisualParam *which_param, F32 weight, BOOL upload_bake = FALSE );
+	/*virtual*/ BOOL setVisualParamWeight(const char* param_name, F32 weight, BOOL upload_bake = FALSE );
+	/*virtual*/ BOOL setVisualParamWeight(S32 index, F32 weight, BOOL upload_bake = FALSE );
 	/*virtual*/ void updateVisualParams();
+	/*virtual*/ void idleUpdateAppearanceAnimation();
+
+private:
+	// helper function. Passed in param is assumed to be in avatar's parameter list.
+	BOOL setParamWeight(LLViewerVisualParam *param, F32 weight, BOOL upload_bake = FALSE );
 
 
 /**                    Initialization
@@ -259,17 +267,31 @@ protected:
 public:
 	void 				updateAttachmentVisibility(U32 camera_mode);
 	BOOL 				isWearingAttachment(const LLUUID& inv_item_id) const;
+	BOOL				attachmentWasRequested(const LLUUID& inv_item_id) const;
+	void				addAttachmentRequest(const LLUUID& inv_item_id);
+	void				removeAttachmentRequest(const LLUUID& inv_item_id);
 	LLViewerObject* 	getWornAttachment(const LLUUID& inv_item_id);
 	const std::string   getAttachedPointName(const LLUUID& inv_item_id) const;
 	/*virtual*/ const LLViewerJointAttachment *attachObject(LLViewerObject *viewer_object);
 	/*virtual*/ BOOL 	detachObject(LLViewerObject *viewer_object);
 	static BOOL			detachAttachmentIntoInventory(const LLUUID& item_id);
+
+private:
+	// Track attachments that have been requested but have not arrived yet.
+	mutable std::map<LLUUID,LLTimer> mAttachmentRequests;
+	
 	// <edit> testzone attachpt
+public:
+	void 			addUnsupportedAttachment( LLViewerObject *viewer_object );
+	bool 			removeUnsupportedAttachment( LLViewerObject *viewer_object );
 	BOOL 			isWearingUnsupportedAttachment( const LLUUID& inv_item_id );
 	std::map<S32, std::pair<LLUUID/*inv*/,LLUUID/*object*/> > mUnsupportedAttachmentPoints;
+	// </edit>
+	
 // [RLVa:KB] - Checked: 2010-03-14 (RLVa-1.2.0a) | Added: RLVa-1.1.0i
 	LLViewerJointAttachment* getWornAttachmentPoint(const LLUUID& inv_item_id) const;
 // [/RLVa:KB]
+
 private:
 
 	LLViewerJoint* 		mScreenp; // special purpose joint for HUD attachments
