@@ -45,6 +45,7 @@
 #include "llviewerobjectlist.h" 
 #include "llviewertexturelist.h" 
 #include "lltexlayer.h"
+#include "lltexlayerparams.h"
 #include "llsurface.h"
 #include "llvlmanager.h"
 #include "llagent.h"
@@ -55,7 +56,7 @@
 #include "lldebugview.h"
 #include "llfasttimerview.h"
 #include "llviewerregion.h"
-#include "llvoavatar.h"
+#include "llvoavatarself.h"
 #include "llviewerwindow.h"		// *TODO: remove, only used for width/height
 #include "llworld.h"
 #include "llfeaturemanager.h"
@@ -525,12 +526,12 @@ void output_statistics(void*)
 
 	llinfos << "--------------------------------" << llendl;
 	llinfos << "Avatar Memory (partly overlaps with above stats):" << llendl;
-	gTexStaticImageList.dumpByteCount();
-	LLVOAvatar::dumpScratchTextureByteCount();
+	LLTexLayerStaticImageList::getInstance()->dumpByteCount();
+	LLVOAvatarSelf::dumpScratchTextureByteCount();
 	LLTexLayerSetBuffer::dumpTotalByteCount();
-	LLVOAvatar::dumpTotalLocalTextureByteCount();
+	LLVOAvatarSelf::dumpTotalLocalTextureByteCount();
 	LLTexLayerParamAlpha::dumpCacheByteCount();
-	LLVOAvatar::dumpBakedStatus();
+	LLVOAvatarSelf::dumpBakedStatus();
 
 	llinfos << llendl;
 

@@ -918,8 +918,7 @@ void LLAgentWearables::onInitialWearableAssetArrived( LLWearable* wearable, void
 	LLUUID item_id = wearable_data->second;
 	delete wearable_data;
 
-	LLVOAvatar* avatar = gAgentAvatarp;
-	if( !avatar )
+	if( !isAgentAvatarValid() )
 	{
 		return;
 	}
@@ -931,11 +930,11 @@ void LLAgentWearables::onInitialWearableAssetArrived( LLWearable* wearable, void
 		gAgentWearables.setWearable(type,wearable);
 
 		// disable composites if initial textures are baked
-		avatar->setupComposites();
+		gAgentAvatarp->setupComposites();
 		gAgentWearables.queryWearableCache();
 
 		wearable->writeToAvatar( FALSE );
-		avatar->setCompositeUpdatesEnabled(TRUE);
+		gAgentAvatarp->setCompositeUpdatesEnabled(TRUE);
 		gInventory.addChangedMask( LLInventoryObserver::LABEL, item_id );
 	}
 	else
@@ -969,7 +968,7 @@ void LLAgentWearables::onInitialWearableAssetArrived( LLWearable* wearable, void
 		// If there are any, schedule them to be uploaded as soon as the layer textures they depend on arrive.
 		if( !gAgentCamera.cameraCustomizeAvatar() )
 		{
-			avatar->requestLayerSetUploads();
+			gAgentAvatarp->requestLayerSetUploads();
 		}
 	}
 }

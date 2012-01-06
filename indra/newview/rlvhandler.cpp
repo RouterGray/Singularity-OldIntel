@@ -1502,7 +1502,7 @@ ERlvCmdRet RlvHandler::processForceCommand(const RlvCommand& rlvCmd) const
 				const LLViewerObject* pAttachObj = gObjectList.findObject(rlvCmd.getObjectID());
 				if ( (pAttachObj) && (pAttachObj->isAttachment()) )
 				{
-					LLVOAvatar::detachAttachmentIntoInventory(pAttachObj->getAttachmentItemID());
+					LLVOAvatarSelf::detachAttachmentIntoInventory(pAttachObj->getAttachmentItemID());
 				}
 			}
 			break;
