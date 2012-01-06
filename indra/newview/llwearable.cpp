@@ -650,7 +650,7 @@ void LLWearable::writeToAvatar( BOOL set_by_user )
 		{
 			const LLUUID& image_id = get_if_there(mTEMap, te, LLVOAvatarDictionary::getDefaultTextureImageID((ETextureIndex) te ) );
 			LLViewerTexture* image = LLViewerTextureManager::getFetchedTexture( image_id );
-			gAgentAvatarp->setLocTexTE( te, image, set_by_user );
+			gAgentAvatarp->setLocalTextureTE( te, image, set_by_user );
 		}
 	}
 
@@ -720,7 +720,7 @@ void LLWearable::removeFromAvatar( LLWearableType::EType type, BOOL upload_bake 
 	{
 		if( LLVOAvatarDictionary::getTEWearableType((ETextureIndex) te ) == type )
 		{
-			gAgentAvatarp->setLocTexTE( te, image, upload_bake );
+			gAgentAvatarp->setLocalTextureTE( te, image, upload_bake );
 		}
 	}
 

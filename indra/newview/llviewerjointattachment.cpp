@@ -40,7 +40,7 @@
 #include "lldrawable.h"
 #include "llgl.h"
 #include "llrender.h"
-#include "llvoavatar.h"
+#include "llvoavatarself.h"
 #include "llvolume.h"
 #include "pipeline.h"
 #include "llspatialpartition.h"
@@ -182,7 +182,7 @@ BOOL LLViewerJointAttachment::addObject(LLViewerObject* object)
 		object->markDead();
 
 		// If this happens to be attached to self, then detach.
-		LLVOAvatar::detachAttachmentIntoInventory(object->getAttachmentItemID());
+		LLVOAvatarSelf::detachAttachmentIntoInventory(object->getAttachmentItemID());
 		return FALSE;
 	}
 

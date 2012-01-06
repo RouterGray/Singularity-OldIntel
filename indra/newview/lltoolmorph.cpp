@@ -151,9 +151,8 @@ BOOL LLVisualParamHint::needsRender()
 
 void LLVisualParamHint::preRender(BOOL clear_depth)
 {
-	mLastParamWeight = mVisualParam->getWeight();
-	//mWearablePtr->setVisualParamWeight(mVisualParam->getID(), mVisualParamWeight, FALSE);
-	gAgentAvatarp->setVisualParamWeight(mVisualParam->getID(), mVisualParamWeight, FALSE);
+	mLastParamWeight = gAgentAvatarp->getVisualParamWeight(mVisualParam);
+	gAgentAvatarp->setVisualParamWeight(mVisualParam, mVisualParamWeight);
 	gAgentAvatarp->setVisualParamWeight("Blink_Left", 0.f);
 	gAgentAvatarp->setVisualParamWeight("Blink_Right", 0.f);
 	gAgentAvatarp->updateComposites();
@@ -236,9 +235,9 @@ BOOL LLVisualParamHint::render()
 	
 	LLViewerCamera::getInstance()->setAspect((F32)mFullWidth / (F32)mFullHeight);
 	LLViewerCamera::getInstance()->setOriginAndLookAt(
-		camera_pos,		// camera
+		camera_pos,			// camera
 		LLVector3::z_axis,	// up
-		target_pos );	// point of interest
+		target_pos );		// point of interest
 
 	LLViewerCamera::getInstance()->setPerspective(FALSE, mOrigin.mX, mOrigin.mY, mFullWidth, mFullHeight, FALSE);
 
