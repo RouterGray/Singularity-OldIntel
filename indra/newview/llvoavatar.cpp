@@ -7400,7 +7400,7 @@ void LLVOAvatar::updateMeshTextures()
 void LLVOAvatar::setLocalTexture( ETextureIndex type, LLViewerTexture* in_tex, BOOL baked_version_ready )
 {
 	// invalid for anyone but self
-	llassert(0);
+//	llassert(0);
 }
 
 void LLVOAvatar::setNameFromChat(const std::string &text) {
