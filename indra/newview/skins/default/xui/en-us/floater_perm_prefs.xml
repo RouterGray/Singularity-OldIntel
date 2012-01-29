@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<floater name="perm prefs" title="Default Upload Permissions" width="315" height="180" rect_control="FloaterPermPrefsRect" can_close="true" can_minimize="true">
-    <panel label="Permissions" name="permissions" width="292" height="120" left="10" border="true" bottom="-140">
-    	<button name="help" label="?" label_selected="?" bottom_delta="-25" height="18" width="22" left="260"/>
-    	<check_box bottom_delta="0" width="106" height="16" left="10" initial_value="false" label="Share with group" name="share_with_group" control_name="ShareWithGroup"/>
-    	<check_box bottom_delta="-32" width="130" height="16" initial_value="false" label="Allow anyone to copy" name="everyone_copy" control_name="EveryoneCopy"/>
-    	<text bottom_delta="-26" name="NextOwnerLabel" height="10">Next owner can:</text>
-		<check_box bottom_delta="-30" width="78" height="16" initial_value="false" label="Modify" name="next_owner_modify" control_name="NextOwnerModify"/>
+<floater name="perm prefs" title="Default Permissions" width="315" height="180" rect_control="FloaterPermPrefsRect" can_close="true" can_minimize="true">
+	<!--panel name="permissions" label="Permissions" width="292" height="120" left="10" border="true" bottom="-140" filename="panel_permissions.xml"/-->
+	<panel name="permissions" label="Permissions" width="292" height="120" left="10" border="true" bottom="-140">
+		<text left="2" name="default_up_perm">Default Upload Permissions</text>
+		<button name="help" label="?" label_selected="?" bottom_delta="-25" height="18" width="22" left="260"/>
+		<check_box bottom_delta="0" width="106" height="16" left="10" initial_value="false" label="Share with group" name="share_with_group" control_name="ShareWithGroup"/>
+		<check_box bottom_delta="-25" width="130" height="16" initial_value="false" label="Allow anyone to copy" name="everyone_copy" control_name="EveryoneCopy"/>
+		<text bottom_delta="-20" name="NextOwnerLabel" height="10">Next owner can:</text>
+		<check_box bottom_delta="-25" width="78" height="16" initial_value="false" label="Modify" name="next_owner_modify" control_name="NextOwnerModify"/>
 		<check_box bottom_delta="0" width="88" height="16" left_delta="78" initial_value="false" label="Copy" name="next_owner_copy" control_name="NextOwnerCopy"/>
-    	<check_box bottom_delta="0" width="106" height="16" left_delta="88" initial_value="true" label="Resell/Give away" name="next_owner_transfer" control_name="NextOwnerTransfer"/>
-    </panel>
+		<check_box bottom_delta="0" width="106" height="16" left_delta="88" initial_value="true" label="Resell/Give away" name="next_owner_transfer" control_name="NextOwnerTransfer"/>
+	</panel>
 	<button bottom_delta="-30" height="20" label="OK" label_selected="OK" left="90" name="ok" width="100"/>
 	<button bottom_delta="0" height="20" label="Cancel" label_selected="Cancel" left_delta="105" name="cancel" width="100"/>
 </floater>
