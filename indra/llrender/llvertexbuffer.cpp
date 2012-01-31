@@ -750,41 +750,25 @@ void LLVertexBuffer::cleanupClass()
 
 S32 LLVertexBuffer::determineUsage(S32 usage)
 {
-	S32 ret_usage = usage;
-
-	if (!sEnableVBOs)
-	{
-		ret_usage = 0;
-	}
-	
-	if (usage == GL_STREAM_DRAW_ARB && !sUseStreamDraw)
-	{
-		ret_usage = 0;
-	}
-	
-	if (usage == GL_DYNAMIC_DRAW_ARB && sPreferStreamDraw)
-	{
-		ret_usage = GL_STREAM_DRAW_ARB;
-	}
-	
-	if (usage == 0 && LLRender::sGLCoreProfile)
+	if (LLRender::sGLCoreProfile)
 	{ //MUST use VBOs for all rendering
-		ret_usage = GL_STREAM_DRAW_ARB;
+		if(!usage)
+			return GL_STREAM_DRAW_ARB;
 	}
-	
-	if (usage && usage != GL_STREAM_DRAW_ARB)
-	{ //only stream_draw and dynamic_draw are supported when using VBOs, dynamic draw is the default
-		if (sDisableVBOMapping)
-		{ //always use stream draw if VBO mapping is disabled
-			ret_usage = GL_STREAM_DRAW_ARB;
-		}
-		else
-		{
-			ret_usage = GL_DYNAMIC_DRAW_ARB;
-		}
+	else if (!sEnableVBOs || !usage || (!sUseStreamDraw && usage == GL_STREAM_DRAW_ARB))
+	{
+		return 0;
 	}
-	
-	return ret_usage;
+	//Only stream_draw and dynamic_draw are supported when using VBOs, dynamic draw is the default.
+	//Always use stream_draw VBO if mapping is disabled, or stream is preferred or expected
+	if( sDisableVBOMapping || sPreferStreamDraw || (usage == GL_STREAM_DRAW_ARB))
+	{
+		return GL_STREAM_DRAW_ARB;
+	}
+	else
+	{
+		return GL_DYNAMIC_DRAW_ARB;
+	}
 }
 
 LLVertexBuffer::LLVertexBuffer(U32 typemask, S32 usage) :

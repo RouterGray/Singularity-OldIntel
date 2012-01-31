@@ -44,10 +44,11 @@ class LLToggleableMenu;
 class LLFloater;
 class LLSearchEditor;
 class LLComboBox;
+class LLFloaterInventoryFinder;
 
 class LLInventoryView : public LLFloater, LLInventoryObserver
 {
-friend class LLInventoryViewFinder;
+friend class LLFloaterInventoryFinder;
 
 public:
 	LLInventoryView(const std::string& name, const std::string& rect,
@@ -156,7 +157,7 @@ protected:
 	void init(LLInventoryModel* inventory);
 
 protected:
-	LLInventoryViewFinder* getFinder();
+	LLFloaterInventoryFinder* getFinder();
 	LLSearchEditor*				mSearchEditor;
 	LLComboBox*					mQuickFilterCombo;
 	LLTabContainer*				mFilterTabs;
