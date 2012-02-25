@@ -71,7 +71,6 @@ elseif (LINUX)
         ssl
 #       qgif
 #       qjpeg
-        jscore
         jpeg
         fontconfig
         X11
@@ -79,5 +78,8 @@ elseif (LINUX)
         Xext
         GL
         )
+      if (WORD_SIZE EQUAL 32)
+        set(WEBKIT_PLUGIN_LIBRARIES ${WEBKIT_PLUGIN_LIBRARIES} jscore)
+      endif (WORD_SIZE EQUAL 32)
      endif (STANDALONE)
 endif (WINDOWS)

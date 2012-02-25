@@ -47,18 +47,11 @@ target_link_libraries(linux-crash-logger
     ${LLVFS_LIBRARIES}
     ${LLXML_LIBRARIES}
     ${LLMESSAGE_LIBRARIES}
-    ${LLUI_LIBRARIES}
     ${LLVFS_LIBRARIES}
     ${LLMATH_LIBRARIES}
     ${LLCOMMON_LIBRARIES}
     ${UI_LIBRARIES}
     ${DB_LIBRARIES}
-    ${XMLRPCEPI_LIBRARIES}
-    ${CURL_LIBRARIES}
-    ${APR_LIBRARIES}
-    ${APRUTIL_LIBRARIES}
-    ${CRYPTO_LIBRARIES}
-    rt
     )
 
 add_custom_command(

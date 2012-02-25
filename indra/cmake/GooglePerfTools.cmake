@@ -1,10 +1,14 @@
 # -*- cmake -*-
 include(Prebuilt)
 
+if(WORD_SIZE EQUAL 64)
+  set(DISABLE_TCMALLOC TRUE)
+endif()
+
 if (STANDALONE)
   include(FindGooglePerfTools)
 else (STANDALONE)
-  if (LINUX OR WINDOWS)
+  if (LINUX OR WINDOWS AND NOT WORD_SIZE EQUAL 64)
     use_prebuilt_binary(google)
   endif (LINUX OR WINDOWS)
   if (WINDOWS)
@@ -29,10 +33,6 @@ if (GOOGLE_PERFTOOLS_FOUND AND STANDALONE)
 else ()
   set(USE_GOOGLE_PERFTOOLS OFF)
 endif ()
-
-# XXX Disable temporarily, until we have compilation issues on 64-bit
-# Etch sorted.
-#set(USE_GOOGLE_PERFTOOLS OFF)
 
 if (USE_GOOGLE_PERFTOOLS)
   set(TCMALLOC_FLAG -DLL_USE_TCMALLOC=1)
