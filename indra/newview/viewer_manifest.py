@@ -838,20 +838,24 @@ class Linux_x86_64Manifest(LinuxManifest):
             self.path("libdb-4.2.so")
             self.path("libcrypto.so.0.9.8")
             self.path("libexpat.so.1")
+            self.path("libexpat.so.1", "libexpat.so.0") #llcommon.so depends on expat1 and 0, this should be fixed in the future.
             self.path("libhunspell-1.2.so.0.0.0", "libhunspell-1.2.so.0")
             self.path("libssl.so.0.9.8")
             self.path("libuuid.so", "libuuid.so.1")
             self.path("libSDL-1.2.so.0")
+            self.path("libSDL-1.2.so.0.11.3")
             self.path("libELFIO.so")
-            self.path("libjpeg.so.7")
-            self.path("libpng12.so.0")
-            self.path("libopenjpeg.so.2")
-            self.path("libxml2.so.2")
+            #self.path("libjpeg.so.7")
+            #self.path("libpng12.so.0")
+            #self.path("libopenjpeg.so.2")
+            #self.path("libxml2.so.2")
             #self.path("libz.so.1") #not needed
 
             # OpenAL
             self.path("libopenal.so.1")
+            self.path("libopenal.so.1.6.372")
             self.path("libalut.so.0")
+            self.path("libalut.so.0.1.0")
 
             self.end_prefix("lib64")
 
