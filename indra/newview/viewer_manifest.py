@@ -836,11 +836,11 @@ class Linux_x86_64Manifest(LinuxManifest):
             self.path("libapr-1.so.0")
             self.path("libaprutil-1.so.0")
             self.path("libdb-4.2.so")
-            self.path("libcrypto.so.0.9.8")
+            self.path("libcrypto.so.1.0.0")
             self.path("libexpat.so.1")
             self.path("libexpat.so.1", "libexpat.so.0") #llcommon.so depends on expat1 and 0, this should be fixed in the future.
             self.path("libhunspell-1.2.so.0.0.0", "libhunspell-1.2.so.0")
-            self.path("libssl.so.0.9.8")
+            self.path("libssl.so.1.0.0")
             self.path("libuuid.so", "libuuid.so.1")
             self.path("libSDL-1.2.so.0")
             self.path("libSDL-1.2.so.0.11.3")

@@ -266,9 +266,9 @@
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>8a28849f4b9d99601dbc8db9d6a2f9ba</string>
+            <string>0dca69f2c6da2d0c090bfa180e0d3589</string>
             <key>url</key>
-            <uri>https://github.com/downloads/Shyotl/SingularityViewer/curl-7.16.4a-linux64-20090303.tar.bz2</uri>
+            <uri>https://bitbucket.org/Lirusaito/singularityviewer/downloads/curl-7.21.4-linux64-for-singularity.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>
@@ -1125,9 +1125,9 @@ anguage Infrstructure (CLI) international standard</string>
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>00b23f28a2457d9dabbaff0b29ee7323</string>
+            <string>5785bec161f1ad3069fa8330ba42f404</string>
             <key>url</key>
-            <uri>http://s3.amazonaws.com/viewer-source-downloads/install_pkgs/openSSL-0.9.8g-linux64-20080909.tar.bz2</uri>
+            <uri>https://bitbucket.org/Lirusaito/singularityviewer/downloads/openSSL-1.0.0d-linux64-for-singularity.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>
