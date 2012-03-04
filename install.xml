@@ -158,9 +158,9 @@
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>c7ec29e8dfe856d74a15b66d557c3010</string>
+            <string>b20be701a8ac13c4cb92b8d91a3cb966</string>
             <key>url</key>
-            <uri>http://download.kokuaviewer.org/files/libs/ares-1.7.1-linux64-20101115.tar.bz2</uri>
+            <uri>https://bitbucket.org/Siana/singularityviewer/downloads/ares-1.7.5-linux64-20120226.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>
@@ -266,9 +266,9 @@
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>0dca69f2c6da2d0c090bfa180e0d3589</string>
+            <string>53219977189a02452cc2fbebefc9c74b</string>
             <key>url</key>
-            <uri>https://bitbucket.org/Lirusaito/singularityviewer/downloads/curl-7.21.4-linux64-for-singularity.tar.bz2</uri>
+            <uri>https://bitbucket.org/Siana/singularityviewer/downloads/curl-7.24.0-linux64-20120226.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>
@@ -1125,9 +1125,9 @@ anguage Infrstructure (CLI) international standard</string>
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>5785bec161f1ad3069fa8330ba42f404</string>
+            <string>1187b67daa59e3d00044af3570628967</string>
             <key>url</key>
-            <uri>https://bitbucket.org/Lirusaito/singularityviewer/downloads/openSSL-1.0.0d-linux64-for-singularity.tar.bz2</uri>
+            <uri>https://bitbucket.org/Siana/singularityviewer/downloads/openssl-1.0.0g-linux64-20120226.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>
@@ -1370,9 +1370,9 @@ anguage Infrstructure (CLI) international standard</string>
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>4bddfb2c6dd7b1470a3ed675ac14bd9a</string>
+            <string>6127ca95a630a6a2400e8eb13a3a6d33</string>
             <key>url</key>
-            <uri>http://s3.amazonaws.com/viewer-source-downloads/install_pkgs/zlib-1.2.3-linux64-20080909.tar.bz2</uri>
+			<uri>https://bitbucket.org/Siana/singularityviewer/downloads/zlib-1.2.6-linux64-20120226.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>
