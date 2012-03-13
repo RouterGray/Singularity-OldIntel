@@ -43,10 +43,10 @@
 #include "llanimationstates.h"
 #include "llcallingcard.h"
 #include "llconsole.h"
+#include "llenvmanager.h"
 #include "llfirstuse.h"
 #include "llfloatercamera.h"
 #include "llfloatertools.h"
-
 #include "llgroupmgr.h"
 #include "llhomelocationresponder.h"
 #include "llhudmanager.h"
@@ -57,6 +57,7 @@
 #include "llnotificationsutil.h"
 #include "llparcel.h"
 #include "llrendersphere.h"
+#include "llsdmessage.h"
 #include "llsdutil.h"
 #include "llsky.h"
 #include "llsmoothstep.h"
@@ -645,6 +646,8 @@ void LLAgent::toggleTPosed()
 //-----------------------------------------------------------------------------
 void LLAgent::setRegion(LLViewerRegion *regionp)
 {
+	bool teleport = true;
+
 	llassert(regionp);
 	if (mRegionp != regionp)
 	{
@@ -682,6 +685,8 @@ void LLAgent::setRegion(LLViewerRegion *regionp)
 				gSky.mVOGroundp->setRegion(regionp);
 			}
 
+			// Notify windlight managers
+			teleport = (gAgent.getTeleportState() != LLAgent::TELEPORT_NONE);
 		}
 		else
 		{
@@ -713,6 +718,15 @@ void LLAgent::setRegion(LLViewerRegion *regionp)
 	mRegionsVisited.insert(handle);
 
 	LLSelectMgr::getInstance()->updateSelectionCenter();
+
+	if (teleport)
+	{
+		LLEnvManagerNew::instance().onTeleport();
+	}
+	else
+	{
+		LLEnvManagerNew::instance().onRegionCrossing();
+	}
 }
 
 
@@ -2092,11 +2106,15 @@ LLVector3 ll_vector3_from_sdmap(const LLSD& sd)
 
 void LLAgent::setStartPosition( U32 location_id )
 {
+    LLViewerObject          *object;
+
     if (gAgentID == LLUUID::null)
     {
         return;
     }
-    if (gObjectList.findAvatar(gAgentID) == NULL)
+    // we've got an ID for an agent viewerobject
+    object = gObjectList.findObject(gAgentID);
+    if (! object)
     {
         llinfos << "setStartPosition - Can't find agent viewerobject id " << gAgentID << llendl;
         return;
@@ -2113,7 +2131,7 @@ void LLAgent::setStartPosition( U32 location_id )
     if (isAgentAvatarValid())
     {
         // the z height is at the agent's feet
-          agent_pos.mV[VZ] -= 0.5f * gAgentAvatarp->mBodySize.mV[VZ];
+        agent_pos.mV[VZ] -= 0.5f * gAgentAvatarp->mBodySize.mV[VZ];
     }
 
     agent_pos.mV[VX] = llclamp( agent_pos.mV[VX], INSET, REGION_WIDTH - INSET );
@@ -2123,46 +2141,44 @@ void LLAgent::setStartPosition( U32 location_id )
     agent_pos.mV[VZ] = llclamp( agent_pos.mV[VZ],
                                 mRegionp->getLandHeightRegion( agent_pos ),
                                 LLWorld::getInstance()->getRegionMaxHeight() );
-	std::string url = gAgent.getRegion()->getCapability("HomeLocation");
-	if( !url.empty() )
-	{
-		// Send the CapReq
-	    LLSD request;
-	    LLSD body;
-	    LLSD homeLocation;
+    // Send the CapReq
+    LLSD request;
+    LLSD body;
+    LLSD homeLocation;
 
-	    homeLocation["LocationId"] = LLSD::Integer(location_id);
-	    homeLocation["LocationPos"] = ll_sdmap_from_vector3(agent_pos);
-	    homeLocation["LocationLookAt"] = ll_sdmap_from_vector3(mFrameAgent.getAtAxis());
+    homeLocation["LocationId"] = LLSD::Integer(location_id);
+    homeLocation["LocationPos"] = ll_sdmap_from_vector3(agent_pos);
+    homeLocation["LocationLookAt"] = ll_sdmap_from_vector3(mFrameAgent.getAtAxis());
 
-	    body["HomeLocation"] = homeLocation;
+    body["HomeLocation"] = homeLocation;
 
-		LLHTTPClient::post( url, body, new LLHomeLocationResponder() );
-	}
-	else
-	{
-		LLMessageSystem* msg = gMessageSystem;
-		msg->newMessageFast(_PREHASH_SetStartLocationRequest);
-		msg->nextBlockFast( _PREHASH_AgentData);
-		msg->addUUIDFast(_PREHASH_AgentID, getID());
-		msg->addUUIDFast(_PREHASH_SessionID, getSessionID());
-		msg->nextBlockFast( _PREHASH_StartLocationData);
-		// corrected by sim
-		msg->addStringFast(_PREHASH_SimName, "");
-		msg->addU32Fast(_PREHASH_LocationID, location_id);
-		msg->addVector3Fast(_PREHASH_LocationPos, agent_pos);
-		msg->addVector3Fast(_PREHASH_LocationLookAt,mFrameAgent.getAtAxis());
-	
-		// Reliable only helps when setting home location.  Last
-		// location is sent on quit, and we don't have time to ack
-		// the packets.
-		msg->sendReliable(mRegionp->getHost());
-	}
-	const U32 HOME_INDEX = 1;
-	if( HOME_INDEX == location_id )
-	{
-		setHomePosRegion( mRegionp->getHandle(), getPositionAgent() );
-	}
+    // This awkward idiom warrants explanation.
+    // For starters, LLSDMessage::ResponderAdapter is ONLY for testing the new
+    // LLSDMessage functionality with a pre-existing LLHTTPClient::Responder.
+    // In new code, define your reply/error methods on the same class as the
+    // sending method, bind them to local LLEventPump objects and pass those
+    // LLEventPump names in the request LLSD object.
+    // When testing old code, the new LLHomeLocationResponder object
+    // is referenced by an LLHTTPClient::ResponderPtr, so when the
+    // ResponderAdapter is deleted, the LLHomeLocationResponder will be too.
+    // We must trust that the underlying LLHTTPClient code will eventually
+    // fire either the reply callback or the error callback; either will cause
+    // the ResponderAdapter to delete itself.
+    LLSDMessage::ResponderAdapter*
+        adapter(new LLSDMessage::ResponderAdapter(new LLHomeLocationResponder()));
+
+    request["message"] = "HomeLocation";
+    request["payload"] = body;
+    request["reply"]   = adapter->getReplyName();
+    request["error"]   = adapter->getErrorName();
+
+    gAgent.getRegion()->getCapAPI().post(request);
+
+    const U32 HOME_INDEX = 1;
+    if( HOME_INDEX == location_id )
+    {
+        setHomePosRegion( mRegionp->getHandle(), getPositionAgent() );
+    }
 }
 
 void LLAgent::requestStopMotion( LLMotion* motion )
@@ -2805,7 +2821,7 @@ void update_group_floaters(const LLUUID& group_id)
 		gIMMgr->refresh();
 	}
 
-	gAgent.fireEvent(new LLEvent(&gAgent, "new group"), "");
+	gAgent.fireEvent(new LLOldEvents::LLEvent(&gAgent, "new group"), "");
 }
 
 // static
@@ -3971,7 +3987,10 @@ void LLAgent::sendAgentSetAppearance()
 		}
 	}
 
-//	llinfos << "Avatar XML num VisualParams transmitted = " << transmitted_params << llendl;
+	llinfos << "Avatar XML num VisualParams transmitted = " << transmitted_params << llendl;
+	if(transmitted_params < 218) {
+		LLNotificationsUtil::add("SGIncompleteAppearence");
+	}
 	sendReliableMessage();
 }
 

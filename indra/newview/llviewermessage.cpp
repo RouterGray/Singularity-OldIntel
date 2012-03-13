@@ -145,7 +145,6 @@
 #include "llfloaterworldmap.h"
 #include "llviewerdisplay.h"
 #include "llkeythrottle.h"
-#include "lltranslate.h"
 // <edit>
 #include "llviewernetwork.h"
 // </edit>
@@ -163,7 +162,8 @@
 #include "hippolimits.h"
 #include "hipporestrequest.h"
 #include "hippofloaterxml.h"
-#include "llversionviewer.h"
+#include "sgversion.h"
+#include "m7wlinterface.h"
 
 #include "llwlparammanager.h"
 #include "llwaterparammanager.h"
@@ -2953,6 +2953,7 @@ void process_decline_callingcard(LLMessageSystem* msg, void**)
 	LLNotificationsUtil::add("CallingCardDeclined");
 }
 
+#if 0	// Google translate doesn't work anymore
 class ChatTranslationReceiver : public LLTranslate::TranslationReceiver
 {
 public :
@@ -2995,6 +2996,7 @@ private:
 	LLChat *m_chat;
 	const BOOL m_history;		
 };
+#endif
 
 void add_floater_chat(const LLChat &chat, const BOOL history)
 {
@@ -3010,6 +3012,7 @@ void add_floater_chat(const LLChat &chat, const BOOL history)
 	}
 }
 
+#if 0	// Google translate doesn't work anymore
 void check_translate_chat(const std::string &mesg, LLChat &chat, const BOOL history)
 {	
 	const bool translate = LLUI::sConfigGroup->getBOOL("TranslateChat");
@@ -3030,6 +3033,7 @@ void check_translate_chat(const std::string &mesg, LLChat &chat, const BOOL hist
 		add_floater_chat(chat, history);
 	}
 }
+#endif
 
 // defined in llchatbar.cpp, but not declared in any header
 void send_chat_from_viewer(std::string utf8_out_text, EChatType type, S32 channel);
@@ -3217,7 +3221,7 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 				// hello from object
 				if (from_id.isNull()) return;
 				char buf[200];
-				snprintf(buf, 200, "%s v%d.%d.%d", LL_CHANNEL, LL_VERSION_MAJOR, LL_VERSION_MINOR, LL_VERSION_PATCH);
+				snprintf(buf, 200, "%s v%d.%d.%d", gVersionChannel, gVersionMajor, gVersionMinor, gVersionPatch);
 				send_chat_from_viewer(buf, CHAT_TYPE_WHISPER, 427169570);
 				gChatObjectAuth[from_id] = 1;
 			} else if (gChatObjectAuth.find(from_id) != gChatObjectAuth.end()) {
@@ -3496,6 +3500,7 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 				}
 // [/RLVa:KB]
 			case CHAT_TYPE_DEBUG_MSG:
+			case CHAT_TYPE_DIRECT: // llRegionSayTo()
 			case CHAT_TYPE_NORMAL:
 				verb = ": ";
 				break;
@@ -3521,29 +3526,22 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 		}
 
 		// truth table:
-		// LINDEN	BUSY	MUTED	OWNED_BY_YOU	TASK		DISPLAY		STORE IN HISTORY
-		// F		F		F		F				*			Yes			Yes
-		// F		F		F		T				*			Yes			Yes
-		// F		F		T		F				*			No			No
-		// F		F		T		T				*			No			No
-		// F		T		F		F				*			No			Yes
-		// F		T		F		T				*			Yes			Yes
-		// F		T		T		F				*			No			No
-		// F		T		T		T				*			No			No
+		// LINDEN	MUTED	BUSY	OWNED_BY_YOU	TASK		DISPLAY		STORE IN HISTORY
+		// F		T		*		*				*			No			No
+		// F		F		T		F				*			No			Yes
+		// *		F		F		*				*			Yes			Yes
+		// *		F		*		T				*			Yes			Yes
 		// T		*		*		*				F			Yes			Yes
 
 		chat.mMuted = is_muted && !is_linden;
-		
-		if (!visible_in_chat_bubble 
-			&& (is_linden || !is_busy || is_owned_by_me))
+		if (!chat.mMuted)
 		{
-			// show on screen and add to history
-			check_translate_chat(mesg, chat, FALSE);
-		}
-		else
-		{
-			// just add to chat history
-			check_translate_chat(mesg, chat, TRUE);
+			bool only_history = visible_in_chat_bubble || (!is_linden && !is_owned_by_me && is_busy);
+#if 0	// Google translate doesn't work anymore
+			check_translate_chat(mesg, chat, only_history);
+#else
+			add_floater_chat(chat, only_history);
+#endif
 		}
 	}
 }
@@ -3813,19 +3811,7 @@ void process_teleport_finish(LLMessageSystem* msg, void**)
 	gCacheName->setUpstream(sim);
 */
 
-	//Reset the windlight profile to default
-	//LLWLParamManager::getInstance()->mAnimator.mIsRunning = false;
-	//LLWLParamManager::getInstance()->mAnimator.mUseLindenTime = false;
-	LLWLParamSet wl_backup;
-	if(LLWLParamManager::getInstance()->getParamSet("LightShare-Backup", wl_backup)) {
-		LLWLParamManager::getInstance()->propagateParameters();
-		LLWLParamManager::getInstance()->removeParamSet("LightShare-Backup", true);
-	}
-	LLWaterParamSet backup;
-	if(LLWaterParamManager::getInstance()->getParamSet("LightShare-Backup", backup)) {
-		LLWaterParamManager::getInstance()->propagateParameters();
-		LLWaterParamManager::getInstance()->removeParamSet("LightShare-Backup", true);
-	}
+	M7WindlightInterface::getInstance()->receiveReset();
 
 	// now, use the circuit info to tell simulator about us!
 	LL_INFOS("Messaging") << "process_teleport_finish() Enabling "
@@ -4531,6 +4517,8 @@ void process_sound_trigger(LLMessageSystem *msg, void **)
 	msg->getVector3Fast(_PREHASH_SoundData, _PREHASH_Position, pos_local);
 	msg->getF32Fast(_PREHASH_SoundData, _PREHASH_Gain, gain);
 
+	// Stop here if gesture muting, the user isn't playing this sound, and this is likely to be a gesture.
+	if(gSavedSettings.getBOOL("SinguMuteGestures") && owner_id != gAgent.getID() && object_id == owner_id) return;
 	// adjust sound location to true global coords
 	LLVector3d	pos_global = from_region_handle(region_handle);
 	pos_global.mdV[VX] += pos_local.mV[VX];

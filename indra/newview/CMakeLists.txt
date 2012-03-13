@@ -19,7 +19,7 @@ endif(NOT FMODEX)
 include(OPENAL)
 include(HUNSPELL)
 include(FindOpenGL)
-include(JsonCpp)
+#include(JsonCpp)
 include(LLAddBuildTest)
 include(LLAudio)
 include(LLCharacter)
@@ -76,6 +76,8 @@ include_directories(
     )
 
 set(viewer_SOURCE_FILES
+    sgmemstat.cpp
+    sgversion.cpp
     llviewerobjectbackup.cpp
     slfloatermediafilter.cpp
     floaterlocalassetbrowse.cpp
@@ -85,7 +87,11 @@ set(viewer_SOURCE_FILES
     floaterao.cpp
     floatervoicelicense.cpp
     cofmgr.cpp
-    ascentdaycyclemanager.cpp
+    lldaycyclemanager.cpp
+    llenvmanager.cpp
+    llwlhandlers.cpp
+    llregioninfomodel.cpp
+    m7wlinterface.cpp
     ascentfloatercontactgroups.cpp
     ascentkeyword.cpp
     ascentprefschat.cpp
@@ -93,7 +99,6 @@ set(viewer_SOURCE_FILES
     ascentprefsvan.cpp
     dhparam.cpp
     dsaparam.cpp
-    emerald.cpp
     emeraldboobutils.cpp
     dofloaterhex.cpp
     dohexeditor.cpp
@@ -124,10 +129,12 @@ set(viewer_SOURCE_FILES
     llassetuploadqueue.cpp
     llattachmentsmgr.cpp
     llaudiosourcevo.cpp
+    llavatarpropertiesprocessor.cpp
     llbox.cpp
     llbuildnewviewsscheduler.cpp
     llcallbacklist.cpp
     llcallingcard.cpp
+    llcapabilitylistener.cpp
     llcaphttpsender.cpp
     llchatbar.cpp
     llclassifiedinfo.cpp
@@ -435,7 +442,6 @@ set(viewer_SOURCE_FILES
     lltoolselectrect.cpp
     lltoolview.cpp
     lltracker.cpp
-    lltranslate.cpp
     lluploaddialog.cpp
 	lluploadfloaterobservers.cpp
     llurl.cpp
@@ -486,6 +492,7 @@ set(viewer_SOURCE_FILES
     llviewerregion.cpp
     llviewershadermgr.cpp
     llviewerstats.cpp
+    llviewerstatsrecorder.cpp
     llviewertexteditor.cpp
     llviewertexture.cpp
     llviewertextureanim.cpp
@@ -557,6 +564,8 @@ set(viewer_HEADER_FILES
     CMakeLists.txt
     ViewerInstall.cmake
 
+    sgmemstat.h
+    sgversion.h
     llviewerobjectbackup.h
     slfloatermediafilter.h
     floaterlocalassetbrowse.h
@@ -564,13 +573,16 @@ set(viewer_HEADER_FILES
     floaterao.h
     floatervoicelicense.h
     cofmgr.h
-    ascentdaycyclemanager.h
+    lldaycyclemanager.h
+    llenvmanager.h
+    llwlhandlers.h
+    llregioninfomodel.h
+    m7wlinterface.h
     ascentfloatercontactgroups.h
     ascentkeyword.h
     ascentprefschat.h
     ascentprefssys.h
     ascentprefsvan.h
-    emerald.h
     emeraldboobutils.h
     dofloaterhex.h
     dohexeditor.h
@@ -604,10 +616,12 @@ set(viewer_HEADER_FILES
     llassetuploadqueue.h
     llattachmentsmgr.h
     llaudiosourcevo.h
+    llavatarpropertiesprocessor.h
     llbox.h
     llbuildnewviewsscheduler.h
     llcallbacklist.h
     llcallingcard.h
+    llcapabilitylistener.h
     llcaphttpsender.h
     llchatbar.h
     llclassifiedinfo.h
@@ -632,7 +646,6 @@ set(viewer_HEADER_FILES
     lldrawpoolalpha.h
     lldrawpoolavatar.h
     lldrawpoolbump.h
-    lldrawpoolclouds.h
     lldrawpoolground.h
     lldrawpoolsimple.h
     lldrawpoolsky.h
@@ -935,7 +948,6 @@ set(viewer_HEADER_FILES
     llviewerassetstorage.h
     llviewerassettype.h
     llvieweraudio.h
-    llviewerbuild.h
     llviewercamera.h
     llviewercontrol.h
     llviewerdisplay.h
@@ -972,6 +984,7 @@ set(viewer_HEADER_FILES
     llviewerregion.h
     llviewershadermgr.h
     llviewerstats.h
+    llviewerstatsrecorder.h
     llviewertexteditor.h
     llviewertexture.h
     llviewertextureanim.h
@@ -1338,12 +1351,16 @@ if (FMOD OR FMODEX)
   if (NOT WINDOWS)
     set(fmodwrapper_SOURCE_FILES fmodwrapper.cpp)
     add_library(fmodwrapper SHARED ${fmodwrapper_SOURCE_FILES})
-	if(FMODEX)
-		set(fmodwrapper_needed_LIBRARIES ${FMODEX_LIBRARY})
-	endif(FMODEX)
-	if(FMOD)
-		set(fmodwrapper_needed_LIBRARIES "${fmodwrapper_needed_LIBRARIES} ${FMOD_LIBRARY}")
-	endif(FMOD)
+    if(FMOD AND FMODEX)
+		set(fmodwrapper_needed_LIBRARIES "${FMODEX_LIBRARY} ${FMOD_LIBRARY}")
+    else(FMOD AND FMODEX)
+        if(FMODEX)
+            set(fmodwrapper_needed_LIBRARIES ${FMODEX_LIBRARY})
+        endif(FMODEX)
+        if(FMOD)
+            set(fmodwrapper_needed_LIBRARIES "${FMOD_LIBRARY}")
+        endif(FMOD)
+    endif(FMOD AND FMODEX)
     if (DARWIN)
       list(APPEND fmodwrapper_needed_LIBRARIES ${CARBON_LIBRARY})
       set_target_properties(

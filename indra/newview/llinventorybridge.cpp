@@ -140,6 +140,8 @@ struct LLMoveInv
 	void* mUserData;
 };
 
+using namespace LLOldEvents;
+
 // Helpers
 // bug in busy count inc/dec right now, logic is complex... do we really need it?
 void inc_busy_count()
@@ -1804,7 +1806,7 @@ void warn_move_inventory(LLViewerObject* object, LLMoveInv* move_inv)
 
 // Move/copy all inventory items from the Contents folder of an in-world
 // object to the agent's inventory, inside a given category.
-BOOL move_inv_category_world_to_agent(const LLUUID& object_id, 
+BOOL move_inv_category_world_to_agent(const LLUUID& object_id,
 									  const LLUUID& category_id,
 									  BOOL drop,
 									  void (*callback)(S32, void*),
@@ -1831,7 +1833,7 @@ BOOL move_inv_category_world_to_agent(const LLUUID& object_id,
 		llinfos << "Object contents not found for drop." << llendl;
 		return FALSE;
 	}
-	
+
 	BOOL accept = TRUE;
 	BOOL is_move = FALSE;
 
@@ -2895,7 +2897,8 @@ BOOL LLFolderBridge::dragItemIntoFolder(LLInventoryItem* inv_item,
 			}
 			if (is_movable)
 			{
-				is_movable = (RlvFolderLocks::instance().hasLockedFolder(RLV_LOCK_ANY)) && (RlvFolderLocks::instance().canMoveItem(inv_item->getUUID(), mUUID));
+				is_movable = (!RlvFolderLocks::instance().hasLockedFolder(RLV_LOCK_ANY)) ||
+					(RlvFolderLocks::instance().canMoveItem(inv_item->getUUID(), mUUID));
 			}
  		}
  // [/RLVa:KB]
@@ -4541,7 +4544,10 @@ void LLOutfitObserver::done()
 class LLOutfitFetch : public LLInventoryFetchDescendentsObserver
 {
 public:
-	LLOutfitFetch(const LLUUID& id, bool copy_items, bool append) : mCopyItems(copy_items), mAppend(append) {}
+	LLOutfitFetch(const LLUUID& id, bool copy_items, bool append) :
+		LLInventoryFetchDescendentsObserver(id),
+		mCopyItems(copy_items),
+		mAppend(append) {}
 	~LLOutfitFetch() {}
 	virtual void done();
 protected:
@@ -4556,6 +4562,18 @@ void LLOutfitFetch::done()
 	// happen.
 	LLInventoryModel::cat_array_t cat_array;
 	LLInventoryModel::item_array_t item_array;
+
+	// Avoid passing a NULL-ref as mCompleteFolders.front() down to
+	// gInventory.collectDescendents()
+	if( mComplete.empty() )
+	{
+		llwarns << "LLOutfitFetch::done with empty mCompleteFolders" << llendl;
+		dec_busy_count();
+		gInventory.removeObserver(this);
+		delete this;
+		return;
+	}
+	
 	gInventory.collectDescendents(mComplete.front(),
 								  cat_array,
 								  item_array,
@@ -5251,7 +5269,7 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 		items.push_back(std::string("Wearable Wear"));
 		items.push_back(std::string("Wearable Edit"));
 // [RLVa:KB] - Checked: 2011-09-16 (RLVa-1.1.4a) | Added: RLVa-1.1.4a
-		if ( (rlv_handler_t::isEnabled()) && (!gRlvWearableLocks.canRemove(item)) )
+		if ( (rlv_handler_t::isEnabled()) && (gRlvWearableLocks.canRemove(item)) )
 		{
 			disabled_items.push_back(std::string("Wearable Wear"));
 			disabled_items.push_back(std::string("Wearable Edit"));

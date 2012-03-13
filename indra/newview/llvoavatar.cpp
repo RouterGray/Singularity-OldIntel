@@ -46,6 +46,7 @@
 #include "llagentcamera.h"
 #include "llagentwearables.h"
 #include "llanimationstates.h"
+#include "llavatarpropertiesprocessor.h"
 #include "llviewercontrol.h"
 #include "lldrawpoolavatar.h"
 #include "lldriverparam.h"
@@ -3258,6 +3259,29 @@ void LLVOAvatar::getClientInfo(std::string& client, LLColor4& color, BOOL useCom
 		 return;
 	std::string uuid_str = getTE(TEX_HEAD_BODYPAINT)->getID().asString(); //UUID of the head texture
 
+	if(isFullyLoaded())
+	{
+		//Zwagoth's new client identification - HgB
+		// Overwrite the current tag/color settings if new method
+		// exists -- charbl.
+		const LLTextureEntry* texentry = getTE(0);
+		if(texentry->getGlow() > 0.0)
+		{
+			///llinfos << "Using new client identifier." << llendl;
+			U8 tag_buffer[UUID_BYTES+1];
+			memset(&tag_buffer, 0, UUID_BYTES);
+			memcpy(&tag_buffer[0], &texentry->getID().mData, UUID_BYTES);
+			tag_buffer[UUID_BYTES] = 0;
+			U32 tag_len = strlen((const char*)&tag_buffer[0]);
+			tag_len = (tag_len>UUID_BYTES) ? (UUID_BYTES) : tag_len;
+			client = std::string((char*)&tag_buffer[0], tag_len);
+			LLStringFn::replace_ascii_controlchars(mClientTag, LL_UNKNOWN_CHAR);
+			mNameString.clear();
+			color = texentry->getColor();
+			return;
+		}
+	}
+
 	static const LLCachedControl<LLColor4>	avatar_name_color(gColors,"AvatarNameColor",LLColor4(LLColor4U(251, 175, 93, 255)) );
 	if (isSelf())
 	{
@@ -3553,38 +3577,15 @@ void LLVOAvatar::idleUpdateNameTag(const LLVector3& root_pos_last)
 				
 				static const LLCachedControl<LLColor4> avatar_name_color(gColors, "AvatarNameColor" );
 
+
 				//As pointed out by Zwagoth, we really shouldn't be doing this per-frame. Skip if we already have the data. -HgB
 				if (mClientTag == "")
 				{
 					mClientColor = avatar_name_color;
-					if(isFullyLoaded())
+					getClientInfo(mClientTag,mClientColor);
+					if(mClientTag == "")
 					{
-						//Zwagoth's new client identification - HgB
-						// Overwrite the current tag/color settings if new method
-						// exists -- charbl.
-						const LLTextureEntry* texentry = getTE(0);
-						if(texentry->getGlow() > 0.0)
-						{
-							llinfos << "Using new client identifier." << llendl;
-							U8 tag_buffer[UUID_BYTES+1];
-							memset(&tag_buffer, 0, UUID_BYTES);
-							memcpy(&tag_buffer[0], &texentry->getID().mData, UUID_BYTES);
-							tag_buffer[UUID_BYTES] = 0;
-							U32 tag_len = strlen((const char*)&tag_buffer[0]);
-							tag_len = (tag_len>UUID_BYTES) ? (UUID_BYTES) : tag_len;
-							mClientTag = std::string((char*)&tag_buffer[0], tag_len);
-							LLStringFn::replace_ascii_controlchars(mClientTag, LL_UNKNOWN_CHAR);
-							mNameString.clear();
-							mClientColor = texentry->getColor();
-						}
-						else
-						{
-							//llinfos << "Using Emerald-style client identifier." << llendl;
-							//The old client identification. Used only if the new method doesn't exist, so that it isn't automatically overwritten. -HgB
-							getClientInfo(mClientTag,mClientColor);
-							if(mClientTag == "")
-								client = "?"; //prevent console spam..
-						}	
+							client = "?"; //prevent console spam..
 					}
 
 					// Overwrite the tag/color shit yet again if we want to see
@@ -3612,25 +3613,25 @@ void LLVOAvatar::idleUpdateNameTag(const LLVector3& root_pos_last)
 					//Lindens are always more Linden than your friend, make that take precedence
 					if(LLMuteList::getInstance()->isLinden(getFullname()))
 					{
-						static const LLCachedControl<LLColor4> ascent_linden_color(gColors, "AscentLindenColor" );
+						static const LLCachedControl<LLColor4> ascent_linden_color( "AscentLindenColor" );
 						mClientColor = ascent_linden_color;
 					}
 					//check if they are an estate owner at their current position
 					else if(estate_owner.notNull() && this->getID() == estate_owner)
 					{
-						static const LLCachedControl<LLColor4> ascent_estate_owner_color(gColors, "AscentEstateOwnerColor" );
+						static const LLCachedControl<LLColor4> ascent_estate_owner_color( "AscentEstateOwnerColor" );
 						mClientColor = ascent_estate_owner_color;
 					}
 					//without these dots, SL would suck.
 					else if (LLAvatarTracker::instance().getBuddyInfo(this->getID()) != NULL)
 					{
-						static const LLCachedControl<LLColor4> ascent_friend_color(gColors, "AscentFriendColor" );
+						static const LLCachedControl<LLColor4> ascent_friend_color( "AscentFriendColor" );
 						mClientColor = ascent_friend_color;
 					}
 					//big fat jerkface who is probably a jerk, display them as such.
 					else if(LLMuteList::getInstance()->isMuted(this->getID()))
 					{
-						static const LLCachedControl<LLColor4> ascent_muted_color(gColors, "AscentMutedColor" );
+						static const LLCachedControl<LLColor4> ascent_muted_color( "AscentMutedColor" );
 						mClientColor = ascent_muted_color;
 					}
 				}
@@ -4918,7 +4919,7 @@ U32 LLVOAvatar::renderSkinned(EAvatarRenderPass pass)
 
 	if (pass == AVATAR_RENDER_PASS_SINGLE)
 	{
-		bool is_muted = isVisuallyMuted();	//Disable masking and also disable alpha in LLViewerJoint::render
+		bool is_muted = LLPipeline::sImpostorRender && isVisuallyMuted();	//Disable masking and also disable alpha in LLViewerJoint::render
 		const bool should_alpha_mask = !is_muted && shouldAlphaMask();
 		LLGLState test(GL_ALPHA_TEST, should_alpha_mask);
 		
@@ -7936,9 +7937,7 @@ bool LLVOAvatar::sendAvatarTexturesRequest()
 	bool sent = false;
 	if (mRuthTimer.getElapsedTimeF32() > DERUTHING_TIMEOUT_SECONDS)
 	{
-		std::vector<std::string> strings;
-		strings.push_back(getID().asString());
-		send_generic_message("avatartexturesrequest", strings);
+		LLAvatarPropertiesProcessor::getInstance()->sendAvatarTexturesRequest(getID());
 		mRuthTimer.reset();
 		sent = true;
 	}

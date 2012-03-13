@@ -312,11 +312,11 @@ std::string RlvExtGetSet::onGetEnv(std::string strSetting)
 	F32 nValue = 0.0f;
 	if ("daytime" == strSetting)
 	{
-		nValue = (pWLParams->mAnimator.mIsRunning && pWLParams->mAnimator.mUseLindenTime) ? -1.0f : pWLParams->mAnimator.getDayTime();
+		nValue = (pWLParams->mAnimator.getIsRunning() && pWLParams->mAnimator.getUseLindenTime()) ? -1.0f : pWLParams->mAnimator.getDayTime();
 	}
 	else if ("preset" == strSetting)
 	{
-		return (pWLParams->mAnimator.mIsRunning && pWLParams->mAnimator.mUseLindenTime) ? std::string() : pWLParams->mCurParams.mName;
+		return (pWLParams->mAnimator.getIsRunning() && pWLParams->mAnimator.getUseLindenTime()) ? std::string() : pWLParams->mCurParams.mName;
 	}
 	else if ("cloudcoverage" == strSetting)			nValue = pWLParams->mCloudCoverage;
 	else if ("cloudscale" == strSetting)			nValue = pWLParams->mCloudScale;
@@ -325,8 +325,8 @@ std::string RlvExtGetSet::onGetEnv(std::string strSetting)
 	else if ("densitymultiplier" == strSetting)		nValue = pWLParams->mDensityMult.x * pWLParams->mDensityMult.mult;
 	else if ("distancemultiplier" == strSetting)	nValue = pWLParams->mDistanceMult;
 	else if ("eastangle" == strSetting)				nValue = pWLParams->mCurParams.getEastAngle() / F_TWO_PI;
-	else if ("hazedensity" == strSetting)			nValue = pWLParams->mHazeDensity.r;
-	else if ("hazehorizon" == strSetting)			nValue = pWLParams->mHazeHorizon.r;
+	else if ("hazedensity" == strSetting)			nValue = pWLParams->mHazeDensity;
+	else if ("hazehorizon" == strSetting)			nValue = pWLParams->mHazeHorizon;
 	else if ("maxaltitude" == strSetting)			nValue = pWLParams->mMaxAlt;
 	else if ("scenegamma" == strSetting)			nValue = pWLParams->mWLGamma;
 	else if ("starbrightness" == strSetting)		nValue = pWLParams->mCurParams.getStarBrightness();
@@ -390,8 +390,8 @@ ERlvCmdRet RlvExtGetSet::onSetEnv(std::string strSetting, const std::string& str
 		return RLV_RET_FAILED_OPTION;
 
 	// Not quite correct, but RLV-1.16.0 will halt the default daytime cycle on invalid commands so we need to as well
-	pWLParams->mAnimator.mIsRunning = false;
-	pWLParams->mAnimator.mUseLindenTime = false;
+	pWLParams->mAnimator.deactivate();
+	//pWLParams->mAnimator.mUseLindenTime = false;
 
 	// See LLWorldEnvSettings::handleEvent()
 	if ("daytime" == strSetting)
@@ -403,15 +403,16 @@ ERlvCmdRet RlvExtGetSet::onSetEnv(std::string strSetting, const std::string& str
 		}
 		else
 		{
-			pWLParams->mAnimator.mIsRunning = true;
-			pWLParams->mAnimator.mUseLindenTime = true;	
+			pWLParams->mAnimator.activate(LLWLAnimator::TIME_LINDEN);
 		}
 		return RLV_RET_SUCCESS;
 	}
 	// See LLFloaterWindLight::onChangePresetName()
 	else if ("preset" == strSetting)
 	{
-		pWLParams->loadPreset(strValue, true);
+		// LLEnvManagerNew manages using presets now -KC
+		//pWLParams->loadPreset(strValue, true);
+		LLEnvManagerNew::instance().useSkyPreset(strValue);
 		return RLV_RET_SUCCESS;
 	}
 	// See LLFloaterWindLight::onStarAlphaMoved
@@ -471,8 +472,8 @@ ERlvCmdRet RlvExtGetSet::onSetEnv(std::string strSetting, const std::string& str
 	else if ("maxaltitude" == strSetting)			pFloat = &pWLParams->mMaxAlt;
 	else if ("scenegamma" == strSetting)			pFloat = &pWLParams->mWLGamma;
 	// See LLFloaterWindLight::onColorControlRMoved()
-	else if ("hazedensity" == strSetting)	pColour = &pWLParams->mHazeDensity;
-	else if ("hazehorizon" == strSetting)	pColour = &pWLParams->mHazeHorizon;
+	else if ("hazedensity" == strSetting)	pFloat = &pWLParams->mHazeDensity;
+	else if ("hazehorizon" == strSetting)	pFloat = &pWLParams->mHazeHorizon;
 
 	if (pFloat)
 	{

@@ -85,7 +85,7 @@
 #include "llsecondlifeurls.h"
 #include "llstring.h"
 #include "lluserrelations.h"
-#include "llversionviewer.h"
+#include "sgversion.h"
 #include "llvfs.h"
 #include "llxorcipher.h"	// saved password, MAC address
 #include "message.h"
@@ -212,7 +212,7 @@
 //#include "llfloateravatars.h"
 //#include "llactivation.h"
 #include "wlfPanel_AdvSettings.h" //Lower right Windlight and Rendering options
-#include "ascentdaycyclemanager.h"
+#include "lldaycyclemanager.h"
 #include "llfloaterblacklist.h"
 #include "scriptcounter.h"
 #include "shfloatermediaticker.h"
@@ -533,9 +533,9 @@ bool idle_startup()
 			if(!start_messaging_system(
 				   message_template_path,
 				   port,
-				   LL_VERSION_MAJOR,
-				   LL_VERSION_MINOR,
-				   LL_VERSION_PATCH,
+				   gVersionMajor,
+				   gVersionMinor,
+				   gVersionPatch,
 				   FALSE,
 				   std::string(),
 				   responder,
@@ -1019,7 +1019,7 @@ bool idle_startup()
 		}
 		else
 		{
-			gDirUtilp->setLindenUserDir(gHippoGridManager->getCurrentGridNick(), firstname, lastname);
+			gDirUtilp->setLindenUserDir(gHippoGridManager->getConnectedGrid()->getGridNick(), firstname, lastname);
 		}
     	LLFile::mkdir(gDirUtilp->getLindenUserDir());
 
@@ -1059,7 +1059,7 @@ bool idle_startup()
 		}
 		else
 		{
-			gDirUtilp->setPerAccountChatLogsDir(gHippoGridManager->getCurrentGridNick(), 
+			gDirUtilp->setPerAccountChatLogsDir(gHippoGridManager->getConnectedGrid()->getGridNick(), 
 				gSavedSettings.getString("FirstName"), gSavedSettings.getString("LastName") );
 		}
 		LLFile::mkdir(gDirUtilp->getChatLogsDir());
@@ -1968,7 +1968,7 @@ bool idle_startup()
 		display_startup();
 
 		// init the shader managers
-		AscentDayCycleManager::initClass();
+		//LLDayCycleManager::initClass();
 		display_startup();
 
 		// RN: don't initialize VO classes in drone mode, they are too closely tied to rendering
@@ -2038,7 +2038,7 @@ bool idle_startup()
 	//---------------------------------------------------------------------
 	if(STATE_SEED_GRANTED_WAIT == LLStartUp::getStartupState())
 	{
-		/*LLViewerRegion *regionp = LLWorld::getInstance()->getRegionFromHandle(gFirstSimHandle);
+		LLViewerRegion *regionp = LLWorld::getInstance()->getRegionFromHandle(gFirstSimHandle);
 		if (regionp->capabilitiesReceived())
 		{
 			LLStartUp::setStartupState( STATE_SEED_CAP_GRANTED );
@@ -2056,7 +2056,7 @@ bool idle_startup()
 			{
 				set_startup_status(0.4f, LLTrans::getString("LoginRequestSeedCapGrant"), gAgent.mMOTD);
 			}
-		}*/
+		}
 		return FALSE;
 	}
 
@@ -2766,6 +2766,11 @@ bool idle_startup()
 		LL_DEBUGS("AppInit") << "Initialization complete" << LL_ENDL;
 
 		gRenderStartTime.reset();
+		// We're not allowed to call reset() when paused, and we might or might not be paused depending on
+		// whether or not the main window lost focus before we get here (see LLViewerWindow::handleFocusLost).
+		// The simplest, legal way to make sure we're unpaused is to just pause/unpause here.
+		gForegroundTime.pause();
+		gForegroundTime.unpause();
 		gForegroundTime.reset();
 
 		if (gSavedSettings.getBOOL("FetchInventoryOnLogin")
@@ -3412,7 +3417,7 @@ bool update_dialog_callback(const LLSD& notification, const LLSD& response)
 	// userserver no longer exists.
 	query_map["userserver"] = LLViewerLogin::getInstance()->getGridLabel();
 	// <edit>
-	query_map["channel"] = LL_CHANNEL;
+	query_map["channel"] = gVersionChannel;
 
 	// *TODO constantize this guy
 	// *NOTE: This URL is also used in win_setup/lldownloader.cpp
@@ -3487,7 +3492,7 @@ bool update_dialog_callback(const LLSD& notification, const LLSD& response)
 	LLAppViewer::sUpdaterInfo->mUpdateExePath += "\" -name \"";
 	LLAppViewer::sUpdaterInfo->mUpdateExePath += LLAppViewer::instance()->getSecondLifeTitle();
 	LLAppViewer::sUpdaterInfo->mUpdateExePath += "\" -bundleid \"";
-	LLAppViewer::sUpdaterInfo->mUpdateExePath += LL_VERSION_BUNDLE_ID;
+	LLAppViewer::sUpdaterInfo->mUpdateExePath += gVersionBundleID;
 	LLAppViewer::sUpdaterInfo->mUpdateExePath += "\" &";
 
 	LL_DEBUGS("AppInit") << "Calling updater: " << LLAppViewer::sUpdaterInfo->mUpdateExePath << LL_ENDL;
@@ -3612,20 +3617,20 @@ void register_viewer_callbacks(LLMessageSystem* msg)
 		LLViewerParcelMgr::processParcelDwellReply);
 
 	msg->setHandlerFunc("AvatarPropertiesReply",
-						LLPanelAvatar::processAvatarPropertiesReply);
+						&LLAvatarPropertiesProcessor::processAvatarPropertiesReply);
 	msg->setHandlerFunc("AvatarInterestsReply",
-						LLPanelAvatar::processAvatarInterestsReply);
+						&LLAvatarPropertiesProcessor::processAvatarInterestsReply);
 	msg->setHandlerFunc("AvatarGroupsReply",
-						LLPanelAvatar::processAvatarGroupsReply);
+						&LLAvatarPropertiesProcessor::processAvatarGroupsReply);
 	// ratings deprecated
 	//msg->setHandlerFuncFast(_PREHASH_AvatarStatisticsReply,
 	//					LLPanelAvatar::processAvatarStatisticsReply);
 	msg->setHandlerFunc("AvatarNotesReply",
-						LLPanelAvatar::processAvatarNotesReply);
+						&LLAvatarPropertiesProcessor::processAvatarNotesReply);
 	msg->setHandlerFunc("AvatarPicksReply",
-						LLPanelAvatar::processAvatarPicksReply);
+						&LLAvatarPropertiesProcessor::processAvatarPicksReply);
 	msg->setHandlerFunc("AvatarClassifiedReply",
-						LLPanelAvatar::processAvatarClassifiedReply);
+						&LLAvatarPropertiesProcessor::processAvatarClassifiedsReply);
 
 	msg->setHandlerFuncFast(_PREHASH_CreateGroupReply,
 						LLGroupMgr::processCreateGroupReply);
@@ -3699,8 +3704,9 @@ void register_viewer_callbacks(LLMessageSystem* msg)
 	msg->setHandlerFunc("MapItemReply", LLWorldMap::processMapItemReply);
 
 	msg->setHandlerFunc("EventInfoReply", LLPanelEvent::processEventInfoReply);
-	msg->setHandlerFunc("PickInfoReply", LLPanelPick::processPickInfoReply);
-	msg->setHandlerFunc("ClassifiedInfoReply", LLPanelClassified::processClassifiedInfoReply);
+	msg->setHandlerFunc("PickInfoReply", &LLAvatarPropertiesProcessor::processPickInfoReply);
+	//msg->setHandlerFunc("ClassifiedInfoReply", LLPanelClassified::processClassifiedInfoReply);
+	msg->setHandlerFunc("ClassifiedInfoReply", LLAvatarPropertiesProcessor::processClassifiedInfoReply);
 	msg->setHandlerFunc("ParcelInfoReply", LLPanelPlace::processParcelInfoReply);
 	msg->setHandlerFunc("ScriptDialog", process_script_dialog);
 	msg->setHandlerFunc("LoadURL", process_load_url);
