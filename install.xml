@@ -1370,9 +1370,9 @@ anguage Infrstructure (CLI) international standard</string>
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>6127ca95a630a6a2400e8eb13a3a6d33</string>
+            <string>a55f166b1e601cdb921e1e325457b8f9</string>
             <key>url</key>
-			<uri>https://bitbucket.org/Siana/singularityviewer/downloads/zlib-1.2.6-linux64-20120226.tar.bz2</uri>
+			<uri>https://bitbucket.org/Lirusaito/singularityviewer/downloads/zlib-1.2.6-linux64-20120226-fix.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>
