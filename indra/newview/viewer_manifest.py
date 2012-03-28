@@ -852,8 +852,8 @@ class Linux_x86_64Manifest(LinuxManifest):
             #self.path("libz.so.1") #not needed
 
             # OpenAL
-            self.path("libopenal.so.1")
-            self.path("libopenal.so.1.6.372")
+            #self.path("libopenal.so.1")		<-These are broken.
+            #self.path("libopenal.so.1.6.372")
             self.path("libalut.so.0")
             self.path("libalut.so.0.1.0")
 
