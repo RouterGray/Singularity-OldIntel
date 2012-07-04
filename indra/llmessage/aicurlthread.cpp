@@ -341,7 +341,7 @@ refresh_t PollSet::refresh(void)
 	  // If we reached the end and start at the beginning, then we copied everything.
 	  if (mNext == 0)
 		break;
-	  // When can only come here if mNrFds >= FD_SETSIZE, hence we can just
+	  // We can only come here if mNrFds >= FD_SETSIZE, hence we can just
 	  // wrap around and terminate on count reaching FD_SETSIZE.
 	  i = 0;
 	}
@@ -730,7 +730,7 @@ void AICurlThread::run(void)
 	  fd_set* read_fd_set = multi_handle_w->mReadPollSet.access();
 	  FD_SET(mWakeUpFd, read_fd_set);
 	  fd_set* write_fd_set = ((wres & empty)) ? NULL : multi_handle_w->mWritePollSet.access();
-	  // Calculate nfds (ignored on windows).
+	  // Calculate nfds (ignored on Windows).
 #if !LL_WINDOWS
 	  curl_socket_t const max_rfd = std::max(multi_handle_w->mReadPollSet.get_max_fd(), mWakeUpFd);
 	  curl_socket_t const max_wfd = multi_handle_w->mWritePollSet.get_max_fd();
@@ -935,7 +935,7 @@ CURLMsg const* MultiHandle::info_read(int* msgs_in_queue) const
 {
   CURLMsg const* ret = curl_multi_info_read(mMultiHandle, msgs_in_queue);
   // NULL could be an error, but normally it isn't, so don't print anything and
-  // never increment Stats::multi_errors. However, lets just increment multi_calls
+  // never increment Stats::multi_errors. However, let's just increment multi_calls
   // when it certainly wasn't an error...
   if (ret)
 	Stats::multi_calls++;

@@ -931,7 +931,7 @@ void CurlEasyRequest::applyDefaultOptions(void)
   // Set the CURL options for either SOCKS or HTTP proxy.
   applyProxySettings();
 #if 0
-  // Cause libcurl to print all it's I/O traffic on the debug channel.
+  // Cause libcurl to print all its I/O traffic on the debug channel.
   Debug(
 	if (dc::curl.is_on())
 	{
