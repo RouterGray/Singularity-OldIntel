@@ -49,6 +49,7 @@ public:
     void refreshValues();
 
 protected:
+	static void* createTranslationPanel(void*);
     static void onSpellAdd(void* data);
     static void onSpellRemove(void* data);
     static void onSpellGetMore(void* data);

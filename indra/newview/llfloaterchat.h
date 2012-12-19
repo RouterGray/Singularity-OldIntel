@@ -81,6 +81,7 @@ public:
 
 	static void onClickMute(void *data);
 	static void onClickToggleShowMute(LLUICtrl* caller, void *data);
+	void showTranslationCheckbox(bool show);
 	static void onClickToggleTranslateChat(LLUICtrl* caller, void *data);
 	static void onClickToggleActiveSpeakers(void* userdata);
     static void onClickChatHistoryOpen(void* userdata);

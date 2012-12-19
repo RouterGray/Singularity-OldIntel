@@ -372,6 +372,7 @@ set(viewer_SOURCE_FILES
     llpanelplace.cpp
     llpanelprofile.cpp
     llpanelskins.cpp
+    llpaneltranslationsettings.cpp
     llpanelvolume.cpp
     llpanelweb.cpp
     llparcelselection.cpp
@@ -454,6 +455,7 @@ set(viewer_SOURCE_FILES
     lltoolselectrect.cpp
     lltoolview.cpp
     lltracker.cpp
+    lltranslate.cpp
     lluploaddialog.cpp
     lluploadfloaterobservers.cpp
     llurl.cpp
@@ -879,6 +881,7 @@ set(viewer_HEADER_FILES
     llpanelplace.h
     llpanelprofile.h
     llpanelskins.h
+    llpaneltranslationsettings.h
     llpanelvolume.h
     llpanelweb.h
     llparcelselection.h

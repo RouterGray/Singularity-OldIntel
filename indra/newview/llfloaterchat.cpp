@@ -72,6 +72,7 @@
 #include "lllogchat.h"
 #include "lltexteditor.h"
 #include "lltextparser.h"
+#include "lltranslate.h"
 #include "llfloaterhtml.h"
 #include "llweb.h"
 #include "llstylemap.h"
@@ -112,6 +113,7 @@ LLFloaterChat::LLFloaterChat(const LLSD& seed)
 
 	childSetCommitCallback("show mutes",onClickToggleShowMute,this); //show mutes
 	childSetCommitCallback("translate chat",onClickToggleTranslateChat,this);
+	childSetEnabled("translate chat", LLTranslate::isTranslationConfigured());
 	childSetValue("translate chat", gSavedSettings.getBOOL("TranslateChat"));
 	childSetVisible("Chat History Editor with mute",FALSE);
 	childSetAction("toggle_active_speakers_btn", onClickToggleActiveSpeakers, this);
@@ -398,6 +400,11 @@ void LLFloaterChat::onClickToggleShowMute(LLUICtrl* caller, void *data)
 		history_editor_with_mute->setVisible(FALSE);
 		history_editor->setCursorAndScrollToEnd();
 	}
+}
+
+void LLFloaterChat::showTranslationCheckbox(bool show)
+{
+	childSetEnabled("translate chat", show);
 }
 
 // Update the "TranslateChat" pref after "translate chat" checkbox is toggled in

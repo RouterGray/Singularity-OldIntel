@@ -40,6 +40,7 @@
 #include "llradiogroup.h"
 #include "lluictrlfactory.h"
 #include "llviewercontrol.h"
+#include "llpaneltranslationsettings.h"
 #include "NACLantispam.h"
 #include "lgghunspell_wrapper.h"
 #include "lltrans.h"
@@ -49,9 +50,16 @@
 LLDropTarget* mObjectDropTarget;
 LLPrefsAscentChat* LLPrefsAscentChat::sInst;
 
+// static
+void* LLPrefsAscentChat::createTranslationPanel(void*)
+{
+	return LLPanelTranslationSettings::getInstance();
+}
+
 LLPrefsAscentChat::LLPrefsAscentChat()
 {
-    LLUICtrlFactory::getInstance()->buildPanel(this, "panel_preferences_ascent_chat.xml");
+	mFactoryMap["Translation Panel"] = LLCallbackMap(createTranslationPanel, NULL);
+	LLUICtrlFactory::getInstance()->buildPanel(this, "panel_preferences_ascent_chat.xml", &getFactoryMap());
 
     childSetCommitCallback("SpellBase", onSpellBaseComboBoxCommit, this);
     childSetAction("EmSpell_EditCustom", onSpellEditCustom, this);
@@ -627,5 +635,6 @@ void LLPrefsAscentChat::apply()
 
     refreshValues();
     refresh();
+	LLPanelTranslationSettings::getInstance()->apply();
 }
 
