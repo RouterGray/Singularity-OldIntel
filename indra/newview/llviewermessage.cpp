@@ -91,6 +91,7 @@
 #include "llimview.h"
 #include "llspeakers.h"
 #include "lltrans.h"
+#include "lltranslate.h"
 #include "llviewerfoldertype.h"
 #include "llviewergenericmessage.h"
 #include "llviewermenu.h"
@@ -3612,52 +3613,55 @@ void process_decline_callingcard(LLMessageSystem* msg, void**)
 	LLNotificationsUtil::add("CallingCardDeclined");
 }
 
-#if 0	// Google translate doesn't work anymore
 class ChatTranslationReceiver : public LLTranslate::TranslationReceiver
 {
 public :
-	ChatTranslationReceiver(const std::string &fromLang, const std::string &toLang, LLChat *chat, 
-		const BOOL history)
-		: LLTranslate::TranslationReceiver(fromLang, toLang),
+	ChatTranslationReceiver(const std::string &from_lang, const std::string &to_lang, const std::string &mesg,
+							const LLChat &chat, const BOOL history)
+		: LLTranslate::TranslationReceiver(from_lang, to_lang),
 		m_chat(chat),
-		m_history(history)	
+		m_history(history),
+		m_origMesg(mesg)
 	{
 	}
 
-	static boost::intrusive_ptr<ChatTranslationReceiver> build(const std::string &fromLang, const std::string &toLang, LLChat *chat, const BOOL history)
+	static boost::intrusive_ptr<ChatTranslationReceiver> build(const std::string &from_lang, const std::string &to_lang, const std::string &mesg, const LLChat &chat, BOOL history)
 	{
-		return boost::intrusive_ptr<ChatTranslationReceiver>(new ChatTranslationReceiver(fromLang, toLang, chat, history));
+		return boost::intrusive_ptr<ChatTranslationReceiver>(new ChatTranslationReceiver(from_lang, to_lang, mesg, chat, history));
 	}
 
 protected:
-	void handleResponse(const std::string &translation, const std::string &detectedLanguage)
-	{		
-		if (m_toLang != detectedLanguage)
-			m_chat->mText += " (" + translation + ")";			
+	void handleResponse(const std::string &translation, const std::string &detected_language)
+	{
+		// filter out non-interesting responeses
+		if ( !translation.empty()
+			&& (mToLang != detected_language)
+			&& (LLStringUtil::compareInsensitive(translation, m_origMesg) != 0) )
+		{
+			m_chat.mText += " (" + translation + ")";
+		}
 
-		add_floater_chat(*m_chat, m_history);
-
-		delete m_chat;
+		add_floater_chat(m_chat, m_history);
 	}
 
-	void handleFailure()
+	void handleFailure(int status, const std::string& err_msg)
 	{
-		LLTranslate::TranslationReceiver::handleFailure();
+		llwarns << "Translation failed for mesg " << m_origMesg << " toLang " << mToLang << " fromLang " << mFromLang << llendl;
 
-		m_chat->mText += " (?)";
+		std::string msg = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", err_msg));
+		LLStringUtil::replaceString(msg, "\n", " "); // we want one-line error messages
+		m_chat.mText += " (" + msg + ")";
 
-		add_floater_chat(*m_chat, m_history);
-
-		delete m_chat;
+		add_floater_chat(m_chat, m_history);
 	}
 
 	/*virtual*/ char const* getName(void) const { return "ChatTranslationReceiver"; }
 
 private:
-	LLChat *m_chat;
-	const BOOL m_history;		
+	LLChat m_chat;
+	std::string m_origMesg;
+	BOOL m_history;		
 };
-#endif
 
 void add_floater_chat(const LLChat &chat, const BOOL history)
 {
@@ -3672,29 +3676,6 @@ void add_floater_chat(const LLChat &chat, const BOOL history)
 		LLFloaterChat::addChat(chat, FALSE, FALSE);
 	}
 }
-
-#if 0	// Google translate doesn't work anymore
-void check_translate_chat(const std::string &mesg, LLChat &chat, const BOOL history)
-{	
-	const bool translate = LLUI::sConfigGroup->getBOOL("TranslateChat");
-
-	if (translate && chat.mSourceType != CHAT_SOURCE_SYSTEM)
-	{
-		// fromLang hardcoded to "" (autodetection) pending implementation of
-		// SVC-4879
-		const std::string &fromLang = "";
-		const std::string &toLang = LLTranslate::getTranslateLanguage();
-		LLChat *newChat = new LLChat(chat);
-
-		LLHTTPClient::ResponderPtr result = ChatTranslationReceiver::build(fromLang, toLang, newChat, history);
-		LLTranslate::translateMessage(result, fromLang, toLang, mesg);
-	}
-	else
-	{
-		add_floater_chat(chat, history);
-	}
-}
-#endif
 
 // defined in llchatbar.cpp, but not declared in any header
 void send_chat_from_viewer(std::string utf8_out_text, EChatType type, S32 channel);
@@ -4263,16 +4244,34 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 			chat.mPosAgent = chatter->getPositionAgent();
 		}
 
+		// truth table:
+		// LINDEN	MUTED	BUSY	OWNED_BY_YOU	TASK		DISPLAY		STORE IN HISTORY
+		// F		T		*		*				*			No			No
+		// F		F		T		F				*			No			Yes
+		// *		F		F		*				*			Yes			Yes
+		// *		F		*		T				*			Yes			Yes
+		// T		*		*		*				F			Yes			Yes
+
 		chat.mMuted = is_muted && !is_linden;
 		bool only_history = visible_in_chat_bubble || (!is_linden && !is_owned_by_me && is_do_not_disturb);
-#if 0	// Google translate doesn't work anymore
 		if (!chat.mMuted)
 		{
-			check_translate_chat(mesg, chat, only_history);
+			LLSD args;
+			if (chat.mSourceType != CHAT_SOURCE_SYSTEM && gSavedSettings.getBOOL("TranslateChat"))
+			{
+				if (ircstyle)
+				{
+					mesg.erase(4);
+				}
+				const std::string from_lang = ""; // leave empty to trigger autodetect
+				const std::string to_lang = LLTranslate::getTranslateLanguage();
+
+				LLTranslate::TranslationReceiverPtr result = ChatTranslationReceiver::build(from_lang, to_lang, mesg, chat, only_history);
+				LLTranslate::translateMessage(result, from_lang, to_lang, mesg);
+				return;
+			}
 		}
-#else
 		add_floater_chat(chat, only_history);
-#endif
 	}
 }
 

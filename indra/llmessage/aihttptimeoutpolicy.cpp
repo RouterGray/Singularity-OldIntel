@@ -955,7 +955,6 @@ P(responderIgnore);
 P(setDisplayNameResponder);
 P2(simulatorFeaturesReceived,					transfer_22s_connect_10s);
 P2(startGroupVoteResponder,						transfer_300s);
-P(translationReceiver);
 P(uploadModelPremissionsResponder);
 P(verifiedDestinationResponder);
 P(viewerChatterBoxInvitationAcceptResponder);

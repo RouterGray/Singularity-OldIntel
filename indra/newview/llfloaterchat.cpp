@@ -60,6 +60,7 @@
 #include "llparticipantlist.h"
 #include "llspeakers.h"
 #include "llstylemap.h"
+#include "lltranslate.h"
 #include "lluictrlfactory.h"
 #include "llviewermessage.h"
 #include "llviewertexteditor.h"
@@ -96,6 +97,7 @@ LLFloaterChat::LLFloaterChat(const LLSD& seed)
 	getChild<LLUICtrl>("show mutes")->setCommitCallback(boost::bind(&LLFloaterChat::onClickToggleShowMute, this, _2, getChild<LLTextEditor>("Chat History Editor"), history_editor_with_mute));
 	history_editor_with_mute->setVisible(false);
 	getChild<LLUICtrl>("chat_history_open")->setCommitCallback(boost::bind(show_log_browser, "chat", "chat"));
+	getChildView("translate chat")->setEnabled(LLTranslate::isTranslationConfigured());
 }
 
 LLFloaterChat::~LLFloaterChat()
@@ -342,6 +344,11 @@ void LLFloaterChat::onClickToggleShowMute(bool show_mute, LLTextEditor* history_
 	history_editor->setVisible(!show_mute);
 	history_editor_with_mute->setVisible(show_mute);
 	(show_mute ? history_editor_with_mute : history_editor)->setCursorAndScrollToEnd();
+}
+
+void LLFloaterChat::showTranslationCheckbox(bool show)
+{
+	getChildView("translate chat")->setEnabled(show);
 }
 
 // Put a line of chat in all the right places

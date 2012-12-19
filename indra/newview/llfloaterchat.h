@@ -72,6 +72,7 @@ public:
 
 	void onClickToggleShowMute(bool show_mute, class LLTextEditor* history_editor, LLTextEditor* history_editor_with_mute);
 	static void chatFromLogFile(LLLogChat::ELogLineType type, std::string line, void* userdata);
+	void showTranslationCheckbox(bool show);
 	static void loadHistory();
 	static void* createSpeakersPanel(void* data);
 	static void* createChatPanel(void* data);

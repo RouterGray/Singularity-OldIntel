@@ -403,6 +403,7 @@ set(viewer_SOURCE_FILES
     llpanelprimmediacontrols.cpp
     llpanelprofile.cpp
     llpanelskins.cpp
+    llpaneltranslationsettings.cpp
     llpanelvoicedevicesettings.cpp
     llpanelvoiceeffect.cpp
     llpanelvolume.cpp
@@ -482,6 +483,7 @@ set(viewer_SOURCE_FILES
     lltoolselectrect.cpp
     lltoolview.cpp
     lltracker.cpp
+    lltranslate.cpp
     lluploaddialog.cpp
     lluploadfloaterobservers.cpp
     llurl.cpp
@@ -934,6 +936,7 @@ set(viewer_HEADER_FILES
     llpanelprimmediacontrols.h
     llpanelprofile.h
     llpanelskins.h
+    llpaneltranslationsettings.h
     llpanelvoicedevicesettings.h
     llpanelvoiceeffect.h
     llpanelvolume.h
