@@ -91,20 +91,15 @@ bool LLTrans::parseStrings(const std::string& xml_filename, const std::set<std::
 	return true;
 }
 
-static LLAtomicU32 sStringTemplates_accesses;
-int const access_increment = 1000;
-
-static void log_sStringTemplates_accesses(void)
-{
-  llinfos << "LLTrans::getString/findString called " << sStringTemplates_accesses << " in total." << llendl;
-}
+static LLFastTimer::DeclareTimer FTM_GET_TRANS("Translate string");
 
 //static 
 std::string LLTrans::getString(const std::string &xml_desc, const LLStringUtil::format_map_t& msg_args)
 {
-	// Singu note: make sure LLTrans isn't used in a tight loop.
-	if (sStringTemplates_accesses++ % access_increment == access_increment - 1) log_sStringTemplates_accesses();
-
+	// Don't care about time as much as call count.  Make sure we're not
+	// calling LLTrans::getString() in an inner loop. JC
+	LLFastTimer timer(FTM_GET_TRANS);
+	
 	template_map_t::iterator iter = sStringTemplates.find(xml_desc);
 
 	if (iter != sStringTemplates.end())
@@ -130,11 +125,9 @@ std::string LLTrans::getString(const std::string &xml_desc, const LLStringUtil::
 //static
 std::string LLTrans::getString(const std::string &xml_desc, const LLSD& msg_args)
 {
-	// Singu note: make sure LLTrans isn't used in a tight loop.
-	if (sStringTemplates_accesses++ % access_increment == 0) log_sStringTemplates_accesses();
-
-	// Since sStringTemplates is read-only after it's initial initialization during start up,
-	// this function is already thread-safe.
+	// Don't care about time as much as call count.  Make sure we're not
+	// calling LLTrans::getString() in an inner loop. JC
+	LLFastTimer timer(FTM_GET_TRANS);
 
 	template_map_t::iterator iter = sStringTemplates.find(xml_desc);
 	if (iter != sStringTemplates.end())
@@ -153,9 +146,8 @@ std::string LLTrans::getString(const std::string &xml_desc, const LLSD& msg_args
 //static 
 bool LLTrans::findString(std::string &result, const std::string &xml_desc, const LLStringUtil::format_map_t& msg_args)
 {
-	// Singu note: make sure LLTrans isn't used in a tight loop.
-	if (sStringTemplates_accesses++ % access_increment == 0) log_sStringTemplates_accesses();
-
+	LLFastTimer timer(FTM_GET_TRANS);
+	
 	template_map_t::iterator iter = sStringTemplates.find(xml_desc);
 	if (iter != sStringTemplates.end())
 	{
@@ -176,8 +168,7 @@ bool LLTrans::findString(std::string &result, const std::string &xml_desc, const
 //static
 bool LLTrans::findString(std::string &result, const std::string &xml_desc, const LLSD& msg_args)
 {
-	// Singu note: make sure LLTrans isn't used in a tight loop.
-	if (sStringTemplates_accesses++ % access_increment == 0) log_sStringTemplates_accesses();
+	//V3: LLFastTimer timer(FTM_GET_TRANS);
 
 	template_map_t::iterator iter = sStringTemplates.find(xml_desc);
 	if (iter != sStringTemplates.end())

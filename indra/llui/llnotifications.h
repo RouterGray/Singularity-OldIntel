@@ -107,7 +107,6 @@
 #include "llxmlnode.h"
 #include "llnotificationptr.h"
 #include "llnotificationcontext.h"
-#include "aithreadsafe.h"
 
 namespace AIAlert { class Error; }
 
@@ -197,7 +196,6 @@ class LLNotification  :
 {
 LOG_CLASS(LLNotification);
 friend class LLNotifications;
-friend class UpdateItem;
 
 public:
 	// parameter object used to instantiate a new notification
@@ -568,10 +566,9 @@ class LLNotificationChannelBase :
 	public boost::signals2::trackable
 {
 	LOG_CLASS(LLNotificationChannelBase);
-	friend class UpdateItem;
 public:
 	LLNotificationChannelBase(LLNotificationFilter filter, LLNotificationComparator comp) : 
-		mFilter(filter), mItems_sf(comp) 
+		mFilter(filter), mItems(comp) 
 	{}
 	virtual ~LLNotificationChannelBase() {}
 	// you can also connect to a Channel, so you can be notified of
@@ -585,9 +582,7 @@ public:
 	const LLNotificationFilter& getFilter() { return mFilter; }
 
 protected:
-	AIThreadSafeSimpleDC<LLNotificationSet> mItems_sf;
-	typedef AIAccess<LLNotificationSet> mItems_wat;
-	typedef AIAccessConst<LLNotificationSet> mItems_crat;
+	LLNotificationSet mItems;
 	LLStandardSignal mChanged;
 	LLStandardSignal mPassedFilter;
 	LLStandardSignal mFailedFilter;
