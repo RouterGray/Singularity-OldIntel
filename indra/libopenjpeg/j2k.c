@@ -1804,8 +1804,10 @@ void j2k_destroy_decompress(opj_j2k_t *j2k) {
         if(j2k->cp != NULL) {
             for (i = 0; i < j2k->cp->tileno_size; i++) {
                 int tileno = j2k->cp->tileno[i];
-                opj_free(j2k->tile_data[tileno]);
-                j2k->tile_data[tileno] = NULL;
+		if (tileno != -1) {
+			opj_free(j2k->tile_data[tileno]);
+			j2k->tile_data[tileno] = NULL;
+		}
             }
         }
 
