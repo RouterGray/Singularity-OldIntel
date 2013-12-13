@@ -48,7 +48,7 @@ Allocate an uninitialized memory block
 #ifdef ALLOC_PERF_OPT
 void * OPJ_CALLCONV opj_malloc(size_t size);
 #else
-#define opj_malloc(size) malloc(size)
+#define opj_malloc(size) calloc(1, size)
 #endif
 
 /**
