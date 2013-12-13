@@ -1383,6 +1383,13 @@ opj_bool tcd_decode_tile(opj_tcd_t *tcd, unsigned char *src, int len, int tileno
 		opj_event_msg(tcd->cinfo, EVT_ERROR, "tcd_decode: incomplete bistream\n");
 		return OPJ_FALSE;
 	}
+
+	/* The code below assumes that numcomps > 0 */
+	if (tile->numcomps <= 0) {
+		opj_event_msg(tcd->cinfo, EVT_ERROR, "tcd_decode: tile has a zero or negative numcomps\n");
+		return OPJ_TRUE;
+	}
+
 	
 	/*------------------TIER1-----------------*/
 	
