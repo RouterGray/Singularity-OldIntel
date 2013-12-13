@@ -835,7 +835,7 @@ static void j2k_read_coc(opj_j2k_t *j2k) {
 	
 	len = cio_read(cio, 2);		/* Lcoc */
 	compno = cio_read(cio, image->numcomps <= 256 ? 1 : 2);	/* Ccoc */
-  if (compno >= image->numcomps) {
+  if ((compno < 0) || (compno >= image->numcomps)) {
     opj_event_msg(j2k->cinfo, EVT_ERROR,
       "bad component number in COC (%d out of a maximum of %d)\n",
       compno, image->numcomps);
