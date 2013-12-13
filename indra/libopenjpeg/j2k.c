@@ -1963,6 +1963,11 @@ opj_image_t* j2k_decode(opj_j2k_t *j2k, opj_cio_t *cio, opj_codestream_info_t *c
 	}
 	if (j2k->state == J2K_STATE_NEOC) {
 		j2k_read_eoc(j2k);
+		/* Check one last time for errors during decoding before returning */
+		if (j2k->state & J2K_STATE_ERR) {
+			opj_image_destroy(image);
+			return NULL;
+		}
 	}
 
 	if (j2k->state != J2K_STATE_MT) {
