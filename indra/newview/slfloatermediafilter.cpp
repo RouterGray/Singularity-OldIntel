@@ -82,8 +82,8 @@ void SLFloaterMediaFilter::draw()
 		std::string domain;
 		std::string action;
 		LLSD element;
-		element["columns"][0]["font"] = "SANSSERIF";
-		element["columns"][0]["font-style"] = "BOLD";
+		element["columns"][0]["font"]["name"] = "SANSSERIF";
+		element["columns"][0]["font"]["style"] = "BOLD";
 		for (S32 i = 0; i < (S32)LLViewerParcelMedia::sMediaFilterList.size(); i++)
 		{
 			domain = LLViewerParcelMedia::sMediaFilterList[i]["domain"].asString();
@@ -121,8 +121,8 @@ void SLFloaterMediaFilter::draw()
 			}
 		}
 		std::set<std::string>::iterator it;
-		element["columns"][0]["font"] = "SANSSERIF";
-		element["columns"][0]["font-style"] = "ITALIC";
+		element["columns"][0]["font"]["name"] = "SANSSERIF";
+		element["columns"][0]["font"]["style"] = "ITALIC";
 		//element["columns"][0]["color"] = LLColor4::green3.getValue();
 		element["columns"][0]["column"] = "whitelist_col";
 		for (it = LLViewerParcelMedia::sAllowedMedia.begin(); it != LLViewerParcelMedia::sAllowedMedia.end(); it++)

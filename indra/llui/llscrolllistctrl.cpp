@@ -2685,11 +2685,11 @@ LLView* LLScrollListCtrl::fromXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFac
 
 					std::string font("");
 					if (row_child->getAttributeString("font", font))
-						row["columns"][column_idx]["font"] = font;
+						row["columns"][column_idx]["font"]["name"] = font;
 
 					std::string font_style("");
 					if (row_child->getAttributeString("font-style", font_style))
-						row["columns"][column_idx]["font-style"] = font_style;
+						row["columns"][column_idx]["font"]["style"] = LLFontGL::getStyleFromString(font_style);
 
 					++column_idx;
 					explicit_column = true;
@@ -3143,7 +3143,7 @@ LLScrollListItem* LLScrollListCtrl::addSimpleElement(const std::string& value, E
 	item_params.value(entry_id);
 	item_params.columns.add()
 		.value(value)
-		/*.font(LLFontGL::getFontSansSerifSmall())*/;
+		.font(LLFontGL::getFontSansSerifSmall());
 
 	return addRow(item_params, pos);
 }

@@ -148,8 +148,8 @@ void LLFloaterVoiceEffect::refreshEffectList()
 		element["id"] = LLUUID::null;
 		element["columns"][NAME_COLUMN]["column"] = "name";
 		element["columns"][NAME_COLUMN]["value"] = getString("no_voice_effect");
-		element["columns"][NAME_COLUMN]["font"] = "SANSSERIF";
-		element["columns"][NAME_COLUMN]["font-style"] = "BOLD";
+		element["columns"][NAME_COLUMN]["font"]["name"] = "SANSSERIF";
+		element["columns"][NAME_COLUMN]["font"]["style"] = "BOLD";
 
 		/*LLScrollListItem* sl_item =*/ mVoiceEffectList->addElement(element, ADD_BOTTOM);
 		/* Singu Note: Ours works
@@ -200,8 +200,8 @@ void LLFloaterVoiceEffect::refreshEffectList()
 
 			element["columns"][NAME_COLUMN]["column"] = "name";
 			element["columns"][NAME_COLUMN]["value"] = effect_name;
-			element["columns"][NAME_COLUMN]["font"] = "SANSSERIF";
-			element["columns"][NAME_COLUMN]["font-style"] = font_style;
+			element["columns"][NAME_COLUMN]["font"]["name"] = "SANSSERIF";
+			element["columns"][NAME_COLUMN]["font"]["style"] = font_style;
 
 			element["columns"][1]["column"] = "expires";
 			if (!is_template_only)
@@ -212,8 +212,8 @@ void LLFloaterVoiceEffect::refreshEffectList()
 			else {
 				element["columns"][DATE_COLUMN]["value"] = getString("unsubscribed_voice_effect");
 			}
-			element["columns"][DATE_COLUMN]["font"] = "SANSSERIF";
-			element["columns"][DATE_COLUMN]["font-style"] = "NORMAL";
+			element["columns"][DATE_COLUMN]["font"]["name"] = "SANSSERIF";
+			element["columns"][DATE_COLUMN]["font"]["style"] = "NORMAL";
 
 			/*LLScrollListItem* sl_item =*/ mVoiceEffectList->addElement(element, ADD_BOTTOM);
 			/* Singu Note: Ours works

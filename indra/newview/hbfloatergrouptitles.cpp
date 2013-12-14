@@ -203,10 +203,10 @@ void update_titles_list(HBFloaterGroupTitles* self)
 			element["id"] = citer->mRoleID;
 			element["columns"][LIST_TITLE]["column"] = "title";
 			element["columns"][LIST_TITLE]["value"] = citer->mTitle;
-			element["columns"][LIST_TITLE]["font-style"] = style;
+			element["columns"][LIST_TITLE]["font"]["style"] = style;
 			element["columns"][LIST_GROUP_NAME]["column"] = "group_name";
 			element["columns"][LIST_GROUP_NAME]["value"] = group_datap->mName;
-			element["columns"][LIST_GROUP_NAME]["font-style"] = style;
+			element["columns"][LIST_GROUP_NAME]["font"]["style"] = style;
 			element["columns"][LIST_GROUP_ID]["column"] = "group_id";
 			element["columns"][LIST_GROUP_ID]["value"] = id;
 
@@ -225,10 +225,10 @@ void update_titles_list(HBFloaterGroupTitles* self)
 		element["id"] = LLUUID::null;
 		element["columns"][LIST_TITLE]["column"] = "title";
 		element["columns"][LIST_TITLE]["value"] = "none";
-		element["columns"][LIST_TITLE]["font-style"] = style;
+		element["columns"][LIST_TITLE]["font"]["style"] = style;
 		element["columns"][LIST_GROUP_NAME]["column"] = "group_name";
 		element["columns"][LIST_GROUP_NAME]["value"] = "none";
-		element["columns"][LIST_GROUP_NAME]["font-style"] = style;
+		element["columns"][LIST_GROUP_NAME]["font"]["style"] = style;
 		element["columns"][LIST_GROUP_ID]["column"] = "group_id";
 		element["columns"][LIST_GROUP_ID]["value"] = LLUUID::null;
 

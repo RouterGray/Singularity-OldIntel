@@ -840,15 +840,15 @@ void LLPanelGroupGeneral::addMember(LLGroupMemberData* member)
 	item_params.value = member->getID();
 
 	LLScrollListCell::Params column;
-	item_params.columns.add().column("name").font/*.name*/("SANSSERIF_SMALL").font_style(style);
+	item_params.columns.add().column("name").font.name("SANSSERIF_SMALL").style(style);
 
-	item_params.columns.add().column("title").value(member->getTitle()).font/*.name*/("SANSSERIF_SMALL").font_style(style);
+	item_params.columns.add().column("title").value(member->getTitle()).font.name("SANSSERIF_SMALL").style(style);
 
 	static const LLCachedControl<std::string> format(gSavedSettings, "ShortDateFormat");
 	static const std::string online(LLTrans::getString("group_member_status_online"));
 	item_params.columns.add().column("online").value(member->getOnlineStatus())
 		.format(format).type(member->getOnlineStatus() == online ? "text" : "date")
-		.font/*.name*/("SANSSERIF_SMALL").font_style(style);
+		.font.name("SANSSERIF_SMALL").style(style);
 
 	/*LLScrollListItem* member_row =*/ mListVisibleMembers->addNameItemRow(item_params);
 }

@@ -812,7 +812,7 @@ void LLFloaterAvatarList::refreshAvatarList()
 		{
 			mark.value = "X";
 			mark.color = LLColor4::blue;
-			mark.font_style = "BOLD";
+			mark.font.style = "BOLD";
 		}
 
 		LLScrollListCell::Params name;
@@ -821,7 +821,7 @@ void LLFloaterAvatarList::refreshAvatarList()
 		name.value = av_name;
 		if (entry->isFocused())
 		{
-			name.font_style = "BOLD";
+			name.font.style = "BOLD";
 		}
 
 		//<edit> custom colors for certain types of avatars!

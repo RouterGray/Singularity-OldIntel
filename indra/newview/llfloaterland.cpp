@@ -1531,7 +1531,7 @@ void LLPanelLandObjects::processParcelObjectOwnersReply(LLMessageSystem *msg, vo
 		return;
 	}
 	
-	const std::string FONT = "SANSSERIF";
+	const LLFontGL* FONT = LLFontGL::getFontSansSerif();
 
 	// Extract all of the owners.
 	S32 rows = msg->getNumberOfBlocksFast(_PREHASH_Data);

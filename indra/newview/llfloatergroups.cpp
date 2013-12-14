@@ -344,8 +344,8 @@ LLSD create_group_element(const LLGroupData *group_datap, const LLUUID &active_g
 	LLSD& name_column = element["columns"][0];
 	name_column["column"] = "name";
 	name_column["value"] = group_datap ? group_datap->mName : LLTrans::getString("GroupsNone");
-	name_column["font"] = "SANSSERIF";
-	name_column["font-style"] = style;
+	name_column["font"]["name"] = "SANSSERIF";
+	name_column["font"]["style"] = style;
 
 	LLSD& show_column = element["columns"][1];
 	show_column["column"] = "is_listed_group";

@@ -241,7 +241,7 @@ void LLPanelAvatarSecondLife::processProperties(void* data, EAvatarProcessorType
 				LLSD row;
 				row["id"] = it->group_id;
 				row["columns"][0]["value"] = it->group_id.notNull() ? it->group_name : "";
-				row["columns"][0]["font"] = "SANSSERIF_SMALL";
+				row["columns"][0]["font"]["name"] = "SANSSERIF_SMALL";
 				LLGroupData *group_data = NULL;
 
 				if (pAvatarGroups->avatar_id == pAvatarGroups->agent_id) // own avatar
@@ -263,10 +263,10 @@ void LLPanelAvatarSecondLife::processProperties(void* data, EAvatarProcessorType
 						std::string font_style = group_data->mListInProfile ? "BOLD" : "NORMAL";
 						if(group_data->mID == gAgent.getGroupID())
 							font_style.append("|ITALIC");
-						row["columns"][0]["font-style"] = font_style;
+						row["columns"][0]["font"]["style"] = font_style;
 					}
 					else
-						row["columns"][0]["font-style"] = "NORMAL";
+						row["columns"][0]["font"]["style"] = "NORMAL";
 				}
 				
 				if (group_list)
@@ -1656,11 +1656,11 @@ void LLPanelAvatar::resetGroupList()
 
 				row["id"] = id ;
 				row["columns"][0]["value"] = group_string;
-				row["columns"][0]["font"] = "SANSSERIF_SMALL";
+				row["columns"][0]["font"]["name"] = "SANSSERIF_SMALL";
 				std::string font_style = group_data.mListInProfile ? "BOLD" : "NORMAL";
 				if(group_data.mID == gAgent.getGroupID())
 					font_style.append("|ITALIC");
-				row["columns"][0]["font-style"] = font_style;
+				row["columns"][0]["font"]["style"] = font_style;
 				row["columns"][0]["width"] = 0;
 				group_list->addElement(row,ADD_SORTED);
 			}

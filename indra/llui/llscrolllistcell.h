@@ -63,10 +63,9 @@ public:
 		Optional<std::string>		tool_tip;
 		Optional<std::string>		format;
 
-		Optional<std::string>		font;
+		Optional<const LLFontGL*>		font;
 		Optional<LLColor4>			font_color;
 		Optional<LLFontGL::HAlign>	font_halign;
-		Optional<std::string>		font_style;
 
 		Optional<LLColor4>			color;
 
@@ -79,9 +78,8 @@ public:
 			value("value"),
 			tool_tip("tool_tip", ""),
 			format("format", ""),
-			font("font"/*, LLFontGL::getFontSansSerifSmall()*/),
+			font("font", LLFontGL::getFontSansSerifSmall()),
 			font_color("font_color", LLColor4::black),
-			font_style("font-style"),
 			color("color", LLColor4::white),
 			font_halign("halign", LLFontGL::LEFT)
 		{

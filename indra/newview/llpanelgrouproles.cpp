@@ -602,7 +602,7 @@ void LLPanelGroupSubTab::buildActionCategory(LLScrollListCtrl* ctrl,
 
 		row["columns"][1]["column"] = "action";
 		row["columns"][1]["value"] = action_set->mActionSetData->mName;
-		row["columns"][1]["font-style"] = "BOLD";
+		row["columns"][1]["font"]["style"] = "BOLD";
 
 		LLScrollListItem* title_row = ctrl->addElement(row, ADD_BOTTOM, action_set->mActionSetData);
 
@@ -683,7 +683,7 @@ void LLPanelGroupSubTab::buildActionCategory(LLScrollListCtrl* ctrl,
 
 			row["columns"][column_index]["column"] = "action";
 			row["columns"][column_index]["value"] = (*ra_it)->mDescription;
-			row["columns"][column_index]["font"] = "SANSSERIF_SMALL";
+			row["columns"][column_index]["font"]["name"] = "SANSSERIF_SMALL";
 
 			LLScrollListItem* item = ctrl->addElement(row, ADD_BOTTOM, (*ra_it));
 
@@ -1532,16 +1532,16 @@ void LLPanelGroupMembersSubTab::addMemberToList(LLGroupMemberData* data)
 	LLNameListCtrl::NameItem item_params;
 	item_params.value = data->getID();
 
-	item_params.columns.add().column("name").font/*.name*/("SANSSERIF_SMALL")/*.style("NORMAL")*/;
+	item_params.columns.add().column("name").font.name("SANSSERIF_SMALL").style("NORMAL");
 	
 	item_params.columns.add().column("donated").value(donated.getString())
-			.font/*.name*/("SANSSERIF_SMALL")/*.style("NORMAL")*/;
+			.font.name("SANSSERIF_SMALL").style("NORMAL");
 
 	static const LLCachedControl<std::string> format(gSavedSettings, "ShortDateFormat");
 	static const std::string online(LLTrans::getString("group_member_status_online"));
 	item_params.columns.add().column("online").value(data->getOnlineStatus())
 			.format(format).type(data->getOnlineStatus() == online ? "text" : "date")
-			.font/*.name*/("SANSSERIF_SMALL")/*.style("NORMAL")*/;
+			.font.name("SANSSERIF_SMALL").style("NORMAL");
 	mMembersList->addNameItemRow(item_params);
 
 	mHasMatch = TRUE;

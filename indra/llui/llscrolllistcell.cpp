@@ -174,10 +174,9 @@ U32 LLScrollListText::sCount = 0;
 LLScrollListText::LLScrollListText(const LLScrollListCell::Params& p)
 :	LLScrollListCell(p),
 	mText(p.value().asString()),
-	mFont(LLFontGL::getFontSansSerifSmall()),
+	mFont(p.font),
 	mColor(p.color),
 	mUseColor(p.color.isProvided()),
-	mFontStyle(LLFontGL::getStyleFromString(p.font_style)),
 	mFontAlignment(p.font_halign),
 	mVisible(p.visible),
 	mHighlightCount( 0 ),
@@ -186,19 +185,6 @@ LLScrollListText::LLScrollListText(const LLScrollListCell::Params& p)
 	sCount++;
 
 	mTextWidth = getWidth();
-
-	if (p.font.isProvided())
-	{
-		if (const LLFontGL* font = LLResMgr::getInstance()->getRes(p.font)) // Common CAPITALIZED font name?
-			mFont = font;
-		else // Less common camelCase font?
-		{
-			LLFontDescriptor font_desc;
-			font_desc.setName(p.font);
-			if (const LLFontGL* font = LLFontGL::getFont(font_desc))
-				mFont = font;
-		}
-	}
 
 	// initialize rounded rect image
 	if (!mRoundedRectImage)
@@ -282,7 +268,9 @@ void LLScrollListText::setText(const LLStringExplicit& text)
 
 void LLScrollListText::setFontStyle(const U8 font_style)
 {
-	mFontStyle = font_style;
+	LLFontDescriptor new_desc(mFont->getFontDesc());
+	new_desc.setStyle(font_style);
+	mFont = LLFontGL::getFont(new_desc);
 }
 
 //virtual
@@ -339,7 +327,7 @@ void LLScrollListText::draw(const LLColor4& color, const LLColor4& highlight_col
 	switch(mFontAlignment)
 	{
 	case LLFontGL::LEFT:
-		start_x = (mFontStyle & LLFontGL::ITALIC) ? 2.f : 0.f; //Italic text seems to need a little padding.
+		start_x = (mFont->getFontDesc().getStyle() & LLFontGL::ITALIC) ? 2.f : 0.f; //Italic text seems to need a little padding.
 		break;
 	case LLFontGL::RIGHT:
 		start_x = (F32)getWidth();
@@ -353,7 +341,7 @@ void LLScrollListText::draw(const LLColor4& color, const LLColor4& highlight_col
 					display_color,
 					mFontAlignment,
 					LLFontGL::BOTTOM,
-					mFontStyle,
+					0,
 					LLFontGL::NO_SHADOW,
 					string_chars,
 					getTextWidth(),

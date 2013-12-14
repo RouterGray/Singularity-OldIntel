@@ -425,8 +425,8 @@ BOOL LLPanelFriends::addFriend(const LLUUID& agent_id)
 	LLSD& friend_column = element["columns"][LIST_FRIEND_NAME];
 	friend_column["column"] = "friend_name";
 	friend_column["value"] = fullname;
-	friend_column["font"] = "SANSSERIF";
-	friend_column["font-style"] = "NORMAL";	
+	friend_column["font"]["name"] = "SANSSERIF";
+	friend_column["font"]["style"] = "NORMAL";
 	/* Singu TODO: Liru will fix this up to actually work later
 	static const LLCachedControl<LLColor4> sDefaultColor(gColors, "DefaultListText");
 	static const LLCachedControl<LLColor4> sMutedColor("AscentMutedColor");
@@ -440,13 +440,13 @@ BOOL LLPanelFriends::addFriend(const LLUUID& agent_id)
 	if (isOnline)
 	{
 		mNumOnline++;
-		friend_column["font-style"] = "BOLD";	
+		friend_column["font"]["style"] = "BOLD";
 		online_status_column["value"] = "icon_avatar_online.tga";
 	}
 	else if(isOnlineSIP)
 	{
 		mNumOnline++;
-		friend_column["font-style"] = "BOLD";	
+		friend_column["font"]["style"] = "BOLD";
 		online_status_column["value"] = ONLINE_SIP_ICON_NAME;
 	}
 

@@ -435,8 +435,8 @@ LLView* LLNameListCtrl::fromXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFacto
 
 					row["columns"][column_idx]["column"] = columnname;
 					row["columns"][column_idx]["value"] = value;
-					row["columns"][column_idx]["font"] = font;
-					row["columns"][column_idx]["font-style"] = font_style;
+					row["columns"][column_idx]["font"]["name"] = font;
+					row["columns"][column_idx]["font"]["style"] = LLFontGL::getStyleFromString(font_style);
 					column_idx++;
 				}
 			}
