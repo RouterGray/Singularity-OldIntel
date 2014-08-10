@@ -44,12 +44,13 @@
 #include "llviewermedia_streamingaudio.h"
 #include "llaudioengine.h"
 
-#if LL_FMODEX
-# include "llaudioengine_fmodex.h"
+
+#if LL_FMODSTUDIO
+# include "llaudioengine_fmodstudio.h"
 #endif
 
-#if LL_FMOD
-# include "llaudioengine_fmod.h"
+#if LL_FMODEX
+# include "llaudioengine_fmodex.h"
 #endif
 
 #ifdef LL_OPENAL
@@ -415,6 +416,17 @@ void init_audio()
 	{
 		gAudiop = NULL;
 
+#ifdef LL_FMODSTUDIO	
+		if (!gAudiop
+#if !LL_WINDOWS
+			&& NULL == getenv("LL_BAD_FMODSTUDIO_DRIVER")
+#endif // !LL_WINDOWS
+			)
+		{
+			gAudiop = (LLAudioEngine *) new LLAudioEngine_FMODSTUDIO(gSavedSettings.getBOOL("SHEnableFMODExProfiler"), gSavedSettings.getBOOL("SHEnableFMODEXVerboseDebugging"));
+		}
+#endif
+
 #ifdef LL_FMODEX		
 		if (!gAudiop
 #if !LL_WINDOWS
@@ -434,17 +446,6 @@ void init_audio()
 		)
 		{
 			gAudiop = (LLAudioEngine *) new LLAudioEngine_OpenAL();
-		}
-#endif
-
-#ifdef LL_FMOD			
-		if (!gAudiop
-#if !LL_WINDOWS
-			&& NULL == getenv("LL_BAD_FMOD_DRIVER")
-#endif // !LL_WINDOWS
-		)
-		{
-			gAudiop = (LLAudioEngine *) new LLAudioEngine_FMOD();
 		}
 #endif
 

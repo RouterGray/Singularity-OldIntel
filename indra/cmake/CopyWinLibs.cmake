@@ -233,6 +233,29 @@ if(WORD_SIZE EQUAL 32)
     )
 endif(WORD_SIZE EQUAL 32)
 
+if(FMODSTUDIO)
+    if (WORD_SIZE EQUAL 32)
+        set(fmodstudio_dll_file "fmod.dll")
+    else (WORD_SIZE EQUAL 32)
+        set(fmodstudio_dll_file "fmod64.dll")
+    endif (WORD_SIZE EQUAL 32)
+    
+    find_path(FMODSTUDIO_BINARY_DIR "${fmodstudio_dll_file}"
+          "${release_src_dir}"
+          "${FMODSTUDIO_SDK_DIR}/api/lowlevel/lib"
+          "${FMODSTUDIO_SDK_DIR}"
+          NO_DEFAULT_PATH
+          )
+
+    if(FMODSTUDIO_BINARY_DIR)
+        copy_if_different("${FMODSTUDIO_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Release" out_targets "${fmodstudio_dll_file}")
+        set(all_targets ${all_targets} ${out_targets})
+        copy_if_different("${FMODSTUDIO_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo" out_targets "${fmodstudio_dll_file}")
+        set(all_targets ${all_targets} ${out_targets})
+        copy_if_different("${FMODSTUDIO_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Debug" out_targets "${fmodstudio_dll_file}")
+        set(all_targets ${all_targets} ${out_targets})
+    endif(FMODSTUDIO_BINARY_DIR)
+endif(FMODSTUDIO)
 
 if(FMODEX)
     if (WORD_SIZE EQUAL 32)
@@ -258,25 +281,6 @@ if(FMODEX)
     endif(FMODEX_BINARY_DIR)
 endif(FMODEX)
 
-if(FMOD)
-    find_path(FMOD_BINARY_DIR fmod.dll
-          ${release_src_dir}
-          ${FMOD_SDK_DIR}/api
-          ${FMOD_SDK_DIR}
-          )
-
-if(FMOD_BINARY_DIR)
-    copy_if_different("${FMOD_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Release" out_targets fmod.dll)
-    set(all_targets ${all_targets} ${out_targets})
-    copy_if_different("${FMOD_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo" out_targets fmod.dll)
-    set(all_targets ${all_targets} ${out_targets})
-    copy_if_different("${FMOD_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/Debug" out_targets fmod.dll)
-    set(all_targets ${all_targets} ${out_targets})
-    else(FMOD_BINARY_DIR)
-        list(APPEND release_files fmod.dll)	#Required for compile. This will cause an error in copying binaries.
-    endif(FMOD_BINARY_DIR)
-endif(FMOD)
-    
 copy_if_different(
     ${release_src_dir} 
     "${CMAKE_CURRENT_BINARY_DIR}/Release"

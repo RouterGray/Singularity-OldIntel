@@ -7,13 +7,12 @@ include(Boost)
 include(DBusGlib)
 include(DirectX)
 include(ELFIO)
+if(FMODSTUDIO)
+  include(FMODSTUDIO)
+endif(FMODSTUDIO)
 if(FMODEX)
   include(FMODEX)
-  set(FMOD OFF)
 endif(FMODEX)
-if(FMOD)
-  include(FMOD)
-endif(FMOD)
 include(OPENAL)
 include(FindOpenGL)
 include(Hunspell)
@@ -1302,12 +1301,13 @@ if (WINDOWS)
         winspool
         )
 
+	if(FMODSTUDIO)
+		list(APPEND viewer_LIBRARIES ${FMODSTUDIO_LIBRARY})
+	endif(FMODSTUDIO)
+
 	if(FMODEX)
 		list(APPEND viewer_LIBRARIES ${FMODEX_LIBRARY})
 	endif(FMODEX)
-	if(FMOD)
-		list(APPEND viewer_LIBRARIES ${FMOD_LIBRARY})
-	endif(FMOD)
 
     find_library(INTEL_MEMOPS_LIBRARY
                  NAMES ll_intel_memops
@@ -1407,37 +1407,15 @@ if (OPENAL)
   set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_OPENAL")
 endif (OPENAL)
 
-if (FMOD OR FMODEX)
-  if (FMODEX)
-    set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMODEX")
-  endif (FMODEX)
-  if (FMOD)
-    set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMOD")
-  endif (FMOD)
+if (FMODSTUDIO)
+  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMODSTUDIO")
+  set(FMODWRAPPER_LIBRARY ${FMODSTUDIO_LIBRARY})
+endif (FMODSTUDIO)
 
-  if (DARWIN AND FMOD)
-      set(fmodwrapper_SOURCE_FILES fmodwrapper.cpp)
-      add_library(fmodwrapper SHARED ${fmodwrapper_SOURCE_FILES})
-      set(fmodwrapper_needed_LIBRARIES ${FMOD_LIBRARY} ${CARBON_LIBRARY})
-      set_target_properties(
-        fmodwrapper
-        PROPERTIES
-        BUILD_WITH_INSTALL_RPATH 1
-        INSTALL_NAME_DIR "@executable_path/../Resources"
-        LINK_FLAGS "-unexported_symbols_list ${CMAKE_CURRENT_SOURCE_DIR}/fmod_hidden_symbols.exp"
-        )
-      set(FMODWRAPPER_LIBRARY fmodwrapper)
-      target_link_libraries(fmodwrapper ${fmodwrapper_needed_LIBRARIES})
-  else (DARWIN AND FMOD)
-    # fmodwrapper unnecessary on linux or windows, for fmod and fmodex
-    if (FMODEX)
-       set(FMODWRAPPER_LIBRARY ${FMODEX_LIBRARY})
-    endif (FMODEX)
-    if (FMOD)
-       set(FMODWRAPPER_LIBRARY ${FMOD_LIBRARY})
-    endif (FMOD)
-  endif (DARWIN AND FMOD)
-endif (FMOD OR FMODEX)
+if (FMODEX)
+  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMODEX")
+  set(FMODWRAPPER_LIBRARY ${FMODEX_LIBRARY})
+endif (FMODEX)
 
 set_source_files_properties(llstartup.cpp PROPERTIES COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS}")
 
@@ -1462,19 +1440,27 @@ set(PACKAGE OFF CACHE BOOL
 if (WINDOWS)
     set(release_flags "/MAPRelease/${VIEWER_BINARY_NAME}.map")
 
-    if (FMOD)
+    if (FMODSTUDIO)
+        if (WORD_SIZE EQUAL 32)
+            set(fmodstudio_dll_file "fmod.dll")
+        else (WORD_SIZE EQUAL 32)
+            set(fmodstudio_dll_file "fmod64.dll")
+        endif (WORD_SIZE EQUAL 32)
+
         if(MANIFEST_LIBRARIES)
-            set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|${FMOD_BINARY_DIR}/fmod.dll")
+       	    set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|${FMODSTUDIO_BINARY_DIR}/${fmodstudio_dll_file}")
         else(MANIFEST_LIBRARIES)
-            set(MANIFEST_LIBRARIES "--extra_libraries=${FMOD_BINARY_DIR}/fmod.dll")
+            set(MANIFEST_LIBRARIES "--extra_libraries=${FMODSTUDIO_BINARY_DIR}/${fmodstudio_dll_file}")
         endif(MANIFEST_LIBRARIES)
-    endif (FMOD)
+        set(EXTRA_LINKER_FLAGS "/DELAYLOAD:${fmodstudio_dll_file}")
+    endif (FMODSTUDIO)
+
     if (FMODEX)
-	if (WORD_SIZE EQUAL 32)
-	    set(fmodex_dll_file "fmodex.dll")
-	else (WORD_SIZE EQUAL 32)
-	    set(fmodex_dll_file "fmodex64.dll")
-	endif (WORD_SIZE EQUAL 32)
+        if (WORD_SIZE EQUAL 32)
+            set(fmodex_dll_file "fmodex.dll")
+        else (WORD_SIZE EQUAL 32)
+            set(fmodex_dll_file "fmodex64.dll")
+        endif (WORD_SIZE EQUAL 32)
 
         if(MANIFEST_LIBRARIES)
        	    set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|${FMODEX_BINARY_DIR}/${fmodex_dll_file}")
@@ -1651,6 +1637,14 @@ if (LINUX)
 
   set(product ${VIEWER_BRANDING_NAME_CAMELCASE}-${ARCH}-${viewer_VERSION})
 
+  if (FMODSTUDIO)
+    if(MANIFEST_LIBRARIES)
+      set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|${FMODSTUDIO_LIBRARY}")
+    else(MANIFEST_LIBRARIES)
+      set(MANIFEST_LIBRARIES "--extra_libraries=${FMODSTUDIO_LIBRARY}")
+    endif(MANIFEST_LIBRARIES)
+  endif (FMODSTUDIO)
+
   if (FMODEX)
     if(MANIFEST_LIBRARIES)
       set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|${FMODEX_LIBRARY}")
@@ -1750,6 +1744,15 @@ if (DARWIN)
     )
 
   add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_quicktime media_plugin_webkit basic_plugin_filepicker)
+
+  if (FMODSTUDIO)
+    add_custom_command(OUTPUT "${FMODSTUDIO_LIBRARY}"
+                      COMMAND cp "${FMODSTUDIO_ORIG_LIBRARY}" "${FMODSTUDIO_LIBRARY}"
+                      COMMAND install_name_tool -id "@executable_path/../Resources/libfmod.dylib" ${FMODSTUDIO_LIBRARY}
+                      DEPENDS "${FMODSTUDIO_ORIG_LIBRARY}")
+    add_custom_target(fmodstudio_modified_library DEPENDS "${FMODSTUDIO_LIBRARY}")
+    add_dependencies(${VIEWER_BINARY_NAME} fmodstudio_modified_library)
+  endif (FMODSTUDIO)
 
   if (FMODEX)
     add_custom_command(OUTPUT "${FMODEX_LIBRARY}"
