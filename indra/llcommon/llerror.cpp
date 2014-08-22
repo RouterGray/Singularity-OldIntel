@@ -108,7 +108,7 @@ namespace {
 			mFile.close();
 		}
 		
-		bool okay() { return mFile; }
+		bool okay() { return !!mFile; }
 		
 		virtual bool wantsTime() { return true; }
 		

@@ -1,6 +1,7 @@
 # -*- cmake -*-
 
 include(Prebuilt)
+include(Boost)
 
 set(COLLADADOM_FIND_QUIETLY OFF)
 set(COLLADADOM_FIND_REQUIRED ON)
@@ -24,11 +25,26 @@ else (STANDALONE)
 	  )
 
   if (WINDOWS)
-	  add_definitions(-DDOM_DYNAMIC)
-	  set(COLLADADOM_LIBRARIES 
-		  debug libcollada14dom22-d
-		  optimized libcollada14dom22
+	  if(MSVC12)
+        use_prebuilt_binary(pcre)
+        use_prebuilt_binary(libxml)
+        set(COLLADADOM_LIBRARIES 
+          debug libcollada14dom23-sd
+          optimized libcollada14dom23-s
+          libxml2_a
+          debug pcrecppd
+          optimized pcrecpp
+          debug pcred
+          optimized pcre
+          ${BOOST_SYSTEM_LIBRARIES}
 		  )
+	  else(MSVC12)
+        add_definitions(-DDOM_DYNAMIC)
+        set(COLLADADOM_LIBRARIES 
+		    debug libcollada14dom22-d
+		    optimized libcollada14dom22
+		    )
+      endif(MSVC12)
   else (WINDOWS)
 	  set(COLLADADOM_LIBRARIES 
 		  collada14dom

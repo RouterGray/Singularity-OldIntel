@@ -1616,7 +1616,7 @@ bool idle_startup()
 				if (gNoRender)
 				{
 					LL_WARNS("AppInit") << "Bad login - missing return values" << LL_ENDL;
-					LL_WARNS("AppInit") << emsg << LL_ENDL;
+					LL_WARNS("AppInit") << emsg.str() << LL_ENDL;
 					exit(0);
 				}
 				// Bounce back to the login screen.
@@ -1632,7 +1632,7 @@ bool idle_startup()
 			if (gNoRender)
 			{
 				LL_WARNS("AppInit") << "Failed to login!" << LL_ENDL;
-				LL_WARNS("AppInit") << emsg << LL_ENDL;
+				LL_WARNS("AppInit") << emsg.str() << LL_ENDL;
 				exit(0);
 			}
 			// Bounce back to the login screen.

@@ -3958,9 +3958,9 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 		{
 			// Compute the object SLURL.
 			LLVector3 pos = chatter->getPositionRegion();
-			S32 x = llround((F32)fmod((F64)pos.mV[VX], (F64)REGION_WIDTH_METERS));
-			S32 y = llround((F32)fmod((F64)pos.mV[VY], (F64)REGION_WIDTH_METERS));
-			S32 z = llround((F32)pos.mV[VZ]);
+			S32 x = llmath::llround((F32)fmod((F64)pos.mV[VX], (F64)REGION_WIDTH_METERS));
+			S32 y = llmath::llround((F32)fmod((F64)pos.mV[VY], (F64)REGION_WIDTH_METERS));
+			S32 z = llmath::llround((F32)pos.mV[VZ]);
 			std::ostringstream location;
 			location << chatter->getRegion()->getName() << "/" << x << "/" << y << "/" << z;
 			query_string["slurl"] = location.str();

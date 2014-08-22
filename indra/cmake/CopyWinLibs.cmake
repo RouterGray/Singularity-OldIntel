@@ -42,9 +42,13 @@ set(debug_files
     libapriconv-1.dll
     libeay32.dll
     ssleay32.dll
-    libcollada14dom22-d.dll
     glod.dll
     )
+  if(MSVC10)
+    set(release_files ${release_files}
+        libcollada14dom22-d.dll
+    )
+  endif(MSVC10)
 
 copy_if_different(
     ${debug_src_dir} 
@@ -223,12 +227,12 @@ set(release_files
     libapriconv-1.dll
     libeay32.dll
     ssleay32.dll
-    libcollada14dom22.dll
     glod.dll
     )
 
 if(WORD_SIZE EQUAL 32)
     set(release_files ${release_files}
+    libcollada14dom22.dll
     libtcmalloc_minimal.dll
     )
 endif(WORD_SIZE EQUAL 32)

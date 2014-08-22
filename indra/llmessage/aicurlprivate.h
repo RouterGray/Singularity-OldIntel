@@ -466,7 +466,7 @@ class BufferedCurlEasyRequest : public CurlEasyRequest {
 
 	// Return true when prepRequest was already called and the object has not been
 	// invalidated as a result of calling aborted().
-	bool isValid(void) const { return mResponder; }
+	bool isValid(void) const { return !!mResponder; }
 
 	// Return the capability type of this request.
 	AICapabilityType capability_type(void) const { llassert(mCapabilityType != number_of_capability_types); return mCapabilityType; }

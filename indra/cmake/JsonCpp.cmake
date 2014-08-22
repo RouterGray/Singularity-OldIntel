@@ -10,9 +10,15 @@ if (STANDALONE)
 else (STANDALONE)
   use_prebuilt_binary(jsoncpp)
   if (WINDOWS)
-    set(JSONCPP_LIBRARIES 
-      debug json_vc${MSVC_SUFFIX}d
-      optimized json_vc${MSVC_SUFFIX})
+    if(MSVC12)
+      set(JSONCPP_LIBRARIES 
+        debug json_vc${MSVC_SUFFIX}debug_libmt.lib
+        optimized json_vc${MSVC_SUFFIX}_libmt)
+    else(MSVC12)
+      set(JSONCPP_LIBRARIES 
+        debug json_vc${MSVC_SUFFIX}d
+        optimized json_vc${MSVC_SUFFIX})
+    endif(MSVC12)
   elseif (DARWIN)
     set(JSONCPP_LIBRARIES json_linux-gcc-4.0.1_libmt)
   elseif (LINUX)
