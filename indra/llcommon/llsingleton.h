@@ -33,10 +33,10 @@
 
 /// @brief A global registry of all singletons to prevent duplicate allocations
 /// across shared library boundaries
-class LL_COMMON_API LLSingletonRegistry {
+class LLSingletonRegistry {
 	private:
 		typedef std::map<std::string, void *> TypeMap;
-		static TypeMap * sSingletonMap;
+		static LL_COMMON_API TypeMap * sSingletonMap;
 
 		static void checkInit()
 		{
