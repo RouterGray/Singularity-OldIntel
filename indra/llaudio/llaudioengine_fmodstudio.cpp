@@ -314,7 +314,7 @@ bool LLAudioEngine_FMODSTUDIO::init(const S32 num_channels, void* userdata)
 	result = mSystem->setSoftwareChannels(num_channels + 2);
 	Check_FMOD_Error(result,"FMOD::System::setSoftwareChannels");
 
-	U32 fmod_flags = FMOD_INIT_NORMAL;
+	U32 fmod_flags = FMOD_INIT_NORMAL | FMOD_INIT_3D_RIGHTHANDED;
 	if(mEnableProfiler)
 	{
 		fmod_flags |= FMOD_INIT_PROFILE_ENABLE;
@@ -446,7 +446,7 @@ bool LLAudioEngine_FMODSTUDIO::init(const S32 num_channels, void* userdata)
 	FMOD_SPEAKERMODE speaker_mode;
 	mSystem->getDSPBufferSize(&r_bufferlength, &r_numbuffers);
 	mSystem->getSoftwareFormat(&r_samplerate, &speaker_mode, NULL);
-	mSystem->getDriverInfo(0, r_name, NULL, 255, NULL, NULL, &speaker_mode, NULL);
+	mSystem->getDriverInfo(0, r_name, 255, NULL, NULL, &speaker_mode, NULL);
 	std::string speaker_mode_str = "unknown";
 	switch(speaker_mode)
 	{
@@ -937,12 +937,7 @@ bool LLAudioBufferFMODSTUDIO::loadWAV(const std::string& filename)
 	exinfo.cbsize = sizeof(exinfo);
 	exinfo.suggestedsoundtype = FMOD_SOUND_TYPE_WAV;	//Hint to speed up loading.
 	// Load up the wav file into an fmod sample
-#if LL_WINDOWS
-	FMOD_RESULT result = getSystem()->createSound((const char*)utf8str_to_utf16str(filename).c_str(), base_mode | FMOD_UNICODE, &exinfo, &mSoundp);
-#else
 	FMOD_RESULT result = getSystem()->createSound(filename.c_str(), base_mode, &exinfo, &mSoundp);
-#endif
-
 	if (result != FMOD_OK)
 	{
 		// We failed to load the file for some reason.
