@@ -657,13 +657,14 @@ bool join_group_response(const LLSD& notification, const LLSD& response)
 		LLNotificationsUtil::add("JoinGroup", args, notification["payload"]);
 		return false;
 	}
+
 	if(option == 0 && !group_id.isNull())
 	{
 		// check for promotion or demotion.
 		S32 max_groups = gHippoLimits->getMaxAgentGroups();
 		if(gAgent.isInGroup(group_id)) ++max_groups;
 
-		if(gAgent.mGroups.count() < max_groups)
+		if((S32)gAgent.mGroups.size() < max_groups)
 		{
 			accept_invite = true;
 		}
@@ -2463,8 +2464,8 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 					LLGiveInventory::doGiveInventoryItem(from_id, item, computed_session_id);
 					if (show_autoresponded)
 					{
-							gIMMgr->addMessage(computed_session_id, from_id, name,
-								llformat("%s %s \"%s\"", pns_name.c_str(), LLTrans::getString("IM_autoresponse_sent_item").c_str(), item->getName().c_str()));
+						gIMMgr->addMessage(computed_session_id, from_id, name,
+							llformat("%s %s \"%s\"", pns_name.c_str(), LLTrans::getString("IM_autoresponse_sent_item").c_str(), item->getName().c_str()));
 					}
 				}
 			}
@@ -2635,7 +2636,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 						if (show_autoresponded)
 						{
 							gIMMgr->addMessage(computed_session_id, from_id, name,
-									llformat("%s %s \"%s\"", pns_name.c_str(), LLTrans::getString("IM_autoresponse_sent_item").c_str(), item->getName().c_str()));
+								llformat("%s %s \"%s\"", pns_name.c_str(), LLTrans::getString("IM_autoresponse_sent_item").c_str(), item->getName().c_str()));
 						}
 					}
 				}
