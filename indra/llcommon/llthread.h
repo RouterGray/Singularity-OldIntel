@@ -210,7 +210,6 @@ typedef CONDITION_VARIABLE impl_cond_handle_type;
 //----APR specific------
 #include "apr_thread_cond.h"
 #include "apr_thread_mutex.h"
-#include "apr_signal.h"
 typedef LLAPRPool native_pool_type;
 typedef apr_thread_mutex_t* impl_mutex_handle_type;
 typedef apr_thread_cond_t* impl_cond_handle_type;
@@ -662,10 +661,10 @@ private:
 
 // Simple responder for self destructing callbacks
 // Pure virtual class
-class LL_COMMON_API LLResponder : public LLThreadSafeRefCount
+class LLResponder : public LLThreadSafeRefCount
 {
 protected:
-	virtual ~LLResponder();
+	virtual ~LLResponder() {}
 public:
 	virtual void completed(bool success) = 0;
 };

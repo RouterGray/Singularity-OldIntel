@@ -46,7 +46,7 @@
 
 //Prefer boost over stl over apr.
 
-#if defined(USE_BOOST_ATOMIC) && (BOOST_VERSION >= 105200)
+#if defined(USE_BOOST_ATOMIC) && (BOOST_VERSION >= 105300)
 #include "boost/atomic.hpp"
 template<typename T>
 struct impl_atomic_type { typedef boost::atomic<T> type; };

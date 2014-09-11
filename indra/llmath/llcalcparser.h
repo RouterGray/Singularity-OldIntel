@@ -54,54 +54,39 @@ T max_glue(T a, T b)
 {
 	return std::max(a, b);
 }
-
-template <typename T>
-struct lazy_pow_
-{
-	template<class> struct result;
-	template<class F>
-	struct result
-	{
-		typedef T type;
-	};
-
-	T operator()(T x, T y) const
-	{
-		return std::pow(x, y);
-	}
-};
-
-template <typename T>
+ 
+template<typename RT>
 struct lazy_ufunc_
 {
-	template<class> struct result;
-	template<class F>
-	struct result
-	{
-		typedef T type;
-	};
+	typedef RT result_type;
 
-	T operator()(T(*fn)(T), T x) const
+	template <typename F, typename A1>
+	struct result { typedef RT type; };
+ 
+	template <typename F, typename A1>
+	RT operator()(F f, A1 a1) const
 	{
-		return fn(x);
+		return f(a1);
 	}
 };
 
-template <typename T>
+template<typename RT>
 struct lazy_bfunc_
 {
-	template<class> struct result;
-	template<class F>
-	struct result
+	typedef F32 result_type;
+
+	template <typename F, typename A1, typename A2>
+	struct result { typedef RT type; };
+ 
+	template <typename F, typename A1, typename A2>
+	RT operator()(F f, A1 a1, A2 a2) const
 	{
-		typedef T type;
-	};
-	double operator()(T(*fn)(T, T), T x, T y) const
-	{
-		return fn(x, y);
+		return f(a1, a2);
 	}
 };
 
+//} // end namespace anonymous
+ 
 template <typename FPT, typename Iterator>
 struct grammar
 	: boost::spirit::qi::grammar<
@@ -187,10 +172,9 @@ struct grammar
 		using boost::spirit::qi::no_case;
 		using boost::spirit::qi::_val;
  
-		boost::phoenix::function< lazy_pow_<FPT> >   lazy_pow;
 		boost::phoenix::function< lazy_ufunc_<FPT> > lazy_ufunc;
 		boost::phoenix::function< lazy_bfunc_<FPT> > lazy_bfunc;
- 
+
 		expression =
 			term                   [_val =  _1]
 			>> *(  ('+' >> term    [_val += _1])
@@ -207,7 +191,7 @@ struct grammar
  
 		factor =
 			primary                [_val =  _1]
-			>> *(  ("**" >> factor [_val = lazy_pow(_val, _1)])
+			>> *(  ("**" >> factor [_val = boost::phoenix::bind(static_cast<FPT (*)(FPT,FPT)>(&std::pow),_val,_1)])
 				)
 			;
  
