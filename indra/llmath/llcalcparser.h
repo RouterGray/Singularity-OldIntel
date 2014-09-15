@@ -73,7 +73,7 @@ struct lazy_ufunc_
 template<typename RT>
 struct lazy_bfunc_
 {
-	typedef F32 result_type;
+	typedef RT result_type;
 
 	template <typename F, typename A1, typename A2>
 	struct result { typedef RT type; };
