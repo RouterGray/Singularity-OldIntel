@@ -5,25 +5,25 @@ project(llaudio)
 include(00-Common)
 include(Audio)
 include(LLAudio)
+if (FMODSTUDIO)
+  include(FMODSTUDIO)
+endif (FMODSTUDIO)
 if (FMODEX)
   include(FMODEX)
-  set(FMOD OFF)
 endif (FMODEX)
-if (NOT FMODEX)
-  include(FMOD)
-endif (NOT FMODEX)
 include(OPENAL)
 include(LLCommon)
 include(LLMath)
 include(LLMessage)
 include(LLVFS)
 
+if (FMODSTUDIO)
+  include_directories(${FMODSTUDIO_INCLUDE_DIR})
+endif(FMODSTUDIO)
+
 if (FMODEX)
   include_directories(${FMODEX_INCLUDE_DIR})
 endif(FMODEX)
-if(FMOD)
-  include_directories(${FMOD_INCLUDE_DIR})
-endif (FMOD)
 
 include_directories(
     ${LLAUDIO_INCLUDE_DIRS}
@@ -58,6 +58,20 @@ set(llaudio_HEADER_FILES
     llwindgen.h
     )
 
+if (FMODSTUDIO)
+    list(APPEND llaudio_SOURCE_FILES
+         llaudioengine_fmodstudio.cpp
+         lllistener_fmodstudio.cpp
+         llstreamingaudio_fmodstudio.cpp
+         )
+
+    list(APPEND llaudio_HEADER_FILES
+         llaudioengine_fmodstudio.h
+         lllistener_fmodstudio.h
+         llstreamingaudio_fmodstudio.h
+         )
+endif (FMODSTUDIO)
+
 if (FMODEX)
     list(APPEND llaudio_SOURCE_FILES
          llaudioengine_fmodex.cpp
@@ -71,26 +85,6 @@ if (FMODEX)
          llstreamingaudio_fmodex.h
          )
 endif (FMODEX)
-if (FMOD)
-    list(APPEND llaudio_SOURCE_FILES
-         llaudioengine_fmod.cpp
-         lllistener_fmod.cpp
-         llstreamingaudio_fmod.cpp
-         )
-
-    list(APPEND llaudio_HEADER_FILES
-         llaudioengine_fmod.h
-         lllistener_fmod.h
-         llstreamingaudio_fmod.h
-         )
-
-    if (LINUX)
-      if (${CXX_VERSION} MATCHES "4.[23]")
-        set_source_files_properties(llaudioengine_fmod.cpp
-                                    COMPILE_FLAGS -Wno-error=write-strings)
-      endif (${CXX_VERSION} MATCHES "4.[23]")
-    endif (LINUX)
-endif (FMOD)
 
 if (OPENAL)
   list(APPEND llaudio_SOURCE_FILES

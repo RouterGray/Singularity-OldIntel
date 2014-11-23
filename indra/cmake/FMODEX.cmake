@@ -2,6 +2,10 @@
 
 include(Linking)
 
+if (FMODEX AND FMODSTUDIO)
+    message( FATAL_ERROR "You can not enable two FMOD variants at the same time." )
+endif (FMODEX AND FMODSTUDIO)
+
 if (NOT FMODEX_LIBRARY)
   set(FMODEX_SDK_DIR CACHE PATH "Path to the FMOD Ex SDK.")
   if (FMODEX_SDK_DIR)

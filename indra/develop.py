@@ -447,14 +447,14 @@ class WindowsSetup(PlatformSetup):
             'gen' : r'Visual Studio 10',
             'ver' : r'10.0'
             },
-        'vc110' : {
-            'gen' : r'Visual Studio 11',
-            'ver' : r'11.0'
+        'vc120' : {
+            'gen' : r'Visual Studio 12',
+            'ver' : r'12.0'
             }
         }
     
     gens['vs2010'] = gens['vc100']
-    gens['vs2012'] = gens['vc110']
+    gens['vs2013'] = gens['vc120']
 
     search_path = r'C:\windows'
     exe_suffixes = ('.exe', '.bat', '.com')

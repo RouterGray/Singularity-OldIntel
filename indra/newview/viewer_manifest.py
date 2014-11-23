@@ -213,8 +213,11 @@ class WindowsManifest(ViewerManifest):
             self.end_prefix()
 
         # For mesh upload
-        if self.prefix(src=self.args['configuration'], dst=""):
+        if not self.is_win64() and self.prefix(src=self.args['configuration'], dst=""):
             self.path("libcollada14dom22.dll")
+            self.end_prefix()
+
+        if self.prefix(src=self.args['configuration'], dst=""):
             self.path("glod.dll")
             self.end_prefix()
 

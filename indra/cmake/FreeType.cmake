@@ -11,7 +11,11 @@ else (STANDALONE)
     set(FREETYPE_INCLUDE_DIRS
         ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include)
   else (LINUX)
-    set(FREETYPE_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include)
+    if(MSVC12)
+      set(FREETYPE_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include/freetype2)
+    else(MSVC12)
+      set(FREETYPE_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include)
+	endif (MSVC12)
   endif (LINUX)
 
   set(FREETYPE_LIBRARIES freetype)

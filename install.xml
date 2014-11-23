@@ -67,9 +67,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>c6d96cc9f6d993e2147710a5fb0b089a</string>
+            <string>54684a0e539879c4e20839929faca547</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/glod-1.0pre4-windows64-20131028.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/glod-1.0pre4-windows64-vs12-20140723.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -136,9 +136,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>7dcae03cad9bc04ac7e937284e6d102e</string>
+            <string>1a3dbaf92136ca05e57c92c9c09cbff8</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/apr_suite-1.4.5-windows64-20131019.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/apr_suite-1.4.5-windows64-vs12-20140710.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -183,9 +183,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>2ca54250b59170f3e5342dacad529859</string>
+            <string>b65ca4ce2e9cc34f3ac545ba3bfbdb3a</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/ares-1.9.1-windows64-20131019.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/ares-1.10.0-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -230,9 +230,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>68c056e920ba2b25c0acded6f482a2e4</string>
+            <string>2b33deae4df210c8bb9e1aea6174bc13</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/boost-1.53.0-windows64-20131019.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/boost-1.56.0-windows64-vs12-20140816.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -277,9 +277,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>acbe863e1b3df636e1245cc27c280e7b</string>
+            <string>53b5cd120718119b8a31b5073a49360e</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/colladadom-2.2-windows64-20131020.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/colladadom-2.3-windows64-vs12-20140816.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -324,9 +324,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>ffb31d596f41b650bed49ac13bb513de</string>
+            <string>3820517a958655c31890eaf71bb284ba</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/curl-7.24.0-windows64-20131019.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/curl-7.37.1-windows64-vs12-20140722.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -445,9 +445,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>3239d5c50d6f2c857cc1a95674dbd1f5</string>
+            <string>b68a9abb802abf52f63c805a589eb3fc</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/expat-2.1.0-windows64-20131019.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/expat-2.1.0-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -514,9 +514,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>bfde86bbd84536448ac2a717ed1646d8</string>
+            <string>4a33389ffa875bfd4554fa4d8198692c</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/freetype-2.5.0.1-windows64-20131020.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/freetype-2.5.3-windows64-vs12-20140725.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -607,9 +607,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>eeec9982df843043a18748276bbf39ce</string>
+            <string>919c3fdfac84aaa69c84f1ce793cd9ff</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/glui-2.36-windows-20110214.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/glui-2.36-windows64-vs12-20140710.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -650,9 +650,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>f9072dda75012868d023c335ea5bcf88</string>
+            <string>61f46d94a137f8a50bc6328ed8a69762</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/google_breakpad-0.0.0-rev1099-windows64-20140606.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/google_breakpad-1351-windows64-vs12-20140723.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -771,9 +771,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>22fd1388454117626c2477509d3e93be</string>
+            <string>b97500817a949b250820ca300014d2c6</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/libhunspell-1.3.2-windows64-20140605.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/libhunspell-1.3.2-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -818,9 +818,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>79e328b10fae2090262c0bf02c9c5f71</string>
+            <string>d687c074b621715499bfe6e9ba1acbd2</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/jpeglib-8c-windows64-20131020.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/libjpeg_turbo-1.3.1-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -865,9 +865,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>8cf95eef2a95b71eb4a8ab59779bed52</string>
+            <string>a6de6a8188a87ce8048847f37b4ecd8f</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/jsoncpp-0.5.0-windows64-20131020.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/jsoncpp-0.5.0-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -912,9 +912,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>00fc7bcb4016ecc57def9e3b3223d977</string>
+            <string>82ac61f5d208b0c907217fc90bb835dd</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/libpng-1.5.10-windows64-20131020.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/libpng-1.6.8-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -964,6 +964,13 @@
             <key>url</key>
             <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/libxml2-2.7.8-linux-x86_64-20120420.tar.bz2</uri>
           </map>
+          <key>windows64</key>
+          <map>
+            <key>md5sum</key>
+            <string>1c2effa8c26de72f6c92f65f83dd9e29</string>
+            <key>url</key>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/libxml2-2.9.1-windows64-vs12-20140709.tar.bz2</uri>
+          </map>
         </map>
       </map>
       <key>llqtwebkit</key>
@@ -1003,9 +1010,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>cf9e5d1d79531a7e4d45f78657da9c9b</string>
+            <string>a1c9564dbce8f3b0a296f9924e68a221</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/llqtwebkit-4.7.1-windows64-20131021.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/llqtwebkit-4.8.6-windows64-vs12-20140710.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -1102,9 +1109,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>b59b4ddab26d4441829f50b48925baf0</string>
+            <string>c0fd9371a94cd230c6076c80c7d83a1a</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/libndofdev-0.1-windows64-20131020.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/libndofdev-0.1-windows64-vs12-20140710.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -1149,9 +1156,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>a8ca0eef3d74936d504dab52ecc61ced</string>
+            <string>d074bd556211fd29c58326b2898b0a12</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/ogg_vorbis-1.2.2-1.3.2-windows64-20131020.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/ogg_vorbis-1.3.2-1.3.4-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -1192,9 +1199,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>b50166f0b0a275c8ea0d3b11c578d792</string>
+            <string>66eba34f543bdd90e0656a9c97c8afae</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/openssl-1.0.0g-windows64-20131019.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/openssl-1.0.1h-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -1232,9 +1239,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>e75f1529adcaa6e508d1725f59d93a16</string>
+            <string>62f9844903ae76d2ae90d17ca5814060</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/openal-1.12.854-1.1.0-windows-20110301.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/openal-1.15.1-1.1.0-windows64-vs12-20140813.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -1268,6 +1275,13 @@
             <string>272bd861a7ff9f77e6908064cf52e4cf</string>
             <key>url</key>
             <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/pcre-7.6-linux64-20130216.tar.bz2</uri>
+          </map>
+          <key>windows64</key>
+          <map>
+            <key>md5sum</key>
+            <string>ffdbc30ce4b9238070917073b6066b36</string>
+            <key>url</key>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/pcre-8.35-windows64-vs12-20140816.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -1402,9 +1416,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>94c26b93b855f5816bb29f308d9997fb</string>
+            <string>56175d424e533bbc111a32054fbd2926</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/xmlrpc_epi-0.54.1-windows64-20131019.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/xmlrpc_epi-0.54.1-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -1449,9 +1463,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>5aa50bd41d6cf0262a94760ef66bdbcf</string>
+            <string>3f1ca95ca4461aac57e7255c42db3ebc</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/zlib-1.2.8-windows64-20131019.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/zlib-1.2.8-windows64-vs12-20140709.tar.bz2</uri>
           </map>
         </map>
       </map>
