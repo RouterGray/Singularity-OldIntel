@@ -127,6 +127,45 @@ void LLStreamingAudio_FMODEX::start(const std::string& url)
 	}
 }
 
+enum utf_endian_type_t
+{
+	UTF16LE,
+	UTF16BE,
+	UTF16
+};
+
+std::string utf16input_to_utf8(char* input, U32 len, utf_endian_type_t type)
+{
+	if (type == UTF16)
+	{
+		type = UTF16BE;	//Default
+		if (len > 2)
+		{
+			//Parse and strip BOM.
+			if ((input[0] == 0xFE && input[1] == 0xFF) || 
+				(input[0] == 0xFF && input[1] == 0xFE))
+			{
+				input += 2;
+				len -= 2;
+				type = input[0] == 0xFE ? UTF16BE : UTF16LE;
+			}
+		}
+	}
+	llutf16string out_16((U16*)input, len / 2);
+	if (len % 2)
+	{
+		out_16.push_back((input)[len - 1] << 8);
+	}
+	if (type == UTF16BE)
+	{
+		for (llutf16string::iterator i = out_16.begin(); i < out_16.end(); ++i)
+		{
+			llutf16string::value_type v = *i;
+			*i = ((v & 0x00FF) << 8) | ((v & 0xFF00) >> 8);
+		}
+	}
+	return utf16str_to_utf8str(out_16);
+}
 
 void LLStreamingAudio_FMODEX::update()
 {
@@ -216,23 +255,27 @@ void LLStreamingAudio_FMODEX::update()
 					switch(tag.type)	//Crappy tag translate table.
 					{
 					case(FMOD_TAGTYPE_ID3V2):
-						if(name == "TIT2") name = "TITLE";
+						if (!LLStringUtil::compareInsensitive(name, "TIT2")) name = "TITLE";
 						else if(name == "TPE1") name = "ARTIST";
 						break;
 					case(FMOD_TAGTYPE_ASF):
-						if(name == "Title") name = "TITLE";
-						else if(name == "WM/AlbumArtist") name = "ARTIST";
+						if (!LLStringUtil::compareInsensitive(name, "Title")) name = "TITLE";
+						else if (!LLStringUtil::compareInsensitive(name, "WM/AlbumArtist")) name = "ARTIST";
 						break;
 					case(FMOD_TAGTYPE_FMOD):
-						if (!strcmp(tag.name, "Sample Rate Change"))
+						if (!LLStringUtil::compareInsensitive(name, "Sample Rate Change"))
 						{
 							llinfos << "Stream forced changing sample rate to " << *((float *)tag.data) << llendl;
 							mFMODInternetStreamChannelp->setFrequency(*((float *)tag.data));
 						}
 						continue;
 					default:
+						if (!LLStringUtil::compareInsensitive(name, "TITLE") ||
+							!LLStringUtil::compareInsensitive(name, "ARTIST"))
+							LLStringUtil::toUpper(name);
 						break;
 					}
+
 					switch(tag.datatype)
 					{
 						case(FMOD_TAGDATATYPE_INT):
@@ -247,24 +290,31 @@ void LLStreamingAudio_FMODEX::update()
 						{
 							std::string out = rawstr_to_utf8(std::string((char*)tag.data,tag.datalen));
 							(*mMetaData)[name]=out;
-							llinfos << tag.name << ": " << out << llendl;
+							llinfos << tag.name << "(RAW): " << out << llendl;
+						}
+							break;
+						case(FMOD_TAGDATATYPE_STRING_UTF8) :
+						{
+							U8 offs = 0;
+							if (tag.datalen > 3 && ((char*)tag.data)[0] == 0xEF && ((char*)tag.data)[1] == 0xBB && ((char*)tag.data)[2] == 0xBF)
+								offs = 3;
+							std::string out((char*)tag.data + offs, tag.datalen - offs);
+							(*mMetaData)[name] = out;
+							llinfos << tag.name << "(UTF8): " << out << llendl;
 						}
 							break;
 						case(FMOD_TAGDATATYPE_STRING_UTF16):
 						{
-							std::string out((char*)tag.data,tag.datalen);
-							(*mMetaData)[std::string(tag.name)]=out;
-							llinfos << tag.name << ": " << out << llendl;
+							std::string out = utf16input_to_utf8((char*)tag.data, tag.datalen, UTF16);
+							(*mMetaData)[name] = out;
+							llinfos << tag.name << "(UTF16): " << out << llendl;
 						}
 							break;
 						case(FMOD_TAGDATATYPE_STRING_UTF16BE):
 						{
-							std::string out((char*)tag.data,tag.datalen);
-							U16* buf = (U16*)out.c_str();
-							for(U32 j = 0; j < out.size()/2; ++j)
-								(((buf[j] & 0xff)<<8) | ((buf[j] & 0xff00)>>8));
-							(*mMetaData)[std::string(tag.name)]=out;
-							llinfos << tag.name << ": " << out << llendl;
+							std::string out = utf16input_to_utf8((char*)tag.data, tag.datalen, UTF16BE);
+							(*mMetaData)[name] = out;
+							llinfos << tag.name << "(UTF16BE): " << out << llendl;
 						}
 						default:
 							break;
