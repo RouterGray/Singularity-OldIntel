@@ -226,7 +226,7 @@ void LLPrefsAscentChat::refreshValues()
     mSecondsInLog                   = gSavedSettings.getBOOL("SecondsInLog");
 
     std::string format = gSavedSettings.getString("ShortTimeFormat");
-    if (format.find("%p") == -1)
+    if (format.find("%p") == std::string::npos)
     {
         mTimeFormat = 0;
     }
@@ -236,7 +236,7 @@ void LLPrefsAscentChat::refreshValues()
     }
 
     format = gSavedSettings.getString("ShortDateFormat");
-    if (format.find("%m/%d/%") != -1)
+    if (format.find("%m/%d/%") != std::string::npos)
     {
         mDateFormat = 2;
     }
@@ -265,6 +265,7 @@ void LLPrefsAscentChat::refreshValues()
 	mLegacyEndScroll                = gSavedSettings.getBOOL("LiruLegacyScrollToEnd");
 	mItalicizeActions               = gSavedSettings.getBOOL("LiruItalicizeActions");
 	mLegacyLogLaunch                = gSavedSettings.getBOOL("LiruLegacyLogLaunch");
+	mChatTabNames                   = gSavedSettings.getS32("IMNameSystem");
 	mFriendNames                    = gSavedSettings.getS32("FriendNameSystem");
 	mGroupMembersNames              = gSavedSettings.getS32("GroupMembersNameSystem");
 	mLandManagementNames            = gSavedSettings.getS32("LandManagementNameSystem");
@@ -348,6 +349,8 @@ void LLPrefsAscentChat::refresh()
     }
 
 	//Chat UI -----------------------------------------------------------------------------
+	if (combo = getChild<LLComboBox>("chat_tabs_namesystem_combobox"))
+		combo->setCurrentByIndex(mChatTabNames);
 	if (combo = getChild<LLComboBox>("friends_namesystem_combobox"))
 		combo->setCurrentByIndex(mFriendNames);
 	if (combo = getChild<LLComboBox>("group_members_namesystem_combobox"))
@@ -501,6 +504,7 @@ void LLPrefsAscentChat::cancel()
 	gSavedSettings.setBOOL("LiruLegacyScrollToEnd",                mLegacyEndScroll);
 	gSavedSettings.setBOOL("LiruItalicizeActions",                 mItalicizeActions);
 	gSavedSettings.setBOOL("LiruLegacyLogLaunch",                  mLegacyLogLaunch);
+	gSavedSettings.setS32("IMNameSystem",                          mChatTabNames);
 	gSavedSettings.setS32("FriendNameSystem",                      mFriendNames);
 	gSavedSettings.setS32("GroupMembersNameSystem",                mGroupMembersNames);
 	gSavedSettings.setS32("LandManagementNameSystem",              mLandManagementNames);

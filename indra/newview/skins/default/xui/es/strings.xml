@@ -21,9 +21,6 @@ Asegurate que has ingresado el URI de inicio de sesión correcto. Un ejemplo de 
 
 	<!-- Default Args - these arguments will be replaced in all strings -->
 	<string name="SECOND_LIFE">Second Life</string>
-	<string name="APP_NAME">Singularity Viewer</string>
-	<string name="CAPITALIZED_APP_NAME">SINGULARITY VIEWER</string>
-	<string name="SHORT_APP_NAME">Singularity</string>
 	<string name="SECOND_LIFE_GRID">Grid Second Life</string>
 	<string name="SUPPORT_SITE">Portal de Soporte de Second Life</string>
 	
@@ -3328,6 +3325,11 @@ Where tag = tag string to match.  Removes bot's matching the tag.
 	<string name="RegionInfoAllEstatesYouManage">todos los estados que administras para [OWNER]</string>
 	<string name="RegionInfoAllowedResidents">Residentes Permitidos: ([ALLOWEDAGENTS], máx [MAXACCESS])</string>
 	<string name="RegionInfoAllowedGroups">Grupos Permitidos: ([ALLOWEDGROUPS], máx [MAXACCESS])</string>
+	<string name="RegionInfoEstateManagers">Aministradores de Estado: ([ESTATEMANAGERS], máx [MAXMANAGERS])</string>
+	<string name="RegionInfoBannedResidents">Residentes Prohibidos: ([BANNEDAGENTS], máx [MAXBANNED])</string>
+	<string name="RegionInfoListTypeAllowedAgents">Residentes Permitidos</string>
+	<string name="RegionInfoListTypeBannedAgents">Residentes Prohibidos</string>
+
 
 	<!-- script limits floater -->
 	<string name="ScriptLimitsParcelScriptMemory">Memoria de Scripts en la Parcela</string>
@@ -4142,6 +4144,7 @@ Si continuas recibiendo este mensaje, contacta con [SUPPORT_SITE].
 	<string name="conference-title">Chat grupal</string>
 	<string name="inventory_item_offered-im">Ofrecido un Ítem de Inventario</string>
 	<string name="inventory_item_offered_rlv">Ítem de Inventario ofrecido a [NAME]</string>	
+	<string name="share_alert">Arrastra los ítems hacia aquí desde el inventario</string>
 
 	<string name="only_user_message">eres el único usuario en esta sesión.</string>
 	<string name="offline_message">[NAME] está desconectado.</string>
