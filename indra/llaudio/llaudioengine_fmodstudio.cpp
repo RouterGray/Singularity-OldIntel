@@ -509,8 +509,6 @@ void LLAudioEngine_FMODSTUDIO::allocateListener(void)
 
 void LLAudioEngine_FMODSTUDIO::shutdown()
 {
-	stopInternetStream();
-
 	LL_INFOS("AudioImpl") << "About to LLAudioEngine::shutdown()" << LL_ENDL;
 	LLAudioEngine::shutdown();
 	

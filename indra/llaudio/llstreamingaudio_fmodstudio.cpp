@@ -160,6 +160,13 @@ LLStreamingAudio_FMODSTUDIO::LLStreamingAudio_FMODSTUDIO(FMOD::System *system) :
 
 LLStreamingAudio_FMODSTUDIO::~LLStreamingAudio_FMODSTUDIO()
 {
+	stop();
+	for (U32 i = 0; i < 100; ++i)
+	{
+		if (releaseDeadStreams())
+			break;
+		ms_sleep(10);
+	}
 
 	if (mStreamGroup)
 	{
@@ -169,7 +176,6 @@ LLStreamingAudio_FMODSTUDIO::~LLStreamingAudio_FMODSTUDIO()
 	}
 	if (mStreamDSP)
 		mStreamDSP->release();
-	// nothing interesting/safe to do.
 }
 
 
@@ -248,24 +254,7 @@ std::string utf16input_to_utf8(char* input, U32 len, utf_endian_type_t type)
 
 void LLStreamingAudio_FMODSTUDIO::update()
 {
-	// Kill dead internet streams, if possible
-	std::list<LLAudioStreamManagerFMODSTUDIO *>::iterator iter;
-	for (iter = mDeadStreams.begin(); iter != mDeadStreams.end();)
-	{
-		LLAudioStreamManagerFMODSTUDIO *streamp = *iter;
-		if (streamp->stopStream())
-		{
-			llinfos << "Closed dead stream" << llendl;
-			delete streamp;
-			mDeadStreams.erase(iter++);
-		}
-		else
-		{
-			iter++;
-		}
-	}
-
-	if(!mDeadStreams.empty())
+	if (!releaseDeadStreams())
 	{
 		llassert_always(mCurrentInternetStreamp == NULL);
 		return;
@@ -652,4 +641,26 @@ void LLStreamingAudio_FMODSTUDIO::setBufferSizes(U32 streambuffertime, U32 decod
 	settings.cbSize=sizeof(settings);
 	settings.defaultDecodeBufferSize = decodebuffertime;//ms
 	mSystem->setAdvancedSettings(&settings);
+}
+
+bool LLStreamingAudio_FMODSTUDIO::releaseDeadStreams()
+{
+	// Kill dead internet streams, if possible
+	std::list<LLAudioStreamManagerFMODSTUDIO *>::iterator iter;
+	for (iter = mDeadStreams.begin(); iter != mDeadStreams.end();)
+	{
+		LLAudioStreamManagerFMODSTUDIO *streamp = *iter;
+		if (streamp->stopStream())
+		{
+			llinfos << "Closed dead stream" << llendl;
+			delete streamp;
+			mDeadStreams.erase(iter++);
+		}
+		else
+		{
+			iter++;
+		}
+	}
+
+	return mDeadStreams.empty();
 }

@@ -74,6 +74,8 @@ class LLStreamingAudio_FMODSTUDIO : public LLStreamingAudioInterface
 	/*virtual*/ void setBufferSizes(U32 streambuffertime, U32 decodebuffertime);
 
 private:
+	bool releaseDeadStreams();
+
 	FMOD::System *mSystem;
 
 	LLAudioStreamManagerFMODSTUDIO *mCurrentInternetStreamp;
