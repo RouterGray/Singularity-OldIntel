@@ -321,10 +321,6 @@ bool LLAudioEngine_FMODEX::init(const S32 num_channels, void* userdata)
 	if(mEnableProfiler)
 	{
 		fmod_flags |= FMOD_INIT_ENABLE_PROFILE;
-		mSystem->createChannelGroup("None", &mChannelGroups[AUDIO_TYPE_NONE]);
-		mSystem->createChannelGroup("SFX", &mChannelGroups[AUDIO_TYPE_SFX]);
-		mSystem->createChannelGroup("UI", &mChannelGroups[AUDIO_TYPE_UI]);
-		mSystem->createChannelGroup("Ambient", &mChannelGroups[AUDIO_TYPE_AMBIENT]);
 	}
 
 #if LL_LINUX
@@ -436,6 +432,14 @@ bool LLAudioEngine_FMODEX::init(const S32 num_channels, void* userdata)
 	if(Check_FMOD_Error(result, "Error initializing FMOD Ex"))
 		return false;
 #endif
+
+	if (mEnableProfiler)
+	{
+		mSystem->createChannelGroup("None", &mChannelGroups[AUDIO_TYPE_NONE]);
+		mSystem->createChannelGroup("SFX", &mChannelGroups[AUDIO_TYPE_SFX]);
+		mSystem->createChannelGroup("UI", &mChannelGroups[AUDIO_TYPE_UI]);
+		mSystem->createChannelGroup("Ambient", &mChannelGroups[AUDIO_TYPE_AMBIENT]);
+	}
 
 	// set up our favourite FMOD-native streaming audio implementation if none has already been added
 	if (!getStreamingAudioImpl()) // no existing implementation added

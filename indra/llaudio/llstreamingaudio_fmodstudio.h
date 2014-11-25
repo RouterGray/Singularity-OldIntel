@@ -45,6 +45,9 @@ namespace FMOD
 {
 	class System;
 	class Channel;
+	class ChannelGroup;
+	class ChannelGroup;
+	class DSP;
 }
 
 //Interfaces
@@ -65,10 +68,11 @@ class LLStreamingAudio_FMODSTUDIO : public LLStreamingAudioInterface
 
 	/*virtual*/ bool supportsMetaData(){return true;}
 	/*virtual*/ const LLSD *getMetaData(){return mMetaData;}	//return NULL if not playing.
-	/*virtual*/ bool supportsWaveData(){return false;}
+	/*virtual*/ bool supportsWaveData(){return true;}
 	/*virtual*/ bool getWaveData(float* arr, S32 count, S32 stride = 1);
 	/*virtual*/ bool supportsAdjustableBufferSizes(){return true;}
 	/*virtual*/ void setBufferSizes(U32 streambuffertime, U32 decodebuffertime);
+
 private:
 	FMOD::System *mSystem;
 
@@ -81,6 +85,9 @@ private:
 	F32 mGain;
 
 	LLSD *mMetaData;
+
+	FMOD::ChannelGroup* mStreamGroup;
+	FMOD::DSP* mStreamDSP;
 };
 
 

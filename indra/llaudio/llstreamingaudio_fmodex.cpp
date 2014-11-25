@@ -289,6 +289,8 @@ void LLStreamingAudio_FMODEX::update()
 						case(FMOD_TAGDATATYPE_STRING):
 						{
 							std::string out = rawstr_to_utf8(std::string((char*)tag.data,tag.datalen));
+							if (out.length() && out.back() == 0)
+								out.pop_back();
 							(*mMetaData)[name]=out;
 							llinfos << tag.name << "(RAW): " << out << llendl;
 						}
@@ -299,6 +301,8 @@ void LLStreamingAudio_FMODEX::update()
 							if (tag.datalen > 3 && ((char*)tag.data)[0] == 0xEF && ((char*)tag.data)[1] == 0xBB && ((char*)tag.data)[2] == 0xBF)
 								offs = 3;
 							std::string out((char*)tag.data + offs, tag.datalen - offs);
+							if (out.length() && out.back() == 0)
+								out.pop_back();
 							(*mMetaData)[name] = out;
 							llinfos << tag.name << "(UTF8): " << out << llendl;
 						}
@@ -306,6 +310,8 @@ void LLStreamingAudio_FMODEX::update()
 						case(FMOD_TAGDATATYPE_STRING_UTF16):
 						{
 							std::string out = utf16input_to_utf8((char*)tag.data, tag.datalen, UTF16);
+							if (out.length() && out.back() == 0)
+								out.pop_back();
 							(*mMetaData)[name] = out;
 							llinfos << tag.name << "(UTF16): " << out << llendl;
 						}
@@ -313,6 +319,8 @@ void LLStreamingAudio_FMODEX::update()
 						case(FMOD_TAGDATATYPE_STRING_UTF16BE):
 						{
 							std::string out = utf16input_to_utf8((char*)tag.data, tag.datalen, UTF16BE);
+							if (out.length() && out.back() == 0)
+								out.pop_back();
 							(*mMetaData)[name] = out;
 							llinfos << tag.name << "(UTF16BE): " << out << llendl;
 						}

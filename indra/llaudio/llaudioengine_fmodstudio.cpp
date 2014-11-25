@@ -49,6 +49,8 @@
 
 #include "sound_ids.h"
 
+#include <bitset>
+
 #if LL_WINDOWS	//Some ugly code to make missing fmod.dll not cause a fatal error.
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
@@ -77,7 +79,7 @@ bool attemptDelayLoad()
 
 static bool sVerboseDebugging = false;
 
-FMOD_RESULT F_CALLBACK windCallback(FMOD_DSP_STATE *dsp_state, float *inbuffer, float *outbuffer, unsigned int length, int inchannels, int outchannels);
+FMOD_RESULT F_CALLBACK windCallback(FMOD_DSP_STATE *dsp_state, float *originalbuffer, float *newbuffer, unsigned int length, int inchannels, int *outchannels);
 
 FMOD::ChannelGroup *LLAudioEngine_FMODSTUDIO::mChannelGroups[LLAudioEngine::AUDIO_TYPE_COUNT] = {0};
 
@@ -314,14 +316,10 @@ bool LLAudioEngine_FMODSTUDIO::init(const S32 num_channels, void* userdata)
 	result = mSystem->setSoftwareChannels(num_channels + 2);
 	Check_FMOD_Error(result,"FMOD::System::setSoftwareChannels");
 
-	U32 fmod_flags = FMOD_INIT_NORMAL | FMOD_INIT_3D_RIGHTHANDED;
+	U32 fmod_flags = FMOD_INIT_NORMAL | FMOD_INIT_3D_RIGHTHANDED | FMOD_INIT_THREAD_UNSAFE;
 	if(mEnableProfiler)
 	{
 		fmod_flags |= FMOD_INIT_PROFILE_ENABLE;
-		mSystem->createChannelGroup("None", &mChannelGroups[AUDIO_TYPE_NONE]);
-		mSystem->createChannelGroup("SFX", &mChannelGroups[AUDIO_TYPE_SFX]);
-		mSystem->createChannelGroup("UI", &mChannelGroups[AUDIO_TYPE_UI]);
-		mSystem->createChannelGroup("Ambient", &mChannelGroups[AUDIO_TYPE_AMBIENT]);
 	}
 
 #if LL_LINUX
@@ -423,7 +421,7 @@ bool LLAudioEngine_FMODSTUDIO::init(const S32 num_channels, void* userdata)
 		Ok, the speaker mode selected isn't supported by this soundcard. Switch it
 		back to stereo...
 		*/
-		result = mSystem->setSoftwareFormat(44100, FMOD_SPEAKERMODE_STEREO, 2);
+		result = mSystem->setSoftwareFormat(44100, FMOD_SPEAKERMODE_STEREO, 0);
 		Check_FMOD_Error(result,"Error falling back to stereo mode");
 		/*
 		... and re-init.
@@ -433,6 +431,14 @@ bool LLAudioEngine_FMODSTUDIO::init(const S32 num_channels, void* userdata)
 	if(Check_FMOD_Error(result, "Error initializing FMOD Studio"))
 		return false;
 #endif
+
+	if (mEnableProfiler)
+	{
+		mSystem->createChannelGroup("None", &mChannelGroups[AUDIO_TYPE_NONE]);
+		mSystem->createChannelGroup("SFX", &mChannelGroups[AUDIO_TYPE_SFX]);
+		mSystem->createChannelGroup("UI", &mChannelGroups[AUDIO_TYPE_UI]);
+		mSystem->createChannelGroup("Ambient", &mChannelGroups[AUDIO_TYPE_AMBIENT]);
+	}
 
 	// set up our favourite FMOD-native streaming audio implementation if none has already been added
 	if (!getStreamingAudioImpl()) // no existing implementation added
@@ -536,46 +542,50 @@ LLAudioChannel * LLAudioEngine_FMODSTUDIO::createChannel()
 
 bool LLAudioEngine_FMODSTUDIO::initWind()
 {
-	//mNextWindUpdate = 0.0;
+	mNextWindUpdate = 0.0;
 
-	//if (!mWindDSP)
-	//{
-	//	FMOD_DSP_DESCRIPTION dspdesc;
-	//	memset(&dspdesc, 0, sizeof(FMOD_DSP_DESCRIPTION));	//Set everything to zero
-	//	strncpy(dspdesc.name,"Wind Unit", sizeof(dspdesc.name));	//Set name to "Wind Unit"
-	//	dspdesc.read = &windCallback; //Assign callback.
-	//	if(Check_FMOD_Error(mSystem->createDSP(&dspdesc, &mWindDSP), "FMOD::createDSP"))
-	//		return false;
+	if (!mWindDSP)
+	{
+		FMOD_DSP_DESCRIPTION dspdesc;
+		memset(&dspdesc, 0, sizeof(FMOD_DSP_DESCRIPTION));	//Set everything to zero
+		dspdesc.pluginsdkversion = FMOD_PLUGIN_SDK_VERSION;
+		strncpy(dspdesc.name,"Wind Unit", sizeof(dspdesc.name));	//Set name to "Wind Unit"
+		dspdesc.numoutputbuffers = 1;
+		dspdesc.read = &windCallback; //Assign callback.
+		if(Check_FMOD_Error(mSystem->createDSP(&dspdesc, &mWindDSP), "FMOD::createDSP"))
+			return false;
 
-	//	if(mWindGen)
-	//		delete mWindGen;
-	//
-	//	int frequency = 44100;
-	//	mSystem->getSoftwareFormat(&frequency, NULL, NULL);
-	//	mWindGen = new LLWindGen<MIXBUFFERFORMAT>((U32)frequency);
-	//	mWindDSP->setUserData((void*)mWindGen);
-	//}
+		if(mWindGen)
+			delete mWindGen;
+	
+		int frequency = 44100;
+		mSystem->getSoftwareFormat(&frequency, NULL, NULL);
+		mWindGen = new LLWindGen<MIXBUFFERFORMAT>((U32)frequency);
+		mWindDSP->setUserData((void*)mWindGen);
+	}
 
-	//if (mWindDSP)
-	//{
-	//	mSystem->playDSP(mWindDSP, NULL, false, 0);
-	//	return true;
-	//}
+	if (mWindDSP)
+	{
+		mSystem->playDSP(mWindDSP, NULL, false, 0);
+		FMOD_SPEAKERMODE mode;	
+		mSystem->getSoftwareFormat(NULL, &mode, NULL);
+		mWindDSP->setChannelFormat(FMOD_CHANNELMASK_STEREO, 2, mode);
+		return true;
+	}
 	return false;
 }
 
 
 void LLAudioEngine_FMODSTUDIO::cleanupWind()
 {
-	//if (mWindDSP)
-	//{
-	//	mWindDSP->remove();
-	//	mWindDSP->release();
-	//	mWindDSP = NULL;
-	//}
+	if (mWindDSP)
+	{
+		mWindDSP->release();
+		mWindDSP = NULL;
+	}
 
-	//delete mWindGen;
-	//mWindGen = NULL;
+	delete mWindGen;
+	mWindGen = NULL;
 }
 
 
