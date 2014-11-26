@@ -75,6 +75,7 @@ class LLStreamingAudio_FMODSTUDIO : public LLStreamingAudioInterface
 
 private:
 	bool releaseDeadStreams();
+	void cleanupWaveData();
 
 	FMOD::System *mSystem;
 
