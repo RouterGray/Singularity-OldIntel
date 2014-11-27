@@ -211,7 +211,7 @@ namespace llmath
 	inline S32 llround(const F32 val)
 	{
 #if __cplusplus >= 201103L || _MSC_VER >= 1800
-		return std::round(val);
+		return S32(std::round(val));
 #else
 		return llfloor(val + 0.5f);
 #endif
