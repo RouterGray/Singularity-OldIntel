@@ -16,8 +16,10 @@ cmake_minimum_required(VERSION 2.6.2 FATAL_ERROR)
 # basis to convince CMake to add the proper link directory.  This line
 # can be removed when we use full paths for all libraries.
 cmake_policy(SET CMP0003 OLD)
+if(NOT (CMAKE_MAJOR_VERSION LESS 3))
 cmake_policy(SET CMP0048 OLD)
 cmake_policy(SET CMP0026 OLD)
+endif(NOT (CMAKE_MAJOR_VERSION LESS 3))
 
 set(ROOT_PROJECT_NAME "Singularity" CACHE STRING
     "The root project/makefile/solution name. Defaults to Singularity.")
