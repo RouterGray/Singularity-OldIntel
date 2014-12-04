@@ -111,11 +111,15 @@ class PlatformSetup(object):
 
     def build_dirs(self):
         '''Return the top-level directories in which builds occur.
-
+        if(os.getcwd().rsplit('/', 1)[1] == 'indra'):
+            prefix = '../'
+        else:
+            prefix = ''
+        
         This can return more than one directory, e.g. if doing a
         32-bit viewer and server build on Linux.'''
 
-        return ['../build-' + self.platform()]
+        return [prefix+'build-' + self.platform()]
 
     def cmake_commandline(self, src_dir, build_dir, opts, simple):
         '''Return the command line to run cmake with.'''
@@ -275,9 +279,14 @@ class LinuxSetup(UnixSetup):
         return 'linux'
 
     def build_dirs(self):
+        if(os.getcwd().rsplit('/', 1)[1] == 'indra'):
+            prefix = '../'
+        else:
+            prefix = ''
+        
         platform_build = '%s-%s' % (self.platform(), self.build_type.lower())
 
-        return ['../viewer-' + platform_build]
+        return [prefix+'viewer-' + platform_build]
 
     def cmake_commandline(self, src_dir, build_dir, opts, simple):
         args = dict(
@@ -501,10 +510,15 @@ class WindowsSetup(PlatformSetup):
         return 'win32'
 
     def build_dirs(self):
-        if self.word_size == 64:
-            return ['../build-' + self.generator + '-Win64']
+        if(os.getcwd().rsplit('\\', 1)[1] == 'indra'):
+            prefix = '../'
         else:
-            return ['../build-' + self.generator]
+            prefix = ''
+        
+        if self.word_size == 64:
+            return [prefix+'build-' + self.generator + '-Win64']
+        else:
+            return [prefix+'build-' + self.generator]
 
     def cmake_commandline(self, src_dir, build_dir, opts, simple):
         args = dict(
