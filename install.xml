@@ -650,9 +650,9 @@
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>61f46d94a137f8a50bc6328ed8a69762</string>
+            <string>69e360938a6a13d9b10edfe09dc1bd9d</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/google_breakpad-1351-windows64-vs12-20140723.tar.bz2</uri>
+            <uri>https://bitbucket.org/alchemyviewer/publiclibs-vs12/downloads/google_breakpad-1400-windows64-20141105.tar.bz2</uri>
           </map>
         </map>
       </map>
@@ -1362,16 +1362,16 @@
           <key>windows</key>
           <map>
             <key>md5sum</key>
-            <string>d0befc33613c980a5a3580b8e2b02d11</string>
+            <string>4a6b9cf0f1e2767240de21af3338ffd7</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/slvoice-4.6.0009.20030-windows-20140312.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/slvoice-4.6.0009.20030-windows-20140312-rpk.tar.bz2</uri>
           </map>
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>d0befc33613c980a5a3580b8e2b02d11</string>
+            <string>4a6b9cf0f1e2767240de21af3338ffd7</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/slvoice-4.6.0009.20030-windows-20140312.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/slvoice-4.6.0009.20030-windows-20140312-rpk.tar.bz2</uri>
           </map>
         </map>
       </map>

@@ -57,8 +57,8 @@ if (NOT FMODEX_LIBRARY)
 endif (NOT FMODEX_LIBRARY)
 
 find_path(FMODEX_INCLUDE_DIR fmod.hpp
-          "${LIBS_PREBUILT_DIR}/include/fmodex"
-          "${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/fmodex"
+          ${LIBS_PREBUILT_DIR}/include/fmodex
+          ${LIBS_PREBUILT_LEGACY_DIR}/include/fmodex
           "${FMODEX_SDK_DIR}/api/inc"
           "${FMODEX_SDK_DIR}/inc"
           "${FMODEX_SDK_DIR}"

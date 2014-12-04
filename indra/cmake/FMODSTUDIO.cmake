@@ -55,8 +55,8 @@ if (NOT FMODSTUDIO_LIBRARY)
 endif (NOT FMODSTUDIO_LIBRARY)
 
 find_path(FMODSTUDIO_INCLUDE_DIR fmod.hpp
-          "${LIBS_PREBUILT_DIR}/include/fmodstudio"
-          "${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/fmodstudio"
+          ${LIBS_PREBUILT_DIR}/include/fmodstudio
+          ${LIBS_PREBUILT_LEGACY_DIR}/include/fmodstudio
           "${FMODSTUDIO_SDK_DIR}/api/lowlevel/inc"
           "${FMODSTUDIO_SDK_DIR}"
           )

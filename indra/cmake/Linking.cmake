@@ -5,9 +5,18 @@ set(${CMAKE_CURRENT_LIST_FILE}_INCLUDED "YES")
 include(Variables)
 
 if (NOT STANDALONE)
-  set(ARCH_PREBUILT_DIRS ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/lib)
-  set(ARCH_PREBUILT_DIRS_RELEASE ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/lib/release)
-  set(ARCH_PREBUILT_DIRS_DEBUG ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/lib/debug)
+  set(ARCH_PREBUILT_DIRS
+    ${LIBS_PREBUILT_DIR}/lib
+    ${LIBS_PREBUILT_LEGACY_DIR}/lib
+    )
+  set(ARCH_PREBUILT_DIRS_RELEASE
+    ${LIBS_PREBUILT_DIR}/lib/release
+    ${LIBS_PREBUILT_LEGACY_DIR}/lib/release
+    )
+  set(ARCH_PREBUILT_DIRS_DEBUG
+    ${LIBS_PREBUILT_DIR}/lib/debug
+    ${LIBS_PREBUILT_LEGACY_DIR}/lib/debug
+    )
 
   if(WINDOWS OR ${CMAKE_GENERATOR} MATCHES "Xcode")
     # the cmake xcode and VS generators implicitly append ${CMAKE_CFG_INTDIR} to the library paths for us
@@ -37,7 +46,7 @@ else (LINUX)
   set(PTHREAD_LIBRARY "")
 endif (LINUX)
 
-if (WINDOWS)
+if (WINDOWS)	
   set(WINDOWS_LIBRARIES
       advapi32
       shell32

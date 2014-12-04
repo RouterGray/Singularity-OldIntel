@@ -115,7 +115,7 @@ class PlatformSetup(object):
         This can return more than one directory, e.g. if doing a
         32-bit viewer and server build on Linux.'''
 
-        return ['build-' + self.platform()]
+        return ['../build-' + self.platform()]
 
     def cmake_commandline(self, src_dir, build_dir, opts, simple):
         '''Return the command line to run cmake with.'''
@@ -277,7 +277,7 @@ class LinuxSetup(UnixSetup):
     def build_dirs(self):
         platform_build = '%s-%s' % (self.platform(), self.build_type.lower())
 
-        return ['viewer-' + platform_build]
+        return ['../viewer-' + platform_build]
 
     def cmake_commandline(self, src_dir, build_dir, opts, simple):
         args = dict(
@@ -502,9 +502,9 @@ class WindowsSetup(PlatformSetup):
 
     def build_dirs(self):
         if self.word_size == 64:
-            return ['build-' + self.generator + '-Win64']
+            return ['../build-' + self.generator + '-Win64']
         else:
-            return ['build-' + self.generator]
+            return ['../build-' + self.generator]
 
     def cmake_commandline(self, src_dir, build_dir, opts, simple):
         args = dict(

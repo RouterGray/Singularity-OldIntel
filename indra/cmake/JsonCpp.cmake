@@ -24,5 +24,8 @@ else (STANDALONE)
   elseif (LINUX)
     set(JSONCPP_LIBRARIES jsoncpp)
   endif (WINDOWS)
-  set(JSONCPP_INCLUDE_DIR ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include/jsoncpp)
+  set(JSONCPP_INCLUDE_DIR
+    ${LIBS_PREBUILT_DIR}/include/jsoncpp
+    ${LIBS_PREBUILT_LEGACY_DIR}/include/jsoncpp
+    )
 endif (STANDALONE)

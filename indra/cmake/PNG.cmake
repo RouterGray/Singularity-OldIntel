@@ -34,8 +34,14 @@ else (STANDALONE)
       #
       set(PNG_PRELOAD_ARCHIVES -Wl,--whole-archive png16 -Wl,--no-whole-archive)
       set(PNG_LIBRARIES png16)
-      set(PNG_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/include/libpng16)
+      set(PNG_INCLUDE_DIRS
+        ${LIBS_PREBUILT_DIR}/include/libpng16
+        ${LIBS_PREBUILT_LEGACY_DIR}/include/libpng16
+        )
     endif ()
   endif()
-  set(PNG_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include/)
+  set(PNG_INCLUDE_DIRS
+    ${LIBS_PREBUILT_DIR}/include
+    ${LIBS_PREBUILT_LEGACY_DIR}/include
+    )
 endif (STANDALONE)

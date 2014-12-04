@@ -187,11 +187,8 @@ class WindowsManifest(ViewerManifest):
         # the final exe is complicated because we're not sure where it's coming from,
         # nor do we have a fixed name for the executable
         self.path(src='%s/secondlife-bin.exe' % self.args['configuration'], dst=self.final_exe())
-        
-        if self.is_win64():
-            release_lib_dir = "../../libraries/x86_64-win/lib/release"
-        else:
-            release_lib_dir = "../../libraries/i686-win32/lib/release"
+       
+        release_lib_dir = "Release"
 
         # Plugin host application
         self.path(os.path.join(os.pardir,
@@ -256,7 +253,7 @@ class WindowsManifest(ViewerManifest):
             self.end_prefix()
 
         # For WebKit/Qt plugin runtimes
-        if self.prefix(src=release_lib_dir, dst="llplugin"):
+        if self.prefix(src=release_lib_dir+"/llplugin", dst="llplugin"):
             self.path("libeay32.dll")
             self.path("qtcore4.dll")
             self.path("qtgui4.dll")
@@ -268,7 +265,7 @@ class WindowsManifest(ViewerManifest):
             self.end_prefix()
 
         # For WebKit/Qt plugin runtimes (image format plugins)
-        if self.prefix(src=release_lib_dir+"/imageformats", dst="llplugin/imageformats"):
+        if self.prefix(src=release_lib_dir+"/llplugin/imageformats", dst="llplugin/imageformats"):
             self.path("qgif4.dll")
             self.path("qico4.dll")
             self.path("qjpeg4.dll")
@@ -277,7 +274,7 @@ class WindowsManifest(ViewerManifest):
             self.path("qtiff4.dll")
             self.end_prefix()
 
-        if self.prefix(src=release_lib_dir+"/codecs", dst="llplugin/codecs"):
+        if self.prefix(src=release_lib_dir+"/llplugin/codecs", dst="llplugin/codecs"):
             self.path("qcncodecs4.dll")
             self.path("qjpcodecs4.dll")
             self.path("qkrcodecs4.dll")
@@ -311,7 +308,7 @@ class WindowsManifest(ViewerManifest):
             self.path("msvc*.dll")
         except:
             try:
-                if self.prefix(release_lib_dir+"/msvcrt", dst=""):
+                if self.prefix(src=release_lib_dir+"/msvcrt", dst=""):
                     self.path("*.dll")
                     self.path("*.manifest")
                     self.end_prefix()
@@ -319,7 +316,7 @@ class WindowsManifest(ViewerManifest):
                 pass
 
         # Vivox runtimes
-        if self.prefix(src="vivox-runtime/i686-win32", dst=""):
+        if self.prefix(src=release_lib_dir, dst=""):
             self.path("SLVoice.exe")
             self.path("ca-bundle.crt")
             self.path("libsndfile-1.dll")
@@ -334,9 +331,8 @@ class WindowsManifest(ViewerManifest):
             print self.args['extra_libraries']
             path_list = self.args['extra_libraries'].split('|')
             for path in path_list:
-                path_pair = path.rsplit('/', 1)
-                if self.prefix(src=path_pair[0], dst=""):
-                    self.path(path_pair[1])
+                if self.prefix(src=release_lib_dir, dst=""):
+                    self.path(path)
                     self.end_prefix()
 
         self.package_file = 'none'

@@ -17,5 +17,8 @@ else (STANDALONE)
     else (WINDOWS)
         set(EXPAT_LIBRARIES expat)
     endif (WINDOWS)
-    set(EXPAT_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include)
+    set(EXPAT_INCLUDE_DIRS
+      ${LIBS_PREBUILT_DIR}/include
+      ${LIBS_PREBUILT_LEGACY_DIR}/include
+      )
 endif (STANDALONE)

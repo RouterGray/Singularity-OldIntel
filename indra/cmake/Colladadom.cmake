@@ -20,9 +20,11 @@ else (STANDALONE)
   endif (NOT DARWIN AND NOT WINDOWS)
 
   set(COLLADADOM_INCLUDE_DIRS
-	  ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include/collada
-	  ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include/collada/1.4
-	  )
+    ${LIBS_PREBUILT_DIR}/include/collada
+    ${LIBS_PREBUILT_DIR}/include/collada/1.4
+    ${LIBS_PREBUILT_LEGACY_DIR}/include/collada
+    ${LIBS_PREBUILT_LEGACY_DIR}/include/collada/1.4
+    )
 
   if (WINDOWS)
 	  if(MSVC12)

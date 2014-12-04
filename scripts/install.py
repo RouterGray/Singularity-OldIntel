@@ -101,8 +101,10 @@ class InstallFile(object):
 
     def _is_md5sum_match(self):
         hasher = md5(file(self.filename, 'rb').read())
-        if hasher.hexdigest() == self.md5sum:
+        md5_sum = hasher.hexdigest()
+        if md5_sum == self.md5sum:
             return  True
+        print "Got:", md5_sum, " Expected ", self.md5sum
         return False
 
     def is_match(self, platform):

@@ -21,7 +21,10 @@ if (OPENAL)
     openal
     alut
     )
-    set(OPENAL_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/${LL_ARCH_DIR}/include)
+    set(OPENAL_INCLUDE_DIRS
+      ${LIBS_PREBUILT_DIR}/include
+      ${LIBS_PREBUILT_LEGACY_DIR}/include
+      )
 endif (OPENAL)
 
 if (OPENAL)
