@@ -296,7 +296,7 @@ inline void vector_shrink_to_fit(std::vector<T>& invec)
 #if defined(LL_WINDOWS) || __cplusplus >= 201103L || (defined(__GXX_EXPERIMENTAL_CXX0X) && __GNUC_MINOR__ >= 5)
 	invec.shrink_to_fit();
 #else
-	invec(invec.begin(), invec.end()).swap(invec);
+	std::vector<T>(invec).swap(invec);
 #endif
 }
 
