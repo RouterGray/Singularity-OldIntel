@@ -69,8 +69,8 @@ typedef LLMemberListener<LLPanelObjectInventory> object_inventory_listener_t;
 typedef LLMemberListener<LLInventoryView> inventory_listener_t;
 typedef LLMemberListener<LLInventoryPanel> inventory_panel_listener_t;
 
-{
 bool LLInventoryAction::doToSelected(LLFolderView* folder, std::string action)
+{
 	LLInventoryModel* model = &gInventory;
 	if ("rename" == action)
 	{
