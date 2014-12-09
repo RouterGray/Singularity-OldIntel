@@ -372,7 +372,7 @@ bool LLAudioEngine_FMODSTUDIO::init(const S32 num_channels, void* userdata)
 		if (NULL == getenv("LL_BAD_FMOD_OSS")) 	 /*Flawfinder: ignore*/
 		{
 			LL_DEBUGS("AppInit") << "Trying OSS audio output..." << LL_ENDL;
-			if((result = mSystem->setOutput(FMOD_OUTPUTTYPE_OSS) == FMOD_OK) &&
+			if((result = mSystem->setOutput(FMOD_OUTPUTTYPE_OSS)) == FMOD_OK &&
 			    (result = mSystem->init(num_channels + 2, fmod_flags, 0)) == FMOD_OK)
 			{
 				LL_DEBUGS("AppInit") << "OSS audio output initialized OKAY" << LL_ENDL;

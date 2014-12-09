@@ -142,7 +142,7 @@ LLStreamingAudio_FMODSTUDIO::LLStreamingAudio_FMODSTUDIO(FMOD::System *system) :
 	// Leave the net buffer properties at the default.
 	//FSOUND_Stream_Net_SetBufferProperties(20000, 40, 80);
 
-	Check_FMOD_Error(system->createChannelGroup("stream", &mStreamGroup), "FMOD::System::createChannelGroup");
+	Check_FMOD_Error(mSystem->createChannelGroup("stream", &mStreamGroup), "FMOD::System::createChannelGroup");
 
 	FMOD_DSP_DESCRIPTION dspdesc;
 	memset(&dspdesc, 0, sizeof(FMOD_DSP_DESCRIPTION));	//Zero out everything
@@ -353,8 +353,8 @@ void LLStreamingAudio_FMODSTUDIO::update()
 						case(FMOD_TAGDATATYPE_STRING):
 						{
 							std::string out = rawstr_to_utf8(std::string((char*)tag.data,tag.datalen));
-							if (out.length() && out.back() == 0)
-								out.pop_back();
+							if (out.length() && out[out.size() - 1] == 0)
+								out.erase(out.size() - 1);
 							(*mMetaData)[name]=out;
 							llinfos << tag.name << "(RAW): " << out << llendl;
 						}
@@ -365,8 +365,8 @@ void LLStreamingAudio_FMODSTUDIO::update()
 							if (tag.datalen > 3 && ((char*)tag.data)[0] == 0xEF && ((char*)tag.data)[1] == 0xBB && ((char*)tag.data)[2] == 0xBF)
 								offs = 3;
 							std::string out((char*)tag.data + offs, tag.datalen - offs);
-							if (out.length() && out.back() == 0)
-								out.pop_back();
+							if (out.length() && out[out.size() - 1] == 0)
+								out.erase(out.size() - 1);
 							(*mMetaData)[name] = out;
 							llinfos << tag.name << "(UTF8): " << out << llendl;
 						}
@@ -374,8 +374,8 @@ void LLStreamingAudio_FMODSTUDIO::update()
 						case(FMOD_TAGDATATYPE_STRING_UTF16):
 						{
 							std::string out = utf16input_to_utf8((char*)tag.data, tag.datalen, UTF16);
-							if (out.length() && out.back() == 0)
-								out.pop_back();
+							if (out.length() && out[out.size() - 1] == 0)
+								out.erase(out.size() - 1);
 							(*mMetaData)[name] = out;
 							llinfos << tag.name << "(UTF16): " << out << llendl;
 						}
@@ -383,8 +383,8 @@ void LLStreamingAudio_FMODSTUDIO::update()
 						case(FMOD_TAGDATATYPE_STRING_UTF16BE):
 						{
 							std::string out = utf16input_to_utf8((char*)tag.data, tag.datalen, UTF16BE);
-							if (out.length() && out.back() == 0)
-								out.pop_back();
+							if (out.length() && out[out.size() - 1] == 0)
+								out.erase(out.size() - 1);
 							(*mMetaData)[name] = out;
 							llinfos << tag.name << "(UTF16BE): " << out << llendl;
 						}

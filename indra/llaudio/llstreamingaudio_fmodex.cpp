@@ -289,8 +289,8 @@ void LLStreamingAudio_FMODEX::update()
 						case(FMOD_TAGDATATYPE_STRING):
 						{
 							std::string out = rawstr_to_utf8(std::string((char*)tag.data,tag.datalen));
-							if (out.length() && out.back() == 0)
-								out.pop_back();
+							if (out.length() && out[out.size() - 1] == 0)
+								out.erase(out.size() - 1);
 							(*mMetaData)[name]=out;
 							llinfos << tag.name << "(RAW): " << out << llendl;
 						}
@@ -301,8 +301,8 @@ void LLStreamingAudio_FMODEX::update()
 							if (tag.datalen > 3 && ((char*)tag.data)[0] == 0xEF && ((char*)tag.data)[1] == 0xBB && ((char*)tag.data)[2] == 0xBF)
 								offs = 3;
 							std::string out((char*)tag.data + offs, tag.datalen - offs);
-							if (out.length() && out.back() == 0)
-								out.pop_back();
+							if (out.length() && out[out.size() - 1] == 0)
+								out.erase(out.size() - 1);
 							(*mMetaData)[name] = out;
 							llinfos << tag.name << "(UTF8): " << out << llendl;
 						}
@@ -310,8 +310,8 @@ void LLStreamingAudio_FMODEX::update()
 						case(FMOD_TAGDATATYPE_STRING_UTF16):
 						{
 							std::string out = utf16input_to_utf8((char*)tag.data, tag.datalen, UTF16);
-							if (out.length() && out.back() == 0)
-								out.pop_back();
+							if (out.length() && out[out.size() - 1] == 0)
+								out.erase(out.size() - 1);
 							(*mMetaData)[name] = out;
 							llinfos << tag.name << "(UTF16): " << out << llendl;
 						}
@@ -319,8 +319,8 @@ void LLStreamingAudio_FMODEX::update()
 						case(FMOD_TAGDATATYPE_STRING_UTF16BE):
 						{
 							std::string out = utf16input_to_utf8((char*)tag.data, tag.datalen, UTF16BE);
-							if (out.length() && out.back() == 0)
-								out.pop_back();
+							if (out.length() && out[out.size() - 1] == 0)
+								out.erase(out.size() - 1);
 							(*mMetaData)[name] = out;
 							llinfos << tag.name << "(UTF16BE): " << out << llendl;
 						}
@@ -568,7 +568,7 @@ void LLStreamingAudio_FMODEX::setBufferSizes(U32 streambuffertime, U32 decodebuf
 	Check_FMOD_Error(mSystem->setStreamBufferSize(streambuffertime / 1000 * 128 * 128, FMOD_TIMEUNIT_RAWBYTES), "FMOD::System::setStreamBufferSize");
 	FMOD_ADVANCEDSETTINGS settings;
 	memset(&settings,0,sizeof(settings));
-	settings.cbSize=sizeof(settings);
+	settings.cbsize=sizeof(settings);
 	settings.defaultDecodeBufferSize = decodebuffertime;//ms
 	Check_FMOD_Error(mSystem->setAdvancedSettings(&settings), "FMOD::System::setAdvancedSettings");
 }
@@ -576,10 +576,10 @@ void LLStreamingAudio_FMODEX::setBufferSizes(U32 streambuffertime, U32 decodebuf
 bool LLStreamingAudio_FMODEX::releaseDeadStreams()
 {
 	// Kill dead internet streams, if possible
-	std::list<LLAudioStreamManagerFMODSTUDIO *>::iterator iter;
+	std::list<LLAudioStreamManagerFMODEX *>::iterator iter;
 	for (iter = mDeadStreams.begin(); iter != mDeadStreams.end();)
 	{
-		LLAudioStreamManagerFMODSTUDIO *streamp = *iter;
+		LLAudioStreamManagerFMODEX *streamp = *iter;
 		if (streamp->stopStream())
 		{
 			llinfos << "Closed dead stream" << llendl;
