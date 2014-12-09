@@ -174,6 +174,8 @@ class ViewerManifest(LLManifest):
 
         return " ".join((channel_flags, grid_flags, setting_flags)).strip()
 
+    def icon_path(self):
+        return "../../indra/newview/res/"
 class WindowsManifest(ViewerManifest):
     def is_win64(self):
         return self.args.get('arch') == "x86_64"
@@ -191,9 +193,9 @@ class WindowsManifest(ViewerManifest):
         release_lib_dir = "Release"
 
         # Plugin host application
-        self.path(os.path.join(os.pardir,
-                               'llplugin', 'slplugin', self.args['configuration'], "SLPlugin.exe"),
-                  "SLPlugin.exe")
+        self.path2basename(os.path.join(os.pardir,
+                                        'llplugin', 'slplugin', self.args['configuration']),
+                           "SLplugin.exe")
 
         # Plugin volume control
         if not self.is_win64() and self.prefix(src=self.args['configuration'], dst=""):
@@ -505,9 +507,10 @@ class DarwinManifest(ViewerManifest):
         self.path(self.args['configuration'] + "/" + self.app_name() + ".app", dst="")
 
         if self.prefix(src="", dst="Contents"):  # everything goes in Contents
+
             # copy additional libs in <bundle>/Contents/MacOS/
-            self.path("../../libraries/universal-darwin/lib/release/libndofdev.dylib", dst="Resources/libndofdev.dylib")
-            self.path("../../libraries/universal-darwin/lib/release/libhunspell-1.3.0.dylib", dst="Resources/libhunspell-1.3.0.dylib")
+            self.path("../packages/libraries/universal-darwin/lib/release/libndofdev.dylib", dst="Resources/libndofdev.dylib")
+            self.path("../packages/libraries/universal-darwin/lib/release/libhunspell-1.3.0.dylib", dst="Resources/libhunspell-1.3.0.dylib")
 
             # most everything goes in the Resources directory
             if self.prefix(src="", dst="Resources"):
@@ -521,7 +524,10 @@ class DarwinManifest(ViewerManifest):
                 self.path("featuretable_mac.txt")
                 self.path("SecondLife.nib")
 
-                self.path(("../newview/res/%s_icon.icns" % self.viewer_branding_id()), dst=("%s_icon.icns" % self.viewer_branding_id()))
+                icon_path = self.icon_path()
+                if self.prefix(src=icon_path, dst="") :
+                    self.path("%s_icon.icns" % self.viewer_branding_id())
+                    self.end_prefix(icon_path)
 
                 # Translations
                 self.path("English.lproj")
@@ -541,27 +547,55 @@ class DarwinManifest(ViewerManifest):
                 self.path("uk.lproj")
                 self.path("zh-Hans.lproj")
 
-                # SLVoice and vivox lols
-                self.path("vivox-runtime/universal-darwin/SLVoice", "SLVoice")
-                self.path("vivox-runtime/universal-darwin/ca-bundle.crt", "ca-bundle.crt")
-                self.path("vivox-runtime/universal-darwin/libortp.dylib", "libortp.dylib")
-                self.path("vivox-runtime/universal-darwin/libsndfile.dylib", "libsndfile.dylib")
-                self.path("vivox-runtime/universal-darwin/libvivoxoal.dylib", "libvivoxoal.dylib")
-                self.path("vivox-runtime/universal-darwin/libvivoxplatform.dylib", "libvivoxplatform.dylib")
-                self.path("vivox-runtime/universal-darwin/libvivoxsdk.dylib", "libvivoxsdk.dylib")
+                def path_optional(src, dst):
+                    """
+                    For a number of our self.path() calls, not only do we want
+                    to deal with the absence of src, we also want to remember
+                    which were present. Return either an empty list (absent)
+                    or a list containing dst (present). Concatenate these
+                    return values to get a list of all libs that are present.
+                    """
+                    if self.path(src, dst):
+                        return [dst]
+                    print "Skipping %s" % dst
+                    return []
 
-                self.path("../llcommon/" + self.args['configuration'] + "/libllcommon.dylib", "libllcommon.dylib")
+                libdir = "../packages/libraries/universal-darwin/lib/release"
+                # dylibs is a list of all the .dylib files we expect to need
+                # in our bundled sub-apps. For each of these we'll create a
+                # symlink from sub-app/Contents/Resources to the real .dylib.
+                # Need to get the llcommon dll from any of the build directories as well.
+                
+                libfile = "libllcommon.dylib"
 
-                libfile = "lib%s.dylib"
-                libdir = "../../libraries/universal-darwin/lib/release"
+                dylibs = path_optional(self.find_existing_file(os.path.join(os.pardir,
+                                                               "llcommon",
+                                                               self.args['configuration'],
+                                                               libfile),
+                                                               os.path.join(libdir, libfile)),
+                                       dst=libfile)
 
-                for libfile in ("libapr-1.0.dylib",
+                for libfile in (
+                                "libapr-1.0.dylib",
                                 "libaprutil-1.0.dylib",
                                 "libcollada14dom.dylib",
                                 "libexpat.1.5.2.dylib",
+                                "libexception_handler.dylib",
                                 "libGLOD.dylib",
-                                "libexception_handler.dylib"):
-                    self.path(os.path.join(libdir, libfile), libfile)
+                                ):
+                    dylibs += path_optional(os.path.join(libdir, libfile), libfile)
+
+                # SLVoice and vivox lols, no symlinks needed
+                for libfile in (
+                                'libortp.dylib',
+                                'libsndfile.dylib',
+                                'libvivoxoal.dylib',
+                                'libvivoxsdk.dylib',
+                                'libvivoxplatform.dylib',
+                                'ca-bundle.crt',
+                                'SLVoice',
+                                ):
+                     self.path2basename(libdir, libfile)
 
                 # For using FMOD for sound...but, fmod is proprietary so some might not use it...
                 try:
@@ -571,40 +605,48 @@ class DarwinManifest(ViewerManifest):
                     print "Skipping libfmodwrapper.dylib - not found"
                     pass
 
-                # And now FMOD Ex!
-                try:
-                    self.path("libfmodex.dylib", "libfmodex.dylib")
-                    pass
-                except:
-                    print "Skipping libfmodex.dylib - not found"
-                    pass
 
-                # plugin launcher
-                self.path("../llplugin/slplugin/" + self.args['configuration'] + "/SLPlugin.app", "SLPlugin.app")
+                # dylibs that vary based on configuration
+                if self.args['configuration'].lower() == 'debug':
+                    for libfile in (
+                                "libfmodexL.dylib",
+                                ):
+                        dylibs += path_optional(os.path.join("../packages/lib/debug",
+                                                             libfile), libfile)
+                else:
+                    for libfile in (
+                                "libfmodex.dylib",
+                                ):
+                        dylibs += path_optional(os.path.join("../packages/lib/release",
+                                                             libfile), libfile)
 
-                # dependencies on shared libs
-                slplugin_res_path = self.dst_path_of("SLPlugin.app/Contents/Resources")
-                for libfile in ("libllcommon.dylib",
-                                "libapr-1.0.dylib",
-                                "libaprutil-1.0.dylib",
-                                "libexpat.1.5.2.dylib",
-                                "libexception_handler.dylib"):
-                    target_lib = os.path.join('../../..', libfile)
-                    self.run_command("ln -sf %(target)r %(link)r" %
-                                     {'target': target_lib,
-                                      'link' : os.path.join(slplugin_res_path, libfile)}
-                                     )
-                    #self.run_command("ln -sf %(target)r %(link)r" %
-                    #                 {'target': target_lib,
-                    #                  'link' : os.path.join(mac_crash_logger_res_path, libfile)}
-                    #                 )
+                # our apps
+                for app_bld_dir, app in (#("mac_crash_logger", "mac-crash-logger.app"),
+                                         # plugin launcher
+                                         (os.path.join("llplugin", "slplugin"), "SLPlugin.app"),
+                                         ):
+                    self.path2basename(os.path.join(os.pardir,
+                                                    app_bld_dir, self.args['configuration']),
+                                       app)
+
+                    # our apps dependencies on shared libs
+                    # for each app, for each dylib we collected in dylibs,
+                    # create a symlink to the real copy of the dylib.
+                    resource_path = self.dst_path_of(os.path.join(app, "Contents", "Resources"))
+                    for libfile in dylibs:
+                        symlinkf(os.path.join(os.pardir, os.pardir, os.pardir, libfile),
+                                 os.path.join(resource_path, libfile))
 
                 # plugins
                 if self.prefix(src="", dst="llplugin"):
-                    self.path("../plugins/filepicker/" + self.args['configuration'] + "/basic_plugin_filepicker.dylib", "basic_plugin_filepicker.dylib")
-                    self.path("../plugins/quicktime/" + self.args['configuration'] + "/media_plugin_quicktime.dylib", "media_plugin_quicktime.dylib")
-                    self.path("../plugins/webkit/" + self.args['configuration'] + "/media_plugin_webkit.dylib", "media_plugin_webkit.dylib")
-                    self.path("../../libraries/universal-darwin/lib/release/libllqtwebkit.dylib", "libllqtwebkit.dylib")
+                    self.path2basename(os.path.join(os.pardir,"plugins", "filepicker", self.args['configuration']),
+                                       "basic_plugin_filepicker.dylib")
+                    self.path2basename(os.path.join(os.pardir,"plugins", "quicktime", self.args['configuration']),
+                                       "media_plugin_quicktime.dylib")
+                    self.path2basename(os.path.join(os.pardir,"plugins", "webkit", self.args['configuration']),
+                                       "media_plugin_webkit.dylib")
+                    self.path2basename(os.path.join(os.pardir,"packages", "libraries", "universal-darwin", "lib", "release"),
+                                       "libllqtwebkit.dylib")
 
                     self.end_prefix("llplugin")
 
@@ -687,64 +729,88 @@ class DarwinManifest(ViewerManifest):
                 'vol':volname})
 
         # mount the image and get the name of the mount point and device node
-        hdi_output = self.run_command('hdiutil attach -private "' + sparsename + '"')
-        devfile = re.search("/dev/disk([0-9]+)[^s]", hdi_output).group(0).strip()
-        volpath = re.search('HFS\s+(.+)', hdi_output).group(1).strip()
+        hdi_output = self.run_command('hdiutil attach -private %r' % sparsename)
+        try:
+            devfile = re.search("/dev/disk([0-9]+)[^s]", hdi_output).group(0).strip()
+            volpath = re.search('HFS\s+(.+)', hdi_output).group(1).strip()
 
-        # Copy everything in to the mounted .dmg
+            if devfile != '/dev/disk1':
+                # adding more debugging info based upon nat's hunches to the
+                # logs to help track down 'SetFile -a V' failures -brad
+                print "WARNING: 'SetFile -a V' command below is probably gonna fail"
 
-        if self.default_channel_for_brand() and not self.default_grid():
-            app_name = self.app_name() + " " + self.args['grid']
-        else:
-            app_name = channel_standin.strip()
+            # Copy everything in to the mounted .dmg
 
-        # Hack:
-        # Because there is no easy way to coerce the Finder into positioning
-        # the app bundle in the same place with different app names, we are
-        # adding multiple .DS_Store files to svn. There is one for release,
-        # one for release candidate and one for first look. Any other channels
-        # will use the release .DS_Store, and will look broken.
-        # - Ambroff 2008-08-20
-                # Added a .DS_Store for snowglobe - Merov 2009-06-17
+            if self.default_channel_for_brand() and not self.default_grid():
+                app_name = self.app_name() + " " + self.args['grid']
+            else:
+                app_name = channel_standin.strip()
 
-                # We have a single branded installer for all snowglobe channels so snowglobe logic is a bit different
-        if (self.app_name()=="Snowglobe"):
-            dmg_template = os.path.join ('installers', 'darwin', 'snowglobe-dmg')
-        else:
-            dmg_template = os.path.join(
-                'installers',
-                'darwin',
-                '%s-dmg' % "".join(self.channel_unique().split()).lower())
+            # Hack:
+            # Because there is no easy way to coerce the Finder into positioning
+            # the app bundle in the same place with different app names, we are
+            # adding multiple .DS_Store files to svn. There is one for release,
+            # one for release candidate and one for first look. Any other channels
+            # will use the release .DS_Store, and will look broken.
+            # - Ambroff 2008-08-20
+            # Added a .DS_Store for snowglobe - Merov 2009-06-17
 
-        if not os.path.exists (self.src_path_of(dmg_template)):
-            dmg_template = os.path.join ('installers', 'darwin', 'release-dmg')
+            # We have a single branded installer for all snowglobe channels so snowglobe logic is a bit different
+            if (self.app_name()=="Snowglobe"):
+                dmg_template = os.path.join ('installers', 'darwin', 'snowglobe-dmg')
+            else:
+                dmg_template = os.path.join(
+                    'installers',
+                    'darwin',
+                    '%s-dmg' % "".join(self.channel_unique().split()).lower())
 
-        for s,d in {self.get_dst_prefix():app_name + ".app",
-                    os.path.join(dmg_template, "_VolumeIcon.icns"): ".VolumeIcon.icns",
-                    os.path.join(dmg_template, "background.jpg"): "background.jpg",
-                    os.path.join(dmg_template, "_DS_Store"): ".DS_Store"}.items():
-            print "Copying to dmg", s, d
-            self.copy_action(self.src_path_of(s), os.path.join(volpath, d))
+            if not os.path.exists (self.src_path_of(dmg_template)):
+                dmg_template = os.path.join ('installers', 'darwin', 'release-dmg')
 
-        # Hide the background image, DS_Store file, and volume icon file (set their "visible" bit)
-        self.run_command('SetFile -a V "' + os.path.join(volpath, ".VolumeIcon.icns") + '"')
-        self.run_command('SetFile -a V "' + os.path.join(volpath, "background.jpg") + '"')
-        self.run_command('SetFile -a V "' + os.path.join(volpath, ".DS_Store") + '"')
+            for s,d in {self.get_dst_prefix():app_name + ".app",
+                        os.path.join(dmg_template, "_VolumeIcon.icns"): ".VolumeIcon.icns",
+                        os.path.join(dmg_template, "background.jpg"): "background.jpg",
+                        os.path.join(dmg_template, "_DS_Store"): ".DS_Store"}.items():
+                print "Copying to dmg", s, d
+                self.copy_action(self.src_path_of(s), os.path.join(volpath, d))
 
-        # Create the alias file (which is a resource file) from the .r
-        self.run_command('rez "' + self.src_path_of("installers/darwin/release-dmg/Applications-alias.r") + '" -o "' + os.path.join(volpath, "Applications") + '"')
+            # Hide the background image, DS_Store file, and volume icon file (set their "visible" bit)
+            for f in ".VolumeIcon.icns", "background.jpg", ".DS_Store":
+                pathname = os.path.join(volpath, f)
+                # We've observed mysterious "no such file" failures of the SetFile
+                # command, especially on the first file listed above -- yet
+                # subsequent inspection of the target directory confirms it's
+                # there. Timing problem with copy command? Try to handle.
+                for x in xrange(3):
+                    if os.path.exists(pathname):
+                        print "Confirmed existence: %r" % pathname
+                        break
+                    print "Waiting for %s copy command to complete (%s)..." % (f, x+1)
+                    sys.stdout.flush()
+                    time.sleep(1)
+                # If we fall out of the loop above without a successful break, oh
+                # well, possibly we've mistaken the nature of the problem. In any
+                # case, don't hang up the whole build looping indefinitely, let
+                # the original problem manifest by executing the desired command.
+                self.run_command('SetFile -a V %r' % pathname)
 
-        # Set the alias file's alias and custom icon bits
-        self.run_command('SetFile -a AC "' + os.path.join(volpath, "Applications") + '"')
+            # Create the alias file (which is a resource file) from the .r
+            self.run_command('Rez %r -o %r' %
+                             (self.src_path_of("installers/darwin/release-dmg/Applications-alias.r"),
+                              os.path.join(volpath, "Applications")))
 
-        # Set the disk image root's custom icon bit
-        self.run_command('SetFile -a C "' + volpath + '"')
+            # Set the alias file's alias and custom icon bits
+            self.run_command('SetFile -a AC "' + os.path.join(volpath, "Applications") + '"')
 
-        # Unmount the image
-        self.run_command('hdiutil detach -force "' + devfile + '"')
+            # Set the disk image root's custom icon bit
+            self.run_command('SetFile -a C "' + volpath + '"')
+        finally:
+            # Unmount the image
+            self.run_command('hdiutil detach -force "' + devfile + '"')
 
         print "Converting temp disk image to final disk image"
         self.run_command('hdiutil convert "%(sparse)s" -format UDZO -imagekey zlib-level=9 -o "%(final)s"' % {'sparse':sparsename, 'final':finalname})
+        self.run_command('hdiutil internet-enable -yes "%(final)s"' % {'final':finalname})
         # get rid of the temp file
         self.package_file = finalname
         self.remove(sparsename)
@@ -764,10 +830,12 @@ class LinuxManifest(ViewerManifest):
             self.path("client-readme-voice.txt","README-linux-voice.txt")
             self.path("client-readme-joystick.txt","README-linux-joystick.txt")
             self.path("wrapper.sh",self.wrapper_name())
-            self.path("handle_secondlifeprotocol.sh")
-            self.path("register_secondlifeprotocol.sh")
-            self.path("refresh_desktop_app_entry.sh")
-            self.path("launch_url.sh")
+            if self.prefix(src="", dst="etc"):
+                self.path("handle_secondlifeprotocol.sh")
+                self.path("register_secondlifeprotocol.sh")
+                self.path("refresh_desktop_app_entry.sh")
+                self.path("launch_url.sh")
+                self.end_prefix("etc")
             self.path("install.sh")
             self.end_prefix("linux_tools")
 
@@ -779,9 +847,11 @@ class LinuxManifest(ViewerManifest):
         #    self.path("secondlife-stripped","bin/"+self.binary_name())
         #else:
         #    self.path("secondlife-bin","bin/"+self.binary_name())
-        self.path("secondlife-bin","bin/"+self.binary_name())
+        if self.prefix(src="", dst="bin"):
+            self.path("secondlife-bin",self.binary_name())
+            self.path2basename("../llplugin/slplugin", "SLPlugin")
+            self.end_prefix("bin")
 
-        self.path("../llplugin/slplugin/SLPlugin", "bin/SLPlugin")
         if self.prefix("res-sdl"):
             self.path("*")
             # recurse
@@ -789,9 +859,9 @@ class LinuxManifest(ViewerManifest):
 
         # plugins
         if self.prefix(src="", dst="bin/llplugin"):
-            self.path("../plugins/filepicker/libbasic_plugin_filepicker.so", "libbasic_plugin_filepicker.so")
-            self.path("../plugins/webkit/libmedia_plugin_webkit.so", "libmedia_plugin_webkit.so")
-            self.path("../plugins/gstreamer010/libmedia_plugin_gstreamer010.so", "libmedia_plugin_gstreamer.so")
+            self.path2basename("../plugins/filepicker", "libbasic_plugin_filepicker.so")
+            self.path2basename("../plugins/webkit", "libmedia_plugin_webkit.so")
+            self.path("../plugins/gstreamer010", "libmedia_plugin_gstreamer.so")
             self.end_prefix("bin/llplugin")
 
         self.path("featuretable_linux.txt")
@@ -860,37 +930,36 @@ class Linux_i686Manifest(LinuxManifest):
     def construct(self):
         super(Linux_i686Manifest, self).construct()
 
-        self.path("../llcommon/libllcommon.so", "lib/libllcommon.so")
+        if not self.path("../llcommon/libllcommon.so", "lib/libllcommon.so"):
+            print "Skipping llcommon.so (assuming llcommon was linked statically)"
 
-        if (not self.standalone()) and self.prefix("../../libraries/i686-linux/lib/release", dst="lib"):
+        if (not self.standalone()) and self.prefix("../packages/lib/release", dst="lib"):
+            self.prefix("../packages/libraries/i686-linux/lib/release", dst="lib")
 
+            self.path("libapr-1.so*")
+            self.path("libaprutil-1.so*")
+            self.path("libdb*.so")
+            self.path("libexpat.so*")
+            self.path("libglod.so")
+            self.path("libuuid.so*")
+            self.path("libSDL-1.2.so*")
+            self.path("libdirectfb-1.*.so*")
+            self.path("libfusion-1.*.so*")
+            self.path("libdirect-1.*.so*")
+            self.path("libhunspell-*.so.*")
+
+            self.path("libalut.so")
+            self.path("libopenal.so.1")
+
+            self.path("libtcmalloc_minimal.so.0") #formerly called google perf tools
+            self.path("libtcmalloc_minimal.so.0.2.2")
+			
             try:
                 self.path("libfmod-3.75.so")
                 pass
             except:
                 print "Skipping libfmod-3.75.so - not found"
                 pass
-
-            self.path("libELFIO.so")
-            self.path("libSDL-1.2.so*")
-            self.path("libapr-1.so*")
-            self.path("libaprutil-1.so*")
-            self.path("libcollada14dom.so.2.2", "libcollada14dom.so")
-            self.path("libcrypto.so*")
-            self.path("libdb*.so")
-            self.path("libdirect-1.*.so*")
-            self.path("libdirectfb-1.*.so*")
-            self.path("libfusion-1.*.so*")
-            self.path("libglod.so")
-            self.path("libminizip.so.1.2.3", "libminizip.so");
-            self.path("libexpat.so*")
-            self.path("libhunspell-*.so.*")
-            self.path("libssl.so*")
-            self.path("libuuid.so*")
-            self.path("libalut.so")
-            self.path("libopenal.so.1")
-            self.path("libtcmalloc_minimal.so.0")
-            self.path("libtcmalloc_minimal.so.0.2.2")
 
             # Boost
             self.path("libboost_context-mt.so.*")
@@ -900,6 +969,12 @@ class Linux_i686Manifest(LinuxManifest):
             self.path("libboost_signals-mt.so.*")
             self.path("libboost_system-mt.so.*")
             self.path("libboost_thread-mt.so.*")
+			
+            self.path("libcollada14dom.so.2.2", "libcollada14dom.so")
+            self.path("libcrypto.so*")
+            self.path("libELFIO.so")
+            self.path("libminizip.so.1.2.3", "libminizip.so");
+            self.path("libssl.so*")
 
             if 'extra_libraries' in self.args:
                 path_list = self.args['extra_libraries'].split('|')
@@ -909,12 +984,13 @@ class Linux_i686Manifest(LinuxManifest):
                     self.path(src_path, dst_path)
 
             self.end_prefix("lib")
+            self.end_prefix("lib")
 
             # Vivox runtimes
-            if self.prefix(src="vivox-runtime/i686-linux", dst="bin"):
+            if self.prefix(src="../packages/lib/release", dst="bin"):
                 self.path("SLVoice")
-                self.end_prefix()
-            if self.prefix(src="vivox-runtime/i686-linux", dst="lib"):
+                self.end_prefix("bin")
+            if self.prefix(src="../packages/lib/release", dst="lib"):
                 self.path("libortp.so")
                 self.path("libvivoxsdk.so")
                 self.end_prefix("lib")
@@ -924,25 +1000,23 @@ class Linux_x86_64Manifest(LinuxManifest):
     def construct(self):
         super(Linux_x86_64Manifest, self).construct()
 
-        self.path("../llcommon/libllcommon.so", "lib64/libllcommon.so")
+        if not self.path("../llcommon/libllcommon.so", "lib64/libllcommon.so"):
+            print "Skipping llcommon.so (assuming llcommon was linked statically)"
 
-        if (not self.standalone()) and self.prefix("../../libraries/x86_64-linux/lib/release", dst="lib64"):
+        if (not self.standalone()) and self.prefix("../packages/lib/release", dst="lib64"):
+            self.prefix("../../libraries/x86_64-linux/lib/release", dst="lib64")
             self.path("libapr-1.so*")
             self.path("libaprutil-1.so*")
-            self.path("libcollada14dom.so.2.2", "libcollada14dom.so")
             self.path("libdb-*.so*")
-            self.path("libcrypto.so.*")
             self.path("libexpat.so*")
             self.path("libglod.so")
-            self.path("libhunspell-1.3.so*")
-            self.path("libminizip.so.1.2.3", "libminizip.so");
-            self.path("libssl.so*")
             self.path("libuuid.so*")
             self.path("libSDL-1.2.so*")
-            self.path("libELFIO.so")
             self.path("libjpeg.so*")
-            self.path("libpng*.so*")
-            self.path("libz.so*")
+            self.path("libhunspell-1.3.so*")
+            self.path("libalut.so*")
+            self.path("libopenal.so*")
+
 
             # Boost
             self.path("libboost_context-mt.so.*")
@@ -953,9 +1027,13 @@ class Linux_x86_64Manifest(LinuxManifest):
             self.path("libboost_system-mt.so.*")
             self.path("libboost_thread-mt.so.*")
 
-            # OpenAL
-            self.path("libopenal.so*")
-            self.path("libalut.so*")
+            self.path("libcollada14dom.so.2.2", "libcollada14dom.so")
+            self.path("libcrypto.so.*")
+            self.path("libELFIO.so")
+            self.path("libminizip.so.1.2.3", "libminizip.so");
+            self.path("libpng*.so*")
+            self.path("libssl.so*")
+            self.path("libz.so*")
 
             if 'extra_libraries' in self.args:
                 path_list = self.args['extra_libraries'].split('|')
@@ -965,26 +1043,49 @@ class Linux_x86_64Manifest(LinuxManifest):
                     self.path(src_path, dst_path)
 
             self.end_prefix("lib64")
+            self.end_prefix("lib64")
 
-        # Vivox runtimes and libs
-        if self.prefix(src="vivox-runtime/i686-linux", dst="bin"):
-            self.path("SLVoice")
-            self.end_prefix("bin")
+            # Vivox runtimes and libs
+            if self.prefix(src="../packages/lib/release", dst="bin"):
+                self.path("SLVoice")
+                self.end_prefix("bin")
 
-        if self.prefix(src="vivox-runtime/i686-linux", dst="lib32"):
-            #self.path("libalut.so")
-            self.path("libortp.so")
-            self.path("libvivoxsdk.so")
-            self.end_prefix("lib32")
+            if self.prefix(src="../packages/lib/release", dst="lib32"):
+                #self.path("libalut.so")
+                self.path("libortp.so")
+                self.path("libvivoxsdk.so")
+                self.end_prefix("lib32")
 
-        # 32bit libs needed for voice
-        if self.prefix("../../libraries/x86_64-linux/lib/release/32bit-compat", dst="lib32"):
-            self.path("libalut.so")
-            self.path("libidn.so.11")
-            self.path("libopenal.so.1")
-            # self.path("libortp.so")
-            self.path("libuuid.so.1")
-            self.end_prefix("lib32")
+            # 32bit libs needed for voice
+            if self.prefix("../packages/lib/32bit-compat", dst="lib32"):
+                self.path("libalut.so")
+                self.path("libidn.so.11")
+                self.path("libopenal.so.1")
+                # self.path("libortp.so")
+                self.path("libuuid.so.1")
+                self.end_prefix("lib32")
+
+################################################################
+
+def symlinkf(src, dst):
+    """
+    Like ln -sf, but uses os.symlink() instead of running ln.
+    """
+    try:
+        os.symlink(src, dst)
+    except OSError, err:
+        if err.errno != errno.EEXIST:
+            raise
+        # We could just blithely attempt to remove and recreate the target
+        # file, but that strategy doesn't work so well if we don't have
+        # permissions to remove it. Check to see if it's already the
+        # symlink we want, which is the usual reason for EEXIST.
+        if not (os.path.islink(dst) and os.readlink(dst) == src):
+            # Here either dst isn't a symlink or it's the wrong symlink.
+            # Remove and recreate. Caller will just have to deal with any
+            # exceptions at this stage.
+            os.remove(dst)
+            os.symlink(src, dst)
 
 if __name__ == "__main__":
     main()

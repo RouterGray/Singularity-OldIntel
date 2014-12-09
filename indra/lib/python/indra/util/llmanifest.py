@@ -41,6 +41,14 @@ import tarfile
 import errno
 import subprocess
 
+class ManifestError(RuntimeError):
+    """Use an exception more specific than generic Python RuntimeError"""
+    pass
+
+class MissingError(ManifestError):
+    """You specified a file that doesn't exist"""
+    pass
+
 def path_ancestors(path):
     drive, path = os.path.splitdrive(os.path.normpath(path))
     result = []
@@ -245,15 +253,25 @@ def main():
     for opt in args:
         print "Option:", opt, "=", args[opt]
 
+    # Build base package.
+    touch = args.get('touch')
+    if touch:
+        print 'Creating base package'
+    args['package_id'] = "" # base package has no package ID
     wm = LLManifest.for_platform(args['platform'], args.get('arch'))(args)
     wm.do(*args['actions'])
+    # Store package file for later if making touched file.
+    base_package_file = ""
+    if touch:
+        print 'Created base package ', wm.package_file
+        base_package_file = "" + wm.package_file
 
     # Write out the package file in this format, so that it can easily be called
     # and used in a .bat file - yeah, it sucks, but this is the simplest...
     touch = args.get('touch')
     if touch:
         fp = open(touch, 'w')
-        fp.write('set package_file=%s\n' % wm.package_file)
+        fp.write('set package_file=%s\n' % base_package_file)
         fp.close()
         print 'touched', touch
     return 0
@@ -390,8 +408,8 @@ class LLManifest(object):
 
     def run_command(self, command):
         """ Runs an external command, and returns the output.  Raises
-        an exception if the command reurns a nonzero status code.  For
-        debugging/informational purpoases, prints out the command's
+        an exception if the command returns a nonzero status code.  For
+        debugging/informational purposes, prints out the command's
         output as it is received."""
         print "Running command:", command
         fd = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -404,7 +422,7 @@ class LLManifest(object):
                 print lines[-1].rstrip('\n'),
         output = ''.join(lines)
         if fd.returncode:
-            raise RuntimeError(
+            raise ManifestError(
                 "Command %s returned non-zero status (%s) \noutput:\n%s"
                 % (command, fd.returncode, output) )
         return output
@@ -414,14 +432,24 @@ class LLManifest(object):
           a) verify that you really have created it
           b) schedule it for cleanup"""
         if not os.path.exists(path):
-            raise RuntimeError, "Should be something at path " + path
+            raise ManifestError, "Should be something at path " + path
         self.created_paths.append(path)
 
-    def put_in_file(self, contents, dst):
+    def put_in_file(self, contents, dst, src=None):
         # write contents as dst
-        f = open(self.dst_path_of(dst), "wb")
-        f.write(contents)
-        f.close()
+        dst_path = self.dst_path_of(dst)
+        f = open(dst_path, "wb")
+        try:
+            f.write(contents)
+        finally:
+            f.close()
+
+        # Why would we create a file in the destination tree if not to include
+        # it in the installer? The default src=None (plus the fact that the
+        # src param is last) is to preserve backwards compatibility.
+        if src:
+            self.file_list.append([src, dst_path])
+        return dst_path
 
     def replace_in(self, src, dst=None, searchdict={}):
         if dst == None:
@@ -569,7 +597,7 @@ class LLManifest(object):
             except (IOError, os.error), why:
                 errors.append((srcname, dstname, why))
         if errors:
-            raise RuntimeError, errors
+            raise ManifestError, errors
 
 
     def cmakedirs(self, path):
@@ -617,11 +645,10 @@ class LLManifest(object):
 
     def check_file_exists(self, path):
         if not os.path.exists(path) and not os.path.islink(path):
-            raise RuntimeError("Path %s doesn't exist" % (
-                os.path.normpath(os.path.join(os.getcwd(), path)),))
+            raise MissingError("Path %s doesn't exist" % (os.path.abspath(path),))
 
 
-    wildcard_pattern = re.compile('\*')
+    wildcard_pattern = re.compile(r'\*')
     def expand_globs(self, src, dst):
         src_list = glob.glob(src)
         src_re, d_template = self.wildcard_regex(src.replace('\\', '/'),
@@ -630,40 +657,71 @@ class LLManifest(object):
             d = src_re.sub(d_template, s.replace('\\', '/'))
             yield os.path.normpath(s), os.path.normpath(d)
 
+    def path2basename(self, path, file):
+        """
+        It is a common idiom to write:
+        self.path(os.path.join(somedir, somefile), somefile)
+
+        So instead you can write:
+        self.path2basename(somedir, somefile)
+
+        Note that this is NOT the same as:
+        self.path(os.path.join(somedir, somefile))
+
+        which is the same as:
+        temppath = os.path.join(somedir, somefile)
+        self.path(temppath, temppath)
+        """
+        return self.path(os.path.join(path, file), file)
+
     def path(self, src, dst=None):
         sys.stdout.write("Processing %s => %s ... " % (src, dst))
         sys.stdout.flush()
         if src == None:
-            raise RuntimeError("No source file, dst is " + dst)
+            raise ManifestError("No source file, dst is " + dst)
         if dst == None:
             dst = src
         dst = os.path.join(self.get_dst_prefix(), dst)
-        count = 0
-        is_glob = False
 
-        # look under each prefix for matching paths
-        paths = set([os.path.join(self.get_src_prefix(), src),
-                 os.path.join(self.get_artwork_prefix(), src),
-                 os.path.join(self.get_build_prefix(), src)])
-        for path in paths:
-            if self.wildcard_pattern.search(path):
-                is_glob = True
-                for s,d in self.expand_globs(path, dst):
+        def try_path(src):
+            # expand globs
+            count = 0
+            if self.wildcard_pattern.search(src):
+                for s,d in self.expand_globs(src, dst):
                     assert(s != d)
                     count += self.process_file(s, d)
             else:
+                # if we're specifying a single path (not a glob),
+                # we should error out if it doesn't exist
+                self.check_file_exists(src)
                 # if it's a directory, recurse through it
-                if os.path.isdir(path):
-                    count += self.process_directory(path, dst)
-                elif os.path.exists(path):
-                    count += self.process_file(path, dst)
+                if os.path.isdir(src):
+                    count += self.process_directory(src, dst)
+                else:
+                    count += self.process_file(src, dst)
+            return count
 
-        # if we're specifying a single path (not a glob),
-        # we should error out if it doesn't exist
-        if count == 0 and not is_glob:
-            raise RuntimeError("No files match %s\n" % str(paths))
+        for pfx in self.get_src_prefix(), self.get_artwork_prefix(), self.get_build_prefix():
+            try:
+                count = try_path(os.path.join(pfx, src))
+            except MissingError:
+                # If src isn't a wildcard, and if that file doesn't exist in
+                # this pfx, try next pfx.
+                count = 0
+                continue
+
+            # Here try_path() didn't raise MissingError. Did it process any files?
+            if count:
+                break
+            # Even though try_path() didn't raise MissingError, it returned 0
+            # files. src is probably a wildcard meant for some other pfx. Loop
+            # back to try the next.
 
         print "%d files" % count
+
+        # Let caller check whether we processed as many files as expected. In
+        # particular, let caller notice 0.
+        return count
 
     def do(self, *actions):
         self.actions = actions
