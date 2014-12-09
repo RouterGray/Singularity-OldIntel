@@ -111,7 +111,7 @@ class PlatformSetup(object):
 
     def build_dirs(self):
         '''Return the top-level directories in which builds occur.
-        if(os.getcwd().rsplit('/', 1)[1] == 'indra'):
+        if(os.path.basename(os.path.normpath(os.getcwd())) == 'indra'):
             prefix = '../'
         else:
             prefix = ''
@@ -279,7 +279,7 @@ class LinuxSetup(UnixSetup):
         return 'linux'
 
     def build_dirs(self):
-        if(os.getcwd().rsplit('/', 1)[1] == 'indra'):
+        if(os.path.basename(os.path.normpath(os.getcwd())) == 'indra'):
             prefix = '../'
         else:
             prefix = ''
@@ -510,7 +510,7 @@ class WindowsSetup(PlatformSetup):
         return 'win32'
 
     def build_dirs(self):
-        if(os.getcwd().rsplit('\\', 1)[1] == 'indra'):
+        if(os.path.basename(os.path.normpath(os.getcwd())) == 'indra'):
             prefix = '../'
         else:
             prefix = ''
@@ -671,7 +671,12 @@ class WindowsSetup(PlatformSetup):
             if prev_build == self.build_type:
                 # Only run vstool if the build type has changed.
                 continue
-            vstool_cmd = (os.path.join('indra','tools','vstool','VSTool.exe') +
+
+            if(os.path.basename(os.path.normpath(os.getcwd())) == 'indra'):
+                tool_path = os.path.join('tools','vstool','VSTool.exe')
+            else:
+                tool_path = os.path.join('indra','tools','vstool','VSTool.exe')
+            vstool_cmd = (tool_path +
                           ' --solution ' +
                           os.path.join(build_dir,'Singularity.sln') +
                           ' --config ' + self.build_type +
