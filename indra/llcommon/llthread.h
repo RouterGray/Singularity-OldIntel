@@ -27,12 +27,14 @@
 #ifndef LL_LLTHREAD_H
 #define LL_LLTHREAD_H
 
-#define USE_BOOST_MUTEX
+#define USE_BOOST_MUTEX 0
+
+#define IS_LLCOMMON_INLINE (!LL_COMMON_LINK_SHARED || defined(llcommon_EXPORTS))
 
 #if LL_GNUC
 // Needed for is_main_thread() when compiling with optimization (relwithdebinfo).
 // It doesn't hurt to just always specify it though.
-#pragma interface
+//#pragma interface
 #endif
 
 #include "llapp.h"
@@ -188,7 +190,7 @@ protected:
 
 //Prefer boost over stl over windows over apr.
 
-#if defined(USE_BOOST_MUTEX) && (BOOST_VERSION >= 103400)	//condition_variable_any was added in boost 1.34
+#if USE_BOOST_MUTEX && (BOOST_VERSION >= 103400)	//condition_variable_any was added in boost 1.34
 //Define BOOST_SYSTEM_NO_DEPRECATED to avoid system_category() and generic_category() dependencies, as those won't be exported.
 #define BOOST_SYSTEM_NO_DEPRECATED
 #include <boost/thread/mutex.hpp>
@@ -268,7 +270,12 @@ public:
 	{
 		if (inc_lock_if_recursive())
 			return;
+
+#if IS_LLCOMMON_INLINE
 		if (AIThreadID::in_main_thread_inline() && LLApp::isRunning())
+#else
+		if (AIThreadID::in_main_thread() && LLApp::isRunning())
+#endif
 		{
 			if (!LLMutexImpl::try_lock())
 			{
@@ -279,7 +286,11 @@ public:
 		{
 			LLMutexImpl::lock();
 		}
+#if IS_LLCOMMON_INLINE
 		mLockingThread.reset_inline();
+#else
+		mLockingThread.reset();
+#endif
 	}
 
 	void unlock()
@@ -302,7 +313,11 @@ public:
 			return true;
 		if (!LLMutexImpl::try_lock())
 			return false;
+#if IS_LLCOMMON_INLINE
 		mLockingThread.reset_inline();
+#else
+		mLockingThread.reset();
+#endif
 		return true;
 	}
 	
@@ -321,7 +336,11 @@ public:
 	// Returns true if locked by this thread.
 	bool isSelfLocked() const
 	{
+#if IS_LLCOMMON_INLINE
 		return mLockingThread.equals_current_thread_inline();
+#else
+		return mLockingThread.equals_current_thread();
+#endif
 	}
 
 #ifdef NEEDS_MUTEX_IMPL
@@ -426,16 +445,20 @@ public:
 	{}
 	~LLCondition()
 	{}
-	void LL_COMMON_API wait()
+	void wait()
 	{
+#if IS_LLCOMMON_INLINE
 		if (AIThreadID::in_main_thread_inline())
+#else
+		if (AIThreadID::in_main_thread())
+#endif
 			wait_main();
 		else LLConditionVariableImpl::wait(*this);
 	}
 	void signal()		{ LLConditionVariableImpl::notify_one(); }
 	void broadcast()	{ LLConditionVariableImpl::notify_all(); }
 private:
-	void wait_main();	//Cannot be inline. Uses internal fasttimer.
+	LL_COMMON_API void wait_main();	//Cannot be inline. Uses internal fasttimer.
 };
 
 class LLMutexLock
@@ -646,7 +669,7 @@ public:
 	void unref()
 	{
 		llassert(mRef > 0);
-		if (!--mRef) delete this;
+		if (--mRef == 0) delete this;
 	}
 	S32 getNumRefs() const
 	{
