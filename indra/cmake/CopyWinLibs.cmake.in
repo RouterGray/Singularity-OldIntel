@@ -23,6 +23,10 @@ set(LIBS_DEBUG_DIR
   )
 
 function(copy_files paths names dest)
+  string(FIND ${dest} ${CUR_CONFIG} idx)
+  if(${idx} LESS 0)
+    return()
+  endif(${idx} LESS 0)
   foreach(f ${names})
     foreach(p ${paths})
 	  set(from_file "${p}/${f}")

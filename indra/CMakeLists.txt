@@ -122,7 +122,7 @@ if(WINDOWS)
   add_custom_command(
     COMMENT "Copying prebuilt libraries to viewer executable directory"
     OUTPUT ${CMAKE_BINARY_DIR}/CopyWinLibs
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/CopyWinLibs.cmake
+    COMMAND ${CMAKE_COMMAND} -DCUR_CONFIG:STRING=${CMAKE_CFG_INTDIR} -P ${CMAKE_BINARY_DIR}/CopyWinLibs.cmake
     DEPENDS ${CMAKE_BINARY_DIR}/prepare/prebuilt ${CMAKE_BINARY_DIR}/CopyWinLibs.cmake
   	)
   add_custom_target(copy_win_libs DEPENDS ${CMAKE_BINARY_DIR}/CopyWinLibs)
