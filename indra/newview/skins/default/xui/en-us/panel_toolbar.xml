@@ -424,6 +424,7 @@
       <button bottom="0" height="24" label="Autoreplace" name="auto_replace_btn" image_overlay="icn_toolbar_auto_replace.tga" image_overlay_alignment="left" image_selected="toolbar_btn_selected.tga" image_unselected="toolbar_btn_enabled.tga" image_disabled="toolbar_btn_disabled.tga" scale_image="true" width="50" follows="left|right">
         <button.commit_callback function="ShowFloater" parameter="autoreplace"/>
       </button>
+      <button bottom="-22" height="16" width="16" left="4" toggle="true" scale_image="false" image_unselected="checkbox_enabled_false.tga" image_selected="checkbox_enabled_true.tga" label="" control_name="AutoReplace" name="enable_autoreplace" tool_tip="Toggle Autoreplace on and off"/>
     </layout_panel>
     <layout_panel name="paneldisplayname" height="24" width="50" user_resize="false" visibility_control="ToolbarVisibleDisplayName">
       <button bottom="0" height="24" label="Display Name" name="display_name_btn" image_overlay="icn_toolbar_display_name.tga" image_overlay_alignment="left" image_selected="toolbar_btn_selected.tga" image_unselected="toolbar_btn_enabled.tga" image_disabled="toolbar_btn_disabled.tga" scale_image="true" width="50" follows="left|right">
