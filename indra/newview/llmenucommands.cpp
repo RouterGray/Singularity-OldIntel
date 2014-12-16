@@ -182,7 +182,6 @@ struct MenuFloaterDict : public LLSingleton<MenuFloaterDict>
 		registerFloater("DayCycle", boost::bind(LLFloaterDayCycle::show), boost::bind(LLFloaterDayCycle::isOpen));
 		registerFloater("debug avatar", boost::bind(handle_debug_avatar_textures, (void*)NULL));
 		registerFloater("debug settings", boost::bind(handle_singleton_toggle<LLFloaterSettingsDebug>, (void*)NULL));
-		registerFloater("displayname", boost::bind(LLFloaterDisplayName::show));
 		registerFloater("edit ui", boost::bind(LLFloaterEditUI::show, (void*)NULL));
 		registerFloater("EnvSettings", boost::bind(LLFloaterEnvSettings::show), boost::bind(LLFloaterEnvSettings::isOpen));
 		registerFloater("fly", boost::bind(LLAgent::toggleFlying));
@@ -229,6 +228,7 @@ struct MenuFloaterDict : public LLSingleton<MenuFloaterDict>
 		registerFloater<LLFloaterChat>					("chat history");
 		registerFloater<LLFloaterChatterBox>			("communicate");
 		registerFloater<LLFloaterDestinations>			("destinations");
+		registerFloater<LLFloaterDisplayName>			("displayname");
 		registerFloater<LLFloaterMyFriends>				("friends", 0);
 		registerFloater<LLFloaterGesture>				("gestures");
 		registerFloater<LLFloaterMyFriends>				("groups", 1);

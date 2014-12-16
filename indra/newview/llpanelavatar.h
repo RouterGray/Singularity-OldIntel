@@ -88,12 +88,10 @@ class LLPanelAvatarFirstLife : public LLPanelAvatarTab
 public:
 	LLPanelAvatarFirstLife(const std::string& name, const LLRect &rect, LLPanelAvatar* panel_avatar);
 
-	/*virtual*/ BOOL postBuild(void);
-
+	/*virtual*/ BOOL postBuild();
 	/*virtual*/ void processProperties(void* data, EAvatarProcessorType type);
 
-	static void onClickImage(			void *userdata);
-
+	void onClickImage();
 
 	void enableControls(BOOL own_avatar);
 };
@@ -104,30 +102,29 @@ class LLPanelAvatarSecondLife
 {
 public:
 	LLPanelAvatarSecondLife(const std::string& name, const LLRect &rect, LLPanelAvatar* panel_avatar );
+	~LLPanelAvatarSecondLife();
 
-	/*virtual*/ BOOL postBuild(void);
+	/*virtual*/ BOOL postBuild();
 	/*virtual*/ void refresh();
 
 	/*virtual*/ void processProperties(void* data, EAvatarProcessorType type);
 
-	static void onClickImage(			void *userdata);
-	static void onClickFriends(			void *userdata);
-	static void onDoubleClickGroup(void* userdata);
-	static void onClickPublishHelp(void *userdata);
-	static void onClickPartnerHelp(void *userdata);
+	void onClickImage();
+	void onClickFriends();
+	void onDoubleClickGroup();
 	static bool onClickPartnerHelpLoadURL(const LLSD& notification, const LLSD& response);
-	static void onClickPartnerInfo(void *userdata);
 
 	// Clear out the controls anticipating new network data.
 	void clearControls();
 	void enableControls(BOOL own_avatar);
 	void updateOnlineText(BOOL online, BOOL have_calling_card);
-	void updatePartnerName();
+	void updatePartnerName(const LLAvatarName& name);
 
 	void setPartnerID(LLUUID id) { mPartnerID = id; }
 	
 private:
 	LLUUID				mPartnerID;
+	boost::signals2::connection mCacheConnection;
 };
 
 
@@ -139,7 +136,7 @@ class LLPanelAvatarWeb :
 public:
 	LLPanelAvatarWeb(const std::string& name, const LLRect& rect, LLPanelAvatar* panel_avatar);
 	/*virtual*/ ~LLPanelAvatarWeb();
-	/*virtual*/ BOOL	postBuild(void);
+	/*virtual*/ BOOL postBuild();
 
 	/*virtual*/ void refresh();
 
@@ -149,11 +146,8 @@ public:
 
 	void setWebURL(std::string url);
 
-	void load(std::string url);
-	void onURLKeystroke(LLLineEditor* editor);
+	void load(const std::string& url);
 	void onCommitLoad(const LLSD& value);
-	void onCommitURL(const LLSD& value);
-	static void onClickWebProfileHelp(void *);
 
 	// inherited from LLViewerMediaObserver
 	/*virtual*/ void handleMediaEvent(LLPluginClassMedia* self, EMediaEvent event);
@@ -170,7 +164,7 @@ class LLPanelAvatarAdvanced : public LLPanelAvatarTab
 public:
 	LLPanelAvatarAdvanced(const std::string& name, const LLRect& rect, LLPanelAvatar* panel_avatar);
 
-	/*virtual*/ BOOL	postBuild(void);
+	/*virtual*/ BOOL postBuild();
 
 	/*virtual*/ void processProperties(void* data, EAvatarProcessorType type);
 
@@ -197,7 +191,7 @@ class LLPanelAvatarNotes : public LLPanelAvatarTab
 public:
 	LLPanelAvatarNotes(const std::string& name, const LLRect& rect, LLPanelAvatar* panel_avatar);
 
-	/*virtual*/ BOOL	postBuild(void);
+	/*virtual*/ BOOL postBuild();
 
 	/*virtual*/ void refresh();
 
@@ -212,7 +206,7 @@ class LLPanelAvatarClassified : public LLPanelAvatarTab
 public:
 	LLPanelAvatarClassified(const std::string& name, const LLRect& rect, LLPanelAvatar* panel_avatar);
 
-	/*virtual*/ BOOL postBuild(void);
+	/*virtual*/ BOOL postBuild();
 
 	/*virtual*/ void refresh();
 
@@ -230,11 +224,13 @@ public:
 	void deleteClassifiedPanels();
 
 private:
-	static void onClickNew(void* data);
-	static void onClickDelete(void* data);
+	void onClickNew();
+	void onClickDelete();
 
 	bool callbackDelete(const LLSD& notification, const LLSD& response);
 	bool callbackNew(const LLSD& notification, const LLSD& response);
+
+	bool mInDirectory;
 };
 
 
@@ -253,13 +249,13 @@ public:
 	void deletePickPanels();
 
 private:
-	static void onClickNew(void* data);
-	static void onClickDelete(void* data);
+	void onClickNew();
+	void onClickDelete();
 	
 	//Pick import and export - RK
-	static void onClickImport(void* data);
+	void onClickImport();
 	static void onClickImport_continued(void* self, bool import);
-	static void onClickExport(void* data);
+	void onClickExport();
 
 	bool callbackDelete(const LLSD& notification, const LLSD& response);
 
@@ -310,12 +306,12 @@ public:
 	void selectTab(S32 tabnum);
 	void selectTabByName(std::string tab_name);
 
-	BOOL haveData() { return mHaveProperties && mHaveStatistics; }
-	BOOL isEditable() const { return mAllowEdit; }
+	bool haveData() const { return mHaveProperties && mHaveStatistics; }
+	bool isEditable() const { return mAllowEdit; }
 
-	static void onClickGetKey(void *userdata);
-	static void onClickOK(		void *userdata);
-	static void onClickCancel(	void *userdata);
+	void onClickGetKey();
+	void onClickOK();
+	void onClickCancel();
 
 private:
 	void enableOKIfReady();
@@ -347,15 +343,16 @@ public:
 	
 private:
 	LLUUID						mAvatarID;			// for which avatar is this window?
-	BOOL						mIsFriend;			// Are we friends?
-	BOOL						mHaveProperties;
-	BOOL						mHaveStatistics;
+	bool						mIsFriend;			// Are we friends?
+	bool						mHaveProperties;
+	bool						mHaveStatistics;
 	// only update note if data received from database and
 	// note is changed from database version
 	bool						mHaveNotes;
 	std::string					mLastNotes;
 	LLTabContainer*		mTab;
-	BOOL						mAllowEdit;
+	bool						mAllowEdit;
+	boost::signals2::connection mCacheConnection;
 
 	typedef std::list<LLPanelAvatar*> panel_list_t;
 	static panel_list_t sAllPanels;

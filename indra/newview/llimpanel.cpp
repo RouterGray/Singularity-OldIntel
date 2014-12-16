@@ -401,11 +401,9 @@ LLFloaterIMPanel::LLFloaterIMPanel(
 
 void LLFloaterIMPanel::onAvatarNameLookup(const LLAvatarName& avatar_name)
 {
-	std::string title;
-	LLAvatarNameCache::getPNSName(avatar_name, title);
-	setTitle(title);
+	setTitle(avatar_name.getNSName());
 	const S32& ns(gSavedSettings.getS32("IMNameSystem"));
-	LLAvatarNameCache::getPNSName(avatar_name, title, ns);
+	std::string title(avatar_name.getNSName(ns));
 	if (!ns || ns == 3) // Remove Resident, if applicable.
 	{
 		size_t pos(title.find(" Resident"));
@@ -768,7 +766,7 @@ void LLFloaterIMPanel::addHistoryLine(const std::string &utf8msg, LLColor4 incol
 			static const LLCachedControl<bool> italicize("LiruItalicizeActions");
 			is_irc = italicize && utf8msg[0] != ':';
 			if (source.notNull())
-				LLAvatarNameCache::getPNSName(source, show_name);
+				LLAvatarNameCache::getNSName(source, show_name);
 			// Convert the name to a hotlink and add to message.
 			LLStyleSP source_style = LLStyleMap::instance().lookupAgent(source);
 			source_style->mItalic = is_irc;
@@ -1434,7 +1432,7 @@ void LLFloaterIMPanel::processIMTyping(const LLIMInfo* im_info, bool typing)
 	{
 		// other user started typing
 		std::string name;
-		if (!LLAvatarNameCache::getPNSName(im_info->mFromID, name)) name = im_info->mName;
+		if (!LLAvatarNameCache::getNSName(im_info->mFromID, name)) name = im_info->mName;
 		addTypingIndicator(name);
 	}
 	else
