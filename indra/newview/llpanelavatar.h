@@ -38,6 +38,7 @@
 #include "lluuid.h"
 #include "llmediactrl.h"
 #include "llavatarpropertiesprocessor.h"
+#include "llmutelist.h"
 
 class LLAvatarName;
 class LLCheckBoxCtrl;
@@ -99,6 +100,7 @@ public:
 
 class LLPanelAvatarSecondLife
 : public LLPanelAvatarTab
+, public LLMuteListObserver
 {
 public:
 	LLPanelAvatarSecondLife(const std::string& name, const LLRect &rect, LLPanelAvatar* panel_avatar );
@@ -108,6 +110,8 @@ public:
 	/*virtual*/ void refresh();
 
 	/*virtual*/ void processProperties(void* data, EAvatarProcessorType type);
+	/*virtual*/ void onChange() {}
+	/*virtual*/ void onChangeDetailed(const LLMute& mute);
 
 	void onClickImage();
 	void onClickFriends();

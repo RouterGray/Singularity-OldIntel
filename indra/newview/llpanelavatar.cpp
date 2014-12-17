@@ -102,7 +102,11 @@ void LLPanelAvatarTab::setAvatarID(const LLUUID& avatar_id)
 			LLAvatarPropertiesProcessor::getInstance()->removeObserver(mAvatarID, this);
 		mAvatarID = avatar_id;
 		if (mAvatarID.notNull())
+		{
 			LLAvatarPropertiesProcessor::getInstance()->addObserver(mAvatarID, this);
+			if (LLUICtrl* ctrl = findChild<LLUICtrl>("Mute"))
+				ctrl->setValue(LLMuteList::instance().isMuted(mAvatarID));
+		}
 	}
 	
 }
@@ -130,11 +134,13 @@ LLPanelAvatarSecondLife::LLPanelAvatarSecondLife(const std::string& name,
 :	LLPanelAvatarTab(name, rect, panel_avatar),
 	mPartnerID()
 {
+	LLMuteList::instance().addObserver(this);
 }
 
 LLPanelAvatarSecondLife::~LLPanelAvatarSecondLife()
 {
 	mCacheConnection.disconnect();
+	LLMuteList::instance().removeObserver(this);
 }
 
 void LLPanelAvatarSecondLife::refresh()
@@ -276,6 +282,12 @@ void LLPanelAvatarSecondLife::processProperties(void* data, EAvatarProcessorType
 			}
 		}
 	}
+}
+
+void LLPanelAvatarSecondLife::onChangeDetailed(const LLMute& mute)
+{
+	if (mute.mID != mAvatarID) return;
+	getChild<LLUICtrl>("Mute")->setValue(LLMuteList::instance().hasMute(mute));
 }
 
 //-----------------------------------------------------------------------------

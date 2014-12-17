@@ -69,7 +69,6 @@
 // [/RLVa:KB]
 
 class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy startConferenceChatResponder_timeout;
 extern AIHTTPTimeoutPolicy sessionInviteResponder_timeout;
 
 //
@@ -172,7 +171,7 @@ public:
 		mAgents = agents_to_invite;
 	}
 
-	/*virtual*/ void httpFailure(void)
+	/*virtual*/ void httpFailure()
 	{
 		//try an "old school" way.
 		if ( mStatus == 400 )
@@ -191,9 +190,7 @@ public:
 		//and it is not worth the effort switching over all
 		//the possible different language translations
 	}
-
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return startConferenceChatResponder_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLStartConferenceChatResponder"; }
+	/*virtual*/ char const* getName() const { return "LLStartConferenceChatResponder"; }
 
 private:
 	LLUUID mTempSessionID;
@@ -347,6 +344,7 @@ LLFloaterIMPanel::LLFloaterIMPanel(
 	case IM_SESSION_P2P_INVITE:
 		mVoiceChannel = new LLVoiceChannelP2P(mSessionUUID, mLogLabel, mOtherParticipantUUID);
 		LLAvatarTracker::instance().addParticularFriendObserver(mOtherParticipantUUID, this);
+		LLMuteList::instance().addObserver(this);
 		mDing = gSavedSettings.getBOOL("LiruNewMessageSoundIMsOn");
 		break;
 	default:
@@ -418,6 +416,7 @@ void LLFloaterIMPanel::onAvatarNameLookup(const LLAvatarName& avatar_name)
 LLFloaterIMPanel::~LLFloaterIMPanel()
 {
 	LLAvatarTracker::instance().removeParticularFriendObserver(mOtherParticipantUUID, this);
+	LLMuteList::instance().removeObserver(this);
 
 	delete mSpeakers;
 	mSpeakers = NULL;
@@ -461,6 +460,13 @@ void LLFloaterIMPanel::changed(U32 mask)
 	else
 		// Show offline icon here
 	*/
+}
+
+// virtual
+void LLFloaterIMPanel::onChangeDetailed(const LLMute& mute)
+{
+	if (mute.mID == mOtherParticipantUUID)
+		rebuildDynamics(getChild<LLComboBox>("instant_message_flyout"));
 }
 
 // virtual
@@ -638,20 +644,14 @@ void LLFloaterIMPanel::draw()
 class LLSessionInviteResponder : public LLHTTPClient::ResponderIgnoreBody
 {
 public:
-	LLSessionInviteResponder(const LLUUID& session_id)
-	{
-		mSessionID = session_id;
-	}
+	LLSessionInviteResponder(const LLUUID& session_id) : mSessionID(session_id) {}
 
-	/*virtual*/ void httpFailure(void)
+	/*virtual*/ void httpFailure()
 	{
-		llwarns << "Error inviting all agents to session [status:"
-				<< mStatus << "]: " << mReason << llendl;
+		llwarns << "Error inviting all agents to session [status:" << mStatus << "]: " << mReason << llendl;
 		//throw something back to the viewer here?
 	}
-
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return sessionInviteResponder_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLSessionInviteResponder"; }
+	/*virtual*/ char const* getName() const { return "LLSessionInviteResponder"; }
 
 private:
 	LLUUID mSessionID;
@@ -960,7 +960,7 @@ void LLFloaterIMPanel::removeDynamics(LLComboBox* flyout)
 	flyout->remove(mDing ? getString("ding on") : getString("ding off"));
 	flyout->remove(mRPMode ? getString("rp mode on") : getString("rp mode off"));
 	flyout->remove(LLAvatarActions::isFriend(mOtherParticipantUUID) ? getString("remove friend") : getString("add friend"));
-	//flyout->remove(LLAvatarActions::isBlocked(mOtherParticipantUUID) ? getString("unmute") : getString("mute"));
+	flyout->remove(LLAvatarActions::isBlocked(mOtherParticipantUUID) ? getString("unmute") : getString("mute"));
 }
 
 void LLFloaterIMPanel::addDynamics(LLComboBox* flyout)
@@ -968,7 +968,7 @@ void LLFloaterIMPanel::addDynamics(LLComboBox* flyout)
 	flyout->add(mDing ? getString("ding on") : getString("ding off"), 6);
 	flyout->add(mRPMode ? getString("rp mode on") : getString("rp mode off"), 7);
 	flyout->add(LLAvatarActions::isFriend(mOtherParticipantUUID) ? getString("remove friend") : getString("add friend"), 8);
-	//flyout->add(LLAvatarActions::isBlocked(mOtherParticipantUUID) ? getString("unmute") : getString("mute"), 9);
+	flyout->add(LLAvatarActions::isBlocked(mOtherParticipantUUID) ? getString("unmute") : getString("mute"), 9);
 }
 
 void copy_profile_uri(const LLUUID& id, bool group = false);
@@ -997,7 +997,7 @@ void LLFloaterIMPanel::onFlyoutCommit(LLComboBox* flyout, const LLSD& value)
 		if (option == 6) mDing = !mDing;
 		else if (option == 7) mRPMode = !mRPMode;
 		else if (option == 8) LLAvatarActions::isFriend(mOtherParticipantUUID) ? LLAvatarActions::removeFriendDialog(mOtherParticipantUUID) : LLAvatarActions::requestFriendshipDialog(mOtherParticipantUUID);
-		//else if (option == 9) LLAvatarActions::toggleBlock(mOtherParticipantUUID);
+		else if (option == 9) LLAvatarActions::toggleBlock(mOtherParticipantUUID);
 
 		// Last add them back
 		addDynamics(flyout);
