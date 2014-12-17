@@ -192,7 +192,7 @@ void add_timestamped_line(LLViewerTextEditor* edit, LLChat chat, const LLColor4&
 		chat.mURL = llformat("secondlife:///app/agent/%s/about",chat.mFromID.asString().c_str());
 	}
 
-	if(chat.mSourceType == CHAT_SOURCE_OBJECT)
+	if (chat.mSourceType == CHAT_SOURCE_OBJECT)
 	{
 		LLStringUtil::trim(chat.mFromName);
 		if (!chat.mFromName.length())
@@ -200,7 +200,6 @@ void add_timestamped_line(LLViewerTextEditor* edit, LLChat chat, const LLColor4&
 			chat.mFromName = LLTrans::getString("Unnamed");
 			line = chat.mFromName + line;
 		}
-		llassert_always(!chat.mURL.empty());
 	}
 
 	static const LLCachedControl<bool> italicize("LiruItalicizeActions");
