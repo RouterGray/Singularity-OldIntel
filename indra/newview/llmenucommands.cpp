@@ -116,12 +116,6 @@
 // [/RLVa:LF]
 #include "shfloatermediaticker.h"
 
-void handle_chat()
-{
-	// give focus to chatbar if it's open but not focused
-	static const LLCachedControl<bool> chat_visible("ChatVisible",true);
-	(chat_visible && gFocusMgr.childHasKeyboardFocus(gChatBar)) ? LLChatBar::stopChat() : LLChatBar::startChat(NULL);
-}
 void handle_debug_avatar_textures(void*);
 template<typename T> void handle_singleton_toggle(void*);
 void show_outfit_dialog() { new LLMakeOutfitDialog(false); }
@@ -177,7 +171,6 @@ struct MenuFloaterDict : public LLSingleton<MenuFloaterDict>
 		registerFloater("build", boost::bind(toggle_build));
 		registerFloater("buy currency", boost::bind(LLFloaterBuyCurrency::buyCurrency));
 		registerFloater("buy land", boost::bind(&LLViewerParcelMgr::startBuyLand, boost::bind(LLViewerParcelMgr::getInstance), false));
-		registerFloater("chatbar", boost::bind(handle_chat));
 		registerFloater("complaint reporter", boost::bind(LLFloaterReporter::showFromMenu, COMPLAINT_REPORT));
 		registerFloater("DayCycle", boost::bind(LLFloaterDayCycle::show), boost::bind(LLFloaterDayCycle::isOpen));
 		registerFloater("debug avatar", boost::bind(handle_debug_avatar_textures, (void*)NULL));

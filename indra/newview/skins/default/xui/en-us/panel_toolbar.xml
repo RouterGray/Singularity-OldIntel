@@ -9,9 +9,7 @@
       <icon image_name="spacer24.tga" width="2" height="2" follows="left|right" color="0,0,0,0" left="0" />
     </layout_panel>
     <layout_panel name="panel2" height="24" width="50" auto_resize="false" user_resize="false" visibility_control="ToolbarVisibleChatbar">
-      <button bottom="0" height="24" image_selected="btn_chatbar_selected.tga" scale_image="true" image_unselected="btn_chatbar.tga" label="" left="2" name="chat_btn" image_overlay="icn_chatbar.tga" tool_tip="Show Chat Bar. (Enter)" width="50" follows="left|right" control_name="ChatVisible">
-        <button.commit_callback function="ShowFloater" parameter="chatbar"/>
-      </button>
+      <button bottom="0" height="24" image_selected="btn_chatbar_selected.tga" scale_image="true" image_unselected="btn_chatbar.tga" label="" left="2" name="chat_btn" image_overlay="icn_chatbar.tga" tool_tip="Show Chat Bar. (Enter)" width="50" follows="left|right" control_name="ChatVisible" toggle="true"/>
     </layout_panel>
     <layout_panel name="panel3" height="2" width="2" auto_resize="false" user_resize="false" visibility_control="ToolbarVisibleChatbar">
       <icon image_name="spacer24.tga" width="2" height="2" follows="left|right" color="0,0,0,0"/>
