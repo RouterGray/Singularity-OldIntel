@@ -609,6 +609,17 @@ bool LLAvatarNameCache::get(const LLUUID& agent_id, LLAvatarName *av_name)
 			
 			return true;
 		}
+		else if (!hasNameLookupURL())
+		{
+			std::string full_name;
+			if (gCacheName->getFullName(agent_id, full_name))
+			{
+				LLAvatarName av_name;
+				av_name.fromString(full_name);
+				sCache[agent_id] = av_name;
+				return true;
+			}
+		}
 	}
 
 	if (!isRequestPending(agent_id))
@@ -662,6 +673,18 @@ LLAvatarNameCache::callback_connection_t LLAvatarNameCache::get(const LLUUID& ag
 			if (av_name.mExpires > LLFrameTimer::getTotalSeconds())
 			{
 				// ...name already exists in cache, fire callback now
+				fireSignal(agent_id, slot, av_name);
+				return connection;
+			}
+		}
+		else if (!hasNameLookupURL())
+		{
+			std::string full_name;
+			if (gCacheName->getFullName(agent_id, full_name))
+			{
+				LLAvatarName av_name;
+				av_name.fromString(full_name);
+				sCache[agent_id] = av_name;
 				fireSignal(agent_id, slot, av_name);
 				return connection;
 			}
