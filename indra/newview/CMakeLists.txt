@@ -1301,13 +1301,6 @@ if (WINDOWS)
         winspool
         )
 
-	if(FMODSTUDIO)
-		list(APPEND viewer_LIBRARIES ${FMODSTUDIO_LIBRARY})
-	endif(FMODSTUDIO)
-
-	if(FMODEX)
-		list(APPEND viewer_LIBRARIES ${FMODEX_LIBRARY})
-	endif(FMODEX)
 	find_library(DEBUG_INTEL_MEMOPS_LIBRARY ll_intel_memops
 	  PATHS
       ${LIBS_PREBUILT_DIR}/lib/debug
@@ -1411,19 +1404,15 @@ if (WINDOWS)
   list(APPEND viewer_SOURCE_FILES ${viewer_INSTALLER_FILES})
 endif (WINDOWS)
 
+if (FMODSTUDIO)
+  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMODSTUDIO")
+endif (FMODSTUDIO)
+if (FMODEX)
+  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMODEX")
+endif (FMODEX)
 if (OPENAL)
   set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_OPENAL")
 endif (OPENAL)
-
-if (FMODSTUDIO)
-  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMODSTUDIO")
-  set(FMODWRAPPER_LIBRARY ${FMODSTUDIO_LIBRARY})
-endif (FMODSTUDIO)
-
-if (FMODEX)
-  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMODEX")
-  set(FMODWRAPPER_LIBRARY ${FMODEX_LIBRARY})
-endif (FMODEX)
 
 set_source_files_properties(llstartup.cpp PROPERTIES COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS}")
 
@@ -1445,44 +1434,45 @@ endif (!DISABLE_TEMPLATE_CHECK)
 set(PACKAGE OFF CACHE BOOL
     "Add a package_viewer target that builds an installer package.")
 
+if(FMOD_LIBRARY_RELEASE)
+  get_filename_component(fmod_lib_rel_name ${FMOD_LIBRARY_RELEASE} NAME)
+  get_filename_component(fmod_lib_deb_name ${FMOD_LIBRARY_DEBUG} NAME)
+  add_custom_command(OUTPUT fmod_lib.marker
+                     COMMENT "Copying fmod library to executable directory"
+                     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<$<NOT:$<CONFIG:debug>>:${FMOD_LIBRARY_RELEASE}>$<$<CONFIG:debug>:${FMOD_LIBRARY_DEBUG}>" "${CMAKE_CFG_INTDIR}/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${fmod_lib_deb_name}>" 				
+                     DEPENDS "${FMOD_LIBRARY_RELEASE}")
+  add_custom_target(fmod_lib_copy DEPENDS fmod_lib.marker prepare)
+  if(DARWIN)
+    add_custom_command(OUTPUT fmod_lib_install.marker
+		               COMMAND install_name_tool -id "@executable_path/../Resources/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${FMOD_LIBRARY_DEBUG}>" "${CMAKE_CFG_INTDIR}/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${fmod_lib_deb_name}>"
+                       DEPENDS fmod_lib.marker)
+	add_dependencies(fmod_lib_copy fmod_lib_install.marker)
+  endif(DARWIN)
+  add_dependencies(${VIEWER_BINARY_NAME} fmod_lib_copy)
+
+  #viewer_manifest.py needs these libraries (for now its all dynlib)
+  if(MANIFEST_LIBRARIES)
+    set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|optimized ${fmod_lib_rel_name}|debug ${fmod_lib_deb_name}")
+  else(MANIFEST_LIBRARIES)
+    set(MANIFEST_LIBRARIES "--extra_libraries=optimized ${fmod_lib_rel_name}|debug ${fmod_lib_deb_name}")
+  endif(MANIFEST_LIBRARIES)
+
+  if(WINDOWS) #If windows, fmod_lib_<config> points to a dll. The correct .lib needs to be linked (but copying is not necessary)
+    set(EXTRA_LINKER_FLAGS_RELEASE "/DELAYLOAD:${fmod_lib_rel_name}")
+	set(EXTRA_LINKER_FLAGS_DEBUG "/DELAYLOAD:${fmod_lib_deb_name}")
+  endif(WINDOWS)
+  list(APPEND viewer_LIBRARIES optimized "${FMOD_LINK_LIBRARY_RELEASE}" debug "${FMOD_LINK_LIBRARY_DEBUG}" )
+endif(FMOD_LIBRARY_RELEASE)
+
 if (WINDOWS)
-    set(release_flags "/MAPRelease/${VIEWER_BINARY_NAME}.map")
-
-    if (FMODSTUDIO)
-        if (WORD_SIZE EQUAL 32)
-            set(fmodstudio_dll_file "fmod.dll")
-        else (WORD_SIZE EQUAL 32)
-            set(fmodstudio_dll_file "fmod64.dll")
-        endif (WORD_SIZE EQUAL 32)
-
-        if(MANIFEST_LIBRARIES)
-       	    set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|${fmodstudio_dll_file}")
-        else(MANIFEST_LIBRARIES)
-            set(MANIFEST_LIBRARIES "--extra_libraries=${fmodstudio_dll_file}")
-        endif(MANIFEST_LIBRARIES)
-        set(EXTRA_LINKER_FLAGS "/DELAYLOAD:${fmodstudio_dll_file}")
-    endif (FMODSTUDIO)
-
-    if (FMODEX)
-        if (WORD_SIZE EQUAL 32)
-            set(fmodex_dll_file "fmodex.dll")
-        else (WORD_SIZE EQUAL 32)
-            set(fmodex_dll_file "fmodex64.dll")
-        endif (WORD_SIZE EQUAL 32)
-
-        if(MANIFEST_LIBRARIES)
-       	    set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|${fmodex_dll_file}")
-        else(MANIFEST_LIBRARIES)
-            set(MANIFEST_LIBRARIES "--extra_libraries=${fmodex_dll_file}")
-        endif(MANIFEST_LIBRARIES)
-        set(EXTRA_LINKER_FLAGS "/DELAYLOAD:${fmodex_dll_file}")
-    endif (FMODEX)
+    set(release_flags "/MAP")
 
     set_target_properties(${VIEWER_BINARY_NAME}
         PROPERTIES
-        LINK_FLAGS "/debug /NODEFAULTLIB:LIBCMT /SUBSYSTEM:WINDOWS ${GOOGLE_PERFTOOLS_LINKER_FLAGS} ${EXTRA_LINKER_FLAGS}"
-        LINK_FLAGS_DEBUG "/NODEFAULTLIB:\"LIBCMT;LIBCMTD;MSVCRT\""
-        LINK_FLAGS_RELEASE ${release_flags}
+        LINK_FLAGS "/debug /NODEFAULTLIB:LIBCMT /SUBSYSTEM:WINDOWS ${GOOGLE_PERFTOOLS_LINKER_FLAGS}"
+        LINK_FLAGS_DEBUG "/NODEFAULTLIB:\"LIBCMT;LIBCMTD;MSVCRT\" ${EXTRA_LINKER_FLAGS_DEBUG}"
+        LINK_FLAGS_RELEASE "${release_flags} ${EXTRA_LINKER_FLAGS_RELEASE}"
+		LINK_FLAGS_RELWITHDEBINFO "${release_flags} ${EXTRA_LINKER_FLAGS_RELEASE}"
         )
 
     # sets the 'working directory' for debugging from visual studio.
@@ -1621,7 +1611,6 @@ target_link_libraries(${VIEWER_BINARY_NAME}
     ${Boost_DATE_TIME_LIBRARY}
     ${DBUSGLIB_LIBRARIES}
     ${OPENGL_LIBRARIES}
-    ${FMODWRAPPER_LIBRARY} # must come after LLAudio
     ${GLOD_LIBRARIES}
     ${APRUTIL_LIBRARIES}
     ${OPENGL_LIBRARIES}
@@ -1646,22 +1635,6 @@ if (LINUX)
       )
 
   set(product ${VIEWER_BRANDING_NAME_CAMELCASE}-${ARCH}-${viewer_VERSION})
-
-  if (FMODSTUDIO)
-    if(MANIFEST_LIBRARIES)
-      set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|${FMODSTUDIO_LIBRARY}")
-    else(MANIFEST_LIBRARIES)
-      set(MANIFEST_LIBRARIES "--extra_libraries=${FMODSTUDIO_LIBRARY}")
-    endif(MANIFEST_LIBRARIES)
-  endif (FMODSTUDIO)
-
-  if (FMODEX)
-    if(MANIFEST_LIBRARIES)
-      set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|${FMODEX_LIBRARY}")
-    else(MANIFEST_LIBRARIES)
-      set(MANIFEST_LIBRARIES "--extra_libraries=${FMODEX_LIBRARY}")
-    endif(MANIFEST_LIBRARIES)
-  endif (FMODEX)
 
   add_custom_command(
       OUTPUT ${product}.tar.bz2
@@ -1755,24 +1728,6 @@ if (DARWIN)
 
   add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_quicktime media_plugin_webkit basic_plugin_filepicker)
 
-  if (FMODSTUDIO)
-    add_custom_command(OUTPUT "${FMODSTUDIO_LIBRARY}"
-                      COMMAND cp "${FMODSTUDIO_ORIG_LIBRARY}" "${FMODSTUDIO_LIBRARY}"
-                      COMMAND install_name_tool -id "@executable_path/../Resources/libfmod.dylib" ${FMODSTUDIO_LIBRARY}
-                      DEPENDS "${FMODSTUDIO_ORIG_LIBRARY}")
-    add_custom_target(fmodstudio_modified_library DEPENDS "${FMODSTUDIO_LIBRARY}")
-    add_dependencies(${VIEWER_BINARY_NAME} fmodstudio_modified_library)
-  endif (FMODSTUDIO)
-
-  if (FMODEX)
-    add_custom_command(OUTPUT "${FMODEX_LIBRARY}"
-                      COMMAND cp "${FMODEX_ORIG_LIBRARY}" "${FMODEX_LIBRARY}"
-                      COMMAND install_name_tool -id "@executable_path/../Resources/libfmodex.dylib" ${FMODEX_LIBRARY}
-                      DEPENDS "${FMODEX_ORIG_LIBRARY}")
-    add_custom_target(fmodex_modified_library DEPENDS "${FMODEX_LIBRARY}")
-    add_dependencies(${VIEWER_BINARY_NAME} fmodex_modified_library)
-  endif (FMODEX)
-
   if (PACKAGE)
       add_custom_target(package_viewer ALL DEPENDS ${VIEWER_BINARY_NAME})
 
@@ -1817,9 +1772,9 @@ if (PACKAGE)
     list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}")
     # *TODO: Generate these search dirs in the cmake files related to each binary.
     list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/llplugin/slplugin/${CMAKE_CFG_INTDIR}")
-    list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/media_plugins/gstreamer010/${CMAKE_CFG_INTDIR}")
-    list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/media_plugins/quicktime/${CMAKE_CFG_INTDIR}")
-    list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/media_plugins/webkit/${CMAKE_CFG_INTDIR}")
+    list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/plugins/gstreamer010/${CMAKE_CFG_INTDIR}")
+    list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/plugins/quicktime/${CMAKE_CFG_INTDIR}")
+    list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/plugins/webkit/${CMAKE_CFG_INTDIR}")
     set(VIEWER_SYMBOL_FILE "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/secondlife-symbols-darwin.tar.bz2")
     set(VIEWER_EXE_GLOBS "'${VIEWER_BRANDING_NAME}' SLPlugin")
     set(VIEWER_LIB_GLOB "*.dylib")
@@ -1897,8 +1852,10 @@ if (WINDOWS)
 
     set_target_properties(llcommon
         PROPERTIES
-        LINK_FLAGS "/debug /NODEFAULTLIB:LIBCMT /LTCG"
+        LINK_FLAGS "/debug /NODEFAULTLIB:LIBCMT"
         LINK_FLAGS_DEBUG "/NODEFAULTLIB:\"LIBCMT;LIBCMTD;MSVCRT\""
+		LINK_FLAGS_RELEASE "${release_flags} /LTCG"
+		LINK_FLAGS_RELWITHDEBINFO "${release_flags}"
         )
 
   add_custom_command(

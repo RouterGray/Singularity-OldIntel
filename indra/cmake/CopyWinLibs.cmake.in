@@ -6,10 +6,6 @@
 
 set(LIBS_PREBUILT_DIR "@LIBS_PREBUILT_DIR@")
 set(LIBS_PREBUILT_LEGACY_DIR "@LIBS_PREBUILT_LEGACY_DIR@")
-set(FMODSTUDIO_SDK_DIR "@FMODSTUDIO_SDK_DIR@")
-set(FMODEX_SDK_DIR "@FMODEX_SDK_DIR@")
-set(FMODSTUDIO @FMODSTUDIO@)
-set(FMODEX @FMODEX@)
 set(MSVC10 "@MSVC10@")
 set(WORD_SIZE "@WORD_SIZE@")
 
@@ -181,62 +177,5 @@ if(0)
   copy_files("${LIBS_DEBUG_DIR}/codecs" "${plugin_codec_debug_files}" "../test_apps/llplugintest/codecs/Debug")
 endif(0)
 
-if(FMODSTUDIO)
-    if (WORD_SIZE EQUAL 32)
-        set(fmodstudio_dll_file "fmod.dll")
-    else (WORD_SIZE EQUAL 32)
-        set(fmodstudio_dll_file "fmod64.dll")
-    endif (WORD_SIZE EQUAL 32)
-    
-    find_path(FMODSTUDIO_BINARY_RELEASE_DIR "${fmodstudio_dll_file}"
-	      ${LIBS_RELEASE_DIR}
-          "${FMODSTUDIO_SDK_DIR}/api/lowlevel/lib"
-          "${FMODSTUDIO_SDK_DIR}"
-          NO_DEFAULT_PATH
-          )
-	find_path(FMODSTUDIO_BINARY_DEBUG_DIR "${fmodstudio_dll_file}"
-	      ${LIBS_DEBUG_DIR}
-          "${FMODSTUDIO_SDK_DIR}/api/lowlevel/lib"
-		  "${FMODSTUDIO_SDK_DIR}"
-          NO_DEFAULT_PATH
-          )
-
-    if(FMODSTUDIO_BINARY_RELEASE_DIR)
-		copy_files(${FMODSTUDIO_BINARY_RELEASE_DIR} ${fmodstudio_dll_file} "Release")
-		copy_files(${FMODSTUDIO_BINARY_RELEASE_DIR} ${fmodstudio_dll_file} "RelWithDebInfo")
-    endif(FMODSTUDIO_BINARY_RELEASE_DIR)
-	if(FMODSTUDIO_BINARY_DEBUG_DIR)
-		copy_files(${FMODSTUDIO_BINARY_DEBUG_DIR} ${fmodstudio_dll_file} "Debug")
-	endif(FMODSTUDIO_BINARY_DEBUG_DIR)
-endif(FMODSTUDIO)
-
-if(FMODEX)
-    if (WORD_SIZE EQUAL 32)
-        set(fmodex_dll_file "fmodex.dll")
-    else (WORD_SIZE EQUAL 32)
-        set(fmodex_dll_file "fmodex64.dll")
-    endif (WORD_SIZE EQUAL 32)
-    
-	find_path(FMODEX_BINARY_RELEASE_DIR "${fmodex_dll_file}"
-          ${LIBS_RELEASE_DIR}
-          "${FMODEX_SDK_DIR}/api"
-          "${FMODEX_SDK_DIR}"
-          NO_DEFAULT_PATH
-          )
-	find_path(FMODEX_BINARY_DEBUG_DIR "${fmodex_dll_file}"
-          ${LIBS_DEBUG_DIR}
-          "${FMODSTUDIO_SDK_DIR}/api"
-          "${FMODSTUDIO_SDK_DIR}"
-          NO_DEFAULT_PATH
-          )
-
-    if(FMODEX_BINARY_RELEASE_DIR)
-		copy_files(${FMODEX_BINARY_RELEASE_DIR ${fmodex_dll_file} "Release")
-		copy_files(${FMODEX_BINARY_RELEASE_DIR ${fmodex_dll_file} "RelWithDebInfo")
-    endif(FMODEX_BINARY_RELEASE_DIR)
-	if(FMODEX_BINARY_DEBUG_DIR)
-		copy_files(${FMODEX_BINARY_DEBUG_DIR ${fmodex_dll_file} "Debug")
-	endif(FMODEX_BINARY_DEBUG_DIR)
-endif(FMODEX)
 
 

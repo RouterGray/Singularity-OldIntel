@@ -6,81 +6,80 @@ if (FMODEX AND FMODSTUDIO)
     message( FATAL_ERROR "You can not enable two FMOD variants at the same time." )
 endif (FMODEX AND FMODSTUDIO)
 
-if (NOT FMODEX_LIBRARY)
+unset(FMOD_LIBRARY_RELEASE CACHE)
+unset(FMOD_LIBRARY_DEBUG CACHE)
+unset(FMOD_LINK_LIBRARY_RELEASE CACHE)
+unset(FMOD_LINK_LIBRARY_DEBUG CACHE)
+unset(FMOD_INCLUDE_DIR CACHE)
+
+if (NOT FMODEX_SDK_DIR)
   set(FMODEX_SDK_DIR CACHE PATH "Path to the FMOD Ex SDK.")
-  if (FMODEX_SDK_DIR)
-    if(WORD_SIZE EQUAL 32)
-      find_library(FMODEX_LIBRARY
-                   fmodex_vc fmodexL_vc fmodex fmodexL
-                   PATHS
-                   "${FMODEX_SDK_DIR}/api/lib"
-                   "${FMODEX_SDK_DIR}/api"
-                   "${FMODEX_SDK_DIR}/lib"
-                   "${FMODEX_SDK_DIR}"
-                   )
-    elseif(WORD_SIZE EQUAL 64)
-      find_library(FMODEX_LIBRARY
-                   fmodex64_vc fmodexL64_vc fmodex64 fmodexL64
-                   PATHS
-                   "${FMODEX_SDK_DIR}/api/lib"
-                   "${FMODEX_SDK_DIR}/api"
-                   "${FMODEX_SDK_DIR}/lib"
-                   "${FMODEX_SDK_DIR}"
-                   )
-    endif(WORD_SIZE EQUAL 32)
-  endif(FMODEX_SDK_DIR)
-  if(WINDOWS AND NOT FMODEX_SDK_DIR)
-    GET_FILENAME_COMPONENT(FMODEX_PROG_DIR [HKEY_CURRENT_USER\\Software\\FMOD\ Programmers\ API\ Windows] ABSOLUTE CACHE)
-    if(WORD_SIZE EQUAL 32)
-      find_library(FMODEX_LIBRARY
-                   fmodex_vc fmodexL_vc
-                   PATHS
-                   "${FMODEX_PROG_DIR}/api/lib"
-                   "${FMODEX_PROG_DIR}/api"
-                   "${FMODEX_PROG_DIR}"
-                   )
-    else(WORD_SIZE EQUAL 32)
-      find_library(FMODEX_LIBRARY
-                   fmodex64_vc fmodexL64_vc
-                   PATHS
-                   "${FMODEX_PROG_DIR}/api/lib"
-                   "${FMODEX_PROG_DIR}/api"
-                   "${FMODEX_PROG_DIR}"
-                   )
-    endif(WORD_SIZE EQUAL 32)
-    if(FMODEX_LIBRARY)
-      message(STATUS "Found fmodex in ${FMODEX_PROG_DIR}")
-      set(FMODEX_SDK_DIR "${FMODEX_PROG_DIR}")
-      set(FMODEX_SDK_DIR "${FMODEX_PROG_DIR}" CACHE PATH "Path to the FMOD Ex SDK." FORCE)
-    endif(FMODEX_LIBRARY)
-  endif(WINDOWS AND NOT FMODEX_SDK_DIR)
-endif (NOT FMODEX_LIBRARY)
+  if(WINDOWS)
+    GET_FILENAME_COMPONENT(FMODEX_SDK_DIR [HKEY_CURRENT_USER\\Software\\FMOD\ Programmers\ API\ Windows] ABSOLUTE CACHE)
+  endif(WINDOWS)
+endif (NOT FMODEX_SDK_DIR)
 
-find_path(FMODEX_INCLUDE_DIR fmod.hpp
-          ${LIBS_PREBUILT_DIR}/include/fmodex
-          ${LIBS_PREBUILT_LEGACY_DIR}/include/fmodex
-          "${FMODEX_SDK_DIR}/api/inc"
-          "${FMODEX_SDK_DIR}/inc"
-          "${FMODEX_SDK_DIR}"
-          )
+set(release_fmod_lib_paths
+    ${LIBS_PREBUILT_DIR}/release/lib/
+    ${LIBS_PREBUILT_LEGACY_DIR}/release/lib)
+set(debug_fmod_lib_paths
+    ${LIBS_PREBUILT_DIR}/debug/lib
+    ${LIBS_PREBUILT_LEGACY_DIR}/debug/lib)
+set(fmod_inc_paths
+    ${LIBS_PREBUILT_DIR}/include/fmodsex
+    ${LIBS_PREBUILT_LEGACY_DIR}/include/fmodex)
 
-if(DARWIN)
-  set(FMODEX_ORIG_LIBRARY "${FMODEX_LIBRARY}")
-  set(FMODEX_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/libfmodex.dylib")
-endif(DARWIN)
 
-if (FMODEX_LIBRARY AND FMODEX_INCLUDE_DIR)
-  set(FMODEX ON CACHE BOOL "Use closed source FMOD Ex sound library.")
-else (FMODEX_LIBRARY AND FMODEX_INCLUDE_DIR)
-  set(FMODEX_LIBRARY "")
-  set(FMODEX_INCLUDE_DIR "")
-  if (FMODEX)
+
+if (FMODEX_SDK_DIR)
+  set(release_fmod_lib_paths ${release_fmod_lib_paths} "${FMODEX_SDK_DIR}/api" "${FMODEX_SDK_DIR}/api/lib")
+  set(debug_fmod_lib_paths ${debug_fmod_lib_paths} "${FMODEX_SDK_DIR}/api" "${FMODEX_SDK_DIR}/api/lib")
+  set(fmod_inc_paths ${fmod_inc_paths} "${FMODEX_SDK_DIR}/api/inc")
+endif (FMODEX_SDK_DIR)
+
+if(WINDOWS)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES_OLD ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set(CMAKE_FIND_LIBRARY_SUFFIXES .dll)
+endif(WINDOWS)
+if(WORD_SIZE EQUAL 32) #Check if CMAKE_FIND_LIBRARY_PREFIXES is set to 'lib' for darwin.
+  find_library(FMOD_LIBRARY_RELEASE fmodex PATHS ${release_fmod_lib_paths})
+  find_library(FMOD_LIBRARY_DEBUG fmodexL PATHS ${debug_fmod_lib_paths})
+elseif(WORD_SIZE EQUAL 64)
+  find_library(FMOD_LIBRARY_RELEASE fmodex64 PATHS ${release_fmod_lib_paths})
+  find_library(FMOD_LIBRARY_DEBUG fmodLex64 PATHS ${debug_fmod_lib_paths}) 
+endif (WORD_SIZE EQUAL 32)
+if(WINDOWS)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_OLD})
+  if(WORD_SIZE EQUAL 32)
+    find_library(FMOD_LINK_LIBRARY_RELEASE fmodex_vc PATHS ${release_fmod_lib_paths})
+    find_library(FMOD_LINK_LIBRARY_DEBUG fmodexL_vc PATHS ${debug_fmod_lib_paths})
+  elseif(WORD_SIZE EQUAL 64)
+    find_library(FMOD_LINK_LIBRARY_RELEASE fmodex64_vc PATHS ${release_fmod_lib_paths})
+    find_library(FMOD_LINK_LIBRARY_DEBUG fmodLex64_vc PATHS ${debug_fmod_lib_paths}) 
+  endif (WORD_SIZE EQUAL 32)
+else(WINDOWS)
+  set(FMODSTUDIO_LINK_LIBRARY_RELEASE  ${FMODSTUDIO_LIBRARY_RELEASE})
+  set(FMODSTUDIO_LINK_LIBRARY_DEBUG ${FMODSTUDIO_LIBRARY_DEBUG})
+endif(WINDOWS)
+find_path(FMOD_INCLUDE_DIR fmod.hpp ${fmod_inc_paths})
+
+if (FMOD_LIBRARY_RELEASE AND FMOD_INCLUDE_DIR)
+  set(FMOD ON CACHE BOOL "Use closed source FMOD sound library.")
+  if (NOT FMOD_LIBRARY_DEBUG) #Use release library in debug configuration if debug library is absent.
+    set(FMOD_LIBRARY_DEBUG ${FMOD_LIBRARY_RELEASE})
+  endif (NOT FMOD_LIBRARY_DEBUG)
+else (FMOD_LIBRARY_RELEASE AND FMOD_INCLUDE_DIR)
+  unset(FMOD_LIBRARY_RELEASE CACHE)
+  unset(FMOD_LIBRARY_DEBUG CACHE)
+  unset(FMOD_INCLUDE_DIR CACHE)
+  if (FMOD)
     message(STATUS "No support for FMOD Ex audio (need to set FMODEX_SDK_DIR?)")
-  endif (FMODEX)
-  set(FMODEX OFF CACHE BOOL "Use closed source FMOD Ex sound library.")
+  endif (FMOD)
+  set(FMOD OFF CACHE BOOL "Use closed source FMOD sound library.")
+  set(FMOD OFF)
   set(FMODEX OFF)
-endif (FMODEX_LIBRARY AND FMODEX_INCLUDE_DIR)
+endif (FMOD_LIBRARY_RELEASE AND FMOD_INCLUDE_DIR)
 
-if (FMODEX)
-  message(STATUS "Building with FMOD Ex audio support")
-endif (FMODEX)
+if (FMOD)
+  message(STATUS "Building with FMOD audio support")
+endif (FMOD)

@@ -1341,23 +1341,23 @@
           <key>darwin</key>
           <map>
             <key>md5sum</key>
-            <string>917a60e1b18dd0f5e6afb555623339a4</string>
+            <string>8eb5462ea9d469bce4b0d22bd8f0c33b</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/slvoice-4.6.0009.20030-darwin-20140312.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/slvoice-4.6.0009.20030-darwin-20140312-rpk.tar.bz2</uri>
           </map>
           <key>linux</key>
           <map>
             <key>md5sum</key>
-            <string>01573510dce7f380f44e561ef2f3dd9f</string>
+            <string>1c8643e27023f1d9b1523ca5794b7475</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/vivox-2.1.3010.6270-linux-20090309.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/vivox-2.1.3010.6270-linux-20090309-rpk.tar.bz2</uri>
           </map>
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>01573510dce7f380f44e561ef2f3dd9f</string>
+            <string>1c8643e27023f1d9b1523ca5794b7475</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/vivox-2.1.3010.6270-linux-20090309.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/vivox-2.1.3010.6270-linux-20090309-rpk.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>

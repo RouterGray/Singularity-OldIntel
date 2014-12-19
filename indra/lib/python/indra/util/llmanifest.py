@@ -41,14 +41,6 @@ import tarfile
 import errno
 import subprocess
 
-class ManifestError(RuntimeError):
-    """Use an exception more specific than generic Python RuntimeError"""
-    pass
-
-class MissingError(ManifestError):
-    """You specified a file that doesn't exist"""
-    pass
-
 def path_ancestors(path):
     drive, path = os.path.splitdrive(os.path.normpath(path))
     result = []
@@ -253,25 +245,15 @@ def main():
     for opt in args:
         print "Option:", opt, "=", args[opt]
 
-    # Build base package.
-    touch = args.get('touch')
-    if touch:
-        print 'Creating base package'
-    args['package_id'] = "" # base package has no package ID
     wm = LLManifest.for_platform(args['platform'], args.get('arch'))(args)
     wm.do(*args['actions'])
-    # Store package file for later if making touched file.
-    base_package_file = ""
-    if touch:
-        print 'Created base package ', wm.package_file
-        base_package_file = "" + wm.package_file
 
     # Write out the package file in this format, so that it can easily be called
     # and used in a .bat file - yeah, it sucks, but this is the simplest...
     touch = args.get('touch')
     if touch:
         fp = open(touch, 'w')
-        fp.write('set package_file=%s\n' % base_package_file)
+        fp.write('set package_file=%s\n' % wm.package_file)
         fp.close()
         print 'touched', touch
     return 0
@@ -298,13 +280,14 @@ class LLManifest(object):
         self.file_list = []
         self.excludes = []
         self.actions = []
-        self.src_prefix = [args['source']]
-        self.artwork_prefix = [args['artwork']]
-        self.build_prefix = [args['build']]
-        self.dst_prefix = [args['dest']]
+        self.src_prefix = list([args['source']])
+        self.artwork_prefix = list([args['artwork']])
+        self.build_prefix = list([args['build']])
+        self.alt_build_prefix = list([args['build']])
+        self.dst_prefix = list([args['dest']])
         self.created_paths = []
         self.package_name = "Unknown"
-        
+
     def default_grid(self):
         return self.args.get('grid', None) == ''
     def default_channel(self):
@@ -328,7 +311,7 @@ class LLManifest(object):
         in the file list by path()."""
         self.excludes.append(glob)
 
-    def prefix(self, src='', build=None, dst=None):
+    def prefix(self, src='', build=None, dst=None, alt_build=None):
         """ Pushes a prefix onto the stack.  Until end_prefix is
         called, all relevant method calls (esp. to path()) will prefix
         paths with the entire prefix stack.  Source and destination
@@ -339,10 +322,15 @@ class LLManifest(object):
             dst = src
         if build is None:
             build = src
+        if alt_build is None:
+            alt_build = build
+
         self.src_prefix.append(src)
         self.artwork_prefix.append(src)
         self.build_prefix.append(build)
         self.dst_prefix.append(dst)
+        self.alt_build_prefix.append(alt_build)
+
         return True  # so that you can wrap it in an if to get indentation
 
     def end_prefix(self, descr=None):
@@ -355,25 +343,30 @@ class LLManifest(object):
         src = self.src_prefix.pop()
         artwork = self.artwork_prefix.pop()
         build = self.build_prefix.pop()
+        alt_build_prefix = self.alt_build_prefix.pop()
         dst = self.dst_prefix.pop()
         if descr and not(src == descr or build == descr or dst == descr):
             raise ValueError, "End prefix '" + descr + "' didn't match '" +src+ "' or '" +dst + "'"
 
     def get_src_prefix(self):
         """ Returns the current source prefix."""
-        return os.path.join(*self.src_prefix)
+        return os.path.relpath(os.path.normpath(os.path.join(*self.src_prefix)))
 
     def get_artwork_prefix(self):
         """ Returns the current artwork prefix."""
-        return os.path.join(*self.artwork_prefix)
+        return os.path.relpath(os.path.normpath(os.path.join(*self.artwork_prefix)))
 
     def get_build_prefix(self):
         """ Returns the current build prefix."""
-        return os.path.join(*self.build_prefix)
+        return os.path.relpath(os.path.normpath(os.path.join(*self.build_prefix)))
+    
+    def get_alt_build_prefix(self):
+        """ Returns the current alternate source prefix."""
+        return os.path.relpath(os.path.normpath(os.path.join(*self.alt_build_prefix)))
 
     def get_dst_prefix(self):
         """ Returns the current destination prefix."""
-        return os.path.join(*self.dst_prefix)
+        return os.path.relpath(os.path.normpath(os.path.join(*self.dst_prefix)))
 
     def src_path_of(self, relpath):
         """Returns the full path to a file or directory specified
@@ -390,26 +383,10 @@ class LLManifest(object):
         relative to the destination directory."""
         return os.path.join(self.get_dst_prefix(), relpath)
 
-    def ensure_src_dir(self, reldir):
-        """Construct the path for a directory relative to the
-        source path, and ensures that it exists.  Returns the
-        full path."""
-        path = os.path.join(self.get_src_prefix(), reldir)
-        self.cmakedirs(path)
-        return path
-
-    def ensure_dst_dir(self, reldir):
-        """Construct the path for a directory relative to the
-        destination path, and ensures that it exists.  Returns the
-        full path."""
-        path = os.path.join(self.get_dst_prefix(), reldir)
-        self.cmakedirs(path)
-        return path
-
     def run_command(self, command):
         """ Runs an external command, and returns the output.  Raises
-        an exception if the command returns a nonzero status code.  For
-        debugging/informational purposes, prints out the command's
+        an exception if the command reurns a nonzero status code.  For
+        debugging/informational purpoases, prints out the command's
         output as it is received."""
         print "Running command:", command
         fd = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -422,7 +399,7 @@ class LLManifest(object):
                 print lines[-1].rstrip('\n'),
         output = ''.join(lines)
         if fd.returncode:
-            raise ManifestError(
+            raise RuntimeError(
                 "Command %s returned non-zero status (%s) \noutput:\n%s"
                 % (command, fd.returncode, output) )
         return output
@@ -432,24 +409,14 @@ class LLManifest(object):
           a) verify that you really have created it
           b) schedule it for cleanup"""
         if not os.path.exists(path):
-            raise ManifestError, "Should be something at path " + path
+            raise RuntimeError, "Should be something at path " + path
         self.created_paths.append(path)
 
-    def put_in_file(self, contents, dst, src=None):
+    def put_in_file(self, contents, dst):
         # write contents as dst
-        dst_path = self.dst_path_of(dst)
-        f = open(dst_path, "wb")
-        try:
-            f.write(contents)
-        finally:
-            f.close()
-
-        # Why would we create a file in the destination tree if not to include
-        # it in the installer? The default src=None (plus the fact that the
-        # src param is last) is to preserve backwards compatibility.
-        if src:
-            self.file_list.append([src, dst_path])
-        return dst_path
+        f = open(self.dst_path_of(dst), "wb")
+        f.write(contents)
+        f.close()
 
     def replace_in(self, src, dst=None, searchdict={}):
         if dst == None:
@@ -512,29 +479,30 @@ class LLManifest(object):
                 if method is not None:
                     method(src, dst)
             self.file_list.append([src, dst])
-            return 1
+            return [dst]
         else:
             sys.stdout.write(" (excluding %r, %r)" % (src, dst))
             sys.stdout.flush()
-            return 0
+            return []
 
     def process_directory(self, src, dst):
         if not self.includes(src, dst):
             sys.stdout.write(" (excluding %r, %r)" % (src, dst))
             sys.stdout.flush()
-            return 0
+            return []
         names = os.listdir(src)
         self.cmakedirs(dst)
         errors = []
+        found_files = []
         count = 0
         for name in names:
             srcname = os.path.join(src, name)
             dstname = os.path.join(dst, name)
             if os.path.isdir(srcname):
-                count += self.process_directory(srcname, dstname)
+                found_files.extend(self.process_directory(srcname, dstname))
             else:
-                count += self.process_file(srcname, dstname)
-        return count
+                found_files.extend(self.process_file(srcname, dstname))
+        return found_files
 
     def includes(self, src, dst):
         if src:
@@ -597,7 +565,7 @@ class LLManifest(object):
             except (IOError, os.error), why:
                 errors.append((srcname, dstname, why))
         if errors:
-            raise ManifestError, errors
+            raise RuntimeError, errors
 
 
     def cmakedirs(self, path):
@@ -614,24 +582,10 @@ class LLManifest(object):
             if os.path.exists(f):
                 return f
         # didn't find it, return last item in list
-        if len(list) > 0:
+        if list:
             return list[-1]
         else:
             return None
-
-    def contents_of_tar(self, src_tar, dst_dir):
-        """ Extracts the contents of the tarfile (specified
-        relative to the source prefix) into the directory
-        specified relative to the destination directory."""
-        self.check_file_exists(src_tar)
-        tf = tarfile.open(self.src_path_of(src_tar), 'r')
-        for member in tf.getmembers():
-            tf.extract(member, self.ensure_dst_dir(dst_dir))
-            # TODO get actions working on these dudes, perhaps we should extract to a temporary directory and then process_directory on it?
-            self.file_list.append([src_tar,
-                           self.dst_path_of(os.path.join(dst_dir,member.name))])
-        tf.close()
-
 
     def wildcard_regex(self, src_glob, dst_glob):
         src_re = re.escape(src_glob)
@@ -643,12 +597,7 @@ class LLManifest(object):
             i = i+1
         return re.compile(src_re), dst_temp
 
-    def check_file_exists(self, path):
-        if not os.path.exists(path) and not os.path.islink(path):
-            raise MissingError("Path %s doesn't exist" % (os.path.abspath(path),))
-
-
-    wildcard_pattern = re.compile(r'\*')
+    wildcard_pattern = re.compile('\*')
     def expand_globs(self, src, dst):
         src_list = glob.glob(src)
         src_re, d_template = self.wildcard_regex(src.replace('\\', '/'),
@@ -675,53 +624,44 @@ class LLManifest(object):
         return self.path(os.path.join(path, file), file)
 
     def path(self, src, dst=None):
-        sys.stdout.write("Processing %s => %s ... " % (src, dst))
         sys.stdout.flush()
         if src == None:
-            raise ManifestError("No source file, dst is " + dst)
+            raise RuntimeError("No source file, dst is " + dst)
         if dst == None:
             dst = src
         dst = os.path.join(self.get_dst_prefix(), dst)
+        sys.stdout.write("Processing %s => %s ... " % (src, dst))
+        count = 0
+        is_glob = False
+        found_files = []
 
-        def try_path(src):
-            # expand globs
-            count = 0
-            if self.wildcard_pattern.search(src):
-                for s,d in self.expand_globs(src, dst):
+        # look under each prefix for matching paths. Paths are normalized so  './../blah' will match '../blah/../blah/'
+        paths = set([os.path.normpath(os.path.join(self.get_src_prefix(), src)),
+                 os.path.normpath(os.path.join(self.get_artwork_prefix(), src)),
+                 os.path.normpath(os.path.join(self.get_build_prefix(), src)), 
+                 os.path.normpath(os.path.join(self.get_alt_build_prefix(), src))]
+                    )
+        for path in paths:
+            print path
+            if self.wildcard_pattern.search(path):
+                is_glob = True
+                for s,d in self.expand_globs(path, dst):
                     assert(s != d)
-                    count += self.process_file(s, d)
+                    found_files.extend(self.process_file(s, d))
             else:
-                # if we're specifying a single path (not a glob),
-                # we should error out if it doesn't exist
-                self.check_file_exists(src)
                 # if it's a directory, recurse through it
-                if os.path.isdir(src):
-                    count += self.process_directory(src, dst)
-                else:
-                    count += self.process_file(src, dst)
-            return count
+                if os.path.isdir(path):
+                    found_files.extend(self.process_directory(path, dst))
+                elif os.path.exists(path):
+                    found_files.extend(self.process_file(path, dst))
 
-        for pfx in self.get_src_prefix(), self.get_artwork_prefix(), self.get_build_prefix():
-            try:
-                count = try_path(os.path.join(pfx, src))
-            except MissingError:
-                # If src isn't a wildcard, and if that file doesn't exist in
-                # this pfx, try next pfx.
-                count = 0
-                continue
+        # if we're specifying a single path (not a glob),
+        # we should error out if it doesn't exist
+        if not found_files and not is_glob:
+            raise RuntimeError("No files match %s\n" % str(paths))
 
-            # Here try_path() didn't raise MissingError. Did it process any files?
-            if count:
-                break
-            # Even though try_path() didn't raise MissingError, it returned 0
-            # files. src is probably a wildcard meant for some other pfx. Loop
-            # back to try the next.
-
-        print "%d files" % count
-
-        # Let caller check whether we processed as many files as expected. In
-        # particular, let caller notice 0.
-        return count
+        print "%d files" % len(found_files)
+        return found_files
 
     def do(self, *actions):
         self.actions = actions
