@@ -41,6 +41,7 @@ import shutil
 import socket
 import sys
 import commands
+import shlex
 
 class CommandError(Exception):
     pass
@@ -506,6 +507,11 @@ class WindowsSetup(PlatformSetup):
 
     generator = property(_get_generator, _set_generator)
 
+    def get_gen_str(self, gen):
+        if gen is None:
+             gen = self._generator
+        return self.gens[gen.lower()]['ver']
+
     def os(self):
         return 'win32'
 
@@ -539,7 +545,7 @@ class WindowsSetup(PlatformSetup):
                 '-DSTANDALONE:BOOL=%(standalone)s '
                 '-DUNATTENDED:BOOL=%(unattended)s '
                 '-DWORD_SIZE:STRING=%(word_size)s '
-                '-DROOT_PROJECT_NAME:STRING=%(project_name)s '
+                '-DROOT_PROJECT_NAME:STRING=\"%(project_name)s\" '
                 '%(opts)s "%(dir)s"' % args)
 
     def get_HKLM_registry_value(self, key_str, value_str):
@@ -551,19 +557,17 @@ class WindowsSetup(PlatformSetup):
         return value
         
     def find_visual_studio(self, gen=None):
-        if gen is None:
-            gen = self._generator
-        gen = gen.lower()
+        gen = self.get_gen_str(gen)
         value_str = (r'EnvironmentDirectory')
         key_str = (r'SOFTWARE\Microsoft\VisualStudio\%s\Setup\VS' %
-                   self.gens[gen]['ver'])
+                   gen)
         print ('Reading VS environment from HKEY_LOCAL_MACHINE\%s\%s' %
                (key_str, value_str))
         try:
             return self.get_HKLM_registry_value(key_str, value_str)           
         except WindowsError, err:
             key_str = (r'SOFTWARE\Wow6432Node\Microsoft\VisualStudio\%s\Setup\VS' %
-                       self.gens[gen]['ver'])
+                       gen)
 
         try:
             return self.get_HKLM_registry_value(key_str, value_str)
@@ -571,14 +575,13 @@ class WindowsSetup(PlatformSetup):
             print >> sys.stderr, "Didn't find ", self.gens[gen]['gen']
         return ''
         
+          
     def find_visual_studio_express(self, gen=None):
-        if gen is None:
-            gen = self._generator
-        gen = gen.lower()
+        gen = self.get_gen_str(gen)
         try:
             import _winreg
             key_str = (r'SOFTWARE\Microsoft\VCEXpress\%s\Setup\VC' %
-                       self.gens[gen]['ver'])
+                       gen)
             value_str = (r'ProductDir')
             print ('Reading VS environment from HKEY_LOCAL_MACHINE\%s\%s' %
                    (key_str, value_str))
@@ -590,17 +593,15 @@ class WindowsSetup(PlatformSetup):
             print 'Found: %s' % value
             return value
         except WindowsError, err:
-            print >> sys.stderr, "Didn't find ", self.gens[gen]['gen']
+            print >> sys.stderr, "Didn't find ", gen
             return ''
         
     def find_visual_studio_express_single(self, gen=None):
-        if gen is None:
-            gen = self._generator
-        gen = gen.lower()
+        gen = self.get_gen_str(gen)
         try:
             import _winreg
             key_str = (r'SOFTWARE\Microsoft\VCEXpress\%s_Config\Setup\VC' %
-                       self.gens[gen]['ver'])
+                       gen)
             value_str = (r'ProductDir')
             print ('Reading VS environment from HKEY_CURRENT_USER\%s\%s' %
                    (key_str, value_str))
@@ -612,7 +613,7 @@ class WindowsSetup(PlatformSetup):
             print 'Found: %s' % value
             return value
         except WindowsError, err:
-            print >> sys.stderr, "Didn't find ", self.gens[gen]['gen']
+            print >> sys.stderr, "Didn't find ", gen
             return ''
 
     def get_build_cmd(self):
@@ -621,7 +622,7 @@ class WindowsSetup(PlatformSetup):
             if self.gens[self.generator]['ver'] in [ r'8.0', r'9.0' ]:
                 config = '\"%s|Win32\"' % config
 
-            return "buildconsole %s.sln /build %s" % (self.project_name, config)
+            return "buildconsole \"%s.sln\" /build %s" % (self.project_name, config), None
         environment = self.find_visual_studio()
         if environment == '':
             environment = self.find_visual_studio_express()
@@ -637,15 +638,16 @@ class WindowsSetup(PlatformSetup):
                     exit(0)
     
         # devenv.com is CLI friendly, devenv.exe... not so much.
-        return ('"%sdevenv.com" %s.sln /build %s' % 
+        return ('"%sdevenv.com" \"%s.sln\" /build %s' % 
                 (self.find_visual_studio(), self.project_name, self.build_type))
 
     def run(self, command, name=None):
         '''Run a program.  If the program fails, raise an exception.'''
-        ret = os.system(command)
+        ret = os.system('\"'+command+'\"')
         if ret:
             if name is None:
-                name = command.split(None, 1)[0]
+                name = os.path.normpath(shlex.split(command.encode('utf8'),posix=False)[0].strip('"'))
+
             path = self.find_in_path(name)
             if not path:
                 ret = 'was not found'
@@ -677,9 +679,9 @@ class WindowsSetup(PlatformSetup):
             else:
                 tool_path = os.path.join('indra','tools','vstool','VSTool.exe')
             vstool_cmd = (tool_path +
-                          ' --solution ' +
-                          os.path.join(build_dir,'Singularity.sln') +
-                          ' --config ' + self.build_type +
+                          ' --solution \"' +
+                          os.path.join(build_dir,'%s.sln' % self.project_name) +
+                          '\" --config ' + self.build_type +
                           ' --startup secondlife-bin')
             print 'Running vstool %r in %r' % (vstool_cmd, getcwd())
             self.run(vstool_cmd)        
