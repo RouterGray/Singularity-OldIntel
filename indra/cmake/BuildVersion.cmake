@@ -38,11 +38,6 @@ if (WINDOWS)
        ${CMAKE_SOURCE_DIR}/newview/res/viewerRes.rc.in
        ${CMAKE_SOURCE_DIR}/newview/res/viewerRes.rc
    )
-   
-   configure_file(
-       ${CMAKE_SOURCE_DIR}/newview/res/viewerRes_bc.rc.in
-       ${CMAKE_SOURCE_DIR}/newview/res/viewerRes_bc.rc
-   )
 endif (WINDOWS)
 
 if (DARWIN)

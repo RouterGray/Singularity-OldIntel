@@ -1228,7 +1228,6 @@ if (WINDOWS)
         res/arrowcopmulti.cur
         res/arrowdrag.cur
         res/circleandline.cur
-        res/icon1.ico
         res/llarrow.cur
         res/llarrowdrag.cur
         res/llarrowdragmulti.cur
@@ -1248,8 +1247,7 @@ if (WINDOWS)
         res/lltooltranslate.cur
         res/lltoolzoomin.cur
         res/lltoolzoomout.cur
-        res/snowglobe_icon.BMP
-        res/snowglobe_icon.ico
+        res/${VIEWER_BRANDING_ID}_icon.ico
         res/resource.h
         res/toolpickobject.cur
         res/toolpickobject2.cur
