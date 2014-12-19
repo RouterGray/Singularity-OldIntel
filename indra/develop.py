@@ -574,7 +574,29 @@ class WindowsSetup(PlatformSetup):
         except:
             print >> sys.stderr, "Didn't find ", self.gens[gen]['gen']
         return ''
-        
+
+    def find_msbuild(self, gen=None):
+        gen = self.get_gen_str(gen)
+
+        key_str = (r'SOFTWARE\Microsoft\MSBuild\ToolsVersions\12.0')
+
+        print ('Checking MSBuild support for vs ver = %s' % gen)
+        if not self.get_HKLM_registry_value(key_str+'\\'+gen, "VCTargetsPath"):
+            return (None, None)
+        print ('Reading MSBuild location from HKEY_LOCAL_MACHINE\%s\MSBuildToolsPath' %
+               key_str)
+        print key_str
+        try:
+            return (self.get_HKLM_registry_value(key_str, 'MSBuildToolsPath'), gen)           
+        except WindowsError, err:
+            key_str = (r'SOFTWARE\Wow6432Node\Microsoft\MSBuild\ToolsVersions\%s' %
+                       gen)
+
+        try:
+            return (self.get_HKLM_registry_value(key_str, 'MSBuildToolsPath'), gen)
+        except WindowsError, err:
+            print 'Didn\'t find msbuild'
+            return (None, None)
           
     def find_visual_studio_express(self, gen=None):
         gen = self.get_gen_str(gen)
@@ -637,9 +659,15 @@ class WindowsSetup(PlatformSetup):
                     print >> sys.stderr, "\nPlease see https://wiki.secondlife.com/wiki/Microsoft_Visual_Studio#Extra_steps_for_Visual_Studio_Express_editions for Visual Studio Express specific information"
                     exit(0)
     
+        msbuild_dir, tool_ver = self.find_msbuild()
+        
+        if msbuild_dir is not None and tool_ver is not None:
+            return ('\"%smsbuild.exe\" \"%s.sln\" /p:configuration=%s /p:VisualStudioVersion=%s' % 
+                (msbuild_dir, self.project_name, self.build_type,  tool_ver)), True
+
         # devenv.com is CLI friendly, devenv.exe... not so much.
         return ('"%sdevenv.com" \"%s.sln\" /build %s' % 
-                (self.find_visual_studio(), self.project_name, self.build_type))
+                (self.find_visual_studio(), self.project_name, self.build_type)), None
 
     def run(self, command, name=None):
         '''Run a program.  If the program fails, raise an exception.'''
@@ -689,16 +717,21 @@ class WindowsSetup(PlatformSetup):
         
     def run_build(self, opts, targets):
         cwd = getcwd()
-        build_cmd = self.get_build_cmd()
+        build_cmd, msbuild = self.get_build_cmd()
 
         for d in self.build_dirs():
             try:
                 os.chdir(d)
                 if targets:
-                    for t in targets:
-                        cmd = '%s /project %s %s' % (build_cmd, t, ' '.join(opts))
+                    if msbuild:
+                        cmd = '%s /target:%s %s' % (build_cmd, ';'.join(targets), ' '.join(opts))
                         print 'Running build(targets) %r in %r' % (cmd, d)
                         self.run(cmd)
+                    else:
+                        for t in targets:
+                            cmd = '%s /project %s %s' % (build_cmd, t, ' '.join(opts))
+                            print 'Running build(targets) %r in %r' % (cmd, d)
+                            self.run(cmd)
                 else:
                     cmd = '%s %s' % (build_cmd, ' '.join(opts))
                     print 'Running build %r in %r' % (cmd, d)

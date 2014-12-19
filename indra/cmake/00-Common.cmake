@@ -91,7 +91,7 @@ if (WINDOWS)
   
   # SSE2 is implied on win64
   if(WORD_SIZE EQUAL 32)
-    add_definitions(/arch:SSE2)
+    add_definitions(/arch:SSE2 /D_ATL_XP_TARGETING)
   else(WORD_SIZE EQUAL 32)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /wd4267 /wd4250 /wd4244")
   endif(WORD_SIZE EQUAL 32)
