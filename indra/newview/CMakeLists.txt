@@ -1450,9 +1450,9 @@ if(FMOD_LIBRARY_RELEASE)
 
   #viewer_manifest.py needs these libraries (for now its all dynlib)
   if(MANIFEST_LIBRARIES)
-    set(MANIFEST_LIBRARIES "${MANIFEST_LIBRARIES}|optimized ${fmod_lib_rel_name}|debug ${fmod_lib_deb_name}")
+    set(MANIFEST_LIBRARIES ${MANIFEST_LIBRARIES}|optimized ${fmod_lib_rel_name}|debug ${fmod_lib_deb_name})
   else(MANIFEST_LIBRARIES)
-    set(MANIFEST_LIBRARIES "--extra_libraries=optimized ${fmod_lib_rel_name}|debug ${fmod_lib_deb_name}")
+    set(MANIFEST_LIBRARIES optimized ${fmod_lib_rel_name}|debug ${fmod_lib_deb_name})
   endif(MANIFEST_LIBRARIES)
 
   if(WINDOWS) #If windows, fmod_lib_<config> points to a dll. The correct .lib needs to be linked (but copying is not necessary)
@@ -1530,7 +1530,7 @@ if (WINDOWS)
           --login_channel=${VIEWER_LOGIN_CHANNEL}
           --source=${CMAKE_CURRENT_SOURCE_DIR}
           --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/touched.bat
-		  ${MANIFEST_LIBRARIES}
+		  --extra_libraries="${MANIFEST_LIBRARIES}"
         DEPENDS
             ${VIEWER_BINARY_NAME}
             ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1553,7 +1553,7 @@ if (WINDOWS)
           --login_channel=${VIEWER_LOGIN_CHANNEL}
           --source=${CMAKE_CURRENT_SOURCE_DIR}
           --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/copy_touched.bat
-		  ${MANIFEST_LIBRARIES}
+		  --extra_libraries="${MANIFEST_LIBRARIES}"
         DEPENDS
             ${VIEWER_BINARY_NAME}
             ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1652,7 +1652,7 @@ if (LINUX)
         --source=${CMAKE_CURRENT_SOURCE_DIR}
         --standalone=${STANDALONE}
         --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.touched
-		  ${MANIFEST_LIBRARIES}
+		--extra_libraries="${MANIFEST_LIBRARIES}"
       DEPENDS
         secondlife-stripped
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1676,7 +1676,7 @@ if (LINUX)
         --login_channel=${VIEWER_LOGIN_CHANNEL}
         --source=${CMAKE_CURRENT_SOURCE_DIR}
         --standalone=${STANDALONE}
-		  ${MANIFEST_LIBRARIES}
+		--extra_libraries="${MANIFEST_LIBRARIES}"
       DEPENDS
         secondlife-stripped
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py

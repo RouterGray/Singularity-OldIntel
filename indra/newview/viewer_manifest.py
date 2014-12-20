@@ -197,9 +197,15 @@ class ViewerManifest(LLManifest):
     def add_extra_libraries(self):
         found_libs = []
         if 'extra_libraries' in self.args:
-            path_list = self.args['extra_libraries'].split('|')
+            try:
+                path_list = self.args['extra_libraries'].strip('"').split('|')
+            except:
+                return None
             for cur_path in path_list:
-                config, file = cur_path.split(' ', 1)
+                try:
+                    config, file = cur_path.split(' ', 1)
+                except:
+                    config, file = (None, None)
                 if(config == 'optimized'):
                     if(self.args['configuration'].lower() != 'release' and self.args['configuration'].lower() != 'relwithdebinfo'):
                         continue
