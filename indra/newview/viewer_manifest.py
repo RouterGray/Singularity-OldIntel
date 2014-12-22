@@ -37,6 +37,7 @@ import re
 import tarfile
 import time
 import subprocess
+import errno
 viewer_dir = os.path.dirname(__file__)
 # add llmanifest library to our path so we don't have to muck with PYTHONPATH
 sys.path.append(os.path.join(viewer_dir, '../lib/python/indra/util'))

@@ -112,13 +112,13 @@ class PlatformSetup(object):
 
     def build_dirs(self):
         '''Return the top-level directories in which builds occur.
+        This can return more than one directory, e.g. if doing a
+        32-bit viewer and server build on Linux.'''
+
         if(os.path.basename(os.path.normpath(os.getcwd())) == 'indra'):
             prefix = '../'
         else:
             prefix = ''
-        
-        This can return more than one directory, e.g. if doing a
-        32-bit viewer and server build on Linux.'''
 
         return [prefix+'build-' + self.platform()]
 

@@ -13,7 +13,7 @@ else (STANDALONE)
         add_definitions("-DCARES_STATICLIB")
         set(CARES_LIBRARIES areslib)
     elseif (DARWIN)
-        set(APR_LIBRARIES 
+        set(CARES_LIBRARIES 
           debug libcares.a
           optimized libcares.a
           )
