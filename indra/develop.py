@@ -418,15 +418,17 @@ class DarwinSetup(UnixSetup):
             word_size=self.word_size,
             unattended=self.unattended,
             project_name=self.project_name,
-            universal=self.universal,
-            type=self.build_type.upper(),
+            universal='',
+            type='',
             )
+        if(self.generator != 'Xcode'):
+            args['type'] = '-DCMAKE_BUILD_TYPE=%s' % self.build_type.upper()
         if self.universal == 'ON':
             args['universal'] = '-DCMAKE_OSX_ARCHITECTURES:STRING=\'i386;ppc\''
         #if simple:
         #    return 'cmake %(opts)s %(dir)r' % args
         return ('cmake -G %(generator)r '
-                '-DCMAKE_BUILD_TYPE:STRING=%(type)s '
+                '%(type) '
                 '-DSTANDALONE:BOOL=%(standalone)s '
                 '-DUNATTENDED:BOOL=%(unattended)s '
                 '-DWORD_SIZE:STRING=%(word_size)s '
