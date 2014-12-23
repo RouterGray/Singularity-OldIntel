@@ -280,14 +280,7 @@ class LinuxSetup(UnixSetup):
         return 'linux'
 
     def build_dirs(self):
-        if(os.path.basename(os.path.normpath(os.getcwd())) == 'indra'):
-            prefix = '../'
-        else:
-            prefix = ''
-        
-        platform_build = '%s-%s' % (self.platform(), self.build_type.lower())
-
-        return [prefix+'viewer-' + platform_build]
+        return [PlatformSetup.build_dirs(self)[0]+'-'+self.build_type.lower()]
 
     def cmake_commandline(self, src_dir, build_dir, opts, simple):
         args = dict(
@@ -409,6 +402,12 @@ class DarwinSetup(UnixSetup):
         else:
             return UnixSetup.arch(self)
 
+    def build_dirs(self):
+        if(self.generator == 'Xcode'):
+            return PlatformSetup.build_dirs(self)
+        else:
+             return [PlatformSetup.build_dirs(self)[0]+'-'+self.build_type.lower()]
+
     def cmake_commandline(self, src_dir, build_dir, opts, simple):
         args = dict(
             dir=src_dir,
@@ -428,7 +427,7 @@ class DarwinSetup(UnixSetup):
         #if simple:
         #    return 'cmake %(opts)s %(dir)r' % args
         return ('cmake -G %(generator)r '
-                '%(type) '
+                '%(type)s '
                 '-DSTANDALONE:BOOL=%(standalone)s '
                 '-DUNATTENDED:BOOL=%(unattended)s '
                 '-DWORD_SIZE:STRING=%(word_size)s '
@@ -437,6 +436,18 @@ class DarwinSetup(UnixSetup):
                 '%(opts)s %(dir)r' % args)
 
     def run_build(self, opts, targets):
+        if(self.generator != 'Xcode'):
+            if targets:
+                targets = ' '.join(targets)
+            else:
+                targets = 'all'
+
+            for d in self.build_dirs():
+                cmd = 'make -C %r %s %s' % (d, ' '.join(opts), targets)
+                print 'Running %r' % cmd
+                self.run(cmd)
+            return
+
         cwd = getcwd()
         if targets:
             targets = ' '.join(['-target ' + repr(t) for t in targets])

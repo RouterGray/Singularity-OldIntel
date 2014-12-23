@@ -687,12 +687,13 @@ class DarwinManifest(ViewerManifest):
         if not os.path.exists (self.src_path_of(dmg_template)):
             dmg_template = os.path.join ('installers', 'darwin', 'release-dmg')
 
-        for s,d in {self.get_dst_prefix():app_name + ".app",
-                    os.path.join(dmg_template, "_VolumeIcon.icns"): ".VolumeIcon.icns",
-                    os.path.join(dmg_template, "background.jpg"): "background.jpg",
-                    os.path.join(dmg_template, "_DS_Store"): ".DS_Store"}.items():
+        
+        for s,d in {self.build_path_of(self.get_dst_prefix()):app_name + ".app",
+                    self.src_path_of(os.path.join(dmg_template, "_VolumeIcon.icns")): ".VolumeIcon.icns",
+                    self.src_path_of(os.path.join(dmg_template, "background.jpg")): "background.jpg",
+                    self.src_path_of(os.path.join(dmg_template, "_DS_Store")): ".DS_Store"}.items():
             print "Copying to dmg", s, d
-            self.copy_action(self.src_path_of(s), os.path.join(volpath, d))
+            self.copy_action(s, os.path.join(volpath, d))
 
         # Hide the background image, DS_Store file, and volume icon file (set their "visible" bit)
         self.run_command('SetFile -a V "' + os.path.join(volpath, ".VolumeIcon.icns") + '"')
