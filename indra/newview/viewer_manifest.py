@@ -197,12 +197,14 @@ class ViewerManifest(LLManifest):
 
     def add_extra_libraries(self):
         found_libs = []
-        if 'extra_libraries' in self.args:
+        if 'extra_libraries' in self.args and self.args['extra_libraries'] != '':
             try:
                 path_list = self.args['extra_libraries'].strip('"').split('|')
             except:
                 return None
             for cur_path in path_list:
+                if cur_path is None or cur_path == '':
+                    continue
                 try:
                     config, file = cur_path.split(' ', 1)
                 except:
@@ -215,7 +217,7 @@ class ViewerManifest(LLManifest):
                     if(self.args['configuration'].lower() != 'debug'):
                         continue
                     cur_path = file
-                if(cur_path != None):
+                if(cur_path != ''):
                     found_libs += self.path_optional(cur_path)
         return found_libs
 

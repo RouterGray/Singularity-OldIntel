@@ -642,7 +642,6 @@ class LLManifest(object):
                  os.path.normpath(os.path.join(self.get_alt_build_prefix(), src))]
                     )
         for path in paths:
-            print path
             if self.wildcard_pattern.search(path):
                 is_glob = True
                 for s,d in self.expand_globs(path, dst):
