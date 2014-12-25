@@ -752,6 +752,8 @@ class LinuxManifest(ViewerManifest):
         #    self.path("secondlife-stripped","bin/"+self.binary_name())
         #else:
         #    self.path("secondlife-bin","bin/"+self.binary_name())
+        self.path("secondlife-bin","bin/"+self.binary_name())
+
         if self.prefix(src="", dst="bin"):
             self.path2basename("../llplugin/slplugin", "SLPlugin")
             self.end_prefix("bin")
