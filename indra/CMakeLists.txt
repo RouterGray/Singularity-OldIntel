@@ -17,7 +17,6 @@ cmake_minimum_required(VERSION 2.6.2 FATAL_ERROR)
 # can be removed when we use full paths for all libraries.
 cmake_policy(SET CMP0003 OLD)
 if(NOT (CMAKE_MAJOR_VERSION LESS 3))
-cmake_policy(SET CMP0048 OLD)
 cmake_policy(SET CMP0026 OLD)
 endif(NOT (CMAKE_MAJOR_VERSION LESS 3))
 
@@ -31,7 +30,6 @@ include(Variables)
 
 # Load versions now.  Install locations need them.
 include(BuildVersion)
-
 include(UnixInstall)
 
 if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
