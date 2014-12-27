@@ -37,8 +37,8 @@
       <button label="Connexion" label_selected="Me connecter" name="connect_btn"/>
     </layout_panel>
   </layout_stack>
-  <check_box label="Mémoriser le nom" name="remember_name_check"/>
-  <check_box label="Mémoriser mot de passe" name="remember_check"/>
+  <check_box label="Retenir le nom" name="remember_name_check"/>
+  <check_box label="Retenir mot de passe" name="remember_check"/>
 	<text name="create_new_account_text">
 		Créer un compte
 	</text>
