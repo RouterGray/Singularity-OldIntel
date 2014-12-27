@@ -1,7 +1,7 @@
 # ll_deploy_sharedlibs_command
 # target_exe: the cmake target of the executable for which the shared libs will be deployed.
 macro(ll_deploy_sharedlibs_command target_exe) 
-  get_target_property(TARGET_LOCATION ${target_exe} LOCATION)
+  SET(TARGET_LOCATION $<TARGET_FILE:${target_exe}>)
   get_filename_component(OUTPUT_PATH ${TARGET_LOCATION} PATH)
   
   if(DARWIN)
@@ -42,7 +42,8 @@ macro(ll_stage_sharedlib DSO_TARGET)
   # Also this directory is shared with RunBuildTest.cmake, y'know, for the tests.
   set_target_properties(${DSO_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${SHARED_LIB_STAGING_DIR})
   if(NOT WINDOWS)
-    get_target_property(DSO_PATH ${DSO_TARGET} LOCATION)
+    
+	SET(DSO_PATH $<TARGET_FILE:${DSO_TARGET}>)
     get_filename_component(DSO_FILE ${DSO_PATH} NAME)
     if(DARWIN)
       set(SHARED_LIB_STAGING_DIR_CONFIG ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/Resources)

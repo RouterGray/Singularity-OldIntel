@@ -1846,7 +1846,7 @@ if (WINDOWS)
     ENDFOREACH(RUNTIME_LIB ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})
   ENDIF(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
 
-  get_target_property(BUILT_LLCOMMON llcommon LOCATION)
+  SET(BUILT_LLCOMMON $<TARGET_FILE:llcommon>)
 
     set_target_properties(llcommon
         PROPERTIES
@@ -1867,7 +1867,7 @@ if (WINDOWS)
       COMMENT "Copying llcommon.dll to the runtime folder."
       )
 
-  get_target_property(BUILT_SLPLUGIN SLPlugin LOCATION)
+  SET(BUILT_SLPLUGIN $<TARGET_FILE:SLPlugin>)
   add_custom_command(
       TARGET ${VIEWER_BINARY_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND}
@@ -1879,7 +1879,7 @@ if (WINDOWS)
       COMMENT "Copying SLPlugin executable to the runtime folder."
       )
 
-  get_target_property(BUILT_WEBKIT_PLUGIN media_plugin_webkit LOCATION)
+  SET(BUILT_WEBKIT_PLUGIN $<TARGET_FILE:media_plugin_webkit>)
     add_custom_command(
         TARGET ${VIEWER_BINARY_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND}
@@ -1891,7 +1891,7 @@ if (WINDOWS)
         COMMENT "Copying WebKit Plugin to the runtime folder."
         )
 
-  get_target_property(BUILT_QUICKTIME_PLUGIN media_plugin_quicktime LOCATION)
+  SET(BUILT_QUICKTIME_PLUGIN $<TARGET_FILE:media_plugin_quicktime>)
     add_custom_command(
         TARGET ${VIEWER_BINARY_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND}
@@ -1903,7 +1903,7 @@ if (WINDOWS)
         COMMENT "Copying Quicktime Plugin to the runtime folder."
         )
 
-  get_target_property(BUILT_FILEPICKER_PLUGIN basic_plugin_filepicker LOCATION)
+  SET(BUILT_FILEPICKER_PLUGIN $<TARGET_FILE:basic_plugin_filepicker>)
     add_custom_command(
         TARGET ${VIEWER_BINARY_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND}
@@ -1917,7 +1917,7 @@ if (WINDOWS)
 
 # winmm doesn't build on windows 64
   if(WORD_SIZE EQUAL 32)
-  get_target_property(BUILT_WINMM_SHIM_PLUGIN winmm_shim LOCATION)
+  SET(BUILT_WINMM_SHIM_PLUGIN $<TARGET_FILE:winmm_shim>)
     add_custom_command(
         TARGET ${VIEWER_BINARY_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND}

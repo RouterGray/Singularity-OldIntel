@@ -4,7 +4,7 @@
 # other commands to guarantee full compatibility
 # with the version specified
 
-cmake_minimum_required(VERSION 2.6.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
 
 # Eventually the third-party support modules (cmake/*.cmake) should
 # know the full path to all libraries.  Until that happens we need
@@ -15,10 +15,7 @@ cmake_minimum_required(VERSION 2.6.2 FATAL_ERROR)
 # CMP0003 to OLD and link to one library (apr) on a per-configuration
 # basis to convince CMake to add the proper link directory.  This line
 # can be removed when we use full paths for all libraries.
-cmake_policy(SET CMP0003 OLD)
-if(NOT (CMAKE_MAJOR_VERSION LESS 3))
-cmake_policy(SET CMP0026 OLD)
-endif(NOT (CMAKE_MAJOR_VERSION LESS 3))
+#cmake_policy(SET CMP0003 OLD)
 
 set(ROOT_PROJECT_NAME "Singularity" CACHE STRING
     "The root project/makefile/solution name. Defaults to Singularity.")
