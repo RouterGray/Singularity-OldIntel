@@ -1233,7 +1233,7 @@ void LLPanelAvatar::setOnlineStatus(EOnlineStatus online_status)
 		mPanelSecondLife->childSetVisible("online_yes", online_status == ONLINE_STATUS_YES);
 
 	LLView* offer_tp(getChildView("Offer Teleport..."));
-	LLView* map_stalk(getChildView("Find on map"));
+	LLView* map_stalk(getChildView("Find on Map"));
 	// Since setOnlineStatus gets called after setAvatarID
 	// need to make sure that "Offer Teleport" doesn't get set
 	// to TRUE again for yourself
