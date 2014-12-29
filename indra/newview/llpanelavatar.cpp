@@ -1184,7 +1184,10 @@ BOOL LLPanelAvatar::postBuild()
 	ctrl->setEnabled(false);
 	getChild<LLUICtrl>("OK")->setCommitCallback(boost::bind(&LLPanelAvatar::onClickOK, this));
 	getChild<LLUICtrl>("Cancel")->setCommitCallback(boost::bind(&LLPanelAvatar::onClickCancel, this));
-	getChild<LLUICtrl>("copy_key")->setCommitCallback(boost::bind(&LLPanelAvatar::onClickGetKey, this));
+	if (LLUICtrl* ctrl = findChild<LLUICtrl>("copy_key")) // Singu TODO: Bring this back
+		ctrl->setCommitCallback(boost::bind(&LLPanelAvatar::onClickGetKey, this));
+	void copy_profile_uri(const LLUUID& id, bool group);
+	getChild<LLUICtrl>("copy_uri")->setCommitCallback(boost::bind(copy_profile_uri, boost::bind(&LLPanelAvatar::getAvatarID, this), false));
 	getChildView("web_profile")->setVisible(!gSavedSettings.getString("WebProfileURL").empty());
 
 	if (mTab && !sAllowFirstLife)
@@ -1207,7 +1210,7 @@ BOOL LLPanelAvatar::postBuild()
 
 LLPanelAvatar::~LLPanelAvatar()
 {
-	LLAvatarPropertiesProcessor::getInstance()->removeObserver(mAvatarID,this);
+	LLAvatarPropertiesProcessor::getInstance()->removeObserver(mAvatarID, this);
 	sAllPanels.remove(this);
 	mCacheConnection.disconnect();
 }
@@ -1224,7 +1227,7 @@ void LLPanelAvatar::setOnlineStatus(EOnlineStatus online_status)
 	// If they are a friend, we may know the truth!
 	if ((ONLINE_STATUS_YES != online_status)
 		&& mIsFriend
-		&& (LLAvatarTracker::instance().isBuddyOnline( mAvatarID )))
+		&& LLAvatarTracker::instance().isBuddyOnline(mAvatarID))
 	{
 		online_status = ONLINE_STATUS_YES;
 	}
@@ -1266,10 +1269,8 @@ void LLPanelAvatar::setAvatarID(const LLUUID &avatar_id)
 	if (avatar_id != mAvatarID)
 	{
 		//avatar_changed = TRUE;
-		if(mAvatarID.notNull())
-		{
+		if (mAvatarID.notNull())
 			LLAvatarPropertiesProcessor::getInstance()->removeObserver(mAvatarID, this);
-		}
 		mAvatarID = avatar_id;
 	}
 
