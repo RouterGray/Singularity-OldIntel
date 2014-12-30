@@ -264,16 +264,17 @@ class WindowsManifest(ViewerManifest):
 
             self.add_extra_libraries()
 
-            try:
-                self.path("msvc*.dll")
-            except:
-                try:
-                    if self.prefix(src="msvcrt", dst=""):
-                        self.path("*.dll")
-                        self.path("*.manifest")
-                        self.end_prefix()
-                except:
-                    pass
+            if(self.prefix(src="..", dst="")):
+                found_files = self.path("msvc*.dll")
+                self.end_prefix()
+                if(not found_files):
+                    try:
+                        if self.prefix(src="msvcrt", dst=""):
+                            self.path("*.dll")
+                            self.path("*.manifest")
+                            self.end_prefix()
+                    except:
+                        pass
 
             # Vivox runtimes
             self.path("SLVoice.exe")
