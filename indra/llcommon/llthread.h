@@ -27,7 +27,7 @@
 #ifndef LL_LLTHREAD_H
 #define LL_LLTHREAD_H
 
-#define USE_BOOST_MUTEX 0
+#define USE_BOOST_MUTEX 1
 
 #define IS_LLCOMMON_INLINE (!LL_COMMON_LINK_SHARED || defined(llcommon_EXPORTS))
 
