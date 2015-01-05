@@ -17,13 +17,9 @@ include(LLMath)
 include(LLMessage)
 include(LLVFS)
 
-if (FMODSTUDIO)
-  include_directories(${FMODSTUDIO_INCLUDE_DIR})
-endif(FMODSTUDIO)
-
-if (FMODEX)
-  include_directories(${FMODEX_INCLUDE_DIR})
-endif(FMODEX)
+if (FMOD)
+  include_directories(${FMOD_INCLUDE_DIR})
+endif(FMOD)
 
 include_directories(
     ${LLAUDIO_INCLUDE_DIRS}
