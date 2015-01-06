@@ -986,7 +986,7 @@ void LLPanelLogin::onLocationSLURL()
 //Special handling of name combobox. Facilitates grid-changing by account selection.
 void LLPanelLogin::onSelectLoginEntry(const LLSD& selected_entry)
 {
-	if (!selected_entry.isUndefined())
+	if (selected_entry.isMap())
 		setFields(LLSavedLoginEntry(selected_entry));
 	// This stops the automatic matching of the first name to a selected grid.
 	LLViewerLogin::getInstance()->setNameEditted(true);
