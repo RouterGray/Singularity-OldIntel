@@ -62,6 +62,7 @@
 #include "pipeline.h"
 #include "llappviewer.h"		// for do_disconnect()
 #include "llpacketring.h"
+#include "hippogridmanager.h"
 
 #include <deque>
 #include <queue>
@@ -1376,11 +1377,14 @@ void process_enable_simulator(LLMessageSystem *msg, void **user_data)
 	// Viewer trusts the simulator.
 	msg->enableCircuit(sim, TRUE);
 // <FS:CR> Aurora Sim
-	U32 region_size_x = 256;
-	msg->getU32Fast(_PREHASH_SimulatorInfo, _PREHASH_RegionSizeX, region_size_x);
-	U32 region_size_y = 256;
-	msg->getU32Fast(_PREHASH_SimulatorInfo, _PREHASH_RegionSizeY, region_size_y);
-	LLWorld::getInstance()->setRegionSize(region_size_x, region_size_y);
+	if (!gHippoGridManager->getConnectedGrid()->isSecondLife())
+	{
+		U32 region_size_x = 256;
+		msg->getU32Fast(_PREHASH_SimulatorInfo, _PREHASH_RegionSizeX, region_size_x);
+		U32 region_size_y = 256;
+		msg->getU32Fast(_PREHASH_SimulatorInfo, _PREHASH_RegionSizeY, region_size_y);
+		LLWorld::getInstance()->setRegionSize(region_size_x, region_size_y);
+	}
 // </FS:CR> Aurora Sim
 	LLWorld::getInstance()->addRegion(handle, sim);
 
