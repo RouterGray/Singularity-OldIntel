@@ -576,8 +576,10 @@ class DarwinManifest(ViewerManifest):
                                 ):
                         self.path(libfile)
                     
-                    dylibs += self.add_extra_libraries()
+                    self.end_prefix()
 
+                if self.prefix(src=self.args['configuration'], alt_build=libdir):
+                    dylibs += self.add_extra_libraries()
                     self.end_prefix()
 
                 # our apps
@@ -876,18 +878,20 @@ class Linux_i686Manifest(LinuxManifest):
             self.path("libboost_system-mt.so.*")
             self.path("libboost_thread-mt.so.*")
 
-            self.add_extra_libraries()
-
             self.end_prefix("lib")
+
+        if (not self.standalone()) and self.prefix(src=self.args['configuration'], alt_build="../packages/lib/release", dst="lib"):
+            dylibs += self.add_extra_libraries()
+            self.end_prefix()
             
-            # Vivox runtimes
-            if self.prefix(src="../packages/lib/release", dst="bin"):
-                self.path("SLVoice")
-                self.end_prefix("bin")
-            if self.prefix(src="../packages/lib/release", dst="lib"):
-                self.path("libortp.so")
-                self.path("libvivoxsdk.so")
-                self.end_prefix("lib")
+        # Vivox runtimes
+        if self.prefix(src="../packages/lib/release", dst="bin"):
+            self.path("SLVoice")
+            self.end_prefix("bin")
+        if self.prefix(src="../packages/lib/release", dst="lib"):
+            self.path("libortp.so")
+            self.path("libvivoxsdk.so")
+            self.end_prefix("lib")
 
 class Linux_x86_64Manifest(LinuxManifest):
     def construct(self):
@@ -926,9 +930,11 @@ class Linux_x86_64Manifest(LinuxManifest):
             self.path("libboost_system-mt.so.*")
             self.path("libboost_thread-mt.so.*")
 
-            self.add_extra_libraries()
-
             self.end_prefix("lib")
+
+        if (not self.standalone()) and self.prefix(src=self.args['configuration'], alt_build="../packages/lib/release", dst="lib"):
+            dylibs += self.add_extra_libraries()
+            self.end_prefix()
 
         # Vivox runtimes
         if self.prefix(src="../packages/lib/release", dst="bin"):

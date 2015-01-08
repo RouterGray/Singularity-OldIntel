@@ -451,6 +451,53 @@
           </map>
         </map>
       </map>
+	  <key>fmodstudio</key>
+	  <map>
+		<key>copyright</key>
+		<string>Copyright © 1994-2014 Firelight Technologies Pty, Ltd.</string>
+		<key>description</key>
+        <string>FMOD Studio programmer’s API's low level component. For simple sounds/channels/dsp/geometry.</string>
+        <key>license</key>
+        <string>fmod</string>
+        <key>packages</key>
+        <map>
+          <key>darwin</key>
+          <map>
+            <key>md5sum</key>
+            <string>93ebcfcaf0572427593cdb38d7c7435b</string>
+            <key>url</key>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-darwin-20150106.tar.bz2</uri>
+          </map>
+          <key>linux</key>
+          <map>
+            <key>md5sum</key>
+            <string>b75bcb905747b6aa9c288924379741d4</string>
+            <key>url</key>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-linux-20150106.tar.bz2</uri>
+          </map>
+          <key>linux64</key>
+          <map>
+            <key>md5sum</key>
+            <string>0d50965abbd4ed317f221761abc25b55</string>
+            <key>url</key>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-linux64-20150106.tar.bz2</uri>
+          </map>
+          <key>windows</key>
+          <map>
+            <key>md5sum</key>
+            <string>c24c02a6130cd9032077c08905e89e88</string>
+            <key>url</key>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-windows-20150106.tar.bz2</uri>
+          </map>
+          <key>windows64</key>
+          <map>
+            <key>md5sum</key>
+            <string>72065eb2a8ebb7d4ef12c320f1f85780</string>
+            <key>url</key>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-windows64-20150106.tar.bz2</uri>
+          </map>
+		</map>
+      </map>
       <key>fontconfig</key>
       <map>
         <key>license</key>
@@ -1721,7 +1768,7 @@ your work.
       <key>fmod</key>
       <map>
         <key>url</key>
-        <string>http://www.fmod.org/ifmodlicense.html</string>
+        <string>http://www.fmod.com/files/public/LICENSE.TXT</string>
       </map>
       <key>freetype</key>
       <map>
