@@ -22,10 +22,8 @@ set(debug_fmod_lib_paths
     ${LIBS_PREBUILT_DIR}/debug/lib
     ${LIBS_PREBUILT_LEGACY_DIR}/debug/lib)
 set(fmod_inc_paths
-    ${LIBS_PREBUILT_DIR}/include/fmodsex
+    ${LIBS_PREBUILT_DIR}/include/fmodex
     ${LIBS_PREBUILT_LEGACY_DIR}/include/fmodex)
-
-
 
 if (FMODEX_SDK_DIR)
   set(release_fmod_lib_paths ${release_fmod_lib_paths} "${FMODEX_SDK_DIR}/api" "${FMODEX_SDK_DIR}/api/lib")
@@ -54,8 +52,8 @@ if(WINDOWS)
     find_library(FMOD_LINK_LIBRARY_DEBUG fmodLex64_vc PATHS ${debug_fmod_lib_paths}) 
   endif (WORD_SIZE EQUAL 32)
 else(WINDOWS)
-  set(FMODSTUDIO_LINK_LIBRARY_RELEASE  ${FMODSTUDIO_LIBRARY_RELEASE})
-  set(FMODSTUDIO_LINK_LIBRARY_DEBUG ${FMODSTUDIO_LIBRARY_DEBUG})
+  set(FMOD_LINK_LIBRARY_RELEASE  ${FMODSTUDIO_LIBRARY_RELEASE})
+  set(FMOD_LINK_LIBRARY_DEBUG ${FMODSTUDIO_LIBRARY_DEBUG})
 endif(WINDOWS)
 find_path(FMOD_INCLUDE_DIR fmod.hpp ${fmod_inc_paths})
 
