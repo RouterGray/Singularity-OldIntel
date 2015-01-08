@@ -120,6 +120,13 @@ namespace LLAvatarNameCache
 	void fireSignal(const LLUUID& agent_id,
 					const callback_slot_t& slot,
 					const LLAvatarName& av_name);
+
+	void resolveNameLegacy(const LLUUID& id, const std::string& name, const callback_slot_t& slot)
+	{
+		LLAvatarName av_name;
+		av_name.fromString(name);
+		fireSignal(id, slot, sCache[id] = av_name);
+	}
 	
 	// Is a request in-flight over the network?
 	bool isRequestPending(const LLUUID& agent_id);
@@ -682,12 +689,10 @@ LLAvatarNameCache::callback_connection_t LLAvatarNameCache::get(const LLUUID& ag
 			std::string full_name;
 			if (gCacheName->getFullName(agent_id, full_name))
 			{
-				LLAvatarName av_name;
-				av_name.fromString(full_name);
-				sCache[agent_id] = av_name;
-				fireSignal(agent_id, slot, av_name);
+				resolveNameLegacy(agent_id, full_name, slot);
 				return connection;
 			}
+			return gCacheName->get(agent_id, false, boost::bind(resolveNameLegacy, _1, _2, slot));
 		}
 	}
 
