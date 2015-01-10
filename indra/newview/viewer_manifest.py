@@ -881,7 +881,7 @@ class Linux_i686Manifest(LinuxManifest):
             self.end_prefix("lib")
 
         if (not self.standalone()) and self.prefix(src=self.args['configuration'], alt_build="../packages/lib/release", dst="lib"):
-            dylibs += self.add_extra_libraries()
+            self.add_extra_libraries()
             self.end_prefix()
             
         # Vivox runtimes
@@ -933,7 +933,7 @@ class Linux_x86_64Manifest(LinuxManifest):
             self.end_prefix("lib")
 
         if (not self.standalone()) and self.prefix(src=self.args['configuration'], alt_build="../packages/lib/release", dst="lib"):
-            dylibs += self.add_extra_libraries()
+            self.add_extra_libraries()
             self.end_prefix()
 
         # Vivox runtimes
