@@ -8,8 +8,13 @@ endif(INSTALL_PROPRIETARY)
 if (DARWIN)
   include(CMakeFindFrameworks)
   find_library(QUICKTIME_LIBRARY QuickTime)
-elseif (WINDOWS AND WORD_SIZE EQUAL 32)
-  set(QUICKTIME_SDK_DIR "$ENV{PROGRAMFILES}/QuickTime SDK"
+
+  SET(program_files $ENV{ProgramW6432})
+  if(NOT program_files)
+    SET(program_files $ENV{ProgramFiles})
+  endif(NOT program_files)
+
+  set(QUICKTIME_SDK_DIR "${program_files}/QuickTime SDK"
       CACHE PATH "Location of the QuickTime SDK.")
 
   find_library(DEBUG_QUICKTIME_LIBRARY qtmlclient
