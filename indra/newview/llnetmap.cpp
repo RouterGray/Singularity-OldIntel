@@ -360,7 +360,7 @@ void LLNetMap::draw()
 					const F32 local_right(local_left + mScale);
 					const F32 local_bottom(bottom + y*mScale);
 					const F32 local_top(local_bottom + mScale);
-					LLViewerTexture* pRegionImage = tiles[x][y];
+					LLViewerTexture* pRegionImage = tiles[x*scaled_width+y];
 					if (pRegionImage && pRegionImage->hasGLTexture())
 					{
 						gGL.getTexUnit(0)->bind(pRegionImage);

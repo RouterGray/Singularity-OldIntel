@@ -160,7 +160,7 @@ public:
 // [SL:KB] - Patch: World-MinimapOverlay | Checked: 2012-06-20 (Catznip-3.3.0)
 	bool isAlive() const; // can become false if circuit disconnects
 
-	typedef std::vector<std::vector<LLPointer<LLViewerTexture> > > tex_matrix_t;
+	typedef std::vector<LLPointer<LLViewerTexture> > tex_matrix_t;
 	const tex_matrix_t& getWorldMapTiles() const;
 // [/SL:KB]
 

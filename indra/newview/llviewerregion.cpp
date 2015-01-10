@@ -434,8 +434,7 @@ LLViewerRegion::~LLViewerRegion()
 
 // [SL:KB] - Patch: World-MinimapOverlay | Checked: 2012-07-26 (Catznip-3.3)
 	for (tex_matrix_t::iterator i = mWorldMapTiles.begin(), iend = mWorldMapTiles.end(); i != iend; ++i)
-		for (std::vector<LLPointer<LLViewerTexture> >::iterator it = (*i).begin(), itend = (*i).end(); it != itend; ++it)
-			(*it)->setBoostLevel(LLViewerTexture::BOOST_NONE);
+		(*i)->setBoostLevel(LLViewerTexture::BOOST_NONE);
 // [/SL:KB]
 }
 
@@ -1114,17 +1113,17 @@ const LLViewerRegion::tex_matrix_t& LLViewerRegion::getWorldMapTiles() const
 		std::string strImgURL = (simOverrideMap.empty() ? gSavedSettings.getString("MapServerURL") : simOverrideMap) + "map-1-";
 		U32 totalX(getWidth()/REGION_WIDTH_U32);
 		if (!totalX) ++totalX; // If this region is too small, still get an image.
-		mWorldMapTiles.resize(totalX);
 		/* TODO: Nonsquare regions?
 		U32 totalY(getLength()/REGION_WIDTH_U32);
 		if (!totalY) ++totalY; // If this region is too small, still get an image.
 		*/
 		const U32 totalY(totalX);
+		mWorldMapTiles.reserve(totalX*totalY);
 		for (U32 x = 0; x != totalX; ++x)
 			for (U32 y = 0; y != totalY; ++y)
 			{
 				LLPointer<LLViewerTexture> tex(LLViewerTextureManager::getFetchedTextureFromUrl(strImgURL+llformat("%d-%d-objects.jpg", gridX + x, gridY + y), TRUE, LLViewerTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE));
-				mWorldMapTiles[x].push_back(tex);
+				mWorldMapTiles.push_back(tex);
 				tex->setBoostLevel(LLViewerTexture::BOOST_MAP);
 			}
 	}
