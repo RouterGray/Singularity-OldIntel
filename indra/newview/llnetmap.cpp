@@ -329,14 +329,15 @@ void LLNetMap::draw()
 			F32 relative_x = (rel_region_pos.mV[0] / region_width) * mScale;
 			F32 relative_y = (rel_region_pos.mV[1] / region_width) * mScale;
 
+			const F32 real_width(regionp->getWidth());
 			// Background region rectangle.
 			F32 bottom =	relative_y;
 			F32 left =		relative_x;
 // <FS:CR> Aurora Sim
 			//F32 top =		bottom + mScale ;
 			//F32 right =		left + mScale ;
-			F32 top =		bottom + (regionp->getWidth() / REGION_WIDTH_METERS) * mScale ;
-			F32 right =		left + (regionp->getWidth() / REGION_WIDTH_METERS) * mScale ;
+			F32 top =		bottom + (real_width / REGION_WIDTH_METERS) * mScale ;
+			F32 right =		left + (real_width / REGION_WIDTH_METERS) * mScale ;
 // </FS:CR> Aurora Sim
 
 			if (regionp == region) gGL.color4fv(this_region_color().mV);
@@ -349,23 +350,34 @@ void LLNetMap::draw()
 
 			if (s_fUseWorldMapTextures)
 			{
-				LLViewerTexture* pRegionImage = regionp->getWorldMapTile();
-				if ( (pRegionImage) && (pRegionImage->hasGLTexture()) )
-				{
-					gGL.getTexUnit(0)->bind(pRegionImage);
-					gGL.begin(LLRender::QUADS);
-						gGL.texCoord2f(0.f, 1.f);
-						gGL.vertex2f(left, top);
-						gGL.texCoord2f(0.f, 0.f);
-						gGL.vertex2f(left, bottom);
-						gGL.texCoord2f(1.f, 0.f);
-						gGL.vertex2f(right, bottom);
-						gGL.texCoord2f(1.f, 1.f);
-						gGL.vertex2f(right, top);
-					gGL.end();
+				const LLViewerRegion::tex_matrix_t& tiles(regionp->getWorldMapTiles());
 
-					pRegionImage->setBoostLevel(LLViewerTexture::BOOST_MAP_VISIBLE);
-					fRenderTerrain = false;
+				for (S32 i(0), scaled_width(real_width/region_width), square_width(scaled_width*scaled_width); i < square_width; ++i)
+				{
+					const F32 y(i/scaled_width);
+					const F32 x(i - y*scaled_width);
+					const F32 local_left(left + x*mScale);
+					const F32 local_right(local_left + mScale);
+					const F32 local_bottom(bottom + y*mScale);
+					const F32 local_top(local_bottom + mScale);
+					LLViewerTexture* pRegionImage = tiles[x][y];
+					if (pRegionImage && pRegionImage->hasGLTexture())
+					{
+						gGL.getTexUnit(0)->bind(pRegionImage);
+						gGL.begin(LLRender::QUADS);
+							gGL.texCoord2f(0.f, 1.f);
+							gGL.vertex2f(local_left, local_top);
+							gGL.texCoord2f(0.f, 0.f);
+							gGL.vertex2f(local_left, local_bottom);
+							gGL.texCoord2f(1.f, 0.f);
+							gGL.vertex2f(local_right, local_bottom);
+							gGL.texCoord2f(1.f, 1.f);
+							gGL.vertex2f(local_right, local_top);
+						gGL.end();
+
+						pRegionImage->setBoostLevel(LLViewerTexture::BOOST_MAP_VISIBLE);
+						fRenderTerrain = false;
+					}
 				}
 			}
 // [/SL:KB]
