@@ -614,9 +614,8 @@ bool LLAvatarNameCache::get(const LLUUID& agent_id, LLAvatarName *av_name)
 			std::string full_name;
 			if (gCacheName->getFullName(agent_id, full_name))
 			{
-				LLAvatarName av_name;
-				av_name.fromString(full_name);
-				sCache[agent_id] = av_name;
+				av_name->fromString(full_name);
+				sCache[agent_id] = *av_name;
 				return true;
 			}
 		}
