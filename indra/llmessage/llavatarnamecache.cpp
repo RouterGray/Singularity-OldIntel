@@ -609,7 +609,7 @@ bool LLAvatarNameCache::get(const LLUUID& agent_id, LLAvatarName *av_name)
 			
 			return true;
 		}
-		else if (!hasNameLookupURL())
+		else if (!usePeopleAPI())
 		{
 			std::string full_name;
 			if (gCacheName->getFullName(agent_id, full_name))
