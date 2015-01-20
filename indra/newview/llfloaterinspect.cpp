@@ -250,7 +250,7 @@ void LLFloaterInspect::refresh()
 		{
 			owner_name = LLTrans::getString("RetrievingData");
 			if (mOwnerNameCacheConnection.find(idOwner) == mOwnerNameCacheConnection.end())
-				mOwnerNameCacheConnection.insert(std::make_pair(idOwner, LLAvatarNameCache::get(idOwner, boost::bind(&LLFloaterInspect::onGetOwnerNameCallback, this, _1))));
+				mOwnerNameCacheConnection.emplace(idOwner, LLAvatarNameCache::get(idOwner, boost::bind(&LLFloaterInspect::onGetOwnerNameCallback, this, _1)));
 		}
 
 		// <edit>
@@ -268,7 +268,7 @@ void LLFloaterInspect::refresh()
 		{
 			last_owner_name = LLTrans::getString("RetrievingData");
 			if (mLastOwnerNameCacheConnection.find(idLastOwner) == mLastOwnerNameCacheConnection.end())
-				mLastOwnerNameCacheConnection.insert(std::make_pair(idLastOwner,  LLAvatarNameCache::get(idLastOwner, boost::bind(&LLFloaterInspect::onGetLastOwnerNameCallback, this, _1))));
+				mLastOwnerNameCacheConnection.emplace(idLastOwner,  LLAvatarNameCache::get(idLastOwner, boost::bind(&LLFloaterInspect::onGetLastOwnerNameCallback, this, _1)));
 		}
 		// </edit>
 
@@ -287,7 +287,7 @@ void LLFloaterInspect::refresh()
 		{
 			creator_name = LLTrans::getString("RetrievingData");
 			if (mCreatorNameCacheConnection.find(idCreator) == mCreatorNameCacheConnection.end())
-				mCreatorNameCacheConnection.insert(std::make_pair(idCreator, LLAvatarNameCache::get(idCreator, boost::bind(&LLFloaterInspect::onGetCreatorNameCallback, this, _1))));
+				mCreatorNameCacheConnection.emplace(idCreator, LLAvatarNameCache::get(idCreator, boost::bind(&LLFloaterInspect::onGetCreatorNameCallback, this, _1)));
 		}
 
 		row["id"] = obj->getObject()->getID();
