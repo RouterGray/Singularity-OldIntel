@@ -55,8 +55,6 @@
 #include "llagent.h"
 #include "llagentcamera.h"
 #include "llviewercontrol.h"
-#include "llmemberlistener.h"
-#include "llevent.h"
 #include "llviewerjoystick.h"
 #include "llviewermenu.h"
 #include "llviewerparcelmgr.h"
@@ -77,24 +75,6 @@ LLToolset*		gFaceEditToolset	= NULL;
 /////////////////////////////////////////////////////
 // LLToolMgr
 
-class LLViewBuildMode : public LLMemberListener<LLView>
-{
-	bool handleEvent(LLPointer<LLOldEvents::LLEvent> event, const LLSD& userdata)
-	{
-		LLToolMgr::getInstance()->toggleBuildMode();
-		return true;
-	}
-};
-class LLViewCheckBuildMode : public LLMemberListener<LLView>
-{
-	bool handleEvent(LLPointer<LLOldEvents::LLEvent> event, const LLSD& userdata)
-	{
-		bool new_value = LLToolMgr::getInstance()->inEdit();
-		gMenuHolder->findControl(userdata["control"].asString())->setValue(new_value);
-		return true;
-	}
-};
-
 LLToolMgr::LLToolMgr()
 	:
 	mBaseTool(NULL), 
@@ -112,14 +92,6 @@ LLToolMgr::LLToolMgr()
 //	gLandToolset		= new LLToolset("Land");
 	gMouselookToolset	= new LLToolset("MouseLook");
 	gFaceEditToolset	= new LLToolset("FaceEdit");
-}
-
-void LLToolMgr::initMenu(std::vector<LLPointer<LLMemberListener<LLView> > >& menu_list)
-{
-	menu_list.push_back(new LLViewBuildMode());
-	menu_list.back()->registerListener(gMenuHolder, "View.BuildMode");
-	menu_list.push_back(new LLViewCheckBuildMode());
-	menu_list.back()->registerListener(gMenuHolder, "View.CheckBuildMode");
 }
 
 void LLToolMgr::initTools()

@@ -35,11 +35,8 @@
 
 #include "llkeyboard.h"
 
-#include "llmemberlistener.h"
-
 class LLTool;
 class LLToolset;
-class LLView;
 
 // Key bindings for common operations
 const MASK MASK_VERTICAL		= MASK_CONTROL;
@@ -54,8 +51,6 @@ class LLToolMgr : public LLSingleton<LLToolMgr>
 public:
 	LLToolMgr();
 	~LLToolMgr();
-
-	void			initMenu(std::vector<LLPointer<LLMemberListener<LLView> > >& menu_list);
 
 	// Must be called after gSavedSettings set up.
 	void			initTools();
