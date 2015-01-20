@@ -36,6 +36,7 @@
 
 #include "llfirstuse.h"
 // tools and manipulators
+#include "llfloaterinspect.h"
 #include "lltool.h"
 #include "llmanipscale.h"
 #include "llselectmgr.h"
@@ -92,6 +93,8 @@ LLToolMgr::LLToolMgr()
 //	gLandToolset		= new LLToolset("Land");
 	gMouselookToolset	= new LLToolset("MouseLook");
 	gFaceEditToolset	= new LLToolset("FaceEdit");
+	gMouselookToolset->setShowFloaterTools(false);
+	gFaceEditToolset->setShowFloaterTools(false);
 }
 
 void LLToolMgr::initTools()
@@ -221,7 +224,19 @@ LLTool* LLToolMgr::getCurrentTool()
 		}
 		if (cur_tool)
 		{
-			cur_tool->handleSelect();
+			if (LLToolCompInspect::getInstance()->isToolCameraActive()
+				&&	prev_tool == LLToolCamera::getInstance()
+				&&	cur_tool == LLToolPie::getInstance())
+			{
+				if (LLFloaterInspect::instanceVisible())
+				{
+					setTransientTool(LLToolCompInspect::getInstance());
+				}
+			}
+			else
+			{
+				cur_tool->handleSelect();
+			}
 		}
 	}
 

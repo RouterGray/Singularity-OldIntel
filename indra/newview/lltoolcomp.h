@@ -109,9 +109,18 @@ public:
 
 	// Overridden from LLToolComposite
     virtual BOOL		handleMouseDown(S32 x, S32 y, MASK mask);
+	virtual BOOL		handleMouseUp(S32 x, S32 y, MASK mask);
     virtual BOOL		handleDoubleClick(S32 x, S32 y, MASK mask);
+	virtual BOOL		handleKey(KEY key, MASK mask);
+	virtual void		onMouseCaptureLost();
+			void		keyUp(KEY key, MASK mask);
 
 	static void pickCallback(const LLPickInfo& pick_info);
+
+	BOOL isToolCameraActive() const { return mIsToolCameraActive; }
+
+private:
+	BOOL mIsToolCameraActive;
 };
 
 //-----------------------------------------------------------------------

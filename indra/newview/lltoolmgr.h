@@ -95,7 +95,7 @@ protected:
 class LLToolset
 {
 public:
-	LLToolset(const char *name) : mSelectedTool(NULL), mName(name) {}
+	LLToolset(const char* name) : mSelectedTool(NULL), mName(name), mIsShowFloaterTools(true) {}
 
 	LLTool*			getSelectedTool()				{ return mSelectedTool; }
 
@@ -111,12 +111,16 @@ public:
 
 	BOOL			isToolSelected( S32 index );
 
+	void            setShowFloaterTools(bool pShowFloaterTools) {mIsShowFloaterTools = pShowFloaterTools;};
+	bool            isShowFloaterTools() const                  {return mIsShowFloaterTools;};
 	const char*		getName() const {return mName;}
+
 protected:
 	const char*		mName;
 	LLTool*			mSelectedTool;
 	typedef std::vector<LLTool*> tool_list_t;
 	tool_list_t 	mToolList;
+	bool            mIsShowFloaterTools;
 };
 
 // Globals
