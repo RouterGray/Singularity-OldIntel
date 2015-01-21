@@ -510,7 +510,7 @@ BOOL LLFloaterIMPanel::postBuild()
 		getChild<LLButton>("end_call_btn")->setCommitCallback(boost::bind(&LLIMMgr::endCall, gIMMgr, boost::ref(mSessionUUID)));
 		getChild<LLButton>("send_btn")->setCommitCallback(boost::bind(&LLFloaterIMPanel::onSendMsg,this));
 		if (LLButton* btn = findChild<LLButton>("toggle_active_speakers_btn"))
-			btn->setCommitCallback(boost::bind(&LLFloaterIMPanel::onClickToggleActiveSpeakers, this, _2));
+			btn->setCommitCallback(boost::bind(&LLView::setVisible, getChildView("active_speakers_panel"), _2));
 
 		mHistoryEditor = getChild<LLViewerTextEditor>("im_history");
 		mHistoryEditor->setParseHTML(TRUE);
@@ -600,8 +600,6 @@ void LLFloaterIMPanel::draw()
 		if (mSpeakerPanel) mSpeakerPanel->setVisible(true);
 		mShowSpeakersOnConnect = false;
 	}
-	if (LLUICtrl* ctrl = findChild<LLUICtrl>("toggle_active_speakers_btn"))
-		ctrl->setValue(getChildView("active_speakers_panel")->getVisible());
 
 	if (mTyping)
 	{
@@ -1029,11 +1027,6 @@ void LLFloaterIMPanel::onClickHistory()
 		show_log_browser(mLogLabel, mOtherParticipantUUID.asString());
 		// [/Ansariel: Display name support]
 	}
-}
-
-void LLFloaterIMPanel::onClickToggleActiveSpeakers(const LLSD& value)
-{
-	childSetVisible("active_speakers_panel", !value);
 }
 
 void LLFloaterIMPanel::onInputEditorFocusReceived()
