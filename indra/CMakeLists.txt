@@ -4,7 +4,7 @@
 # other commands to guarantee full compatibility
 # with the version specified
 
-cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 
 # Eventually the third-party support modules (cmake/*.cmake) should
 # know the full path to all libraries.  Until that happens we need

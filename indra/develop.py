@@ -815,10 +815,12 @@ Commands:
 Command-options for "configure":
   We use cmake variables to change the build configuration.
   -DPACKAGE:BOOL=ON          Create "package" target to make installers
-  -DLOCALIZESETUP:BOOL=ON    Create one win_setup target per supported language
   -DLL_TESTS:BOOL=OFF        Don't generate unit test projects
   -DEXAMPLEPLUGIN:BOOL=OFF   Don't generate example plugin project
   -DDISABLE_TCMALLOC:BOOL=ON Disable linkage of TCMalloc. (64bit builds automatically disable TCMalloc)
+  -DRELEASE_CRASH_REPORTING:BOOL=ON Enable Google Breakpad crash reporting
+  -DFMODSTUDIO:BOOL=ON       Use FMOD Studio audio libraries
+  -DFMODEX:BOOL=ON           Use FMOD Ex audio libraries
 
 Examples:
   Set up a Visual Studio 2010 project with "package" target:

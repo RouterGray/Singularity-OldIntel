@@ -2,6 +2,7 @@
 include(Linking)
 include(Prebuilt)
 
+if(NOT FMOD)
 if (LINUX)
   set(OPENAL ON CACHE BOOL "Enable OpenAL")
 else (LINUX)
@@ -29,4 +30,6 @@ endif (OPENAL)
 
 if (OPENAL)
   message(STATUS "Building with OpenAL audio support")
+  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_OPENAL")
 endif (OPENAL)
+endif(NOT FMOD)

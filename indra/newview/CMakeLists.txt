@@ -1402,16 +1402,6 @@ if (WINDOWS)
   list(APPEND viewer_SOURCE_FILES ${viewer_INSTALLER_FILES})
 endif (WINDOWS)
 
-if (FMODSTUDIO)
-  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMODSTUDIO")
-endif (FMODSTUDIO)
-if (FMODEX)
-  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_FMODEX")
-endif (FMODEX)
-if (OPENAL)
-  set(LLSTARTUP_COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS} -DLL_OPENAL")
-endif (OPENAL)
-
 set_source_files_properties(llstartup.cpp PROPERTIES COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS}")
 
 list(APPEND viewer_SOURCE_FILES ${viewer_HEADER_FILES})
@@ -1442,9 +1432,9 @@ if(FMOD_LIBRARY_RELEASE)
   add_custom_target(fmod_lib_copy DEPENDS fmod_lib.marker prepare)
   if(DARWIN)
     add_custom_command(OUTPUT fmod_lib_install.marker
-		               COMMAND install_name_tool -id "@executable_path/../Resources/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${FMOD_LIBRARY_DEBUG}>" "${CMAKE_CFG_INTDIR}/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${fmod_lib_deb_name}>"
+	  	               COMMAND install_name_tool -id "@executable_path/../Resources/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${FMOD_LIBRARY_DEBUG}>" "${CMAKE_CFG_INTDIR}/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${fmod_lib_deb_name}>"
                        DEPENDS fmod_lib.marker)
-	add_dependencies(fmod_lib_copy fmod_lib_install.marker)
+    add_dependencies(fmod_lib_copy fmod_lib_install.marker)
   endif(DARWIN)
   add_dependencies(${VIEWER_BINARY_NAME} fmod_lib_copy)
 

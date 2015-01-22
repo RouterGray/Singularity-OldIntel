@@ -210,7 +210,7 @@ class ViewerManifest(LLManifest):
                 except:
                     config, file = (None, None)
                 if(config == 'optimized'):
-                    if(self.args['configuration'].lower() != 'release' and self.args['configuration'].lower() != 'relwithdebinfo'):
+                    if(self.args['configuration'].lower() != 'release' and self.args['configuration'].lower() != 'relwithdebinfo' and self.args['configuration'].lower() != 'universal'):
                         continue
                     cur_path = file
                 if(config == 'debug'):
@@ -218,7 +218,10 @@ class ViewerManifest(LLManifest):
                         continue
                     cur_path = file
                 if(cur_path != ''):
-                    found_libs += self.path_optional(cur_path)
+                    if sys.platform == "linux" or sys.platform == "linux2":
+                        found_libs += self.path_optional(cur_path+"*")
+                    else:
+                        found_libs += self.path_optional(cur_path)
         return found_libs
 
 class WindowsManifest(ViewerManifest):
@@ -578,7 +581,7 @@ class DarwinManifest(ViewerManifest):
                     
                     self.end_prefix()
 
-                if self.prefix(src=self.args['configuration'], alt_build=libdir):
+                if self.prefix(src= '' if self.args['configuration'].lower() == 'universal' else self.args['configuration'], alt_build=libdir):
                     dylibs += self.add_extra_libraries()
                     self.end_prefix()
 
@@ -880,7 +883,7 @@ class Linux_i686Manifest(LinuxManifest):
 
             self.end_prefix("lib")
 
-        if (not self.standalone()) and self.prefix(src=self.args['configuration'], alt_build="../packages/lib/release", dst="lib"):
+        if (not self.standalone()) and self.prefix(src='', alt_build="../packages/lib/release", dst="lib"):
             self.add_extra_libraries()
             self.end_prefix()
             
@@ -932,7 +935,7 @@ class Linux_x86_64Manifest(LinuxManifest):
 
             self.end_prefix("lib")
 
-        if (not self.standalone()) and self.prefix(src=self.args['configuration'], alt_build="../packages/lib/release", dst="lib"):
+        if (not self.standalone()) and self.prefix(src='', alt_build="../packages/lib/release", dst="lib"):
             self.add_extra_libraries()
             self.end_prefix()
 
