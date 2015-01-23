@@ -1438,7 +1438,7 @@ if(FMOD_LIBRARY_RELEASE)
   endif(DARWIN)
   add_dependencies(${VIEWER_BINARY_NAME} fmod_lib_copy)
 
-  #viewer_manifest.py needs these libraries (for now its all dynlib)
+  #viewer_manifest.py needs these libraries (for now its all dylib)
   if(MANIFEST_LIBRARIES)
     set(MANIFEST_LIBRARIES ${MANIFEST_LIBRARIES}|optimized ${fmod_lib_rel_name}|debug ${fmod_lib_deb_name})
   else(MANIFEST_LIBRARIES)
