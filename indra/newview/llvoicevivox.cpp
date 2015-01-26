@@ -61,9 +61,6 @@
 // for base64 decoding
 #include "apr_base64.h"
 
-extern AIHTTPTimeoutPolicy vivoxVoiceAccountProvisionResponder_timeout;
-extern AIHTTPTimeoutPolicy vivoxVoiceClientCapResponder_timeout;
-
 #define USE_SESSION_GROUPS 0
 
 const F32 VOLUME_SCALE_VIVOX = 0.01f;
@@ -116,17 +113,19 @@ static int scale_speaker_volume(float volume)
 class LLVivoxVoiceAccountProvisionResponder :
 	public LLHTTPClient::ResponderWithResult
 {
+	LOG_CLASS(LLVivoxVoiceAccountProvisionResponder);
 public:
 	LLVivoxVoiceAccountProvisionResponder(int retries)
 	{
 		mRetries = retries;
 	}
 
-	/*virtual*/ void httpFailure(void)
+private:
+	/* virtual */ void httpFailure()
 	{
 		LL_WARNS("Voice") << "ProvisionVoiceAccountRequest returned an error, "
 			<<  ( (mRetries > 0) ? "retrying" : "too many retries (giving up)" )
-			<< mStatus << "]: " << mReason << LL_ENDL;
+			<< " " << dumpResponse() << LL_ENDL;
 
 		if ( mRetries > 0 )
 		{
@@ -138,30 +137,33 @@ public:
 		}
 	}
 
-	/*virtual*/ void httpSuccess(void)
+	/* virtual */ void httpSuccess()
 	{
-
 		std::string voice_sip_uri_hostname;
 		std::string voice_account_server_uri;
 
-		LL_DEBUGS("Voice") << "ProvisionVoiceAccountRequest response:" << ll_pretty_print_sd(mContent) << LL_ENDL;
+		LL_DEBUGS("Voice") << "ProvisionVoiceAccountRequest response:" << dumpResponse() << LL_ENDL;
 
-		if(mContent.has("voice_sip_uri_hostname"))
-			voice_sip_uri_hostname = mContent["voice_sip_uri_hostname"].asString();
+		const LLSD& content = getContent();
+		if (!content.isMap())
+		{
+			failureResult(HTTP_INTERNAL_ERROR_OTHER, "Malformed response contents", content);
+			return;
+		}
+		if(content.has("voice_sip_uri_hostname"))
+			voice_sip_uri_hostname = content["voice_sip_uri_hostname"].asString();
 
 		// this key is actually misnamed -- it will be an entire URI, not just a hostname.
-		if(mContent.has("voice_account_server_name"))
-			voice_account_server_uri = mContent["voice_account_server_name"].asString();
+		if(content.has("voice_account_server_name"))
+			voice_account_server_uri = content["voice_account_server_name"].asString();
 
 		LLVivoxVoiceClient::getInstance()->login(
-			mContent["username"].asString(),
-			mContent["password"].asString(),
+			content["username"].asString(),
+			content["password"].asString(),
 			voice_sip_uri_hostname,
 			voice_account_server_uri);
-
 	}
 
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return vivoxVoiceAccountProvisionResponder_timeout; }
 	/*virtual*/ char const* getName(void) const { return "LLVivoxVoiceAccountProvisionResponder"; }
 
 private:
@@ -185,37 +187,38 @@ static bool sMuteListListener_listening = false;
 
 class LLVivoxVoiceClientCapResponder : public LLHTTPClient::ResponderWithResult
 {
+	LOG_CLASS(LLVivoxVoiceClientCapResponder);
 public:
 	LLVivoxVoiceClientCapResponder(LLVivoxVoiceClient::state requesting_state) : mRequestingState(requesting_state) {};
 
-	/*virtual*/ void httpFailure(void);
-	/*virtual*/ void httpSuccess(void);
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return vivoxVoiceClientCapResponder_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLVivoxVoiceClientCapResponder"; }
-
 private:
+	// called with bad status codes
+	/*virtual*/ void httpFailure();
+	/*virtual*/ void httpSuccess();
+	/*virtual*/ char const* getName() const { return "LLVivoxVoiceClientCapResponder"; }
+
 	LLVivoxVoiceClient::state mRequestingState;  // state
 };
 
-void LLVivoxVoiceClientCapResponder::httpFailure(void)
+void LLVivoxVoiceClientCapResponder::httpFailure()
 {
-	LL_WARNS("Voice") << "LLVivoxVoiceClientCapResponder error [status:"
-		<< mStatus << "]: " << mReason << LL_ENDL;
+	LL_WARNS("Voice") << dumpResponse() << LL_ENDL;
 	LLVivoxVoiceClient::getInstance()->sessionTerminate();
 }
 
-void LLVivoxVoiceClientCapResponder::httpSuccess(void)
+void LLVivoxVoiceClientCapResponder::httpSuccess()
 {
 	LLSD::map_const_iterator iter;
 
-	LL_DEBUGS("Voice") << "ParcelVoiceInfoRequest response:" << ll_pretty_print_sd(mContent) << LL_ENDL;
+	LL_DEBUGS("Voice") << "ParcelVoiceInfoRequest response:" << dumpResponse() << LL_ENDL;
 
 	std::string uri;
 	std::string credentials;
 
-	if ( mContent.has("voice_credentials") )
+	const LLSD& content = getContent();
+	if ( content.has("voice_credentials") )
 	{
-		LLSD voice_credentials = mContent["voice_credentials"];
+		LLSD voice_credentials = content["voice_credentials"];
 		if ( voice_credentials.has("channel_uri") )
 		{
 			uri = voice_credentials["channel_uri"].asString();
@@ -504,14 +507,22 @@ bool LLVivoxVoiceClient::writeString(const std::string &str)
 void LLVivoxVoiceClient::connectorCreate()
 {
 	std::ostringstream stream;
-	std::string logpath = gDirUtilp->getExpandedFilename(LL_PATH_LOGS, "");
 	std::string loglevel = "0";
 
 	// Transition to stateConnectorStarted when the connector handle comes back.
 	setState(stateConnectorStarting);
 
-	std::string savedLogLevel = gSavedSettings.getString("VivoxDebugLevel");
+	std::string logpath = gSavedSettings.getString("VivoxLogDirectory");
+	if (logpath.empty())
+	{
+		logpath = gDirUtilp->getExpandedFilename(LL_PATH_LOGS, "");
+	}
+	if (LLStringUtil::endsWith(logpath, gDirUtilp->getDirDelimiter()))
+	{
+		logpath.resize(logpath.size()-1);
+	}
 
+	std::string savedLogLevel = gSavedSettings.getString("VivoxDebugLevel");
 	if(savedLogLevel != "0")
 	{
 		LL_DEBUGS("Voice") << "creating connector with logging enabled" << LL_ENDL;
@@ -819,12 +830,13 @@ void LLVivoxVoiceClient::stateMachine()
 					// using glib first.
 					char *voice_path = g_find_program_in_path ("SLVoice");
 					std::string exe_path;
-					if (voice_path) {
+					if (voice_path)
+					{
 						exe_path = llformat("%s", voice_path);
 						free(voice_path);
-					} else {
-						exe_path = gDirUtilp->getExecutableDir() + gDirUtilp->getDirDelimiter() + "SLVoice";
 					}
+					else
+						exe_path = gDirUtilp->getExecutableDir() + gDirUtilp->getDirDelimiter() + "SLVoice";
 #else
 					// *FIX:Mani - Using the executable dir instead
 					// of mAppRODataDir, the working directory from which the app
@@ -866,13 +878,18 @@ void LLVivoxVoiceClient::stateMachine()
 #else
 						args += loglevel;
 #endif
-						args += " -lf ";
 						std::string log_folder = gSavedSettings.getString("VivoxLogDirectory");
+
 						if (log_folder.empty())
 						{
 							log_folder = gDirUtilp->getExpandedFilename(LL_PATH_LOGS, "");
 						}
-						args += "logfolder";
+						if (LLStringUtil::endsWith(log_folder, gDirUtilp->getDirDelimiter()))
+						{
+							log_folder.resize(log_folder.size()-1);
+						}
+						args += " -lf ";
+						args += '"' + log_folder + '"';
 						
 // Singu Note: omit shutdown timeout for Linux, as we are using 2.x version of the SDK there
 // Singu TODO: Remove this when the Vivox SDK 4.x is working on Linux
@@ -2818,7 +2835,7 @@ void LLVivoxVoiceClient::loginResponse(int statusCode, std::string &statusString
 
 	// Status code of 20200 means "bad password".  We may want to special-case that at some point.
 
-	if ( statusCode == 401 )
+	if ( statusCode == HTTP_UNAUTHORIZED )
 	{
 		// Login failure which is probably caused by the delay after a user's password being updated.
 		LL_INFOS("Voice") << "Account.Login response failure (" << statusCode << "): " << statusString << LL_ENDL;
@@ -3320,7 +3337,7 @@ void LLVivoxVoiceClient::mediaStreamUpdatedEvent(
 		switch(statusCode)
 		{
 			case 0:
-			case 200:
+			case HTTP_OK:
 				// generic success
 				// Don't change the saved error code (it may have been set elsewhere)
 			break;
@@ -5516,9 +5533,10 @@ void LLVivoxVoiceClient::notifyStatusObservers(LLVoiceClientStatusObserver::ESta
 		{
 			switch(mAudioSession->mErrorStatusCode)
 			{
-				case 404:	// NOT_FOUND
+				case HTTP_NOT_FOUND:	// NOT_FOUND
+				// *TODO: Should this be 503?
 				case 480:	// TEMPORARILY_UNAVAILABLE
-				case 408:	// REQUEST_TIMEOUT
+				case HTTP_REQUEST_TIME_OUT:	// REQUEST_TIMEOUT
 					// call failed because other user was not available
 					// treat this as an error case
 					status = LLVoiceClientStatusObserver::ERROR_NOT_AVAILABLE;
@@ -5597,7 +5615,7 @@ void LLVivoxVoiceClient::onAvatarNameCache(const LLUUID& agent_id,
 										   const LLAvatarName& av_name)
 {
 	mAvatarNameCacheConnection.disconnect();
-	std::string display_name = av_name.mDisplayName;
+	std::string display_name = av_name.getDisplayName();
 	avatarNameResolved(agent_id, display_name);
 }
 

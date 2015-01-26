@@ -838,6 +838,7 @@ bool idle_startup()
 			firstname = gSavedSettings.getString("FirstName");
 			lastname = gSavedSettings.getString("LastName");
 			password = LLStartUp::loadPasswordFromDisk();
+			gSavedSettings.setBOOL("RememberName", true);
 			gSavedSettings.setBOOL("RememberPassword", TRUE);
 			
 			show_connect_box = false;
@@ -1002,7 +1003,7 @@ bool idle_startup()
 		{
 			// TODO if not use viewer auth
 			// Load all the name information out of the login view
-			LLPanelLogin::getFields(&firstname, &lastname, &password);
+			LLPanelLogin::getFields(firstname, lastname, password);
 			// end TODO
 	 
 			// HACK: Try to make not jump on login
@@ -1013,8 +1014,6 @@ bool idle_startup()
 		{
 			gSavedSettings.setString("FirstName", firstname);
 			gSavedSettings.setString("LastName", lastname);
-			if (!gSavedSettings.controlExists("RememberLogin")) gSavedSettings.declareBOOL("RememberLogin", false, "Remember login", false);
-			gSavedSettings.setBOOL("RememberLogin", LLPanelLogin::getRememberLogin());
 
 			LL_INFOS("AppInit") << "Attempting login as: " << firstname << " " << lastname << LL_ENDL;
 			gDebugInfo["LoginName"] = firstname + " " + lastname;	
@@ -3524,10 +3523,10 @@ void LLStartUp::initNameCache()
 
 	// Start cache in not-running state until we figure out if we have
 	// capabilities for display name lookup
-	LLAvatarNameCache::initClass(false);
 	S32 phoenix_name_system = gSavedSettings.getS32("PhoenixNameSystem");
-	if(phoenix_name_system <= 0 || phoenix_name_system > 3) LLAvatarNameCache::setUseDisplayNames(false);
-	else LLAvatarNameCache::setUseDisplayNames(true);
+	LLAvatarNameCache::initClass(false, gSavedSettings.getBOOL("UsePeopleAPI"));
+	LLAvatarNameCache::setUseDisplayNames(phoenix_name_system > 0 && phoenix_name_system < 4);
+	LLAvatarNameCache::setUseUsernames(!phoenix_name_system || phoenix_name_system == 1 || phoenix_name_system == 3);
 }
 
 void LLStartUp::cleanupNameCache()
@@ -3945,7 +3944,7 @@ bool process_login_success_response(std::string& password, U32& first_sim_size_x
 		LLSavedLogins history_data = LLSavedLogins::loadFile(history_file);
 		std::string grid_name = gHippoGridManager->getConnectedGrid()->getGridName();
 		history_data.deleteEntry(firstname, lastname, grid_name);
-		if (gSavedSettings.getBOOL("RememberLogin"))
+		if (gSavedSettings.getBOOL("RememberName"))
 		{
 			LLSavedLoginEntry login_entry(firstname, lastname, password, grid_name);
 			history_data.addEntry(login_entry);
