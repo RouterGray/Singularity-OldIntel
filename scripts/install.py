@@ -101,8 +101,10 @@ class InstallFile(object):
 
     def _is_md5sum_match(self):
         hasher = md5(file(self.filename, 'rb').read())
-        if hasher.hexdigest() == self.md5sum:
+        md5_sum = hasher.hexdigest()
+        if md5_sum == self.md5sum:
             return  True
+        print "Got:", md5_sum, " Expected ", self.md5sum
         return False
 
     def is_match(self, platform):
@@ -124,16 +126,20 @@ class InstallFile(object):
         return True
 
     def fetch_local(self):
-        #print "Looking for:",self.filename
+        cache_path, cache_file = os.path.split(self.filename)
+        cache_path, cache_folder = os.path.split(os.path.normpath(cache_path))
+        cache_file = os.path.join(cache_path, cache_folder.rsplit('.',1)[0] + ".<user>", cache_file)
+        #print "Looking for:",cache_file
+
         if not os.path.exists(self.filename):
             pass
         elif self.md5sum and not self._is_md5sum_match():
-            print "md5 mismatch:", self.filename
+            print "md5 mismatch:", cache_file
             os.remove(self.filename)
         else:
-            print "Found matching package:", self.filename
+            print "Found matching package:", cache_file
             return
-        print "Downloading",self.url,"to local file",self.filename
+        print "Downloading",self.url,"to local file",cache_file
 
         request = urllib2.Request(self.url)
 
