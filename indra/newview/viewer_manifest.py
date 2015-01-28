@@ -777,7 +777,7 @@ class LinuxManifest(ViewerManifest):
             self.end_prefix("bin/llplugin")
 
         # llcommon
-        if not self.path("../llcommon/libllcommon.so", "lib/libllcommon.so"):
+        if not self.path("../llcommon/libllcommon.so", "lib64/libllcommon.so"):
             print "Skipping llcommon.so (assuming llcommon was linked statically)"
 
         self.path("featuretable_linux.txt")
