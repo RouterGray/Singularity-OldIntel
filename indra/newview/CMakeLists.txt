@@ -1520,7 +1520,7 @@ if (WINDOWS)
           --login_channel=${VIEWER_LOGIN_CHANNEL}
           --source=${CMAKE_CURRENT_SOURCE_DIR}
           --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/touched.bat
-		  --extra_libraries="${MANIFEST_LIBRARIES}"
+          --extra_libraries="${MANIFEST_LIBRARIES}"
         DEPENDS
             ${VIEWER_BINARY_NAME}
             ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1543,7 +1543,7 @@ if (WINDOWS)
           --login_channel=${VIEWER_LOGIN_CHANNEL}
           --source=${CMAKE_CURRENT_SOURCE_DIR}
           --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/copy_touched.bat
-		  --extra_libraries="${MANIFEST_LIBRARIES}"
+          --extra_libraries="${MANIFEST_LIBRARIES}"
         DEPENDS
             ${VIEWER_BINARY_NAME}
             ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1642,7 +1642,7 @@ if (LINUX)
         --source=${CMAKE_CURRENT_SOURCE_DIR}
         --standalone=${STANDALONE}
         --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.touched
-		--extra_libraries="${MANIFEST_LIBRARIES}"
+        --extra_libraries="${MANIFEST_LIBRARIES}"
       DEPENDS
         secondlife-stripped
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1666,7 +1666,7 @@ if (LINUX)
         --login_channel=${VIEWER_LOGIN_CHANNEL}
         --source=${CMAKE_CURRENT_SOURCE_DIR}
         --standalone=${STANDALONE}
-		--extra_libraries="${MANIFEST_LIBRARIES}"
+        --extra_libraries="${MANIFEST_LIBRARIES}"
       DEPENDS
         secondlife-stripped
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1711,6 +1711,7 @@ if (DARWIN)
       --dest=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${product}.app
       --grid=${GRID}
       --source=${CMAKE_CURRENT_SOURCE_DIR}
+      --extra_libraries="${MANIFEST_LIBRARIES}"
     DEPENDS ${VIEWER_BINARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
     )
 
@@ -1734,6 +1735,7 @@ if (DARWIN)
           --grid=${GRID}
           --login_channel=${VIEWER_LOGIN_CHANNEL}
           --source=${CMAKE_CURRENT_SOURCE_DIR}
+          --extra_libraries="${MANIFEST_LIBRARIES}"
           --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.touched
         DEPENDS
           ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py

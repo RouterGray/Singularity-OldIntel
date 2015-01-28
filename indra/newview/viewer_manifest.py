@@ -581,7 +581,7 @@ class DarwinManifest(ViewerManifest):
                     
                     self.end_prefix()
 
-                if self.prefix(src= '' if self.args['configuration'].lower() == 'universal' else self.args['configuration'], alt_build=libdir):
+                if self.prefix(src= '', alt_build=libdir):
                     dylibs += self.add_extra_libraries()
                     self.end_prefix()
 
