@@ -777,7 +777,7 @@ class LinuxManifest(ViewerManifest):
             self.end_prefix("bin/llplugin")
 
         # llcommon
-        if not self.path("../llcommon/libllcommon.so", "lib/libllcommon.so"):
+        if not self.path("../llcommon/libllcommon.so", "lib64/libllcommon.so"):
             print "Skipping llcommon.so (assuming llcommon was linked statically)"
 
         self.path("featuretable_linux.txt")
@@ -900,7 +900,7 @@ class Linux_x86_64Manifest(LinuxManifest):
     def construct(self):
         super(Linux_x86_64Manifest, self).construct()
 
-        if (not self.standalone()) and self.prefix(src="../packages/lib/release", alt_build="../packages/libraries/x86_64-linux/lib/release", dst="lib"):
+        if (not self.standalone()) and self.prefix(src="../packages/lib/release", alt_build="../packages/libraries/x86_64-linux/lib/release", dst="lib64"):
             self.path("libapr-1.so*")
             self.path("libaprutil-1.so*")
 
@@ -933,9 +933,9 @@ class Linux_x86_64Manifest(LinuxManifest):
             self.path("libboost_system-mt.so.*")
             self.path("libboost_thread-mt.so.*")
 
-            self.end_prefix("lib")
+            self.end_prefix("lib64")
 
-        if (not self.standalone()) and self.prefix(src='', alt_build="../packages/lib/release", dst="lib"):
+        if (not self.standalone()) and self.prefix(src='', alt_build="../packages/lib/release", dst="lib64"):
             self.add_extra_libraries()
             self.end_prefix()
 
