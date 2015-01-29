@@ -471,30 +471,30 @@
           <key>linux</key>
           <map>
             <key>md5sum</key>
-            <string>b75bcb905747b6aa9c288924379741d4</string>
+            <string>5da725258b66d8f73fdb2ea574851486</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-linux-20150106.tar.bz2</uri>
+            <uri>http://depot.alchemyviewer.org/pub/linux/lib/fmodstudio-1.05.11-linux-201501282022.tar.bz2</uri>
           </map>
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>0d50965abbd4ed317f221761abc25b55</string>
+            <string>58912a8d907a784a6bba435deac08c73</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-linux64-20150106.tar.bz2</uri>
+            <uri>http://depot.alchemyviewer.org/pub/linux64/lib/fmodstudio-1.05.11-linux64-201501282019.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>
             <key>md5sum</key>
-            <string>c24c02a6130cd9032077c08905e89e88</string>
+            <string>526d82fc9f91e6c974a0b50a4b89c7a6</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-windows-20150106.tar.bz2</uri>
+            <uri>http://depot.alchemyviewer.org/pub/windows/lib/fmodstudio-1.05.11-windows-201501282003.tar.bz2</uri>
           </map>
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>72065eb2a8ebb7d4ef12c320f1f85780</string>
+            <string>70d3bb37400298694776d797ec16a1c1</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-windows64-20150106.tar.bz2</uri>
+            <uri>http://depot.alchemyviewer.org/pub/windows64/lib/fmodstudio-1.05.11-windows64-201501282002.tar.bz2</uri>
           </map>
 		</map>
       </map>
