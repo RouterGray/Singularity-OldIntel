@@ -1712,7 +1712,9 @@ if (DARWIN)
       --grid=${GRID}
       --source=${CMAKE_CURRENT_SOURCE_DIR}
       --extra_libraries="${MANIFEST_LIBRARIES}"
-    DEPENDS ${VIEWER_BINARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+    DEPENDS
+	  ${VIEWER_BINARY_NAME}
+	  ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
     )
 
   add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_quicktime media_plugin_webkit basic_plugin_filepicker)
@@ -1738,6 +1740,7 @@ if (DARWIN)
           --extra_libraries="${MANIFEST_LIBRARIES}"
           --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.touched
         DEPENDS
+		  ${VIEWER_BINARY_NAME}
           ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
       )
   endif (PACKAGE)
