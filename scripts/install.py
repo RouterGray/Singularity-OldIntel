@@ -572,9 +572,16 @@ windows/i686/vs/2003 -- specify a windows visual studio 2003 package"""
                 except AttributeError:
                     _extractall(tar, path=install_dir)
             symlinks = []
+
+            filenames = tar.getnames()
+            if('autobuild-package.xml' in filenames):
+                filenames.remove("autobuild-package.xml")
+                rem_file = os.path.join(install_dir, "autobuild-package.xml")
+                if os.path.exists(rem_file):
+                    os.remove(rem_file)
             if _get_platform() == 'linux' or _get_platform() == 'linux64':
                 first = 1
-                for tfile in tar.getnames():
+                for tfile in filenames:
                     if tfile.find('.so.') > 0:
                         LINK = re.sub(r'\.so\.[0-9.]*$', '.so', tfile)
                         link_name = install_dir + "/" + LINK
@@ -600,14 +607,14 @@ windows/i686/vs/2003 -- specify a windows visual studio 2003 package"""
             if ifile.pkgname in self._installed:
                 self._installed[ifile.pkgname].add_files(
                     ifile.url,
-                    tar.getnames() + symlinks)
+                    filenames + symlinks)
                 self._installed[ifile.pkgname].set_md5sum(
                     ifile.url,
                     ifile.md5sum)
             else:
                 # *HACK: this understands the installed package syntax.
                 definition = { ifile.url :
-                               {'files': tar.getnames() + symlinks,
+                               {'files': filenames + symlinks,
                                 'md5sum' : ifile.md5sum } }
                 self._installed[ifile.pkgname] = InstalledPackage(definition)
             self._installed_changed = True

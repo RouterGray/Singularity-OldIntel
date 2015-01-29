@@ -1430,12 +1430,12 @@ if(FMOD_LIBRARY_RELEASE)
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<$<NOT:$<CONFIG:debug>>:${FMOD_LIBRARY_RELEASE}>$<$<CONFIG:debug>:${FMOD_LIBRARY_DEBUG}>" "${CMAKE_CFG_INTDIR}/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${fmod_lib_deb_name}>" 				
                      DEPENDS "${FMOD_LIBRARY_RELEASE}")
   add_custom_target(fmod_lib_copy DEPENDS fmod_lib.marker prepare)
-  if(DARWIN)
+  if(DARWIN AND FMOD_EXTERNAL_LIB)
     add_custom_command(OUTPUT fmod_lib_install.marker
 	  	               COMMAND install_name_tool -id "@executable_path/../Resources/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${FMOD_LIBRARY_DEBUG}>" "${CMAKE_CFG_INTDIR}/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${fmod_lib_deb_name}>"
                        DEPENDS fmod_lib.marker)
     add_dependencies(fmod_lib_copy fmod_lib_install.marker)
-  endif(DARWIN)
+  endif(DARWIN AND FMOD_EXTERNAL_LIB)
   add_dependencies(${VIEWER_BINARY_NAME} fmod_lib_copy)
 
   #viewer_manifest.py needs these libraries (for now its all dylib)

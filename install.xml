@@ -464,9 +464,9 @@
           <key>darwin</key>
           <map>
             <key>md5sum</key>
-            <string>93ebcfcaf0572427593cdb38d7c7435b</string>
+            <string>1af152ce79422c791ccc6e04571b41d7</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/fmodstudio-1.05.09-darwin-20150106.tar.bz2</uri>
+            <uri>https://bitbucket.org/alchemyviewer/publiclibs-darwin/downloads/fmodstudio-1.05.11-darwin-201501281806.tar.bz2</uri>
           </map>
           <key>linux</key>
           <map>
