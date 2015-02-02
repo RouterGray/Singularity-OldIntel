@@ -366,7 +366,6 @@ BOOL handle_check_pose(void* userdata) {
 }
 
 
-void handle_close_all_notifications(void*);
 void handle_open_message_log(void*);
 // </edit>
 
@@ -3688,17 +3687,6 @@ void process_grant_godlike_powers(LLMessageSystem* msg, void**)
 void handle_open_message_log(void*)
 {
 	LLFloaterMessageLog::show();
-}
-
-void handle_close_all_notifications(void*)
-{
-	LLView::child_list_t child_list(*(gNotifyBoxView->getChildList()));
-	for(LLView::child_list_iter_t iter = child_list.begin();
-		iter != child_list.end();
-		iter++)
-	{
-		gNotifyBoxView->removeChild(*iter);
-	}
 }
 
 void handle_fake_away_status(void*)
@@ -8796,7 +8784,7 @@ class SinguCloseAllDialogs : public view_listener_t
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 	{
-		handle_close_all_notifications(NULL);
+		gNotifyBoxView->deleteAllChildren();
 		return true;
 	}
 };
