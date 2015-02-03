@@ -529,7 +529,9 @@ void LLNotifyBox::drawBackground() const
 
 void LLNotifyBox::close()
 {
-	if (!mIsTip)
+	bool not_tip = !mIsTip;
+	die();
+	if (not_tip)
 	{
 		if (LLNotifyBox* front = gNotifyBoxView->getFirstNontipBox())
 		{
@@ -541,8 +543,6 @@ void LLNotifyBox::close()
 		}
 		--sNotifyBoxCount;
 	}
-
-	die();
 }
 
 void LLNotifyBox::format(std::string& msg, const LLStringUtil::format_map_t& args)
