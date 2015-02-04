@@ -336,6 +336,9 @@ LLFloaterIMPanel::LLFloaterIMPanel(
 		mFactoryMap["active_speakers_panel"] = LLCallbackMap(createSpeakersPanel, this);
 		mVoiceChannel = new LLVoiceChannelGroup(mSessionUUID, mLogLabel);
 		break;
+	default:
+		llwarns << "Unknown session type: " << mDialog << llendl;
+		// fallthrough, Singu TODO: Find out which cases this happens in, seems to only be P2P, though.
 	// just received text from another user
 	case IM_NOTHING_SPECIAL:
 		mTextIMPossible = LLVoiceClient::getInstance()->isSessionTextIMPossible(mSessionUUID);
@@ -346,9 +349,6 @@ LLFloaterIMPanel::LLFloaterIMPanel(
 		LLAvatarTracker::instance().addParticularFriendObserver(mOtherParticipantUUID, this);
 		LLMuteList::instance().addObserver(this);
 		mDing = gSavedSettings.getBOOL("LiruNewMessageSoundIMsOn");
-		break;
-	default:
-		llwarns << "Unknown session type" << llendl;
 		break;
 	}
 
