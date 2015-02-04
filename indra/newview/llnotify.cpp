@@ -769,7 +769,7 @@ void LLNotifyBoxView::showOnly(LLView* view)
 	{
 		if (view == (*iter)) continue;
 		LLView* view(*iter);
-		if (isGroupNotifyBox(view) && !view->getVisible())
+		if (isGroupNotifyBox(view) || !view->getVisible())
 			continue;
 		if (!static_cast<LLNotifyBox*>(view)->isTip())
 			view->setVisible(false);
