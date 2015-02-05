@@ -1770,7 +1770,7 @@ integer llGetRegionAgentCount()
 Returns the number of avatars in the region
 	</string>
 	<string name="LSLTipText_llTextBox">
-llTextBox(key avatar, string message, integer chat_channel
+llTextBox(key avatar, string message, integer chat_channel)
 Shows a dialog box on the avatar&apos;s screen with the message.
 It contains a text box for input, and if entered that text is chatted on chat_channel.
 	</string>
