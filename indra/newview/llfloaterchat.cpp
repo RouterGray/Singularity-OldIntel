@@ -93,11 +93,9 @@ LLFloaterChat::LLFloaterChat(const LLSD& seed)
 	// do not automatically open singleton floaters (as result of getInstance())
 	LLUICtrlFactory::getInstance()->buildFloater(this, "floater_chat_history.xml", &getFactoryMap(), /*no_open =*/false);
 
-	LLTextEditor* history_editor_with_mute = getChild<LLTextEditor>("Chat History Editor with mute");
-	getChild<LLUICtrl>("show mutes")->setCommitCallback(boost::bind(&LLFloaterChat::onClickToggleShowMute, this, _2, getChild<LLTextEditor>("Chat History Editor"), history_editor_with_mute));
-	history_editor_with_mute->setVisible(false);
-	getChild<LLUICtrl>("chat_history_open")->setCommitCallback(boost::bind(show_log_browser, "chat", "chat"));
-	getChildView("translate chat")->setEnabled(LLTranslate::isTranslationConfigured());
+	LLComboBox* combo = getChild<LLComboBox>("history_combo");
+	combo->setCommitCallback(boost::bind(&LLFloaterChat::onFlyout, this, combo, _2));
+	adjustDynamics(combo, true);
 }
 
 LLFloaterChat::~LLFloaterChat()
@@ -337,18 +335,36 @@ void LLFloaterChat::setHistoryCursorAndScrollToEnd()
 	}
 }
 
-
-//static
-void LLFloaterChat::onClickToggleShowMute(bool show_mute, LLTextEditor* history_editor, LLTextEditor* history_editor_with_mute)
+void LLFloaterChat::adjustDynamics(LLComboBox* combo, bool init)
 {
-	history_editor->setVisible(!show_mute);
-	history_editor_with_mute->setVisible(show_mute);
-	(show_mute ? history_editor_with_mute : history_editor)->setCursorAndScrollToEnd();
+	bool translate(gSavedSettings.getBOOL("TranslateChat"));
+	bool muted(gSavedSettings.getBOOL("SinguShowMutedLocal"));
+	if (!init)
+	{
+		combo->remove(getString(translate ? "translate off" : "translate on"));
+		combo->remove(getString(muted ? "show muted text" : "hide muted text"));
+	}
+
+	combo->add(getString(muted ? "hide muted text" : "show muted text"), 1);
+	if (LLTranslate::isTranslationConfigured())
+		combo->add(getString(translate ? "translate on" : "translate off"), 2);
 }
 
-void LLFloaterChat::showTranslationCheckbox(bool show)
+void LLFloaterChat::onFlyout(LLComboBox* ctrl, const LLSD& val)
 {
-	getChildView("translate chat")->setEnabled(show);
+	if (val.isUndefined())
+		show_log_browser("chat", "chat");
+	else
+	{
+		LLControlVariable* control(gSavedSettings.getControl(val.asInteger() == 1 ? "SinguShowMutedLocal" : "TranslateChat"));
+		control->set(!control->get());
+		adjustDynamics(ctrl);
+	}
+}
+
+void LLFloaterChat::showTranslationCheckbox()
+{
+	adjustDynamics(getChild<LLComboBox>("history_combo"));
 }
 
 // Put a line of chat in all the right places

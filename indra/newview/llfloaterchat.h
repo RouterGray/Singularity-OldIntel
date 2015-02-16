@@ -70,9 +70,10 @@ public:
 	
 	static void triggerAlerts(const std::string& text);
 
-	void onClickToggleShowMute(bool show_mute, class LLTextEditor* history_editor, LLTextEditor* history_editor_with_mute);
+	void adjustDynamics(class LLComboBox* combo, bool init = false);
+	void onFlyout(LLComboBox* ctrl, const LLSD& val);
 	static void chatFromLogFile(LLLogChat::ELogLineType type, std::string line, void* userdata);
-	void showTranslationCheckbox(bool show);
+	void showTranslationCheckbox();
 	static void loadHistory();
 	static void* createSpeakersPanel(void* data);
 	static void* createChatPanel(void* data);

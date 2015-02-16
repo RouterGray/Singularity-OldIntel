@@ -28,7 +28,6 @@
 					Gestos
 				</combo_item>
 			</combo_box>
-			<check_box label="Mostrar texto silenciado" name="show mutes"/>
 			<button label="&lt; &lt;" label_selected="&gt; &gt;" name="toggle_active_speakers_btn" tool_tip="Clique aqui para mostrar uma lista dos participantes ativos desta sessão de mensagem instantânea."/>
 			<panel name="chat_panel">
 				<string name="gesture_label">

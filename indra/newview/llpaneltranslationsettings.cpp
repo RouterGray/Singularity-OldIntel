@@ -315,6 +315,6 @@ void LLPanelTranslationSettings::apply()
 	gSavedSettings.setString("TranslationService", getSelectedService());
 	gSavedSettings.setString("BingTranslateAPIKey", getEnteredBingKey());
 	gSavedSettings.setString("GoogleTranslateAPIKey", getEnteredGoogleKey());
-	LLFloaterChat::getInstance()->showTranslationCheckbox(LLTranslate::isTranslationConfigured());
+	LLFloaterChat::getInstance()->showTranslationCheckbox();
 }
 
