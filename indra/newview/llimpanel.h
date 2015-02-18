@@ -84,6 +84,7 @@ public:
 						bool log_to_file = true,
 						const LLUUID& source = LLUUID::null,
 						const std::string& name = LLStringUtil::null);
+	void addHistoryLine(const std::string& utf8msg, LLColor4 incolor, bool log_to_file, const LLUUID& source, const std::string& name, bool is_agent, bool from_user, bool is_irc);
 
 	void setInputFocus(bool b);
 
@@ -136,6 +137,8 @@ public:
 	void showSessionForceClose(const std::string& reason);
 
 	static bool onConfirmForceCloseError(const LLSD& notification, const LLSD& response);
+
+	void rebuildDynamics();
 
 	// LLIMModel Functionality
 	bool getSessionInitialized() const { return mSessionInitialized; }
@@ -226,6 +229,7 @@ private:
 
 	bool mDing; // Whether or not to play a ding on new messages
 	bool mRPMode;
+	bool mTranslate;
 
 	bool mTextIMPossible;
 	bool mCallBackEnabled;

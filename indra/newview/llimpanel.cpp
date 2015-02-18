@@ -55,6 +55,7 @@
 #include "llspeakers.h"
 #include "llstylemap.h"
 #include "lltrans.h"
+#include "lltranslate.h"
 #include "lluictrlfactory.h"
 #include "llviewertexteditor.h"
 #include "llviewerstats.h"
@@ -296,6 +297,7 @@ LLFloaterIMPanel::LLFloaterIMPanel(
 	mShowSpeakersOnConnect(true),
 	mDing(false),
 	mRPMode(false),
+	mTranslate(false),
 	mTextIMPossible(true),
 	mCallBackEnabled(true),
 	mSpeakers(NULL),
@@ -349,6 +351,8 @@ LLFloaterIMPanel::LLFloaterIMPanel(
 		LLAvatarTracker::instance().addParticularFriendObserver(mOtherParticipantUUID, this);
 		LLMuteList::instance().addObserver(this);
 		mDing = gSavedSettings.getBOOL("LiruNewMessageSoundIMsOn");
+		if (LLTranslate::isTranslationConfigured())
+			mTranslate = gSavedSettings.getBOOL("TranslateChat");
 		break;
 	}
 
@@ -696,9 +700,79 @@ bool LLFloaterIMPanel::inviteToSession(const LLDynamicArray<LLUUID>& ids)
 	return TRUE;
 }
 
+class IMTranslationReceiver : public LLTranslate::TranslationReceiver
+{
+public :
+	IMTranslationReceiver(const std::string& from_lang, const std::string& to_lang, LLFloaterIMPanel* panel, const std::string& msg, LLColor4 color, bool log, const LLUUID& source, const std::string& name, bool irc) : LLTranslate::TranslationReceiver(from_lang, to_lang),
+		mPanel(panel),  mMsg(msg), mColor(color), mLog(log), mSource(source), mName(name), mIRC(irc)
+	{
+	}
+
+	static boost::intrusive_ptr<IMTranslationReceiver> build(const std::string& from_lang, const std::string& to_lang, LLFloaterIMPanel* panel, const std::string& msg, LLColor4 color, bool log, const LLUUID& source, const std::string& name, bool irc)
+	{
+		return boost::intrusive_ptr<IMTranslationReceiver>(new IMTranslationReceiver(from_lang, to_lang, panel, msg, color, log, source, name, irc));
+	}
+
+protected:
+	void handleResponse(const std::string& translation, const std::string& detected_language)
+	{
+		// filter out non-interesting responses
+		if (!translation.empty() && mToLang != detected_language && LLStringUtil::compareInsensitive(translation, mMsg))
+			mMsg += " (" + translation + ')';
+		mPanel->addHistoryLine(mMsg, mColor, mLog, mSource, mName, false, true, mIRC);
+	}
+
+	void handleFailure(int status, const std::string& err_msg)
+	{
+		llwarns << "Translation failed for mesg " << mMsg << " toLang " << mToLang << " fromLang " << mFromLang << llendl;
+
+		std::string msg = LLTrans::getString("TranslationFailed", LLSD().with("[REASON]", err_msg));
+		LLStringUtil::replaceString(msg, "\n", " "); // we want one-line error messages
+		mPanel->addHistoryLine(mMsg + " (" + msg + ')', mColor, mLog, mSource, mName, false, true, mIRC);
+	}
+
+	/*virtual*/ char const* getName() const { return "IMTranslationReceiver"; }
+
+private:
+	LLFloaterIMPanel* mPanel;
+	std::string mMsg;
+	const LLColor4 mColor;
+	const bool mLog;
+	const LLUUID mSource;
+	const std::string mName;
+	const bool mIRC;
+};
+
 void LLFloaterIMPanel::addHistoryLine(const std::string &utf8msg, LLColor4 incolor, bool log_to_file, const LLUUID& source, const std::string& name)
 {
-	bool is_agent(gAgentID == source), from_user(source.notNull());
+	bool is_agent(gAgentID == source), from_user(name != SYSTEM_FROM && source.notNull());
+	// IRC style text starts with a colon here; empty names and system messages aren't irc style.
+	bool is_irc = from_user && utf8msg[0] != ':';
+
+	// Now we're adding the actual line of text, so erase the
+	// "Foo is typing..." text segment, and the optional timestamp
+	// if it was present. JC
+	removeTypingIndicator(NULL);
+
+	std::string show_name = name;
+	if (from_user)
+	{
+		LLAvatarNameCache::getNSName(source, show_name);
+		if (mTranslate && !is_agent)
+		{
+			const std::string from_lang = ""; // leave empty to trigger autodetect
+			const std::string to_lang = LLTranslate::getTranslateLanguage();
+
+			LLTranslate::TranslationReceiverPtr result = IMTranslationReceiver::build(from_lang, to_lang, this, utf8msg, incolor, log_to_file, source, show_name, is_irc);
+			LLTranslate::translateMessage(result, from_lang, to_lang, utf8msg);
+			return;
+		}
+	}
+	addHistoryLine(utf8msg, incolor, log_to_file, source, show_name, is_agent, from_user, is_irc);
+}
+
+void LLFloaterIMPanel::addHistoryLine(const std::string& utf8msg, LLColor4 incolor, bool log_to_file, const LLUUID& source, const std::string& name, bool is_agent, bool from_user, bool is_irc)
+{
 	if (!is_agent)
 	{
 		static const LLCachedControl<bool> mKeywordsChangeColor(gSavedPerAccountSettings, "KeywordsChangeColor", false);
@@ -729,13 +803,7 @@ void LLFloaterIMPanel::addHistoryLine(const std::string &utf8msg, LLColor4 incol
 			if (invisible || (!host && focused))
 				++mNumUnreadMessages;
 		}
-
 	}
-
-	// Now we're adding the actual line of text, so erase the 
-	// "Foo is typing..." text segment, and the optional timestamp
-	// if it was present. JC
-	removeTypingIndicator(NULL);
 
 	// Actually add the line
 	bool prepend_newline = true;
@@ -745,27 +813,21 @@ void LLFloaterIMPanel::addHistoryLine(const std::string &utf8msg, LLColor4 incol
 		prepend_newline = false;
 	}
 
-	std::string show_name = name;
-	bool is_irc = false;
+	if (is_irc) is_irc = gSavedSettings.getBOOL("LiruItalicizeActions");
 	// 'name' is a sender name that we want to hotlink so that clicking on it opens a profile.
 	if (!name.empty()) // If name exists, then add it to the front of the message.
 	{
 		// Don't hotlink any messages from the system (e.g. "Second Life:"), so just add those in plain text.
-		if (name == SYSTEM_FROM)
+		if (!from_user)
 		{
 			mHistoryEditor->appendColoredText(name,false,prepend_newline,incolor);
 		}
 		else
 		{
-			// IRC style text starts with a colon here; empty names and system messages aren't irc style.
-			static const LLCachedControl<bool> italicize("LiruItalicizeActions");
-			is_irc = italicize && utf8msg[0] != ':';
-			if (from_user)
-				LLAvatarNameCache::getNSName(source, show_name);
 			// Convert the name to a hotlink and add to message.
 			LLStyleSP source_style = LLStyleMap::instance().lookupAgent(source);
 			source_style->mItalic = is_irc;
-			mHistoryEditor->appendStyledText(show_name,false,prepend_newline,source_style);
+			mHistoryEditor->appendStyledText(name,false,prepend_newline,source_style);
 		}
 		prepend_newline = false;
 	}
@@ -779,21 +841,10 @@ void LLFloaterIMPanel::addHistoryLine(const std::string &utf8msg, LLColor4 incol
 		mHistoryEditor->appendStyledText(utf8msg, false, prepend_newline, style);
 	}
 
-	if (log_to_file
-		&& gSavedPerAccountSettings.getBOOL("LogInstantMessages") ) 
+	if (log_to_file && gSavedPerAccountSettings.getBOOL("LogInstantMessages"))
 	{
-		std::string histstr;
-		if (gSavedPerAccountSettings.getBOOL("IMLogTimestamp"))
-			histstr = LLLogChat::timestamp(gSavedPerAccountSettings.getBOOL("LogTimestampDate")) + show_name + utf8msg;
-		else
-			histstr = show_name + utf8msg;
-
-		// [Ansariel: Display name support]
-		// Floater title contains display name -> bad idea to use that as filename
-		// mLogLabel, however, is the old legacy name
-		//LLLogChat::saveHistory(getTitle(),histstr);
-		LLLogChat::saveHistory(mLogLabel, histstr);
-		// [/Ansariel: Display name support]
+		const std::string histstr(name + utf8msg);
+		LLLogChat::saveHistory(mLogLabel, gSavedPerAccountSettings.getBOOL("IMLogTimestamp") ? LLLogChat::timestamp(gSavedPerAccountSettings.getBOOL("LogTimestampDate")) + histstr : histstr);
 	}
 
 	if (from_user)
@@ -951,6 +1002,8 @@ void LLFloaterIMPanel::removeDynamics(LLComboBox* flyout)
 	flyout->remove(mRPMode ? getString("rp mode on") : getString("rp mode off"));
 	flyout->remove(LLAvatarActions::isFriend(mOtherParticipantUUID) ? getString("remove friend") : getString("add friend"));
 	flyout->remove(LLAvatarActions::isBlocked(mOtherParticipantUUID) ? getString("unmute") : getString("mute"));
+	if (mSessionType == P2P_SESSION)
+		flyout->remove(mTranslate ? getString("translate on") : getString("translate off"));
 }
 
 void LLFloaterIMPanel::addDynamics(LLComboBox* flyout)
@@ -959,6 +1012,14 @@ void LLFloaterIMPanel::addDynamics(LLComboBox* flyout)
 	flyout->add(mRPMode ? getString("rp mode on") : getString("rp mode off"), 7);
 	flyout->add(LLAvatarActions::isFriend(mOtherParticipantUUID) ? getString("remove friend") : getString("add friend"), 8);
 	flyout->add(LLAvatarActions::isBlocked(mOtherParticipantUUID) ? getString("unmute") : getString("mute"), 9);
+	if (mSessionType == P2P_SESSION && LLTranslate::isTranslationConfigured())
+		flyout->add(mTranslate ? getString("translate on") : getString("translate off"), 10);
+}
+
+void LLFloaterIMPanel::rebuildDynamics()
+{
+	if (LLComboBox* flyout = findChild<LLComboBox>("instant_message_flyout"))
+		rebuildDynamics(flyout);
 }
 
 void copy_profile_uri(const LLUUID& id, bool group = false);
@@ -988,6 +1049,7 @@ void LLFloaterIMPanel::onFlyoutCommit(LLComboBox* flyout, const LLSD& value)
 		else if (option == 7) mRPMode = !mRPMode;
 		else if (option == 8) LLAvatarActions::isFriend(mOtherParticipantUUID) ? LLAvatarActions::removeFriendDialog(mOtherParticipantUUID) : LLAvatarActions::requestFriendshipDialog(mOtherParticipantUUID);
 		else if (option == 9) LLAvatarActions::toggleBlock(mOtherParticipantUUID);
+		else if (option == 10) mTranslate = !mTranslate;
 
 		// Last add them back
 		addDynamics(flyout);

@@ -24,6 +24,8 @@
     <string name="remove friend" value="Remove Friend"/>
     <string name="mute" value="Mute"/>
     <string name="unmute" value="Unmute"/>
+    <string name="translate on" value="Translate (on)"/>
+    <string name="translate off" value="Translate (off)"/>
     <button bottom_delta="0" follows="left|top" height="20" left_delta="81" width="50" name="tp_btn" label="TP"/>
     <button bottom_delta="0" follows="left|top" height="20" left_delta="50" width="50" name="pay_btn" label="Pay"/>
     <button bottom_delta="0" follows="left|top" height="20" left_delta="50" width="50" name="history_btn" label="Log"/>

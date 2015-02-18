@@ -30,6 +30,8 @@
 
 // Viewer includes
 #include "llfloaterchat.h"
+#include "llimpanel.h"
+#include "llimview.h"
 #include "lltranslate.h"
 #include "llviewercontrol.h" // for gSavedSettings
 
@@ -316,5 +318,12 @@ void LLPanelTranslationSettings::apply()
 	gSavedSettings.setString("BingTranslateAPIKey", getEnteredBingKey());
 	gSavedSettings.setString("GoogleTranslateAPIKey", getEnteredGoogleKey());
 	LLFloaterChat::getInstance()->showTranslationCheckbox();
+	std::set<LLHandle<LLFloater> > floaters(LLIMMgr::instance().getIMFloaterHandles());
+	for(std::set<LLHandle<LLFloater> >::iterator i = floaters.begin(); i != floaters.end(); ++i)
+	{
+		LLFloaterIMPanel& floater = static_cast<LLFloaterIMPanel&>(*i->get());
+		if (floater.getSessionType() == LLFloaterIMPanel::P2P_SESSION)
+			floater.rebuildDynamics();
+	}
 }
 

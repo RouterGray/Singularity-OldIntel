@@ -4261,7 +4261,7 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 			{
 				if (ircstyle)
 				{
-					mesg.erase(4);
+					mesg.erase(0, 4);
 				}
 				const std::string from_lang = ""; // leave empty to trigger autodetect
 				const std::string to_lang = LLTranslate::getTranslateLanguage();

@@ -28,6 +28,8 @@
     <string name="remove friend" value="Remove Friend"/>
     <string name="mute" value="Mute"/>
     <string name="unmute" value="Unmute"/>
+    <string name="translate on" value="Translate (on)"/>
+    <string name="translate off" value="Translate (off)"/>
 	<button bottom="-20" follows="right|top" height="20" image_overlay="icn_voice-call-start.tga" image_overlay_alignment="left" label="Call" left_delta="81" name="start_call_btn" width="60"/>
 	<button bottom="-20" follows="right|top" height="20" image_overlay="icn_voice-call-end.tga" image_overlay_alignment="left" scale_image="true" label="End" name="end_call_btn" width="24"/>
 	<panel mouse_opaque="false" border="false" bottom="-20" follows="right|top" height="20" left_delta="16" name="speaker_controls" width="60">
