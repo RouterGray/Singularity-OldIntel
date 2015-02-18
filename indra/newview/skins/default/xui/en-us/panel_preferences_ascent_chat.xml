@@ -164,38 +164,37 @@ The following wildcards are available to enhance your autoresponses: #n for user
     </panel>
 
     <panel border="true" bottom="-580" height="525" label="Text Options" left="1" name="TextOptions" width="418">
-      <check_box bottom="-25" left="12" height="16" label="Show misspelled words in red" name="SpellDisplay" control_name="SpellDisplay"/>
-      <text bottom_delta="-24" follows="left|top" height="16" name="EmSpell_txt1">Current language (dictionary):</text>
-      <combo_box bottom_delta="-20" follows="left|top" height="20" name="SpellBase" width="250" control_name="SpellBase"/>
-      <text bottom_delta="-24" follows="left|top" height="20" name="EmSpell_txt3">Downloaded languages (dictionaries):</text>
-      <combo_box bottom_delta="-20" follows="left|top" height="20" name="EmSpell_Avail" width="250" control_name="EmSpell_Avail"/>
-      <button bottom_delta="0" left_delta="255" follows="left|top" height="20" label="Install" name="EmSpell_Add" tool_tip="" width="80"/>
-      <button bottom_delta="-22" left="12" follows="top" height="20" label="Download More..." name="EmSpell_GetMore" tool_tip="Get more dictionaries availabe online" width="250"/>
-      <text bottom_delta="-24" follows="left|top" height="20" name="EmSpell_txt2">Additional custom languages (dictionaries):</text>
-      <combo_box bottom_delta="-20" follows="left|top" height="20" name="EmSpell_Installed" width="250" control_name="EmSpell_Installed" tool_tip=""/>
-      <button bottom_delta="0" left_delta="255" follows="left|top" height="20" label="Remove" name="EmSpell_Remove" tool_tip="" width="80"/>
-      <button bottom_delta="-20" left="12" follows="top" height="20" label="Edit Custom dictionary" name="EmSpell_EditCustom" width="250"/>
-      <text bottom_delta="-24" follows="left|top" height="20" name="EmSpell_txt4">
-To use spellcheck, right-click a misspelled word
-(red or otherwise) and select its replacement
-      </text>
+      <button bottom_delta="-26" left="12" follows="top" height="20" width="190" label="Autoreplace Preferences" name="autoreplace"/>
 
-      <button bottom_delta="-26" left="12" follows="top" height="20" width="250" label="Autoreplace Preferences" name="autoreplace"/>
-      <view_border bevel_style="none" border_thickness="1" bottom_delta="-5" follows="top" height="0" left="5" name="CmdDivisor" width="376"/>
+      <text bottom_delta="-24" left="12" follows="left|top" height="16" font="SansSerif" name="Spell_txt">Dictionaries:</text>
+      <check_box bottom_delta="0" left_delta="110" follows="left|top" height="16" label="Show misspelled words in red" name="SpellDisplay" control_name="SpellDisplay"/>
+      <text bottom_delta="-24" left="12" follows="left|top" height="20" name="Spell_txt1">Current:</text>
+      <combo_box bottom_delta="5" left_delta="85" follows="left|top" height="20" name="SpellBase" width="190" control_name="SpellBase"/>
+      <text bottom_delta="-24" left="12" follows="left|top" height="20" name="Spell_txt2">Downloaded:</text>
+      <combo_box bottom_delta="5" left_delta="85" follows="left|top" height="20" name="EmSpell_Avail" width="190" control_name="EmSpell_Avail"/>
+      <button bottom_delta="0" left_delta="195" follows="left|top" height="20" label="Install" name="EmSpell_Add" width="80"/>
+      <button bottom_delta="0" left_delta="80" follows="top" height="20" label="Get More..." name="EmSpell_GetMore" tool_tip="Get more dictionaries availabe online" width="90"/>
+      <text bottom_delta="-24" left="12" follows="left|top" height="20" name="Spell_txt3">Custom:</text>
+      <combo_box bottom_delta="5" left_delta="85" follows="left|top" height="20" name="EmSpell_Installed" width="190" control_name="EmSpell_Installed" tool_tip=""/>
+      <button bottom_delta="0" left_delta="195" follows="left|top" height="20" label="Remove" name="EmSpell_Remove" width="80"/>
+      <button bottom_delta="0" left_delta="80" follows="top" height="20" label="Edit..." name="EmSpell_EditCustom" width="90"/>
+      <text bottom_delta="-24" left="12" follows="left|top" height="20" name="EmSpell_txt4" width="500">
+To use spellcheck, right-click a misspelled word (red or otherwise) and select its replacement
+      </text>
+      <view_border bevel_style="none" border_thickness="1" bottom_delta="-5" follows="top" height="0" left="5" name="TextDivisor" width="480"/>
+      <panel border="true" left="1" bottom_delta="-90" height="100" width="500" filename="panel_translation_settings.xml" label="Translation" name="Translation Panel"/>
+      <view_border bevel_style="none" border_thickness="1" bottom_delta="-10" follows="top" height="0" left="5" name="TransDivisor" width="480"/>
 
       <check_box bottom_delta="-24" follows="left|top" font="SansSerifSmall" height="16"
-        label="Highlight messages if any of them contain the terms" name="KeywordsOn" width="270"/>
-      <text bottom_delta="-20" follows="top" height="20" left="12" name="keyword_txt1">(separated by commas)</text>
-      <line_editor bevel_style="in" border_style="line" border_thickness="1" bottom_delta="-20" follows="top" height="20" left_delta="5" max_length="500" name="KeywordsList" width="300"/>
+        label="Highlight messages if any of them contain the terms (separated by commas)" name="KeywordsOn" width="300"/>
+      <line_editor bevel_style="in" border_style="line" border_thickness="1" bottom_delta="-20" follows="top" height="20" left_delta="5" max_length="500" name="KeywordsList" width="390"/>
       <text bottom_delta="-24" follows="top" height="20" left_delta="0" name="EmKeyw">Is found within:</text>
       <check_box bottom_delta="3" follows="top" height="16" left_delta="80" label="Local Chat Floater" name="KeywordsInChat"/>
       <check_box bottom_delta="0" left_delta="120" follows="left|top" height="16" label="Instant Message Floater" name="KeywordsInIM"/>
-      <check_box bottom_delta="-24" follows="top" height="16" label="Highlight the message in this color:" left_delta="-195" name="KeywordsChangeColor"/>
+      <check_box bottom_delta="-20" follows="top" height="16" label="Highlight the message in this color:" left_delta="-200" name="KeywordsChangeColor"/>
       <color_swatch border_color="0.45098, 0.517647, 0.607843, 1" bottom_delta="-16" can_apply_immediately="true" color="1, 1, 1, 1" follows="left|top" height="35" left_delta="210" name="KeywordsColor" tool_tip="Click to open Color Picker" width="50"/>
-      <check_box bottom_delta="-10" follows="top" height="16" left_delta="-210" label="Play this sound alert: (UUID)" name="KeywordsPlaySound"/>
-      <line_editor bottom_delta="-20" follows="left|top" bevel_style="in" border_style="line" border_thickness="1" height="20" left_delta="-5" max_length="36" name="KeywordsSound" width="300"/>
+      <check_box bottom_delta="-10" follows="top" height="16" left_delta="-210" label="Play this sound alert (UUID):" name="KeywordsPlaySound"/>
+      <line_editor bottom_delta="0" follows="left|top" bevel_style="in" border_style="line" border_thickness="1" height="20" left_delta="180" max_length="36" name="KeywordsSound" width="210"/>
     </panel>
-
-    <panel border="true" left="1" bottom="-408" height="408" width="500" filename="panel_translation_settings.xml" label="Translation" name="Translation Panel"/>
   </tab_container>
 </panel>
