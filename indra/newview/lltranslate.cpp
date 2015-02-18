@@ -40,6 +40,9 @@
 
 #include "json/reader.h"
 
+const LLStringExplicit GOOGLE_URL_BASE("https://www.googleapis.com/language/translate/v2");
+const LLStringExplicit BING_URL_BASE("http://api.microsofttranslator.com/v2/Http.svc/");
+
 // virtual
 void LLGoogleTranslationHandler::getTranslateURL(
 	std::string &url,
@@ -47,7 +50,7 @@ void LLGoogleTranslationHandler::getTranslateURL(
 	const std::string &to_lang,
 	const std::string &text) const
 {
-	url = std::string("https://www.googleapis.com/language/translate/v2?key=")
+	url = std::string(GOOGLE_URL_BASE + "?key=")
 		+ getAPIKey() + "&q=" + LLURI::escape(text) + "&target=" + to_lang;
 	if (!from_lang.empty())
 	{
@@ -60,7 +63,7 @@ void LLGoogleTranslationHandler::getKeyVerificationURL(
 	std::string& url,
 	const std::string& key) const
 {
-	url = std::string("https://www.googleapis.com/language/translate/v2/languages?key=")
+	url = std::string(GOOGLE_URL_BASE + "/languages?key=")
 		+ key + "&target=en";
 }
 
@@ -163,7 +166,7 @@ void LLBingTranslationHandler::getTranslateURL(
 	const std::string &to_lang,
 	const std::string &text) const
 {
-	url = std::string("http://api.microsofttranslator.com/v2/Http.svc/Translate?appId=")
+	url = std::string(BING_URL_BASE + "Translate?appId=")
 		+ getAPIKey() + "&text=" + LLURI::escape(text) + "&to=" + getAPILanguageCode(to_lang);
 	if (!from_lang.empty())
 	{
@@ -176,7 +179,7 @@ void LLBingTranslationHandler::getKeyVerificationURL(
 	std::string& url,
 	const std::string& key) const
 {
-	url = std::string("http://api.microsofttranslator.com/v2/Http.svc/GetLanguagesForTranslate?appId=")
+	url = std::string(BING_URL_BASE + "GetLanguagesForTranslate?appId=")
 		+ key;
 }
 
