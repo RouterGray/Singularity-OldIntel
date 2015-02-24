@@ -115,24 +115,27 @@ BOOL LLPanelTranslationSettings::postBuild()
 	mGoogleAPIKeyEditor->setKeystrokeCallback(boost::bind(&LLPanelTranslationSettings::onGoogleKeyEdited, this));
 
 	// Now set the links, because v3 has special xml linking and we do not.
-	LLStyleSP style(new LLStyle);
-	style->setColor(gSavedSettings.getColor4("HTMLLinkColor"));
+	const LLColor4 color(gSavedSettings.getColor4("HTMLLinkColor"));
 
 	LLTextEditor* ed = getChild<LLTextEditor>("bing_api_key_label");
 	ed->setParseHTML(true);
+	LLStyleSP style(new LLStyle(true, color, LLStringUtil::null));
 	style->setLinkHREF("https://datamarket.azure.com/dataset/1899a118-d202-492c-aa16-ba21c33c06cb");
 	ed->appendStyledText(" AppId:", false, false, style);
 
 	ed = getChild<LLTextEditor>("google_api_key_label");
 	ed->setParseHTML(true);
+	style = new LLStyle(true, color, LLStringUtil::null);
 	style->setLinkHREF("https://cloud.google.com/translate/v2/getting_started#auth");
 	ed->appendStyledText(" API key:", false, false, style);
 
 	ed = getChild<LLTextEditor>("google_links_text");
 	ed->setParseHTML(true);
+	style = new LLStyle(true, color, LLStringUtil::null);
 	style->setLinkHREF("https://cloud.google.com/translate/v2/pricing");
 	ed->appendStyledText(getString("Pricing"), false, false, style);
 	ed->appendColoredText(" | ", false, false, gColors.getColor("TextFgReadOnlyColor"));
+	style = new LLStyle(true, color, LLStringUtil::null);
 	style->setLinkHREF("https://code.google.com/apis/console/b/0/?pli=1");
 	ed->appendStyledText(getString("Stats"), false, false, style);
 
