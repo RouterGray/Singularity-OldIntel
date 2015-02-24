@@ -55,8 +55,8 @@ private:
 	void verifyKey(int service, const std::string& key, bool alert = true);
 
 	void onEditorFocused(LLFocusableElement* control);
-	void onBingKeyEdited(LLLineEditor* caller);
-	void onGoogleKeyEdited(LLLineEditor* caller);
+	void onBingKeyEdited();
+	void onGoogleKeyEdited();
 	void onBtnBingVerify();
 	void onBtnGoogleVerify();
 

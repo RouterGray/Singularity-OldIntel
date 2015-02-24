@@ -96,9 +96,6 @@ public:
 	virtual bool isConfigured() const = 0;
 
 	virtual ~LLTranslationAPIHandler() {}
-
-protected:
-	static const int STATUS_OK = 200;
 };
 
 /// Google Translate v2 API handler.
@@ -190,6 +187,7 @@ public :
 	class TranslationReceiver: public LLHTTPClient::ResponderWithCompleted
 	{
 	public:
+
 		/**
 		 * Using mHandler, parse incoming response.
 		 *
@@ -209,8 +207,6 @@ public :
 
 		/// Remember source and target languages for subclasses to be able to filter inappropriate results.
 		TranslationReceiver(const std::string& from_lang, const std::string& to_lang);
-
-		virtual void result(LLSD const& content) {};
 
 		/// Override point to handle successful translation.
 		virtual void handleResponse(const std::string &translation, const std::string &recognized_lang) = 0;
@@ -232,7 +228,6 @@ public :
 		EService getService() const;
 
 	protected:
-		virtual void result(LLSD const& content) {};
 		/**
 		 * Save the translation service the key belongs to.
 		 *

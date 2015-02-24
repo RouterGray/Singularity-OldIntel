@@ -91,6 +91,55 @@ LLPanelTranslationSettings::LLPanelTranslationSettings()
 ,	mGoogleKeyVerified(false)
 {
 	LLUICtrlFactory::getInstance()->buildPanel(this, "panel_translation_settings.xml");
+}
+
+// virtual
+BOOL LLPanelTranslationSettings::postBuild()
+{
+	mMachineTranslationCB = getChild<LLCheckBoxCtrl>("translate_chat_checkbox");
+	mLanguageCombo = getChild<LLComboBox>("translate_language_combo");
+	mTranslationServiceRadioGroup = getChild<LLRadioGroup>("translation_service_rg");
+	mBingAPIKeyEditor = getChild<LLLineEditor>("bing_api_key");
+	mGoogleAPIKeyEditor = getChild<LLLineEditor>("google_api_key");
+	mBingVerifyBtn = getChild<LLButton>("verify_bing_api_key_btn");
+	mGoogleVerifyBtn = getChild<LLButton>("verify_google_api_key_btn");
+
+	mMachineTranslationCB->setCommitCallback(boost::bind(&LLPanelTranslationSettings::updateControlsEnabledState, this));
+	mTranslationServiceRadioGroup->setCommitCallback(boost::bind(&LLPanelTranslationSettings::updateControlsEnabledState, this));
+	mBingVerifyBtn->setClickedCallback(boost::bind(&LLPanelTranslationSettings::onBtnBingVerify, this));
+	mGoogleVerifyBtn->setClickedCallback(boost::bind(&LLPanelTranslationSettings::onBtnGoogleVerify, this));
+
+	mBingAPIKeyEditor->setFocusReceivedCallback(boost::bind(&LLPanelTranslationSettings::onEditorFocused, this, _1));
+	mBingAPIKeyEditor->setKeystrokeCallback(boost::bind(&LLPanelTranslationSettings::onBingKeyEdited, this));
+	mGoogleAPIKeyEditor->setFocusReceivedCallback(boost::bind(&LLPanelTranslationSettings::onEditorFocused, this, _1));
+	mGoogleAPIKeyEditor->setKeystrokeCallback(boost::bind(&LLPanelTranslationSettings::onGoogleKeyEdited, this));
+
+	// Now set the links, because v3 has special xml linking and we do not.
+	LLStyleSP style(new LLStyle);
+	style->setColor(gSavedSettings.getColor4("HTMLLinkColor"));
+
+	LLTextEditor* ed = getChild<LLTextEditor>("bing_api_key_label");
+	ed->setParseHTML(true);
+	style->setLinkHREF("https://datamarket.azure.com/dataset/1899a118-d202-492c-aa16-ba21c33c06cb");
+	ed->appendStyledText(" AppId:", false, false, style);
+
+	ed = getChild<LLTextEditor>("google_api_key_label");
+	ed->setParseHTML(true);
+	style->setLinkHREF("https://cloud.google.com/translate/v2/getting_started#auth");
+	ed->appendStyledText(" API key:", false, false, style);
+
+	ed = getChild<LLTextEditor>("google_links_text");
+	ed->setParseHTML(true);
+	style->setLinkHREF("https://cloud.google.com/translate/v2/pricing");
+	ed->appendStyledText(getString("Pricing"), false, false, style);
+	ed->appendColoredText(" | ", false, false, gColors.getColor("TextFgReadOnlyColor"));
+	style->setLinkHREF("https://code.google.com/apis/console/b/0/?pli=1");
+	ed->appendStyledText(getString("Stats"), false, false, style);
+
+	/*
+	center();
+	return TRUE;
+	*/
 
 	mMachineTranslationCB->setValue(gSavedSettings.getBOOL("TranslateChat"));
 	mLanguageCombo->setSelectedByValue(gSavedSettings.getString("TranslateLanguage"), TRUE);
@@ -123,64 +172,7 @@ LLPanelTranslationSettings::LLPanelTranslationSettings()
 	}
 
 	updateControlsEnabledState();
-}
-
-// virtual
-BOOL LLPanelTranslationSettings::postBuild()
-{
-	mMachineTranslationCB = getChild<LLCheckBoxCtrl>("translate_chat_checkbox");
-	mLanguageCombo = getChild<LLComboBox>("translate_language_combo");
-	mTranslationServiceRadioGroup = getChild<LLRadioGroup>("translation_service_rg");
-	mBingAPIKeyEditor = getChild<LLLineEditor>("bing_api_key");
-	mGoogleAPIKeyEditor = getChild<LLLineEditor>("google_api_key");
-	mBingVerifyBtn = getChild<LLButton>("verify_bing_api_key_btn");
-	mGoogleVerifyBtn = getChild<LLButton>("verify_google_api_key_btn");
-
-	mMachineTranslationCB->setCommitCallback(boost::bind(&LLPanelTranslationSettings::updateControlsEnabledState, this));
-	mTranslationServiceRadioGroup->setCommitCallback(boost::bind(&LLPanelTranslationSettings::updateControlsEnabledState, this));
-	mBingVerifyBtn->setClickedCallback(boost::bind(&LLPanelTranslationSettings::onBtnBingVerify, this));
-	mGoogleVerifyBtn->setClickedCallback(boost::bind(&LLPanelTranslationSettings::onBtnGoogleVerify, this));
-
-	mBingAPIKeyEditor->setFocusReceivedCallback(boost::bind(&LLPanelTranslationSettings::onEditorFocused, this, _1));
-	mBingAPIKeyEditor->setKeystrokeCallback(boost::bind(&LLPanelTranslationSettings::onBingKeyEdited, this, _1));
-	mGoogleAPIKeyEditor->setFocusReceivedCallback(boost::bind(&LLPanelTranslationSettings::onEditorFocused, this, _1));
-	mGoogleAPIKeyEditor->setKeystrokeCallback(boost::bind(&LLPanelTranslationSettings::onGoogleKeyEdited, this, _1));
-
-	// Now set the links, because v3 has special xml linking and we do not.
-	LLTextEditor* bing_api_key = getChild<LLTextEditor>("bing_api_key_label");
-	LLTextEditor* google_api_key = getChild<LLTextEditor>("google_api_key_label");
-	LLTextEditor* google_links = getChild<LLTextEditor>("google_links_text");
-	google_api_key->setParseHTML(true);
-	bing_api_key->setParseHTML(true);
-	google_links->setParseHTML(true);
-
-	LLStyleSP link_style(new LLStyle);
-	link_style->setColor(gSavedSettings.getColor4("HTMLLinkColor"));
-	std::string link_text;
-	std::string link_url;
-
-	link_text = " AppId:";
-	link_url = "https://datamarket.azure.com/dataset/1899a118-d202-492c-aa16-ba21c33c06cb"; //Microsoft changed their policy, no longer link to "http://www.bing.com/developers/createapp.aspx";
-	link_style->setLinkHREF(link_url);
-	bing_api_key->appendStyledText(link_text, false, false, link_style);
-
-	link_text = " API key:";
-	link_url = "https://developers.google.com/translate/v2/getting_started#auth";
-	link_style->setLinkHREF(link_url);
-	google_api_key->appendStyledText(link_text, false, false, link_style);
-
-	link_text = getString("Pricing");
-	link_url = "https://developers.google.com/translate/v2/pricing";
-	link_style->setLinkHREF(link_url);
-	google_links->appendStyledText(link_text, false, false, link_style);
-	google_links->appendColoredText(std::string(" | "), false, false, gColors.getColor("TextFgReadOnlyColor"));
-	link_text = getString("Stats");
-	link_url = "https://code.google.com/apis/console";
-	link_style->setLinkHREF(link_url);
-	google_links->appendStyledText(link_text, false, false, link_style);
-
-	//center();
-	return TRUE;
+	return true;
 }
 
 void LLPanelTranslationSettings::setBingVerified(bool ok, bool alert)
@@ -239,20 +231,20 @@ void LLPanelTranslationSettings::updateControlsEnabledState()
 	mLanguageCombo->setEnabled(on);
 
 	getChild<LLTextEditor>("bing_api_key_label")->setVisible(bing_selected);
-	mBingAPIKeyEditor->setVisible(bing_selected);
-	mBingVerifyBtn->setVisible(bing_selected);
+	mBingAPIKeyEditor->setEnabled(on);
 
 	getChild<LLTextEditor>("google_api_key_label")->setVisible(google_selected);
 	getChild<LLTextEditor>("google_links_text")->setVisible(google_selected);
+	mGoogleAPIKeyEditor->setEnabled(on);
+
+	mBingAPIKeyEditor->setVisible(bing_selected);
+	mBingVerifyBtn->setVisible(bing_selected);
 	mGoogleAPIKeyEditor->setVisible(google_selected);
 	mGoogleVerifyBtn->setVisible(google_selected);
 
-	mBingAPIKeyEditor->setEnabled(on);
-	mGoogleAPIKeyEditor->setEnabled(on);
-
-	mBingVerifyBtn->setEnabled(on &&
+	mBingVerifyBtn->setEnabled(on && bing_selected &&
 		!mBingKeyVerified && !getEnteredBingKey().empty());
-	mGoogleVerifyBtn->setEnabled(on &&
+	mGoogleVerifyBtn->setEnabled(on && google_selected &&
 		!mGoogleKeyVerified && !getEnteredGoogleKey().empty());
 }
 
@@ -276,17 +268,17 @@ void LLPanelTranslationSettings::onEditorFocused(LLFocusableElement* control)
 	}
 }
 
-void LLPanelTranslationSettings::onBingKeyEdited(LLLineEditor* caller)
+void LLPanelTranslationSettings::onBingKeyEdited()
 {
-	if (caller->isDirty())
+	if (mBingAPIKeyEditor->isDirty())
 	{
 		setBingVerified(false, false);
 	}
 }
 
-void LLPanelTranslationSettings::onGoogleKeyEdited(LLLineEditor* caller)
+void LLPanelTranslationSettings::onGoogleKeyEdited()
 {
-	if (caller->isDirty())
+	if (mGoogleAPIKeyEditor->isDirty())
 	{
 		setGoogleVerified(false, false);
 	}
@@ -326,4 +318,3 @@ void LLPanelTranslationSettings::apply()
 			floater.rebuildDynamics();
 	}
 }
-

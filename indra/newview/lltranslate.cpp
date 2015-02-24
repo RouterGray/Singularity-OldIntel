@@ -33,10 +33,8 @@
 #include "llbufferstream.h"
 #include "lltrans.h"
 #include "llui.h"
-#include "llviewercontrol.h"
-#include "llweb.h"
-
 #include "sgversion.h"
+#include "llviewercontrol.h"
 
 #include "json/reader.h"
 
@@ -89,7 +87,7 @@ bool LLGoogleTranslationHandler::parseResponse(
 		return false;
 	}
 
-	if (status != STATUS_OK)
+	if (status != HTTP_OK)
 	{
 		// Request failed. Extract error message from the response.
 		parseErrorResponse(root, status, err_msg);
@@ -191,7 +189,7 @@ bool LLBingTranslationHandler::parseResponse(
 	std::string& detected_lang,
 	std::string& err_msg) const
 {
-	if (status != STATUS_OK)
+	if (status != HTTP_OK)
 	{
 		static const std::string MSG_BEGIN_MARKER = "Message: ";
 		size_t begin = body.find(MSG_BEGIN_MARKER);
@@ -307,7 +305,7 @@ void LLTranslate::KeyVerificationReceiver::completedRaw(
 	const LLChannelDescriptors& channels,
 	const LLIOPipe::buffer_ptr_t& buffer)
 {
-	bool ok = (getStatus() == 200);
+	bool ok = (getStatus() == HTTP_OK);
 	setVerificationStatus(ok);
 }
 
