@@ -328,9 +328,10 @@ const S32& friend_name_system()
 	return name_system;
 }
 
-static void update_friend_item(LLScrollListItem* item, const LLAvatarName& avname)
+static void update_friend_name(LLScrollListCtrl* list, const LLUUID& id, const LLAvatarName& avname)
 {
-	item->getColumn(1)->setValue(avname.getNSName(friend_name_system()));
+	if (LLScrollListItem* item = list->getItem(id))
+		item->getColumn(1)->setValue(avname.getNSName(friend_name_system()));
 }
 
 void LLPanelFriends::addFriend(const LLUUID& agent_id)
@@ -399,8 +400,8 @@ void LLPanelFriends::addFriend(const LLUUID& agent_id)
 		.value(have_name ? relation_info->getChangeSerialNum() : -1);
 	element.columns.add(cell);
 
-	LLScrollListItem* item(mFriendsList->addRow(element));
-	if (!have_name) LLAvatarNameCache::get(agent_id, boost::bind(update_friend_item, item, _2));
+	mFriendsList->addRow(element);
+	if (!have_name) LLAvatarNameCache::get(agent_id, boost::bind(update_friend_name, mFriendsList, _1, _2));
 }
 
 // propagate actual relationship to UI.
@@ -421,7 +422,7 @@ void LLPanelFriends::updateFriendItem(const LLUUID& agent_id, const LLRelationsh
 	else
 	{
 		gCacheName->getFullName(agent_id, fullname);
-		LLAvatarNameCache::get(agent_id, boost::bind(update_friend_item, itemp, _2));
+		LLAvatarNameCache::get(agent_id, boost::bind(update_friend_name, mFriendsList, _1, _2));
 		itemp->getColumn(LIST_FRIEND_UPDATE_GEN)->setValue(-1);
 	}
 
@@ -459,7 +460,9 @@ void LLPanelFriends::updateFriendItem(const LLUUID& agent_id, const LLRelationsh
 	itemp->getColumn(LIST_EDIT_THEIRS)->setValue(info->isRightGrantedFrom(LLRelationship::GRANT_MODIFY_OBJECTS));
 
 	// enable this item, in case it was disabled after user input
-	itemp->setEnabled(true);
+	itemp->getColumn(LIST_VISIBLE_ONLINE)->setEnabled(true);
+	itemp->getColumn(LIST_VISIBLE_MAP)->setEnabled(true);
+	itemp->getColumn(LIST_EDIT_MINE)->setEnabled(true);
 
 	mFriendsList->setNeedsSort();
 
@@ -959,7 +962,10 @@ void LLPanelFriends::applyRightsToFriends()
 			rights_updates.insert(std::make_pair(id, rights));
 			// disable these ui elements until response from server
 			// to avoid race conditions
-			(*itr)->setEnabled(false);
+			LLScrollListItem& item = *(*itr);
+			item.getColumn(LIST_VISIBLE_ONLINE)->setEnabled(false);
+			item.getColumn(LIST_VISIBLE_MAP)->setEnabled(false);
+			item.getColumn(LIST_EDIT_MINE)->setEnabled(false);
 		}
 	}
 
