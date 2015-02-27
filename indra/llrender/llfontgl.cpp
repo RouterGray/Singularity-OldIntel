@@ -157,7 +157,8 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
 
 	if (max_chars == -1)
 		max_chars = S32_MAX;
-	const S32 max_index = llmin(begin_offset + max_chars, S32(wstr.length()));
+
+	const S32 max_index = llmin(llmax(max_chars, begin_offset + max_chars), S32(wstr.length()));
 	if (max_index <= 0 || begin_offset >= max_index || max_pixels <= 0)
 		return 0;
 
@@ -528,7 +529,7 @@ F32 LLFontGL::getWidthF32(const LLWString& utf32text, const S32 begin_offset, co
 {
 	const S32 LAST_CHARACTER = LLFontFreetype::LAST_CHAR_FULL;
 
-	const S32 max_index = llmin(begin_offset + max_chars, S32(utf32text.length()));
+	const S32 max_index = llmin(llmax(max_chars, begin_offset + max_chars), S32(utf32text.length()));
 	if (max_index <= 0 || begin_offset >= max_index)
 		return 0;
 
@@ -732,7 +733,7 @@ S32 LLFontGL::maxDrawableChars(const LLWString& utf32text, F32 max_pixels, S32 m
 
 S32	LLFontGL::firstDrawableChar(const LLWString& utf32text, F32 max_pixels, S32 start_pos, S32 max_chars) const
 {
-	const S32 max_index = llmin(max_chars, S32(utf32text.length()));
+	const S32 max_index = llmin(llmax(max_chars, start_pos + max_chars), S32(utf32text.length()));
 	if (max_index <= 0 || start_pos >= max_index || max_pixels <= 0.f || start_pos < 0)
 		return 0;
 	
@@ -803,7 +804,7 @@ S32	LLFontGL::firstDrawableChar(const LLWString& utf32text, F32 max_pixels, S32 
 
 S32 LLFontGL::charFromPixelOffset(const LLWString& utf32text, const S32 begin_offset, F32 target_x, F32 max_pixels, S32 max_chars, BOOL round, BOOL use_embedded) const
 {
-	const S32 max_index = llmin(begin_offset + max_chars, S32(utf32text.length()));
+	const S32 max_index = llmin(llmax(max_chars,begin_offset + max_chars), S32(utf32text.length()));
 	if (max_index <= 0 || begin_offset >= max_index || max_pixels <= 0.f)
 		return 0;
 	
