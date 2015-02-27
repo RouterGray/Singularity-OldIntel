@@ -83,6 +83,7 @@ LLPanelTranslationSettings::LLPanelTranslationSettings()
 :	mMachineTranslationCB(NULL)
 ,	mLanguageCombo(NULL)
 ,	mTranslationServiceRadioGroup(NULL)
+,	mBingAPIIDEditor(NULL)
 ,	mBingAPIKeyEditor(NULL)
 ,	mGoogleAPIKeyEditor(NULL)
 ,	mBingVerifyBtn(NULL)
@@ -99,6 +100,7 @@ BOOL LLPanelTranslationSettings::postBuild()
 	mMachineTranslationCB = getChild<LLCheckBoxCtrl>("translate_chat_checkbox");
 	mLanguageCombo = getChild<LLComboBox>("translate_language_combo");
 	mTranslationServiceRadioGroup = getChild<LLRadioGroup>("translation_service_rg");
+	mBingAPIIDEditor = getChild<LLLineEditor>("bing_client_id");
 	mBingAPIKeyEditor = getChild<LLLineEditor>("bing_api_key");
 	mGoogleAPIKeyEditor = getChild<LLLineEditor>("google_api_key");
 	mBingVerifyBtn = getChild<LLButton>("verify_bing_api_key_btn");
@@ -109,6 +111,8 @@ BOOL LLPanelTranslationSettings::postBuild()
 	mBingVerifyBtn->setClickedCallback(boost::bind(&LLPanelTranslationSettings::onBtnBingVerify, this));
 	mGoogleVerifyBtn->setClickedCallback(boost::bind(&LLPanelTranslationSettings::onBtnGoogleVerify, this));
 
+	mBingAPIIDEditor->setFocusReceivedCallback(boost::bind(&LLPanelTranslationSettings::onEditorFocused, this, _1));
+	mBingAPIIDEditor->setKeystrokeCallback(boost::bind(&LLPanelTranslationSettings::onBingKeyEdited, this));
 	mBingAPIKeyEditor->setFocusReceivedCallback(boost::bind(&LLPanelTranslationSettings::onEditorFocused, this, _1));
 	mBingAPIKeyEditor->setKeystrokeCallback(boost::bind(&LLPanelTranslationSettings::onBingKeyEdited, this));
 	mGoogleAPIKeyEditor->setFocusReceivedCallback(boost::bind(&LLPanelTranslationSettings::onEditorFocused, this, _1));
@@ -117,11 +121,17 @@ BOOL LLPanelTranslationSettings::postBuild()
 	// Now set the links, because v3 has special xml linking and we do not.
 	const LLColor4 color(gSavedSettings.getColor4("HTMLLinkColor"));
 
-	LLTextEditor* ed = getChild<LLTextEditor>("bing_api_key_label");
+	LLTextEditor* ed = getChild<LLTextEditor>("bing_client_id_label");
 	ed->setParseHTML(true);
 	LLStyleSP style(new LLStyle(true, color, LLStringUtil::null));
 	style->setLinkHREF("https://datamarket.azure.com/dataset/1899a118-d202-492c-aa16-ba21c33c06cb");
-	ed->appendStyledText(" AppId:", false, false, style);
+	ed->appendStyledText(" Client ID:", false, false, style);
+
+	ed = getChild<LLTextEditor>("bing_api_key_label");
+	ed->setParseHTML(true);
+	style = new LLStyle(true, color, LLStringUtil::null);
+	style->setLinkHREF("https://datamarket.azure.com/developer/applications/register");
+	ed->appendStyledText("Client Secret:", false, false, style);
 
 	ed = getChild<LLTextEditor>("google_api_key_label");
 	ed->setParseHTML(true);
@@ -149,14 +159,18 @@ BOOL LLPanelTranslationSettings::postBuild()
 	mTranslationServiceRadioGroup->setSelectedByValue(gSavedSettings.getString("TranslationService"), TRUE);
 
 	std::string bing_key = gSavedSettings.getString("BingTranslateAPIKey");
-	if (!bing_key.empty())
+	std::string bing_id = gSavedSettings.getString("BingTranslateAPIID");
+	if (!bing_key.empty() && !bing_id.empty())
 	{
+		mBingAPIIDEditor->setText(bing_id);
+		mBingAPIIDEditor->setTentative(false);
 		mBingAPIKeyEditor->setText(bing_key);
 		mBingAPIKeyEditor->setTentative(FALSE);
-		verifyKey(LLTranslate::SERVICE_BING, bing_key, false);
+		LLTranslate::postBingVerifyAuth(bing_id, bing_key, new EnteredKeyVerifier(LLTranslate::SERVICE_BING, false));
 	}
 	else
 	{
+		mBingAPIIDEditor->setTentative(true);
 		mBingAPIKeyEditor->setTentative(TRUE);
 		mBingKeyVerified = FALSE;
 	}
@@ -205,6 +219,11 @@ std::string LLPanelTranslationSettings::getSelectedService() const
 	return mTranslationServiceRadioGroup->getSelectedValue().asString();
 }
 
+const std::string& LLPanelTranslationSettings::getEnteredBingID() const
+{
+	return mBingAPIIDEditor->getTentative() ? LLStringUtil::null : mBingAPIIDEditor->getText();
+}
+
 std::string LLPanelTranslationSettings::getEnteredBingKey() const
 {
 	return mBingAPIKeyEditor->getTentative() ? LLStringUtil::null : mBingAPIKeyEditor->getText();
@@ -233,20 +252,23 @@ void LLPanelTranslationSettings::updateControlsEnabledState()
 	mTranslationServiceRadioGroup->setEnabled(on);
 	mLanguageCombo->setEnabled(on);
 
+	getChild<LLTextEditor>("bing_client_id_label")->setVisible(bing_selected);
 	getChild<LLTextEditor>("bing_api_key_label")->setVisible(bing_selected);
+	mBingAPIIDEditor->setEnabled(on);
 	mBingAPIKeyEditor->setEnabled(on);
 
 	getChild<LLTextEditor>("google_api_key_label")->setVisible(google_selected);
 	getChild<LLTextEditor>("google_links_text")->setVisible(google_selected);
 	mGoogleAPIKeyEditor->setEnabled(on);
 
+	mBingAPIIDEditor->setVisible(bing_selected);
 	mBingAPIKeyEditor->setVisible(bing_selected);
 	mBingVerifyBtn->setVisible(bing_selected);
 	mGoogleAPIKeyEditor->setVisible(google_selected);
 	mGoogleVerifyBtn->setVisible(google_selected);
 
 	mBingVerifyBtn->setEnabled(on && bing_selected &&
-		!mBingKeyVerified && !getEnteredBingKey().empty());
+		!mBingKeyVerified && !getEnteredBingKey().empty() && !getEnteredBingID().empty());
 	mGoogleVerifyBtn->setEnabled(on && google_selected &&
 		!mGoogleKeyVerified && !getEnteredGoogleKey().empty());
 }
@@ -273,7 +295,7 @@ void LLPanelTranslationSettings::onEditorFocused(LLFocusableElement* control)
 
 void LLPanelTranslationSettings::onBingKeyEdited()
 {
-	if (mBingAPIKeyEditor->isDirty())
+	if (mBingAPIKeyEditor->isDirty() || mBingAPIIDEditor->isDirty())
 	{
 		setBingVerified(false, false);
 	}
@@ -290,7 +312,7 @@ void LLPanelTranslationSettings::onGoogleKeyEdited()
 void LLPanelTranslationSettings::onBtnBingVerify()
 {
 	std::string key = getEnteredBingKey();
-	if (!key.empty())
+	if (!key.empty() && !getEnteredBingID().empty())
 	{
 		verifyKey(LLTranslate::SERVICE_BING, key);
 	}
@@ -311,6 +333,7 @@ void LLPanelTranslationSettings::apply()
 	gSavedSettings.setString("TranslateLanguage", mLanguageCombo->getSelectedValue().asString());
 	gSavedSettings.setString("TranslationService", getSelectedService());
 	gSavedSettings.setString("BingTranslateAPIKey", getEnteredBingKey());
+	gSavedSettings.setString("BingTranslateAPIID", getEnteredBingID());
 	gSavedSettings.setString("GoogleTranslateAPIKey", getEnteredGoogleKey());
 	LLFloaterChat::getInstance()->showTranslationCheckbox();
 	std::set<LLHandle<LLFloater> > floaters(LLIMMgr::instance().getIMFloaterHandles());

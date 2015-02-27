@@ -46,6 +46,7 @@ public:
 	void setBingVerified(bool ok, bool alert);
 	void setGoogleVerified(bool ok, bool alert);
 
+	const std::string& getEnteredBingID() const;
 private:
 	std::string getSelectedService() const;
 	std::string getEnteredBingKey() const;
@@ -62,6 +63,7 @@ private:
 
 	LLCheckBoxCtrl* mMachineTranslationCB;
 	LLComboBox* mLanguageCombo;
+	LLLineEditor* mBingAPIIDEditor;
 	LLLineEditor* mBingAPIKeyEditor;
 	LLLineEditor* mGoogleAPIKeyEditor;
 	LLRadioGroup* mTranslationServiceRadioGroup;

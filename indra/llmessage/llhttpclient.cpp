@@ -195,6 +195,24 @@ public:
 	LLAssetType::EType mAssetType;
 };
 
+class URLEncodedInjector : public Injector
+{
+	const std::string mStr;
+  public:
+	URLEncodedInjector(const std::string& str) : mStr(str) {}
+	/*virtual*/ ~URLEncodedInjector() {}
+
+	/*virtual*/ char const* contentType() const { return "application/x-www-form-urlencoded"; }
+
+	/*virtual*/ U32 get_body(LLChannelDescriptors const& channels, buffer_ptr_t& buffer)
+	{
+		LLBufferStream ostream(channels, buffer.get());
+		ostream.write(mStr.data(), mStr.size());
+		ostream << std::flush;			// Always flush a LLBufferStream when done writing to it.
+		return mStr.size();
+	}
+};
+
 //static
 void LLHTTPClient::request(
 	std::string const& url,
@@ -766,6 +784,11 @@ void LLHTTPClient::postFile(std::string const& url, std::string const& filename,
 void LLHTTPClient::postFile(std::string const& url, LLUUID const& uuid, LLAssetType::EType asset_type, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug), EKeepAlive keepalive)
 {
 	request(url, HTTP_POST, new VFileInjector(uuid, asset_type), responder, headers, NULL/*,*/ DEBUG_CURLIO_PARAM(debug), keepalive);
+}
+
+void LLHTTPClient::postURLEncoded(const std::string& url, const std::string& str, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug), EKeepAlive keepalive)
+{
+	request(url, HTTP_POST, new URLEncodedInjector(str), responder, headers, NULL/*,*/ DEBUG_CURLIO_PARAM(debug), keepalive);
 }
 
 // static

@@ -16916,10 +16916,21 @@ This should be as low as possible, but too low may break functionality</string>
       <key>Value</key>
       <string></string>
     </map>
+    <key>BingTranslateAPIID</key>
+    <map>
+      <key>Comment</key>
+      <string>Bing Client ID to use with the Microsoft Translator API</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string/>
+    </map>
     <key>BingTranslateAPIKey</key>
     <map>
       <key>Comment</key>
-      <string>Bing AppID to use with the Microsoft Translator API</string>
+      <string>Bing Client Secret to use with the Microsoft Translator API</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>

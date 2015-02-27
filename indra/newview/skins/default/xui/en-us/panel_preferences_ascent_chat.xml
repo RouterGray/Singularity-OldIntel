@@ -182,7 +182,7 @@ The following wildcards are available to enhance your autoresponses: #n for user
 To use spellcheck, right-click a misspelled word (red or otherwise) and select its replacement
       </text>
       <view_border bevel_style="none" border_thickness="1" bottom_delta="-5" follows="top" height="0" left="5" name="TextDivisor" width="480"/>
-      <panel border="true" left="1" bottom_delta="-90" height="100" width="500" filename="panel_translation_settings.xml" label="Translation" name="Translation Panel"/>
+      <panel border="true" left="1" bottom_delta="-114" height="124" width="500" filename="panel_translation_settings.xml" label="Translation" name="Translation Panel"/>
       <view_border bevel_style="none" border_thickness="1" bottom_delta="-10" follows="top" height="0" left="5" name="TransDivisor" width="480"/>
 
       <check_box bottom_delta="-24" follows="left|top" font="SansSerifSmall" height="16"

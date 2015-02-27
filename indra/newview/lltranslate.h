@@ -153,8 +153,8 @@ public:
 		std::string& detected_lang,
 		std::string& err_msg) const;
 	/*virtual*/ bool isConfigured() const;
-private:
 	static std::string getAPIKey();
+private:
 	static std::string getAPILanguageCode(const std::string& lang);
 };
 
@@ -203,6 +203,7 @@ public :
 			const LLIOPipe::buffer_ptr_t& buffer);
 
 	protected:
+		friend class BingAuthPostResponder;
 		friend class LLTranslate;
 
 		/// Remember source and target languages for subclasses to be able to filter inappropriate results.
@@ -228,6 +229,7 @@ public :
 		EService getService() const;
 
 	protected:
+		friend class BingVerifyAuthPostResponder;
 		/**
 		 * Save the translation service the key belongs to.
 		 *
@@ -288,10 +290,12 @@ public :
 	 */
 	static bool isTranslationConfigured();
 
-private:
+//private:
 	static const LLTranslationAPIHandler& getPreferredHandler();
 	static const LLTranslationAPIHandler& getHandler(EService service);
-	static void sendRequest(const std::string& url, LLHTTPClient::ResponderPtr responder);
+	static void postBingAuth(const std::string& id, const std::string& secret, TranslationReceiverPtr& receiver, const std::string& from, const std::string& to, const std::string& mesg);
+	static void postBingVerifyAuth(const std::string& id, const std::string& secret, const KeyVerificationReceiverPtr& receiver);
+	static const LLSD& getHeader();
 };
 
 #endif

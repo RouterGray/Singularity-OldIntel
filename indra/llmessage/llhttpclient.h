@@ -529,6 +529,10 @@ public:
 	static void postFile(std::string const& url, const LLUUID& uuid, LLAssetType::EType asset_type, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive)
 	    { AIHTTPHeaders headers; postFile(url, uuid, asset_type, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug), keepalive); }
 
+	static void postURLEncoded(const std::string& url, const std::string& str, LLHTTPClient::ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug), EKeepAlive keepalive = keep_alive);
+	static void postURLEncoded(const std::string& url, const std::string& str, LLHTTPClient::ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug), EKeepAlive keepalive = keep_alive)
+	    { AIHTTPHeaders headers; postURLEncoded(url, str, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug), keepalive); }
+
 	static void del(std::string const& url, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off));
 	static void del(std::string const& url, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off))
 	    { AIHTTPHeaders headers; del(url, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug)); }

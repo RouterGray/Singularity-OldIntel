@@ -31,6 +31,7 @@
 #include <curl/curl.h>
 
 #include "llbufferstream.h"
+#include "llpaneltranslationsettings.h"
 #include "lltrans.h"
 #include "llui.h"
 #include "sgversion.h"
@@ -40,6 +41,13 @@
 
 const LLStringExplicit GOOGLE_URL_BASE("https://www.googleapis.com/language/translate/v2");
 const LLStringExplicit BING_URL_BASE("http://api.microsofttranslator.com/v2/Http.svc/");
+
+static std::string allowed_chars()
+{
+	std::string allowed("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_~");
+	std::sort(allowed.begin(), allowed.end());
+	return allowed;
+}
 
 // virtual
 void LLGoogleTranslationHandler::getTranslateURL(
@@ -164,8 +172,7 @@ void LLBingTranslationHandler::getTranslateURL(
 	const std::string &to_lang,
 	const std::string &text) const
 {
-	url = std::string(BING_URL_BASE + "Translate?appId=")
-		+ getAPIKey() + "&text=" + LLURI::escape(text) + "&to=" + getAPILanguageCode(to_lang);
+	url = BING_URL_BASE + "Translate?text=" + LLURI::escape(text, allowed_chars(), true) + "&to=" + getAPILanguageCode(to_lang);
 	if (!from_lang.empty())
 	{
 		url += "&from=" + getAPILanguageCode(from_lang);
@@ -177,8 +184,7 @@ void LLBingTranslationHandler::getKeyVerificationURL(
 	std::string& url,
 	const std::string& key) const
 {
-	url = std::string(BING_URL_BASE + "GetLanguagesForTranslate?appId=")
-		+ key;
+	url = BING_URL_BASE + "GetLanguagesForTranslate?appId=" + LLURI::escape(key, allowed_chars(), true);
 }
 
 // virtual
@@ -306,7 +312,103 @@ void LLTranslate::KeyVerificationReceiver::completedRaw(
 	const LLIOPipe::buffer_ptr_t& buffer)
 {
 	bool ok = (getStatus() == HTTP_OK);
+	if (!ok)
+	{
+		std::string content;
+		decode_raw_body(channels, buffer, content);
+		LL_DEBUGS("Translate") << "Status: " << mStatus << ", Reason: " << mReason << ", Content: " << content << LL_ENDL;
+	}
 	setVerificationStatus(ok);
+}
+
+class BingResponderBase : public LLHTTPClient::ResponderWithCompleted
+{
+	/*virtual*/ char const* getName() const { return "BingAuthPostResponder"; }
+	/*virtual*/ void completedRaw(const LLChannelDescriptors& channels, const buffer_ptr_t& buffer)
+	{
+		std::string content;
+		decode_raw_body(channels, buffer, content);
+		// HTTP status good?
+		if (isGoodStatus(mStatus))
+		{
+			Json::Value root;
+			Json::Reader reader;
+
+			if (reader.parse(content, root))
+			{
+				LLSD header(LLTranslate::getHeader());
+				content = "Bearer " + root["access_token"].asString();
+				header.insert("Authorization", content);
+				std::string url;
+				getUrl(url, content); // Allow derived class to override at this point.
+				if (!url.empty())
+				{
+					LL_DEBUGS("Translate") << "Sending translation request: " << url << LL_ENDL;
+					LLHTTPClient::get(url, header, getResponder()); // Allow derived class to override at this point.
+				}
+			}
+			else LL_DEBUGS("Translate") << reader.getFormatedErrorMessages() << LL_ENDL;
+		}
+		else
+		{
+			LL_DEBUGS("Translate") << "Status: " << mStatus << ", Reason: " << mReason << ", Content: " << content << LL_ENDL;
+			// Allow derived class to override at this point.
+			httpFailure();
+		}
+	}
+	virtual void httpFailure() = 0;
+	virtual void getUrl(std::string&, const std::string&) = 0;
+	virtual LLHTTPClient::ResponderPtr getResponder() const = 0;
+};
+
+class BingAuthPostResponder : public BingResponderBase
+{
+	/*virtual*/ void httpFailure() { mReceiver->handleFailure(mStatus, mContent); }
+	/*virtual*/ void getUrl(std::string& url, const std::string&) { mReceiver->mHandler.getTranslateURL(url, mFrom, mTo, mMesg); }
+	/*virtual*/ LLHTTPClient::ResponderPtr getResponder() const { return mReceiver; }
+	LLTranslate::TranslationReceiverPtr mReceiver;
+	const std::string mFrom;
+	const std::string mMesg;
+	const std::string mTo;
+public:
+	BingAuthPostResponder(LLTranslate::TranslationReceiverPtr& receiver, const std::string& from, const std::string& to, const std::string& mesg)
+	: mReceiver(receiver), mFrom(from), mMesg(mesg), mTo(to)
+	{}
+};
+
+class BingVerifyAuthPostResponder : public BingResponderBase
+{
+	/*virtual*/ void httpFailure() { mReceiver->setVerificationStatus(false); }
+	/*virtual*/ void getUrl(std::string& url, const std::string& /*key*/)
+	{
+		//LLTranslate::getHandler(LLTranslate::SERVICE_BING).getKeyVerificationURL(url, key);
+		url = LLStringUtil::null;
+		mReceiver->setVerificationStatus(true);
+	}
+	/*virtual*/ LLHTTPClient::ResponderPtr getResponder() const { return mReceiver; }
+	LLTranslate::KeyVerificationReceiverPtr mReceiver;
+public:
+	BingVerifyAuthPostResponder(LLTranslate::KeyVerificationReceiverPtr receiver)
+	: mReceiver(receiver)
+	{}
+};
+
+static void post_bing_auth(const std::string& id, const std::string& secret, LLHTTPClient::ResponderPtr responder)
+{
+	const std::string str("grant_type=client_credentials&client_id=" + LLURI::escape(id, allowed_chars(), true) + "&client_secret=" + LLURI::escape(secret, allowed_chars(), true) + "&scope=http://api.microsofttranslator.com");
+	LLHTTPClient::postURLEncoded("https://datamarket.accesscontrol.windows.net/v2/OAuth2-13", str, responder);
+}
+
+void LLTranslate::postBingAuth(const std::string& id, const std::string& secret, TranslationReceiverPtr& receiver, const std::string& from, const std::string& to, const std::string& mesg)
+{
+	LL_DEBUGS("Translate") << "Posting bing authentification" << LL_ENDL;
+	post_bing_auth(id, secret, new BingAuthPostResponder(receiver, from, to, mesg));
+}
+
+void LLTranslate::postBingVerifyAuth(const std::string& id, const std::string& secret, const KeyVerificationReceiverPtr& receiver)
+{
+	LL_DEBUGS("Translate") << "Posting bing authentification to verify credentials" << LL_ENDL;
+	post_bing_auth(id, secret, new BingVerifyAuthPostResponder(receiver));
 }
 
 //static
@@ -316,11 +418,16 @@ void LLTranslate::translateMessage(
 	const std::string &to_lang,
 	const std::string &mesg)
 {
+	if (gSavedSettings.getString("TranslationService") != "google")
+	{
+		postBingAuth(gSavedSettings.getString("BingTranslateAPIID"), LLBingTranslationHandler::getAPIKey(), receiver, from_lang, to_lang, mesg);
+		return;
+	}
 	std::string url;
 	receiver->mHandler.getTranslateURL(url, from_lang, to_lang, mesg);
 
 	LL_DEBUGS("Translate") << "Sending translation request: " << url << LL_ENDL;
-	sendRequest(url, receiver);
+	LLHTTPClient::get(url, getHeader(), receiver);
 }
 
 // static
@@ -328,12 +435,17 @@ void LLTranslate::verifyKey(
 	KeyVerificationReceiverPtr& receiver,
 	const std::string& key)
 {
+	const EService service(receiver->getService());
+	if (service == SERVICE_BING)
+	{
+		postBingVerifyAuth(LLPanelTranslationSettings::instance().getEnteredBingID(), key, receiver);
+		return;
+	}
 	std::string url;
-	const LLTranslationAPIHandler& handler = getHandler(receiver->getService());
-	handler.getKeyVerificationURL(url, key);
+	getHandler(service).getKeyVerificationURL(url, key);
 
 	LL_DEBUGS("Translate") << "Sending key verification request: " << url << LL_ENDL;
-	sendRequest(url, receiver);
+	LLHTTPClient::get(url, getHeader(), receiver);
 }
 
 //static
@@ -383,13 +495,13 @@ const LLTranslationAPIHandler& LLTranslate::getHandler(EService service)
 }
 
 // static
-void LLTranslate::sendRequest(const std::string& url, LLHTTPClient::ResponderPtr responder)
+const LLSD& LLTranslate::getHeader()
 {
 	static LLSD sHeader;
 
 	if (!sHeader.size())
 	{
-	    std::string user_agent = llformat("%s %d.%d.%d (%d)",
+		std::string user_agent = llformat("%s %d.%d.%d (%d)",
 			gVersionChannel,
 			gVersionMajor,
 			gVersionMinor,
@@ -400,5 +512,5 @@ void LLTranslate::sendRequest(const std::string& url, LLHTTPClient::ResponderPtr
 		sHeader.insert("User-Agent", user_agent);
 	}
 
-	LLHTTPClient::get(url, sHeader, responder);
+	return sHeader;
 }

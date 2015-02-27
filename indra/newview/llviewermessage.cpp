@@ -4256,8 +4256,7 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 		bool only_history = visible_in_chat_bubble || (!is_linden && !is_owned_by_me && is_do_not_disturb);
 		if (!chat.mMuted)
 		{
-			LLSD args;
-			if (chat.mSourceType != CHAT_SOURCE_SYSTEM && gSavedSettings.getBOOL("TranslateChat"))
+			if (chat.mSourceType != CHAT_SOURCE_SYSTEM && !(chat.mSourceType == CHAT_SOURCE_AGENT && gAgentID == from_id) && gSavedSettings.getBOOL("TranslateChat"))
 			{
 				if (ircstyle)
 				{
