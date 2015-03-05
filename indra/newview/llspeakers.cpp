@@ -580,7 +580,8 @@ void LLSpeakerMgr::updateSpeakerList()
 						LLGroupMemberData* member = member_it->second;
 						LLUUID id = member_it->first;
 						// Add only members who are online and not already in the list
-						if ((member->getOnlineStatus() == "Online") && (mSpeakers.find(id) == mSpeakers.end()))
+						const std::string& localized_online();
+						if ((member->getOnlineStatus() == localized_online()) && (mSpeakers.find(id) == mSpeakers.end()))
 						{
 							LLPointer<LLSpeaker> speakerp = setSpeaker(id, "", LLSpeaker::STATUS_VOICE_ACTIVE, LLSpeaker::SPEAKER_AGENT);
 							speakerp->mIsModerator = ((member->getAgentPowers() & GP_SESSION_MODERATOR) == GP_SESSION_MODERATOR);
