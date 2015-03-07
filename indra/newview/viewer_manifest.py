@@ -776,10 +776,6 @@ class LinuxManifest(ViewerManifest):
             self.path("../plugins/gstreamer010/libmedia_plugin_gstreamer010.so", "libmedia_plugin_gstreamer.so")
             self.end_prefix("bin/llplugin")
 
-        # llcommon
-        if not self.path("../llcommon/libllcommon.so", "lib64/libllcommon.so"):
-            print "Skipping llcommon.so (assuming llcommon was linked statically)"
-
         self.path("featuretable_linux.txt")
 
     def wrapper_name(self):
@@ -846,6 +842,10 @@ class Linux_i686Manifest(LinuxManifest):
     def construct(self):
         super(Linux_i686Manifest, self).construct()
 
+        # llcommon
+        if not self.path("../llcommon/libllcommon.so", "lib/libllcommon.so"):
+            print "Skipping llcommon.so (assuming llcommon was linked statically)"
+
         if (not self.standalone()) and self.prefix(src="../packages/lib/release", alt_build="../packages/libraries/i686-linux/lib/release", dst="lib"):
             self.path("libapr-1.so*")
             self.path("libaprutil-1.so*")
@@ -899,6 +899,10 @@ class Linux_i686Manifest(LinuxManifest):
 class Linux_x86_64Manifest(LinuxManifest):
     def construct(self):
         super(Linux_x86_64Manifest, self).construct()
+
+        # llcommon
+        if not self.path("../llcommon/libllcommon.so", "lib64/libllcommon.so"):
+            print "Skipping llcommon.so (assuming llcommon was linked statically)"
 
         if (not self.standalone()) and self.prefix(src="../packages/lib/release", alt_build="../packages/libraries/x86_64-linux/lib/release", dst="lib64"):
             self.path("libapr-1.so*")
