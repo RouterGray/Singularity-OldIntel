@@ -454,6 +454,9 @@ void LLFolderViewItem::filter( LLInventoryFilter& filter)
 
 	setFiltered(passed_filter, filter.getCurrentGeneration());
 	mStringMatchOffset = filter.getStringMatchOffset();
+	// If Creator is part of the filter, don't let it get highlighted if it matches
+	if (mSearchType & 4 && mStringMatchOffset >= mSearchable.length()-mSearchableLabelCreator.length())
+		mStringMatchOffset = std::string::npos;
 	filter.decrementFilterCount();
 
 	if (getRoot()->getDebugFilters())
