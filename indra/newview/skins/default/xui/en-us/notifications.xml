@@ -10420,6 +10420,18 @@ Would you like to enable announcing keys to objects in the sim?
 
   <notification
    icon="alertmodal.tga"
+   name="RezRestoreToWorld"
+   type="alertmodal">
+The object you're attempting to restore in world is no copy, if you do not have rez rights at <0, 0, 0>, you will lose this object!!
+    <usetemplate
+     ignoretext="Confirm before restoring no-copy objects to world"
+     name="okcancelignore"
+     notext="Don't Rez!"
+     yestext="Proceed?"/>
+  </notification>
+
+  <notification
+   icon="alertmodal.tga"
    name="WavefrontExportPartial"
    type="alertmodal">
 Unable to include [FAILED] out of [TOTAL] objects in export due to insufficient permissions.

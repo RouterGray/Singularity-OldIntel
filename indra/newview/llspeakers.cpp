@@ -42,6 +42,8 @@
 
 #include "rlvhandler.h"
 
+#include <boost/foreach.hpp>
+
 extern AIHTTPTimeoutPolicy moderationResponder_timeout;
 
 const LLColor4 INACTIVE_COLOR(0.3f, 0.3f, 0.3f, 0.5f);
@@ -1041,11 +1043,10 @@ void LLLocalSpeakerMgr::updateSpeakerList()
 
 	// pick up non-voice speakers in chat range
 	uuid_vec_t avatar_ids;
-	std::vector<LLVector3d> positions;
-	LLWorld::getInstance()->getAvatars(&avatar_ids, &positions, gAgent.getPositionGlobal(), CHAT_NORMAL_RADIUS);
-	for(U32 i=0; i<avatar_ids.size(); i++)
+	LLWorld::getInstance()->getAvatars(&avatar_ids, NULL, gAgent.getPositionGlobal(), CHAT_NORMAL_RADIUS);
+	BOOST_FOREACH(const LLUUID& id, avatar_ids)
 	{
-		setSpeaker(avatar_ids[i]);
+		setSpeaker(id);
 	}
 
 	// check if text only speakers have moved out of chat range

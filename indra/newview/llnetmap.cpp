@@ -76,7 +76,6 @@
 //<edit>
 #include "lfsimfeaturehandler.h"
 #include "llfloateravatarlist.h"
-#include "llmutelist.h"
 #include "llvoavatar.h"
 //</edit>
 
@@ -558,10 +557,9 @@ void LLNetMap::draw()
 // [RLVa:KB] - Version: 1.23.4 | Alternate: Snowglobe-1.2.4 | Checked: 2009-07-08 (RLVa-1.0.0e) | Modified: RLVa-0.2.0b
 		bool show_friends = !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
 // [/RLVa:KB]
-		uuid_vec_t avatar_ids;
-		std::vector<LLVector3d> positions;
+		LLWorld::pos_map_t positions;
 
-		LLWorld::getInstance()->getAvatars(&avatar_ids, &positions, gAgentCamera.getCameraPositionGlobal());
+		LLWorld::getInstance()->getAvatars(&positions, gAgentCamera.getCameraPositionGlobal());
 
 		// Get the selected ids from radar now, as they are loop invariant
 		uuid_vec_t gmSelected;
@@ -570,57 +568,30 @@ void LLNetMap::draw()
 			gmSelected = LLFloaterAvatarList::instance().getSelectedIDs();
 
 		// Draw avatars
-		for(U32 i=0; i<avatar_ids.size(); i++)
+		for(LLWorld::pos_map_t::const_iterator iter = positions.cbegin(), iter_end = positions.cend(); iter != iter_end; ++iter)
 		{
-			const LLUUID& uuid = avatar_ids[i];
+			const LLUUID& uuid = iter->first;
 			static const LLCachedControl<LLColor4>	standard_color("MapAvatar",LLColor4(0.f,1.f,0.f,1.f));
 			LLColor4 color = standard_color;
 			// TODO: it'd be very cool to draw these in sorted order from lowest Z to highest.
 			// just be careful to sort the avatar IDs along with the positions. -MG
-			pos_map = globalPosToView(positions[i]);
-			if (positions[i].mdV[VZ] == 0.f || positions[i].mdV[VZ] == COARSEUPDATE_MAX_Z)
+			const LLVector3d& position = iter->second;
+			pos_map = globalPosToView(position);
+			if (position.mdV[VZ] == 0.f || position.mdV[VZ] == COARSEUPDATE_MAX_Z)
 			{
 				pos_map.mV[VZ] = 16000.f;
 			}
 
 			if (dist_vec(LLVector2(pos_map.mV[VX], pos_map.mV[VY]), LLVector2(local_mouse_x, local_mouse_y)) < min_pick_dist)
 			{
-				mClosestAgentsToCursor[uuid] = positions[i];
+				mClosestAgentsToCursor[uuid] = position;
 				static const LLCachedControl<LLColor4> map_avatar_rollover_color(gSavedSettings, "ExodusMapRolloverColor", LLColor4::cyan);
 				color = map_avatar_rollover_color;
 			}
 			else
 			{
-
-				if(LLMuteList::getInstance()->isMuted(uuid))
-				{
-					static const LLCachedControl<LLColor4> muted_color("AscentMutedColor",LLColor4(0.7f,0.7f,0.7f,1.f));
-					color = muted_color;
-				}
-
-				LLViewerRegion* avatar_region = LLWorld::getInstance()->getRegionFromPosGlobal(positions[i]);
-				const LLUUID estate_owner = avatar_region ? avatar_region->getOwner() : LLUUID::null;
-
-				// MOYMOD Minimap custom av colors.
-				if (mm_getMarkerColor(uuid, color)) {}
-				//Lindens are always more Linden than your friend, make that take precedence
-				else if (LLMuteList::getInstance()->isLinden(uuid))
-				{
-					static const LLCachedControl<LLColor4> linden_color("AscentLindenColor",LLColor4(0.f,0.f,1.f,1.f));
-					color = linden_color;
-				}
-				//check if they are an estate owner at their current position
-				else if (estate_owner.notNull() && uuid == estate_owner)
-				{
-					static const LLCachedControl<LLColor4> em_color("AscentEstateOwnerColor",LLColor4(1.f,0.6f,1.f,1.f));
-					color = em_color;
-				}
-				//without these dots, SL would suck.
-				else if (show_friends && LLAvatarActions::isFriend(uuid))
-				{
-					static const LLCachedControl<LLColor4> friend_color("AscentFriendColor",LLColor4(1.f,1.f,0.f,1.f));
-					color = friend_color;
-				}
+				bool getCustomColorRLV(const LLUUID&, LLColor4&, LLViewerRegion*, bool name_restricted);
+				getCustomColorRLV(uuid, color, LLWorld::getInstance()->getRegionFromPosGlobal(position), show_friends);
 			}
 
 			LLWorldMapView::drawAvatar(
