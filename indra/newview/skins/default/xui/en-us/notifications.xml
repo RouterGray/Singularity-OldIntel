@@ -10422,7 +10422,7 @@ Would you like to enable announcing keys to objects in the sim?
    icon="alertmodal.tga"
    name="RezRestoreToWorld"
    type="alertmodal">
-The object you're attempting to restore in world is no copy, if you do not have rez rights at <0, 0, 0>, you will lose this object!!
+The object you're attempting to restore in world is no copy, if you do not have rez rights at &lt;0, 0, 0&gt;, you will lose this object!!
     <usetemplate
      ignoretext="Confirm before restoring no-copy objects to world"
      name="okcancelignore"
