@@ -46,6 +46,7 @@
 #include "llstring.h"
 #include "llviewerpartsim.h"
 #include "llviewertexture.h"
+#include "sguuidhash.h"
 #include "llvowater.h"
 
 class LLViewerRegion;
