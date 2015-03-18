@@ -950,7 +950,8 @@ bool SHClientTagMgr::getClientColor(const LLVOAvatar* pAvatar, bool check_status
 
 	if (check_status && ascent_use_status_colors && !pAvatar->isSelf())
 	{
-		getColorFor(id, pAvatar->getRegion(), color);
+		if (getColorFor(id, pAvatar->getRegion(), color, false))
+			return true;
 	}
 	std::map<LLUUID, LLSD>::const_iterator it;
 	LLSD tag;
