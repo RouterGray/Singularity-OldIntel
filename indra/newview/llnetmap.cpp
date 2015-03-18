@@ -591,7 +591,7 @@ void LLNetMap::draw()
 			else
 			{
 				bool getCustomColorRLV(const LLUUID&, LLColor4&, LLViewerRegion*, bool name_restricted);
-				getCustomColorRLV(uuid, color, LLWorld::getInstance()->getRegionFromPosGlobal(position), show_friends);
+				getCustomColorRLV(uuid, color, LLWorld::getInstance()->getRegionFromPosGlobal(position), !show_friends);
 			}
 
 			LLWorldMapView::drawAvatar(
