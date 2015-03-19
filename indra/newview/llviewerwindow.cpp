@@ -2601,7 +2601,8 @@ void LLViewerWindow::draw()
 		// Draw tool specific overlay on world
 		LLToolMgr::getInstance()->getCurrentTool()->draw();
 
-		if( gAgentCamera.cameraMouselook() )
+		static LLCachedControl<bool> drawMouselookInst(gSavedSettings, "AlchemyMouselookInstructions", true);
+		if (drawMouselookInst && (gAgentCamera.cameraMouselook()))
 		{
 			drawMouselookInstructions();
 			stop_glerror();
@@ -5051,44 +5052,52 @@ void LLViewerWindow::destroyWindow()
 
 void LLViewerWindow::drawMouselookInstructions()
 {
-	static const F32 INSTRUCTIONS_OPAQUE_TIME = 10.f;
-	static const F32 INSTRUCTIONS_FADE_TIME = 5.f;
-
-	F32 mouselook_duration = gAgentCamera.getMouseLookDuration();
-	if( mouselook_duration >= (INSTRUCTIONS_OPAQUE_TIME+INSTRUCTIONS_OPAQUE_TIME) )
-		return;
-
-	F32 alpha = 1.f;
-
-	if( mouselook_duration > INSTRUCTIONS_OPAQUE_TIME)	//instructions are fading
-	{
-		alpha = (F32) sqrt(1.f-pow(((mouselook_duration-INSTRUCTIONS_OPAQUE_TIME)/INSTRUCTIONS_FADE_TIME),2.f));
-	}
-
+	// <alchemy>
 	// Draw instructions for mouselook ("Press ESC to leave Mouselook" in a box at the top of the screen.)
-	const std::string instructions = LLTrans::getString("LeaveMouselook");
-	const LLFontGL* font = LLResMgr::getInstance()->getRes( LLFONT_SANSSERIF );
+	const LLFontGL* font = LLFontGL::getFontSansSerifBig();
 
-	const S32 INSTRUCTIONS_PAD = 5;
-	LLRect instructions_rect;
-	instructions_rect.setLeftTopAndSize( 
-		INSTRUCTIONS_PAD,
-		getWindowHeight() - INSTRUCTIONS_PAD,
-		font->getWidth( instructions ) + 2 * INSTRUCTIONS_PAD,
-		llmath::llround(font->getLineHeight() + 2 * INSTRUCTIONS_PAD));
-
+	//to be on top of Bottom bar when it is opened
+	const S32 INSTRUCTIONS_PAD = getWorldViewRectScaled().mTop - 15;
+	const S32 text_pos_start = getWorldViewRectScaled().getCenterX() - 150;
+	if (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWLOC))
 	{
-		gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
-		gGL.color4f( 0.9f, 0.9f, 0.9f, alpha );
-		gl_rect_2d( instructions_rect );
+		const LLVector3& vec = gAgent.getPositionAgent();
+		font->renderUTF8(
+			llformat("X: %.2f", vec.mV[VX]), 0,
+			text_pos_start,
+			INSTRUCTIONS_PAD,
+			LLColor4(1.0f, 0.5f, 0.5f, 0.5),
+			LLFontGL::HCENTER, LLFontGL::TOP,
+			LLFontGL::BOLD, LLFontGL::DROP_SHADOW_SOFT);
+		font->renderUTF8(
+			llformat("Y: %.2f", vec.mV[VX]), 0,
+			text_pos_start + 100,
+			INSTRUCTIONS_PAD,
+			LLColor4(0.5f, 1.0f, 0.5f, 0.5),
+			LLFontGL::HCENTER, LLFontGL::TOP,
+			LLFontGL::BOLD, LLFontGL::DROP_SHADOW_SOFT);
+		font->renderUTF8(
+			llformat("Z: %.2f", vec.mV[VX]), 0,
+			text_pos_start + 200,
+			INSTRUCTIONS_PAD,
+			LLColor4(0.5f, 0.5f, 1.0f, 0.5),
+			LLFontGL::HCENTER, LLFontGL::TOP,
+			LLFontGL::BOLD, LLFontGL::DROP_SHADOW_SOFT);
 	}
-
-	font->renderUTF8( 
-		instructions, 0,
-		instructions_rect.mLeft + INSTRUCTIONS_PAD,
-		instructions_rect.mTop - INSTRUCTIONS_PAD,
-		LLColor4( 0.0f, 0.0f, 0.0f, alpha ),
-		LLFontGL::LEFT, LLFontGL::TOP);
+	const LLViewerParcelMgr& vpm = LLViewerParcelMgr::instance();
+	const bool allow_damage = vpm.allowAgentDamage(gAgent.getRegion(), vpm.getAgentParcel());
+	if (allow_damage)
+	{
+		const S32 health = gStatusBar ? gStatusBar->getHealth() : -1;
+		font->renderUTF8(
+			llformat("HP: %d%%", health), 0,
+			text_pos_start + 300,
+			INSTRUCTIONS_PAD,
+			LLColor4(1.0f, 1.0f, 1.0f, 0.5),
+			LLFontGL::HCENTER, LLFontGL::TOP,
+			LLFontGL::BOLD, LLFontGL::DROP_SHADOW_SOFT);
+	}
+	// </alchemy>
 }
 
 void* LLViewerWindow::getPlatformWindow() const
