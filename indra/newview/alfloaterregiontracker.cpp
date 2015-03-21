@@ -118,7 +118,11 @@ void ALFloaterRegionTracker::refresh()
 		return;
 	}
 
-	const std::string& saved_selected_value = mRegionScrollList->getSelectedValue().asString();
+	std::vector<const std::string> saved_selected_values;
+	BOOST_FOREACH(const LLScrollListItem* item, mRegionScrollList->getAllSelected())
+	{
+		saved_selected_values.push_back(item->getValue().asString());
+	}
 	mRegionScrollList->deleteAllItems();
 
 	const std::string& cur_region_name = gAgent.getRegion()->getName();
@@ -174,8 +178,8 @@ void ALFloaterRegionTracker::refresh()
 			mRegionScrollList->addRow(row);
 		}
 	}
-	if (!saved_selected_value.empty())
-		mRegionScrollList->selectByValue(saved_selected_value);
+	if (!saved_selected_values.empty())
+		mRegionScrollList->selectMultiple(saved_selected_values);
 }
 
 BOOL ALFloaterRegionTracker::tick()
