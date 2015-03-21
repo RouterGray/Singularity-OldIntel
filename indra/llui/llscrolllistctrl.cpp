@@ -2604,9 +2604,11 @@ LLView* LLScrollListCtrl::fromXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFac
 
 	LLSD columns;
 	S32 index = 0;
+	const std::string nodename(std::string(node->getName()->mString) + '.');
+	const std::string kidcolumn(nodename + "columns");
 	for (LLXMLNodePtr child = node->getFirstChild(); child.notNull(); child = child->getNextSibling())
 	{
-		if (child->hasName("column"))
+		if (child->hasName("column") || child->hasName(kidcolumn))
 		{
 			std::string labelname("");
 			if (child->getAttributeString("label", labelname))
@@ -2666,9 +2668,11 @@ LLView* LLScrollListCtrl::fromXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFac
 		scroll_list->sortByColumnIndex(sort_column, sort_ascending);
 	}
 
+	const std::string kidrow(nodename + "row");
+	const std::string kidrows(nodename + "rows");
 	for (LLXMLNodePtr child = node->getFirstChild(); child.notNull(); child = child->getNextSibling())
 	{
-		if (child->hasName("row") || child->hasName("rows"))
+		if (child->hasName("row") || child->hasName(kidrow) || child->hasName("rows") || child->hasName(kidrows))
 		{
 			LLUUID id;
 			LLSD row;
