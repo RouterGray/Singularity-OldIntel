@@ -88,13 +88,13 @@
 	     name="events_mature_icon" width="16" />
 	<check_box bottom="-136" control_name="MapShowMatureEvents" follows="top|right"
 	     font="SansSerifSmall" height="16" initial_value="true" label="Mature"
-	     left_delta="20" mouse_opaque="true" name="event_mature_chk" width="55" />
+	     left_delta="20" mouse_opaque="true" name="events_mature_chk" width="55" />
 	<icon bottom="-156" color="1, 1, 1, 1" follows="top|right" height="16"
 	     image_name="map_event_adult.tga" left="1151" mouse_opaque="true"
 	     name="events_adult_icon" width="16" />
 	<check_box bottom="-156" control_name="MapShowAdultEvents" follows="top|right"
 	     font="SansSerifSmall" height="16" initial_value="false" label="Adult"
-	     left_delta="20" mouse_opaque="true" name="event_adult_chk" width="55" />
+	     left_delta="20" mouse_opaque="true" name="events_adult_chk" width="55" />
 	<icon bottom="-180" color="0.5, 0, 0, 1" follows="top|right" height="16"
 	     image_name="map_track_16.tga" left="1013" mouse_opaque="true"
 	     name="avatar_icon" width="16" />
