@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<floater name="region_tracker" title="Monitore de Región">
+<floater name="region_tracker" title="Monitor de Región">
   <text name="region_label_text"  value="Añadir regiones desde el Mapa Mundial"/>
    <button name="refresh" label=""/>
    <button name="remove" label=""/>
