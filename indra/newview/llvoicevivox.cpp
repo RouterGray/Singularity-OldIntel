@@ -3743,7 +3743,7 @@ void LLVivoxVoiceClient::messageEvent(
 		sessionState *session = findSession(sessionHandle);
 		if(session)
 		{
-			bool is_do_not_disturb = gAgent.getBusy();
+			bool is_do_not_disturb = gAgent.isDoNotDisturb();
 			bool is_muted = LLMuteList::getInstance()->isMuted(session->mCallerID, session->mName, LLMute::flagTextChat);
 			bool is_linden = LLMuteList::getInstance()->isLinden(session->mName);
 			LLChat chat;

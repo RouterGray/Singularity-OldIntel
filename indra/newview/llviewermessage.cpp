@@ -1176,7 +1176,7 @@ bool check_asset_previewable(const LLAssetType::EType asset_type)
 
 void open_inventory_offer(const uuid_vec_t& objects, const std::string& from_name)
 {
-	if (gAgent.getBusy()) return;
+	if (gAgent.isDoNotDisturb()) return;
 	for (uuid_vec_t::const_iterator obj_iter = objects.begin();
 		 obj_iter != objects.end();
 		 ++obj_iter)
@@ -1496,7 +1496,7 @@ bool LLOfferInfo::inventory_offer_callback(const LLSD& notification, const LLSD&
 		from_string = chatHistory_string = mFromName;
 	}
 	
-	bool busy = gAgent.getBusy();
+	bool busy = gAgent.isDoNotDisturb();
 	
 // [RLVa:KB] - Checked: 2010-09-23 (RLVa-1.2.1)
 	bool fRlvNotifyAccepted = false;
@@ -1800,7 +1800,7 @@ void inventory_offer_handler(LLOfferInfo* info)
 		return;
 	}
 
-	if (gAgent.getBusy() && info->mIM != IM_TASK_INVENTORY_OFFERED) // busy mode must not affect interaction with objects (STORM-565)
+	if (gAgent.isDoNotDisturb() && info->mIM != IM_TASK_INVENTORY_OFFERED) // busy mode must not affect interaction with objects (STORM-565)
 	{
 		// Until throttling is implemented, busy mode should reject inventory instead of silently
 		// accepting it.  SEE SL-39554
@@ -2271,7 +2271,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 		llinfos << "RegionID: " << region_id.asString() << llendl;
 	// </edit>
 
-	BOOL is_do_not_disturb = gAgent.getBusy();
+	bool is_do_not_disturb = gAgent.isDoNotDisturb();
 	BOOL is_muted = LLMuteList::getInstance()->isMuted(from_id, name, LLMute::flagTextChat)
 		// object IMs contain sender object id in session_id (STORM-1209)
 		|| dialog == IM_FROM_TASK && LLMuteList::getInstance()->isMuted(session_id);
@@ -3459,7 +3459,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 
 void send_do_not_disturb_message (LLMessageSystem* msg, const LLUUID& from_id, const LLUUID& session_id)
 {
-	if (gAgent.getBusy())
+	if (gAgent.isDoNotDisturb())
 	{
 		std::string my_name;
 		LLAgentUI::buildFullname(my_name);
@@ -3578,7 +3578,7 @@ void process_offer_callingcard(LLMessageSystem* msg, void**)
 
 	if(!source_name.empty())
 	{
-		if (gAgent.getBusy() 
+		if (gAgent.isDoNotDisturb()
 			|| LLMuteList::getInstance()->isMuted(source_id, source_name, LLMute::flagTextChat))
 		{
 			// automatically decline offer
@@ -3804,7 +3804,7 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 		chat.mFromName = from_name;
 	}
 
-	BOOL is_do_not_disturb = gAgent.getBusy();
+	bool is_do_not_disturb = gAgent.isDoNotDisturb();
 
 	BOOL is_muted = FALSE;
 	BOOL is_linden = FALSE;
@@ -4783,14 +4783,7 @@ void process_agent_movement_complete(LLMessageSystem* msg, void**)
 	}
 
 	// force simulator to recognize busy state
-	if (gAgent.getBusy())
-	{
-		gAgent.setBusy();
-	}
-	else
-	{
-		gAgent.clearBusy();
-	}
+	gAgent.setDoNotDisturb(gAgent.isDoNotDisturb());
 
 	if (isAgentAvatarValid())
 	{
