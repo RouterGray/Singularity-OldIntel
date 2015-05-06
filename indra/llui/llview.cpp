@@ -2918,7 +2918,7 @@ bool LLView::setControlValue(const LLSD& value)
 	std::string ctrlname = getControlName();
 	if (!ctrlname.empty())
 	{
-		LLUI::getControlControlGroup(ctrlname)->setUntypedValue(ctrlname, value);
+		LLUI::getControlControlGroup(ctrlname).setUntypedValue(ctrlname, value);
 		return true;
 	}
 	return false;
