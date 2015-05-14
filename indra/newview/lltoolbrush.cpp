@@ -389,10 +389,11 @@ BOOL LLToolBrushLand::handleMouseDown(S32 x, S32 y, MASK mask)
 			return TRUE;
 		}
 
+		/* Singu Note: This is true under wrong conditions, until it's fixed, don't annoy the user.
 		if (!canTerraformParcel(regionp))
 		{
 			alertNoTerraformParcel();
-		}
+		}*/
 
 		LLVector3 pos_region = region_position.getPositionRegion();
 		U32 grids = regionp->getLand().mGridsPerEdge;
