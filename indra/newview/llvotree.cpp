@@ -55,7 +55,7 @@
 #include "llviewerobjectlist.h"
 #include "llviewerregion.h"
 #include "llworld.h"
-#include "noise.h"
+#include "llperlin.h"
 #include "pipeline.h"
 #include "llspatialpartition.h"
 //#include "llviewerwindow.h"
