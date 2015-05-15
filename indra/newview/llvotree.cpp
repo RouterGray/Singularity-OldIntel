@@ -841,7 +841,7 @@ BOOL LLVOTree::updateGeometry(LLDrawable *drawable)
 								sin(nangle * DEG_TO_RAD)*start_radius*nvec_scale, 
 								z*nvec_scalez); 
 					// First and last slice at 0 radius (to bring in top/bottom of structure)
-					radius = start_radius + turbulence3((F32*)&nvec.mV, (F32)fractal_depth)*noise_scale;
+					radius = start_radius + LLPerlinNoise::turbulence(nvec, (F32)fractal_depth)*noise_scale;
 
 					if (slices - 1 == j)
 					{

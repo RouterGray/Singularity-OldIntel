@@ -47,7 +47,7 @@
 #include "llsky.h"
 #include "llviewercamera.h"
 #include "llviewerregion.h"
-#include "noise.h"
+#include "llperlin.h"
 #include "pipeline.h"
 #include "llviewershadermgr.h"
 #include "llvovolume.h"
@@ -1338,7 +1338,7 @@ void LLDrawPoolAvatar::renderAvatars(LLVOAvatar* single_avatar, S32 pass)
 		sVertexProgram->uniform4fv(LLViewerShaderMgr::AVATAR_WIND, 1, wind.mV);
 		F32 phase = -1.f * (avatarp->mRipplePhase);
 
-		F32 freq = 7.f + (noise1(avatarp->mRipplePhase) * 2.f);
+		F32 freq = 7.f + (LLPerlinNoise::noise(avatarp->mRipplePhase) * 2.f);
 		LLVector4 sin_params(freq, freq, freq, phase);
 		sVertexProgram->uniform4fv(LLViewerShaderMgr::AVATAR_SINWAVE, 1, sin_params.mV);
 
