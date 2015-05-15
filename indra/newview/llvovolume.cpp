@@ -4670,7 +4670,7 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
 									pool->addRiggedFace(facep, fullbright ? LLDrawPoolAvatar::RIGGED_FULLBRIGHT_ALPHA : LLDrawPoolAvatar::RIGGED_ALPHA);
 								}
 							}
-							else if (gPipeline.canUseVertexShaders()
+							else if (LLGLSLShader::sNoFixedFunction
 								&& LLPipeline::sRenderBump 
 								&& te->getShiny() 
 								&& can_be_shiny)
@@ -5227,7 +5227,7 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
 		spec_mask = spec_mask | LLVertexBuffer::MAP_EMISSIVE;
 	}
 
-	BOOL batch_textures = gPipeline.getUseVertexShaders();
+	BOOL batch_textures = LLGLSLShader::sNoFixedFunction;
 
 	U32 additional_flags = 0x0;
 	if(batch_textures)
@@ -6004,7 +6004,7 @@ void LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFac
 				{
 					registerFace(group, facep, LLRenderPass::PASS_ALPHA);
 				}
-				else if (gPipeline.canUseVertexShaders()
+				else if (LLGLSLShader::sNoFixedFunction
 					&& LLPipeline::sRenderBump 
 					&& te->getShiny() 
 					&& can_be_shiny)
@@ -6039,7 +6039,7 @@ void LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFac
 					registerFace(group, facep, LLRenderPass::PASS_ALPHA);
 				}
 			}
-			else if (gPipeline.canUseVertexShaders()
+			else if (LLGLSLShader::sNoFixedFunction
 				&& LLPipeline::sRenderBump 
 				&& te->getShiny()
 				&& can_be_shiny)
@@ -6120,7 +6120,7 @@ void LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFac
 				}
 				
 				
-				if (!gPipeline.canUseVertexShaders() &&
+				if (!LLGLSLShader::sNoFixedFunction &&
 					!is_alpha &&
 					te->getShiny() &&
 					LLPipeline::sRenderBump)
@@ -6151,8 +6151,8 @@ void LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFac
 			tex = facep->getTexture();
 
 			bool is_alpha =			facep->getPoolType() == LLDrawPool::POOL_ALPHA;
-			bool is_shiny_shader =	facep->getPoolType() == LLDrawPool::POOL_BUMP && gPipeline.canUseVertexShaders() && te->getShiny();
-			bool is_shiny_fixed =	facep->getPoolType() == LLDrawPool::POOL_BUMP && !gPipeline.canUseVertexShaders() && te->getShiny();
+			bool is_shiny_shader =	facep->getPoolType() == LLDrawPool::POOL_BUMP && LLGLSLShader::sNoFixedFunction && te->getShiny();
+			bool is_shiny_fixed =	facep->getPoolType() == LLDrawPool::POOL_BUMP && !LLGLSLShader::sNoFixedFunction && te->getShiny();
 			bool is_fullbright =	facep->isState(LLFace::FULLBRIGHT);
 
 			if (facep->getPoolType() == LLDrawPool::POOL_MATERIALS)

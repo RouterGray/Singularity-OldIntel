@@ -644,7 +644,7 @@ void LLDrawPoolAvatar::endImpostor()
 
 void LLDrawPoolAvatar::beginRigid()
 {
-	if (gPipeline.canUseVertexShaders())
+	if (LLGLSLShader::sNoFixedFunction)
 	{
 		if (LLPipeline::sUnderWaterRender)
 		{
@@ -724,18 +724,18 @@ void LLDrawPoolAvatar::endDeferredRigid()
 
 void LLDrawPoolAvatar::beginSkinned()
 {
-	if(!gPipeline.canUseVertexShaders())
+	if (!LLGLSLShader::sNoFixedFunction)
 	{
 		sVertexProgram = NULL;
 		return;
 	}
 
-	if (sShaderLevel > 0)
+	if (sShaderLevel > 0)	// for hardware blending
 	{
 		if (LLPipeline::sUnderWaterRender)
 		{
 			sVertexProgram = &gAvatarWaterProgram;
-			sShaderLevel = llmin((U32) 1, sShaderLevel);
+			sShaderLevel = 1;
 		}
 		else
 		{
@@ -797,7 +797,7 @@ void LLDrawPoolAvatar::endSkinned()
 void LLDrawPoolAvatar::beginRiggedSimple()
 {
 	sDiffuseChannel = 0;
-	if(!gPipeline.canUseVertexShaders())
+	if (!LLGLSLShader::sNoFixedFunction)
 	{
 		sVertexProgram = NULL;
 		return;
@@ -845,7 +845,7 @@ void LLDrawPoolAvatar::endRiggedFullbrightAlpha()
 void LLDrawPoolAvatar::beginRiggedGlow()
 {
 	sDiffuseChannel = 0;
-	if(!gPipeline.canUseVertexShaders())
+	if (!LLGLSLShader::sNoFixedFunction)
 	{
 		sVertexProgram = NULL;
 		return;
@@ -867,7 +867,7 @@ void LLDrawPoolAvatar::endRiggedGlow()
 void LLDrawPoolAvatar::beginRiggedFullbright()
 {
 	sDiffuseChannel = 0;
-	if(!gPipeline.canUseVertexShaders())
+	if (!LLGLSLShader::sNoFixedFunction)
 	{
 		sVertexProgram = NULL;
 		return;
@@ -908,7 +908,7 @@ void LLDrawPoolAvatar::endRiggedFullbright()
 
 void LLDrawPoolAvatar::beginRiggedShinySimple()
 {
-	if(!gPipeline.canUseVertexShaders())
+	if (!LLGLSLShader::sNoFixedFunction)
 	{
 		sVertexProgram = NULL;
 		return;
@@ -935,7 +935,7 @@ void LLDrawPoolAvatar::endRiggedShinySimple()
 
 void LLDrawPoolAvatar::beginRiggedFullbrightShiny()
 {
-	if(!gPipeline.canUseVertexShaders())
+	if (!LLGLSLShader::sNoFixedFunction)
 	{
 		sVertexProgram = NULL;
 		return;
@@ -1322,7 +1322,7 @@ void LLDrawPoolAvatar::renderAvatars(LLVOAvatar* single_avatar, S32 pass)
 		return;
 	}
 	
-	if ((sShaderLevel >= SHADER_LEVEL_CLOTH))
+	if (sShaderLevel >= SHADER_LEVEL_CLOTH)
 	{
 		LLMatrix4 rot_mat;
 		LLViewerCamera::getInstance()->getMatrixToLocal(rot_mat);

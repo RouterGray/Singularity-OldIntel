@@ -1686,7 +1686,6 @@ class LLAdvancedToggleWireframe : public view_listener_t
 // [/RLVa:KB]
 //		gUseWireframe = !(gUseWireframe);
 //		gWindowResized = TRUE; // Singu Note: We don't use this (yet?)
-		LLPipeline::updateRenderDeferred();
 		gPipeline.resetVertexBuffers();
 //		return true;
 	}

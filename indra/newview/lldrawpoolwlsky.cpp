@@ -219,7 +219,7 @@ void LLDrawPoolWLSky::renderStars(void) const
 	//New
 	gGL.getTexUnit(0)->bind(gSky.mVOSkyp->getBloomTex());
 
-	if (gPipeline.canUseVertexShaders())
+	if (LLGLSLShader::sNoFixedFunction)
 	{
 		static LLStaticHashedString sCustomAlpha("custom_alpha");
 		star_shader->uniform1f(sCustomAlpha, star_alpha.mV[3]);
@@ -235,7 +235,7 @@ void LLDrawPoolWLSky::renderStars(void) const
 
 	gGL.popMatrix();
 
-	if (!gPipeline.canUseVertexShaders())
+	if (!LLGLSLShader::sNoFixedFunction)
 	{
 		// and disable the combiner states
 		gGL.getTexUnit(0)->setTextureBlendType(LLTexUnit::TB_MULT);
@@ -294,7 +294,7 @@ void LLDrawPoolWLSky::renderHeavenlyBodies()
 		// since LLImageGL::bind detects that it's a noop, and optimizes it out.
 		gGL.getTexUnit(0)->bind(face->getTexture());
 		
-		if (gPipeline.canUseVertexShaders())
+		if (LLGLSLShader::sNoFixedFunction)
 		{
 			// Okay, so the moon isn't a star, but it's close enough.
 			static LLStaticHashedString sCustomAlpha("custom_alpha");
@@ -310,7 +310,7 @@ void LLDrawPoolWLSky::renderHeavenlyBodies()
 		face->getVertexBuffer()->setBuffer(LLDrawPoolWLSky::STAR_VERTEX_DATA_MASK);
 		face->getVertexBuffer()->draw(LLRender::TRIANGLES, face->getVertexBuffer()->getNumIndices(), 0);
 		
-		if (!gPipeline.canUseVertexShaders())
+		if (!LLGLSLShader::sNoFixedFunction)
 		{
 			gGL.getTexUnit(0)->setTextureBlendType(LLTexUnit::TB_MULT);
 		}
@@ -387,7 +387,7 @@ void LLDrawPoolWLSky::render(S32 pass)
 
 		gGL.translatef(origin.mV[0], origin.mV[1], origin.mV[2]);
 
-		if(gPipeline.canUseVertexShaders())
+		if (LLGLSLShader::sNoFixedFunction)
 			star_shader->bind();
 		// *NOTE: have to bind a texture here since register combiners blending in
 		// renderStars() requires something to be bound and we might as well only
@@ -398,7 +398,7 @@ void LLDrawPoolWLSky::render(S32 pass)
 
 		renderStars();
 
-		if(gPipeline.canUseVertexShaders())
+		if (LLGLSLShader::sNoFixedFunction)
 			star_shader->unbind();
 		
 

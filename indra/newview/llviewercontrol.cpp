@@ -205,7 +205,6 @@ bool handleRenderAvatarComplexityLimitChanged(const LLSD& newvalue)
 
 bool handleRenderTransparentWaterChanged(const LLSD& newvalue)
 {
-	LLPipeline::sWaterReflections = gGLManager.mHasCubeMap && gSavedSettings.getBOOL("VertexShaderEnable");
 	if (gPipeline.isInit())	//If water is opaque then distortion/reflection fbos will not be needed.
 	{
 		gPipeline.releaseGLBuffers();
@@ -466,17 +465,9 @@ static bool handleRenderLocalLightsChanged(const LLSD& newvalue)
 
 static bool handleRenderDeferredChanged(const LLSD& newvalue)
 {
-	bool can_defer = LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferred");
-	bool old_deferred = !newvalue.asBoolean() && can_defer;
-	LLRenderTarget::sUseFBO = (newvalue.asBoolean() && can_defer) || gSavedSettings.getBOOL("RenderUseFBO");
 	if (gPipeline.isInit())
 	{
-		LLPipeline::refreshCachedSettings();
-		gPipeline.updateRenderDeferred();
-		gPipeline.releaseGLBuffers();
-		gPipeline.createGLBuffers();
-		gPipeline.resetVertexBuffers();
-		if (old_deferred != newvalue.asBoolean())
+		if (LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferred"))
 		{
 			LLViewerShaderMgr::instance()->setShaders();
 		}
@@ -486,13 +477,11 @@ static bool handleRenderDeferredChanged(const LLSD& newvalue)
 
 static bool handleRenderUseFBOChanged(const LLSD& newvalue)
 {
-	bool can_defer = LLFeatureManager::getInstance()->isFeatureAvailable("RenderDeferred");
-	LLRenderTarget::sUseFBO = newvalue.asBoolean() || (gSavedSettings.getBOOL("RenderDeferred") && can_defer);
+	LLRenderTarget::sUseFBO = newvalue.asBoolean() || LLPipeline::sRenderDeferred;
 	if (gPipeline.isInit())
 	{
 		gPipeline.releaseGLBuffers();
 		gPipeline.createGLBuffers();
-		gPipeline.resetVertexBuffers();
 	}
 	return true;
 }

@@ -298,7 +298,7 @@ bool LLWaterParamManager::savePresetToNotecard(const std::string & name)
 void LLWaterParamManager::propagateParameters(void)
 {
 	// bind the variables only if we're using shaders
-	if(gPipeline.canUseVertexShaders())
+	if(LLGLSLShader::sNoFixedFunction)
 	{
 		std::vector<LLGLSLShader*>::iterator shaders_iter=mShaderList.begin();
 		for(; shaders_iter != mShaderList.end(); ++shaders_iter)
@@ -387,7 +387,7 @@ void LLWaterParamManager::update(LLViewerCamera * cam)
 	stop_glerror();
 
 	// only do this if we're dealing with shaders
-	if(gPipeline.canUseVertexShaders()) 
+	if(LLGLSLShader::sNoFixedFunction) 
 	{
 		//transform water plane to eye space
 		LLVector4a enorm(0.f, 0.f, 1.f);

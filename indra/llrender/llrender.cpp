@@ -194,7 +194,7 @@ void LLTexUnit::enable(eTextureType type)
 		mCurrTexType = type;
 
 		gGL.flush();
-		if (!LLGLSLShader::sNoFixedFunction && 
+		if (!LLGLSLShader::sNoFixedFunction &&
 			//type != LLTexUnit::TT_MULTISAMPLE_TEXTURE &&
 			mIndex < gGLManager.mNumTextureUnits)
 		{

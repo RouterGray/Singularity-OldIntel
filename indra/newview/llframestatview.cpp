@@ -133,7 +133,7 @@ void LLFrameStatView::draw()
 
 	for (i = 0; i < mNumStats; i++)
 	{
-		if (mStats[i]->getLastTime() >= min_last_time)
+		if (mStats[i]->getCurrentTime() >= min_last_time)
 		{
 			is_active[i] = TRUE;
 		}

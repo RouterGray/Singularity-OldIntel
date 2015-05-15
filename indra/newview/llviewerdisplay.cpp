@@ -733,7 +733,7 @@ void display(BOOL rebuild, F32 zoom_factor, int subfield, BOOL for_snapshot, boo
 		LLGLState::checkTextureChannels();
 		LLGLState::checkClientArrays();
 
-		BOOL to_texture = gPipeline.canUseVertexShaders() &&
+		BOOL to_texture = LLGLSLShader::sNoFixedFunction &&
 						LLPipeline::sRenderGlow;
 
 		LLAppViewer::instance()->pingMainloopTimeout("Display:Swap");
@@ -959,7 +959,7 @@ void display(BOOL rebuild, F32 zoom_factor, int subfield, BOOL for_snapshot, boo
 			else
 			{
 				gPipeline.mScreen.bindTarget();
-				if (LLPipeline::sUnderWaterRender && !gPipeline.canUseWindLightShaders())
+				if (LLPipeline::sUnderWaterRender)
 				{
 					const LLColor4 &col = LLDrawPoolWater::sWaterFogColor;
 					glClearColor(col.mV[0], col.mV[1], col.mV[2], 0.f);
@@ -1343,7 +1343,7 @@ void render_ui(F32 zoom_factor, int subfield, bool tiling)
 	}
 	
 	{
-		BOOL to_texture = gPipeline.canUseVertexShaders() &&
+		BOOL to_texture = LLGLSLShader::sNoFixedFunction &&
 							LLPipeline::sRenderGlow;
 
 		if (to_texture)
@@ -1351,7 +1351,7 @@ void render_ui(F32 zoom_factor, int subfield, bool tiling)
 			gPipeline.renderBloom(gSnapshot, zoom_factor, subfield, tiling);
 		}
 
-		if(gPipeline.canUseVertexShaders())
+		if (LLGLSLShader::sNoFixedFunction)
 		{
 			LLPostProcess::getInstance()->renderEffects(gViewerWindow->getWindowDisplayWidth(), gViewerWindow->getWindowDisplayHeight());
 		}
