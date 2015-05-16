@@ -53,6 +53,7 @@
 #include "llmutelist.h"
 #include "llspeakers.h"
 #include "llvoavatar.h" // For mIdleTimer reset
+#include "llviewerobjectlist.h"
 #include "llviewerregion.h"
 
 // [RLVa:KB] - Checked: 2013-05-10 (RLVa-1.4.9)
@@ -97,12 +98,20 @@ LLColor4 agent_chat_color(const LLUUID& id, const std::string& name, bool local_
 	static const LLCachedControl<bool> color_eo_chat("ColorEstateOwnerChat");
 	if (color_eo_chat)
 	{
-		const LLViewerRegion* parent_estate = gAgent.getRegion();
-		if (parent_estate && id == parent_estate->getOwner())
-			return gSavedSettings.getColor4("AscentEstateOwnerColor");
+		const LLViewerObject* obj = gObjectList.findObject(id); // Nearby?
+		if (const LLViewerRegion* parent_estate = obj ? obj->getRegion() : gAgent.getRegion())
+			if (id == parent_estate->getOwner())
+				return gSavedSettings.getColor4("AscentEstateOwnerColor");
 	}
 
 	return local_chat ? gSavedSettings.getColor4("AgentChatColor") : gSavedSettings.getColor("IMChatColor");
+}
+
+bool block_conference(const LLUUID& id)
+{
+	const U32 block(gSavedSettings.getU32("LiruBlockConferences"));
+	if (block == 2) return !LLAvatarActions::isFriend(id);
+	return block;
 }
 
 
@@ -449,7 +458,7 @@ void LLIMMgr::addMessage(
 	if(!floater)
 	{
                // Return now if we're blocking this group's chat or conferences
-               if (gAgent.isInGroup(session_id) ? getIgnoreGroup(session_id) : dialog != IM_NOTHING_SPECIAL && dialog != IM_SESSION_P2P_INVITE && gSavedSettings.getBOOL("LiruBlockConferences"))
+               if (gAgent.isInGroup(session_id) ? getIgnoreGroup(session_id) : dialog != IM_NOTHING_SPECIAL && dialog != IM_SESSION_P2P_INVITE && block_conference(other_participant_id))
 			return;
 
 		std::string name = (session_name.size() > 1) ? session_name : from;
@@ -1476,7 +1485,7 @@ public:
 			time_t timestamp =
 				(time_t) message_params["timestamp"].asInteger();
 
-			BOOL is_busy = gAgent.getBusy();
+			bool is_do_not_disturb = gAgent.isDoNotDisturb();
 			BOOL is_muted = LLMuteList::getInstance()->isMuted(
 				from_id,
 				name,
@@ -1499,7 +1508,7 @@ public:
 			chat.mFromID = from_id;
 			chat.mFromName = name;
 
-			if (!is_linden && (is_busy || is_muted))
+			if (!is_linden && (is_do_not_disturb || is_muted))
 			{
 				return;
 			}
@@ -1566,7 +1575,7 @@ public:
 			}
 			else
 			{
-				if (from_id != session_id && gSavedSettings.getBOOL("LiruBlockConferences")) // from and session are equal for IMs only.
+				if (from_id != session_id && block_conference(from_id)) // from and session are equal for IMs only.
 				{
 					leave_group_chat(from_id, session_id);
 					return;

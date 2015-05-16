@@ -66,9 +66,9 @@
 #include "llchat.h"
 
 #include "llfloaterchat.h"
+#include "rlvhandler.h"
 
-
-void cmdline_printchat(std::string message);
+void cmdline_printchat(const std::string& message);
 void cmdline_rezplat(bool use_saved_value = true, F32 visual_radius = 30.0);
 void cmdline_tp2name(std::string target);
 
@@ -241,6 +241,8 @@ bool cmd_line_chat(std::string revised_text, EChatType type)
 	static LLCachedControl<std::string> sSinguCmdLineAway(gSavedSettings,  "SinguCmdLineAway");
 	static LLCachedControl<std::string> sSinguCmdLineRegionSay(gSavedSettings,  "SinguCmdLineRegionSay");
 	static LLCachedControl<std::string> sSinguCmdLineURL(gSavedSettings,  "SinguCmdLineURL");
+	static LLCachedControl<std::string> sResyncAnimCommand(gSavedSettings, "AlchemyChatCommandResyncAnim", "/resync");
+	static LLCachedControl<std::string> sHoverHeight(gSavedSettings, "AlchemyChatCommandHoverHeight", "/hover");
 
 	if(sAscentCmdLine)
 	{
@@ -450,6 +452,12 @@ bool cmd_line_chat(std::string revised_text, EChatType type)
 			{
 				if (revised_text.length() > command.length() + 1)
 				{
+					const std::string& message = revised_text.substr(command.length()+1);
+					if (!gAgent.getRegion()->isEstateManager())
+					{
+						gChatBar->sendChatFromViewer(message, CHAT_TYPE_REGION, false);
+						return false;
+					}
 					std::vector<std::string> strings(5, "-1");
 					// [0] grid_x, unused here
 					// [1] grid_y, unused here
@@ -458,8 +466,36 @@ bool cmd_line_chat(std::string revised_text, EChatType type)
 					std::string name;
 					LLAgentUI::buildFullname(name);
 					strings[3] = name;
-					strings[4] = revised_text.substr(command.length()+1); // [4] message
+					strings[4] = message; // [4] message
 					LLRegionInfoModel::sendEstateOwnerMessage(gMessageSystem, "simulatormessage", LLFloaterRegionInfo::getLastInvoice(), strings);
+				}
+				return false;
+			}
+			else if (command == utf8str_tolower(sHoverHeight)) // Hover height
+			{
+				F32 height;
+				if (i >> height)
+				{
+					gSavedPerAccountSettings.set("AvatarHoverOffsetZ",
+												 llclamp<F32>(height, MIN_HOVER_Z, MAX_HOVER_Z));
+					return false;
+				}
+			}
+			else if (command == utf8str_tolower(sResyncAnimCommand)) // Resync Animations
+			{
+				for (S32 i = 0; i < gObjectList.getNumObjects(); i++)
+				{
+					LLViewerObject* object = gObjectList.getObject(i);
+					if (object && object->isAvatar())
+					{
+						LLVOAvatar& avatarp = *(LLVOAvatar*)object;
+						for (LLVOAvatar::AnimIterator it = avatarp.mPlayingAnimations.begin(), end = avatarp.mPlayingAnimations.end(); it != end; ++it)
+						{
+							const std::pair<LLUUID, S32>& playpair = *it;
+							avatarp.stopMotion(playpair.first, TRUE);
+							avatarp.startMotion(playpair.first);
+						}
+					}
 				}
 				return false;
 			}
@@ -623,11 +659,38 @@ void cmdline_rezplat(bool use_saved_value, F32 visual_radius) //cmdline_rezplat(
 	msg->sendReliable(gAgent.getRegionHost());
 }
 
-void cmdline_printchat(std::string message)
+void cmdline_printchat(const std::string& message)
 {
-	LLChat chat;
-	chat.mText = message;
+	LLChat chat(message);
 	chat.mSourceType = CHAT_SOURCE_SYSTEM;
-	LLFloaterChat::addChat(chat, FALSE, FALSE);
+	if (rlv_handler_t::isEnabled()) chat.mRlvLocFiltered = chat.mRlvNamesFiltered = true;
+	LLFloaterChat::addChat(chat);
 }
 
+static void fake_local_chat(LLChat chat, const std::string& name)
+{
+	chat.mFromName = name;
+	chat.mText = name + chat.mText;
+	LLFloaterChat::addChat(chat);
+}
+void fake_local_chat(std::string msg)
+{
+	bool action(LLStringUtil::startsWith(msg, "/me") && (msg[3] == ' ' || msg[3] == '\''));
+	if (action) msg.erase(0, 4);
+	LLChat chat((action ? " " : ": ") + msg);
+	chat.mFromID = gAgentID;
+	chat.mSourceType = CHAT_SOURCE_SYSTEM;
+	if (rlv_handler_t::isEnabled()) chat.mRlvLocFiltered = chat.mRlvNamesFiltered = true;
+	chat.mPosAgent = gAgent.getPositionAgent();
+	chat.mURL = "secondlife:///app/agent/" + gAgentID.asString() + "/about";
+	if (action) chat.mChatStyle = CHAT_STYLE_IRC;
+	if (!LLAvatarNameCache::getNSName(gAgentID, chat.mFromName))
+	{
+		LLAvatarNameCache::get(gAgentID, boost::bind(fake_local_chat, chat, boost::bind(&LLAvatarName::getNSName, _2, main_name_system())));
+	}
+	else
+	{
+		chat.mText = chat.mFromName + chat.mText;
+		LLFloaterChat::addChat(chat);
+	}
+}
