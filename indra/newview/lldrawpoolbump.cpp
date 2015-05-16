@@ -1550,7 +1550,7 @@ void LLDrawPoolInvisible::render(S32 pass)
 { //render invisiprims
 	LLFastTimer t(FTM_RENDER_INVISIBLE);
   
-	if (gPipeline.canUseVertexShaders())
+	if (LLGLSLShader::sNoFixedFunction)
 	{
 		gOcclusionProgram.bind();
 	}
@@ -1562,7 +1562,7 @@ void LLDrawPoolInvisible::render(S32 pass)
 	gGL.setColorMask(true, false);
 	glStencilMask(0xFFFFFFFF);
 
-	if (gPipeline.canUseVertexShaders())
+	if (LLGLSLShader::sNoFixedFunction)
 	{
 		gOcclusionProgram.unbind();
 	}

@@ -49,7 +49,6 @@
 #include "pipeline.h"
 #include "llviewerregion.h"
 #include "llvlcomposition.h"
-#include "noise.h"
 #include "llviewercamera.h"
 #include "llglheaders.h"
 #include "lldrawpoolterrain.h"

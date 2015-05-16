@@ -183,11 +183,11 @@ HRESULT GetVideoMemoryViaWMI( WCHAR* strInputDeviceID, DWORD* pdwAdapterRam )
 						SAFE_RELEASE( pVideoControllers[iController] );
 					}
 				}
+				SAFE_RELEASE(pEnumVideoControllers);
 			}
 
 			if( pClassName )
 				SysFreeString( pClassName );
-			SAFE_RELEASE( pEnumVideoControllers );
 		}
 
 		if( pNamespace )
@@ -449,7 +449,13 @@ BOOL LLDXHardware::getInfo(BOOL vram_only)
 	BOOL ok = FALSE;
     HRESULT       hr;
 
-    CoInitialize(NULL);
+    hr = CoInitialize(NULL);
+	if (FAILED(hr))
+	{
+		LL_WARNS("AppInit") << "COM library initialization failed!" << LL_ENDL;
+		gWriteDebug("COM library initialization failed!\n");
+		return FALSE;
+	}
 
     IDxDiagProvider *dx_diag_providerp = NULL;
     IDxDiagContainer *dx_diag_rootp = NULL;
@@ -709,7 +715,13 @@ LLSD LLDXHardware::getDisplayInfo()
 	LLTimer hw_timer;
     HRESULT       hr;
 	LLSD ret;
-    CoInitialize(NULL);
+    hr = CoInitialize(NULL);
+	if (FAILED(hr))
+	{
+		LL_WARNS("AppInit") << "COM library initialization failed!" << LL_ENDL;
+		gWriteDebug("COM library initialization failed!\n");
+		return ret;
+	}
 
     IDxDiagProvider *dx_diag_providerp = NULL;
     IDxDiagContainer *dx_diag_rootp = NULL;

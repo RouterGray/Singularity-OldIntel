@@ -472,7 +472,7 @@ public:
 		static const LLCachedControl<bool> debug_show_render_info("DebugShowRenderInfo");
 		if (debug_show_render_info)
 		{
-			if (gPipeline.getUseVertexShaders() == 0)
+			if (!LLGLSLShader::sNoFixedFunction)
 			{
 				addText(xpos, ypos, "Shaders Disabled");
 				ypos += y_inc;

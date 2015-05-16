@@ -38,7 +38,7 @@
 #include <ctype.h>
 
 #include "llaudioengine.h"
-#include "noise.h"
+#include "llperlin.h"
 #include "raytrace.h"
 
 #include "llagent.h" //  Get state values from here
@@ -417,14 +417,8 @@ public:
 	// must return FALSE when the motion is completed.
 	virtual BOOL onUpdate(F32 time, U8* joint_mask)
 	{
-		F32 nx[2];
-		nx[0]=time*TORSO_NOISE_SPEED;
-		nx[1]=0.0f;
-		F32 ny[2];
-		ny[0]=0.0f;
-		ny[1]=time*TORSO_NOISE_SPEED;
-		F32 noiseX = noise2(nx);
-		F32 noiseY = noise2(ny);
+		F32 noiseX = LLPerlinNoise::noise(LLVector2(time*TORSO_NOISE_SPEED, 0));
+		F32 noiseY = LLPerlinNoise::noise(LLVector2(0, time*TORSO_NOISE_SPEED));
 
 		F32 rx = TORSO_NOISE_AMOUNT * DEG_TO_RAD * noiseX / 0.42f;
 		F32 ry = TORSO_NOISE_AMOUNT * DEG_TO_RAD * noiseY / 0.42f;
@@ -3043,7 +3037,7 @@ void LLVOAvatar::idleUpdateWindEffect()
 		}
 		mWindVec = lerp(mWindVec, wind, interp);
 	
-		F32 wind_freq = hover_strength + llclamp(8.f + (speed * 0.7f) + (noise1(mRipplePhase) * 4.f), 8.f, 25.f);
+		F32 wind_freq = hover_strength + llclamp(8.f + (speed * 0.7f) + (LLPerlinNoise::noise(mRipplePhase) * 4.f), 8.f, 25.f);
 		mWindFreq = lerp(mWindFreq, wind_freq, interp);
 
 		if (mBelowWater)
@@ -3052,9 +3046,9 @@ void LLVOAvatar::idleUpdateWindEffect()
 		}
 
 		mRipplePhase += (time_delta * mWindFreq);
-		if (mRipplePhase > F_TWO_PI)
+		if (mRipplePhase > 256.f)
 		{
-			mRipplePhase = fmodf(mRipplePhase, F_TWO_PI);
+			mRipplePhase = fmodf(mRipplePhase, 256.f);
 		}
 	}
 }
