@@ -1206,10 +1206,7 @@ void LLPipeline::restoreGL()
 {
 	assertInitialized();
 
-	if (LLGLSLShader::sNoFixedFunction)
-	{
-		LLViewerShaderMgr::instance()->setShaders();
-	}
+	LLViewerShaderMgr::instance()->setShaders();
 
 	for (LLWorld::region_list_t::const_iterator iter = LLWorld::getInstance()->getRegionList().begin(); 
 			iter != LLWorld::getInstance()->getRegionList().end(); ++iter)
