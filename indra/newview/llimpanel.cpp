@@ -68,6 +68,8 @@
 #include "rlvcommon.h"
 // [/RLVa:KB]
 
+BOOL is_agent_mappable(const LLUUID& agent_id); // For map stalkies
+
 class AIHTTPTimeoutPolicy;
 extern AIHTTPTimeoutPolicy sessionInviteResponder_timeout;
 
@@ -446,17 +448,43 @@ LLFloaterIMPanel::~LLFloaterIMPanel()
 	mVoiceChannel = NULL;
 }
 
+void add_map_option(LLComboBox& flyout, const std::string& map, const LLUUID& id, U8& did)
+{
+	flyout.remove(map);
+	if (is_agent_mappable(id) && LLAvatarTracker::instance().isBuddyOnline(id))
+	{
+		flyout.add(map, -2);
+		did |= 0x02; // Added map, needs rebuild.
+	}
+	did |= 0x01; // Checked map
+}
+
 // virtual
 void LLFloaterIMPanel::changed(U32 mask)
 {
-	if (mask & (REMOVE|ADD)) // Fix remove/add friend choices
-		rebuildDynamics(getChild<LLComboBox>("instant_message_flyout"));
-	/* Singu TODO: Chat UI - Online icons?
-	if (mask & ONLINE)
-		// Show online icon here
-	else
-		// Show offline icon here
-	*/
+	if (mask & (REMOVE|ADD|POWERS|ONLINE)) // Fix remove/add and map friend choices
+	{
+		U8 did(0);
+		LLComboBox& flyout = *getChild<LLComboBox>("instant_message_flyout");
+		if (mask & POWERS)
+		{
+			// Powers changed, unfortunately, we never know which.
+			add_map_option(flyout, getString("find on map"), mOtherParticipantUUID, did);
+		}
+		if (mask & ONLINE)
+		{
+			if (~did & 0x01)
+				add_map_option(flyout, getString("find on map"), mOtherParticipantUUID, did);
+			/* Singu TODO: Chat UI - Online icons?
+			if (LLAvatarTracker::instance().isBuddyOnline(mOtherParticipantUUID))
+				// Show online icon here?
+			else
+				// Show offline icon here?
+			*/
+		}
+		if (mask & (REMOVE|ADD) || did & 0x02) // Only rebuild if necessary
+			rebuildDynamics(&flyout);
+	}
 }
 
 // virtual
@@ -492,6 +520,8 @@ BOOL LLFloaterIMPanel::postBuild()
 		if (LLComboBox* flyout = findChild<LLComboBox>("instant_message_flyout"))
 		{
 			flyout->setCommitCallback(boost::bind(&LLFloaterIMPanel::onFlyoutCommit, this, flyout, _2));
+			if (is_agent_mappable(mOtherParticipantUUID))
+				flyout->add(getString("find on map"), -2);
 			addDynamics(flyout);
 		}
 		if (LLUICtrl* ctrl = findChild<LLUICtrl>("tp_btn"))
@@ -978,6 +1008,7 @@ void LLFloaterIMPanel::onFlyoutCommit(LLComboBox* flyout, const LLSD& value)
 	else if (option == 4) LLAvatarActions::pay(mOtherParticipantUUID);
 	else if (option == 5) LLAvatarActions::inviteToGroup(mOtherParticipantUUID);
 	else if (option == -1) copy_profile_uri(mOtherParticipantUUID);
+	else if (option == -2) LLAvatarActions::showOnMap(mOtherParticipantUUID);
 	else if (option >= 6) // Options that use dynamic items
 	{
 		// First remove them all
