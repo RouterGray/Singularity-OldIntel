@@ -77,6 +77,8 @@
 #include "llworldmapview.h"
 #include "llnetmap.h"
 #include "llrender.h"
+#include "lldrawpoolwlsky.h"
+#include "llwlparammanager.h"
 #include "aistatemachine.h"
 #include "aithreadsafe.h"
 #include "lldrawpoolbump.h"
@@ -573,6 +575,44 @@ bool handleVelocityInterpolate(const LLSD& newvalue)
 	return true;
 }
 
+bool handleWindlightCloudChanged(const LLSD& new_value)
+{
+	std::string cloudNoiseFilename(gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, "windlight/clouds", new_value.asString()));
+	if (!gDirUtilp->fileExists(cloudNoiseFilename))
+	{
+		cloudNoiseFilename = gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, "windlight/clouds", "Default.tga");
+	}
+	llinfos << "loading WindLight cloud noise from " << cloudNoiseFilename << LL_ENDL;
+
+	LLPointer<LLImageFormatted> cloudNoiseFile(LLImageFormatted::createFromExtension(cloudNoiseFilename));
+
+	if (cloudNoiseFile.isNull())
+	{
+		llwarns << "Error: Failed to load cloud noise image " << cloudNoiseFilename << LL_ENDL;
+		return true;
+	}
+
+	if (cloudNoiseFile->load(cloudNoiseFilename))
+	{
+		LLDrawPoolWLSky::sCloudNoiseRawImage = new LLImageRaw();
+
+		if (cloudNoiseFile->decode(LLDrawPoolWLSky::sCloudNoiseRawImage, 0.0f))
+		{
+			//debug use
+			lldebugs << "cloud noise raw image width: " << LLDrawPoolWLSky::sCloudNoiseRawImage->getWidth() << " : height: " << LLDrawPoolWLSky::sCloudNoiseRawImage->getHeight() << " : components: " <<
+				(S32) LLDrawPoolWLSky::sCloudNoiseRawImage->getComponents() << " : data size: " << LLDrawPoolWLSky::sCloudNoiseRawImage->getDataSize() << LL_ENDL;
+			llassert_always(LLDrawPoolWLSky::sCloudNoiseRawImage->getData());
+
+			LLDrawPoolWLSky::sCloudNoiseTexture = LLViewerTextureManager::getLocalTexture(LLDrawPoolWLSky::sCloudNoiseRawImage.get(), TRUE);
+		}
+		else
+		{
+			LLDrawPoolWLSky::sCloudNoiseRawImage = NULL;
+		}
+	}
+	return true;
+}
+
 bool handleCloudSettingsChanged(const LLSD& newvalue)
 {
 	bool bCloudsEnabled = gSavedSettings.getBOOL("CloudsEnabled");
@@ -782,6 +822,7 @@ void settings_setup_listeners()
 	gSavedSettings.getControl("CloudsEnabled")->getSignal()->connect(boost::bind(&handleCloudSettingsChanged, _2));
 	gSavedSettings.getControl("SkyUseClassicClouds")->getSignal()->connect(boost::bind(&handleCloudSettingsChanged, _2));
 	gSavedSettings.getControl("RenderTransparentWater")->getSignal()->connect(boost::bind(&handleRenderTransparentWaterChanged, _2));
+	gSavedSettings.getControl("AlchemyWLCloudTexture")->getSignal()->connect(boost::bind(&handleWindlightCloudChanged, _2));
 	
 	gSavedSettings.getControl("AscentAvatarXModifier")->getSignal()->connect(boost::bind(&handleAscentAvatarModifier, _2));
 	gSavedSettings.getControl("AscentAvatarYModifier")->getSignal()->connect(boost::bind(&handleAscentAvatarModifier, _2));
