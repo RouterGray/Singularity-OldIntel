@@ -61,6 +61,7 @@
 #include "llmarketplacefunctions.h"
 #include "llnotifications.h"
 #include "llnotificationsutil.h"
+#include "llpanelmaininventory.h"
 #include "llpreviewanim.h"
 #include "llpreviewgesture.h"
 #include "llpreviewlandmark.h"
@@ -120,6 +121,7 @@ void remove_inventory_category_from_avatar_step2( BOOL proceed, LLUUID category_
 bool move_task_inventory_callback(const LLSD& notification, const LLSD& response, LLMoveInv*);
 bool confirm_attachment_rez(const LLSD& notification, const LLSD& response);
 static BOOL can_move_to_outfit(LLInventoryItem* inv_item, BOOL move_is_into_current_outfit);
+void build_context_menu_folder_options(LLInventoryModel* mModel, const LLUUID& mUUID, menuentry_vec_t& mItems, menuentry_vec_t& mDisabledItems);
 
 // Helper functions
 
@@ -3290,7 +3292,7 @@ void LLFolderBridge::staticFolderOptionsMenu()
 	}
 }
 
-BOOL LLFolderBridge::checkFolderForContentsOfType(LLInventoryModel* model, LLInventoryCollectFunctor& is_type)
+BOOL checkFolderForContentsOfType(LLInventoryModel* model, LLInventoryCollectFunctor& is_type, const LLUUID& mUUID)
 {
 	LLInventoryModel::cat_array_t cat_array;
 	LLInventoryModel::item_array_t item_array;
@@ -3301,6 +3303,10 @@ BOOL LLFolderBridge::checkFolderForContentsOfType(LLInventoryModel* model, LLInv
 								is_type,
 								true);
 	return ((item_array.count() > 0) ? TRUE : FALSE );
+}
+BOOL LLFolderBridge::checkFolderForContentsOfType(LLInventoryModel* model, LLInventoryCollectFunctor& is_type)
+{
+	return ::checkFolderForContentsOfType(model, is_type, mUUID);
 }
 
 void LLFolderBridge::buildContextMenuBaseOptions(U32 flags)
@@ -3349,7 +3355,8 @@ void LLFolderBridge::buildContextMenuBaseOptions(U32 flags)
 		LLViewerInventoryCategory *cat = getCategory();
 		// BAP removed protected check to re-enable standard ops in untyped folders.
 		// Not sure what the right thing is to do here.
-		if (!isCOFFolder() && cat && (cat->getPreferredType() != LLFolderType::FT_OUTFIT))
+		const bool is_cof(isCOFFolder());
+		if (!is_cof && cat && (cat->getPreferredType() != LLFolderType::FT_OUTFIT))
 		{
 			LLInventoryPanel* panel = mInventoryPanel.get();
 			if(panel && !panel->getFilterWorn())
@@ -3372,7 +3379,6 @@ void LLFolderBridge::buildContextMenuBaseOptions(U32 flags)
 				mDisabledItems.push_back(std::string("Change Type"));
 			}
 #endif
-			getClipboardEntries(false, mItems, mDisabledItems, flags);
 		}
 		else
 		{
@@ -3390,6 +3396,7 @@ void LLFolderBridge::buildContextMenuBaseOptions(U32 flags)
 				}
 			}
 		}
+		if (!is_cof) getClipboardEntries(false, mItems, mDisabledItems, flags);
 
 		//Added by aura to force inventory pull on right-click to display folder options correctly. 07-17-06
 		mCallingCards = mWearables = FALSE;
@@ -3440,6 +3447,27 @@ void LLFolderBridge::buildContextMenuFolderOptions(U32 flags)
 {
 	// Build folder specific options back up
 	LLInventoryModel* model = getInventoryModel();
+
+	if (isOutboxFolder()) return;
+	if (!isAgentInventory()) return;
+
+	build_context_menu_folder_options(model, mUUID, mItems, mDisabledItems);
+
+	if (!isItemRemovable())
+	{
+		mDisabledItems.push_back(std::string("Delete"));
+	}
+
+#ifdef DELETE_SYSTEM_FOLDERS
+	if (LLFolderType::lookupIsProtectedType(type))
+	{
+		mItems.push_back(std::string("Delete System Folder"));
+	}
+#endif
+}
+
+void build_context_menu_folder_options(LLInventoryModel* model, const LLUUID& mUUID, menuentry_vec_t& mItems, menuentry_vec_t& mDisabledItems)
+{
 	if(!model) return;
 
 	const LLInventoryCategory* category = model->getCategory(mUUID);
@@ -3447,9 +3475,7 @@ void LLFolderBridge::buildContextMenuFolderOptions(U32 flags)
 
 	const LLUUID trash_id = model->findCategoryUUIDForType(LLFolderType::FT_TRASH);
 	if (trash_id == mUUID) return;
-	if (isItemInTrash()) return;
-	if (!isAgentInventory()) return;
-	if (isOutboxFolder()) return;
+	if (model->isObjectDescendentOf(mUUID, trash_id)) return;
 
 	mItems.push_back(std::string("Open Folder In New Window"));
 
@@ -3464,7 +3490,7 @@ void LLFolderBridge::buildContextMenuFolderOptions(U32 flags)
 	if (!is_system_folder)
 	{
 		LLIsType is_callingcard(LLAssetType::AT_CALLINGCARD);
-		if (mCallingCards || checkFolderForContentsOfType(model, is_callingcard))
+		if (/*mCallingCards ||*/ checkFolderForContentsOfType(model, is_callingcard, mUUID))
 		{
 			mItems.push_back(std::string("Calling Card Separator"));
 			mItems.push_back(std::string("Conference Chat Folder"));
@@ -3472,28 +3498,16 @@ void LLFolderBridge::buildContextMenuFolderOptions(U32 flags)
 		}
 	}
 
-	if (!isItemRemovable())
-	{
-		mDisabledItems.push_back(std::string("Delete"));
-	}
-
-#ifdef DELETE_SYSTEM_FOLDERS
-	if (LLFolderType::lookupIsProtectedType(type))
-	{
-		mItems.push_back(std::string("Delete System Folder"));
-	}
-#endif
-
 	// wearables related functionality for folders.
 	//is_wearable
 	LLFindWearables is_wearable;
 	LLIsType is_object( LLAssetType::AT_OBJECT );
 	LLIsType is_gesture( LLAssetType::AT_GESTURE );
 
-	if (mWearables ||
-		checkFolderForContentsOfType(model, is_wearable)  ||
-		checkFolderForContentsOfType(model, is_object) ||
-		checkFolderForContentsOfType(model, is_gesture) )
+	if (/*mWearables ||*/
+		checkFolderForContentsOfType(model, is_wearable, mUUID)  ||
+		checkFolderForContentsOfType(model, is_object, mUUID) ||
+		checkFolderForContentsOfType(model, is_gesture, mUUID) )
 	{
 		mItems.push_back(std::string("Folder Wearables Separator"));
 
@@ -6324,7 +6338,10 @@ void LLLinkFolderBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 	}
 	else
 	{
-		items.push_back(std::string("Find Original"));
+		getClipboardEntries(false, items, disabled_items, flags);
+		if (LLInventoryView* iv = LLInventoryView::getActiveInventory())
+			if (!isOutboxFolder() && isAgentInventory())
+				build_context_menu_folder_options(getInventoryModel(), getFolderID(), items, disabled_items);
 		addDeleteContextMenuOptions(items, disabled_items);
 	}
 	hide_context_entries(menu, items, disabled_items);
@@ -6335,6 +6352,35 @@ void LLLinkFolderBridge::performAction(LLInventoryModel* model, std::string acti
 	{
 		gotoItem();
 		return;
+	}
+	if ("purge" == action)
+	{
+		purgeItem(model, mUUID);
+		return;
+	}
+	if ("restore" == action)
+	{
+		restoreItem();
+		return;
+	}
+	if ("cut" == action)
+	{
+		cutToClipboard();
+		LLFolderView::removeCutItems();
+		return;
+	}
+	if ("copy" == action)
+	{
+		copyToClipboard();
+		return;
+	}
+	if (LLInventoryView* iv = LLInventoryView::getActiveInventory())
+	{
+		if (LLFolderViewItem* folder_item = iv->getActivePanel()->getRootFolder()->getItemByID(getFolderID()))
+		{
+			folder_item->getListener()->performAction(model, action);
+			return;
+		}
 	}
 	LLItemBridge::performAction(model,action);
 }
