@@ -2496,8 +2496,15 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 		{
 			// standard message, not from system
 			bool mute_im = is_muted;
-			if(accept_im_from_only_friend&&!is_friend)
+			if (accept_im_from_only_friend && !is_friend && !is_linden)
 			{
+				if (!gIMMgr->isNonFriendSessionNotified(session_id))
+				{
+					std::string message = LLTrans::getString("IM_unblock_only_groups_friends");
+					gIMMgr->addMessage(session_id, from_id, name, message);
+					gIMMgr->addNotifiedNonFriendSessionID(session_id);
+				}
+
 				mute_im = true;
 			}
 
@@ -2513,20 +2520,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 
 			LL_INFOS("Messaging") << "process_improved_im: session_id( " << session_id << " ), from_id( " << from_id << " )" << LL_ENDL;
 
-/*
-			bool mute_im = is_muted;
-			if (accept_im_from_only_friend && !is_friend)
-			{
-				if (!gIMMgr->isNonFriendSessionNotified(session_id))
-				{
-					std::string message = LLTrans::getString("IM_unblock_only_groups_friends");
-					gIMMgr->addMessage(session_id, from_id, name, message);
-					gIMMgr->addNotifiedNonFriendSessionID(session_id);
-				}
-
-				mute_im = true;
-			}
-*/
+			// Muted nonfriend code moved up
 
 // [RLVa:KB] - Checked: 2010-11-30 (RLVa-1.3.0)
 			// Don't block offline IMs, or IMs from Lindens
@@ -2563,7 +2557,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 				LLFloaterChat::addChat(chat, true, true);
 
 				// Autoresponse to muted avatars
-				if (gSavedPerAccountSettings.getBOOL("AutoresponseMuted"))
+				if (!gIMMgr->isNonFriendSessionNotified(session_id) && gSavedPerAccountSettings.getBOOL("AutoresponseMuted"))
 				{
 					std::string my_name;
 					LLAgentUI::buildFullname(my_name);
@@ -2579,8 +2573,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 						IM_BUSY_AUTO_RESPONSE,
 						session_id);
 					gAgent.sendReliableMessage();
-					LLAvatarName av_name;
-					autoresponder_finish(gSavedPerAccountSettings.getBOOL("AutoresponseMutedShow"), computed_session_id, from_id, LLAvatarNameCache::get(from_id, &av_name) ? av_name.getNSName() : name, gSavedPerAccountSettings.getBOOL("AutoresponseMutedItem") ? static_cast<LLUUID>(gSavedPerAccountSettings.getString("AutoresponseMutedItemID")) : LLUUID::null, true);
+					autoresponder_finish(gSavedPerAccountSettings.getBOOL("AutoresponseMutedShow"), computed_session_id, from_id, name, gSavedPerAccountSettings.getBOOL("AutoresponseMutedItem") ? static_cast<LLUUID>(gSavedPerAccountSettings.getString("AutoresponseMutedItemID")) : LLUUID::null, true);
 				}
 			}
 		}

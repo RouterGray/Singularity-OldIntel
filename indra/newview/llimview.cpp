@@ -1086,6 +1086,16 @@ LLFloaterIMPanel* LLIMMgr::createFloater(
 	return floater;
 }
 
+void LLIMMgr::addNotifiedNonFriendSessionID(const LLUUID& session_id)
+{
+	mNotifiedNonFriendSessions.insert(session_id);
+}
+
+bool LLIMMgr::isNonFriendSessionNotified(const LLUUID& session_id)
+{
+	return mNotifiedNonFriendSessions.end() != mNotifiedNonFriendSessions.find(session_id);
+}
+
 void LLIMMgr::noteOfflineUsers(
 	LLFloaterIMPanel* floater,
 	const LLDynamicArray<LLUUID>& ids)
