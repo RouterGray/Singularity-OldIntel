@@ -193,6 +193,7 @@ void LLPrefsAscentSys::refreshValues()
     mBroadcastViewerEffects		= gSavedSettings.getBOOL("BroadcastViewerEffects");
     mDisablePointAtAndBeam		= gSavedSettings.getBOOL("DisablePointAtAndBeam");
     mPrivateLookAt				= gSavedSettings.getBOOL("PrivateLookAt");
+    mHideOwnLookAt				= gSavedSettings.getBOOL("AlchemyLookAtHideSelf");
     mShowLookAt					= gSavedSettings.getBOOL("AscentShowLookAt");
 	mLookAtNames				= gSavedSettings.getS32("LookAtNameSystem");
 	mLookAtLines				= gSavedSettings.getBOOL("AlchemyLookAtLines");
@@ -340,6 +341,7 @@ void LLPrefsAscentSys::cancel()
     gSavedSettings.setBOOL("BroadcastViewerEffects",        mBroadcastViewerEffects);
     gSavedSettings.setBOOL("DisablePointAtAndBeam",         mDisablePointAtAndBeam);
     gSavedSettings.setBOOL("PrivateLookAt",                 mPrivateLookAt);
+    gSavedSettings.setBOOL("AlchemyLookAtHideSelf",         mHideOwnLookAt);
     gSavedSettings.setBOOL("AscentShowLookAt",              mShowLookAt);
 	gSavedSettings.setS32("LookAtNameSystem",               mLookAtNames);
 	gSavedSettings.setBOOL("AlchemyLookAtLines",            mLookAtLines);

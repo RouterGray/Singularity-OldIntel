@@ -157,6 +157,17 @@
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>AlchemyLookAtHideSelf</key>
+    <map>
+      <key>Comment</key>
+      <string>Hide own Look At beacon when Look At render is enabled</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
     <key>AlchemyMouselookIFF</key>
     <map>
       <key>Comment</key>
