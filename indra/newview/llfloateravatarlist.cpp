@@ -66,11 +66,17 @@ const F32 DEAD_KEEP_TIME = 0.5f;
 
 extern U32 gFrameCount;
 
+const S32& radar_namesystem()
+{
+	static const LLCachedControl<S32> namesystem("RadarNameSystem");
+	return namesystem;
+}
+
 namespace
 {
 	void chat_avatar_status(const std::string& name, const LLUUID& key, ERadarStatType type, bool entering, const F32& dist)
 	{
-		if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) return; // RLVa:LF Don't announce people are around when blind, that cheats the system.
+		if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) return; // RLVa:LF Don't announce people are around when blind, that cheats the system.
 		static LLCachedControl<bool> radar_chat_alerts(gSavedSettings, "RadarChatAlerts");
 		if (!radar_chat_alerts) return;
 		static LLCachedControl<bool> radar_alert_sim(gSavedSettings, "RadarAlertSim");
@@ -102,7 +108,8 @@ namespace
 			if (radar_show_dist) chat.mText += llformat(" (%.2fm)", dist);
 		}
 		chat.mFromName = name;
-		chat.mURL = llformat("secondlife:///app/agent/%s/about",key.asString().c_str());
+		if (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) // RLVa:LF - No way!
+			chat.mURL = llformat("secondlife:///app/agent/%s/about", key.asString().c_str());
 		chat.mSourceType = CHAT_SOURCE_SYSTEM;
 		LLFloaterChat::addChat(chat);
 	}
@@ -202,6 +209,18 @@ bool LLAvatarListEntry::isDead() const
 {
 	return getEntryAgeSeconds() > DEAD_KEEP_TIME;
 }
+
+void LLAvatarListEntry::resetName(const bool& hide_tags, const bool& anon_names, const std::string& hidden)
+{
+	if (hide_tags)
+		mName = hidden;
+	else
+	{
+		LLAvatarNameCache::getNSName(mID, mName, radar_namesystem()); // We wouldn't be alive if this were to fail now.
+		if (anon_names) mName = RlvStrings::getAnonym(mName);
+	}
+}
+
 const F32 ACTIVITY_TIMEOUT = 1.0f;
 void LLAvatarListEntry::setActivity(ACTIVITY_TYPE activity)
 {
@@ -241,14 +260,6 @@ LLFloaterAvatarList::~LLFloaterAvatarList()
 //static
 void LLFloaterAvatarList::toggleInstance(const LLSD&)
 {
-// [RLVa:KB]
-	if(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES))
-	{
-		if(instanceExists())
-			getInstance()->close();
-	}
-	else
-// [/RLVa:KB]
 	if (!instanceVisible())
 	{
 		showInstance();
@@ -262,10 +273,6 @@ void LLFloaterAvatarList::toggleInstance(const LLSD&)
 //static
 void LLFloaterAvatarList::showInstance()
 {
-// [RLVa:KB]
-	if(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES))
-		return;
-// [/RLVa:KB]
 	getInstance()->open();
 }
 
@@ -290,6 +297,12 @@ void LLFloaterAvatarList::onClose(bool app_quitting)
 	{
 		destroy();
 	}
+}
+
+BOOL LLFloaterAvatarList::handleRightMouseDown(S32 x, S32 y, MASK mask)
+{
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) return TRUE; // RLVa:LF - No menu, menus share listeners with others that we may want to work; plus the user has no idea who these people are!!
+	return LLFloater::handleRightMouseDown(x, y, mask);
 }
 
 static void cmd_profile(const LLAvatarListEntry* entry);
@@ -538,12 +551,16 @@ void LLFloaterAvatarList::updateAvatarList()
 		static LLCachedControl<bool> announce(gSavedSettings, "RadarChatKeys");
 		std::queue<LLUUID> announce_keys;
 
+		bool no_names(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS));
+		bool anon_names(!no_names && gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
+		const std::string& rlv_hidden(RlvStrings::getString(RLV_STRING_HIDDEN));
 		for (LLWorld::pos_map_t::const_iterator i = avs.cbegin(), end = avs.cend(); i != end; ++i)
 		{
 			const LLUUID& avid = i->first;
 			std::string name;
-			static const LLCachedControl<S32> namesystem("RadarNameSystem");
-			if (!LLAvatarNameCache::getNSName(avid, name, namesystem)) continue; //prevent (Loading...)
+			if (no_names) name = rlv_hidden;
+			else if (!LLAvatarNameCache::getNSName(avid, name, radar_namesystem())) continue; //prevent (Loading...)
+			else if (anon_names) name = RlvStrings::getAnonym(name);
 
 			LLVector3d position = i->second;
 
@@ -650,7 +667,7 @@ void LLFloaterAvatarList::updateAvatarSorting()
 	}
 }
 
-bool getCustomColor(const LLUUID& id, LLColor4& color, LLViewerRegion* parent_estate);
+bool getCustomColorRLV(const LLUUID& id, LLColor4& color, LLViewerRegion* parent_estate, bool name_restricted);
 
 /**
  * Redraws the avatar list
@@ -680,6 +697,7 @@ void LLFloaterAvatarList::refreshAvatarList()
 	localRectToScreen(getLocalRect(), &screen_rect);
 	speakermgr.update(!(screen_rect.pointInRect(gViewerWindow->getCurrentMouseX(), gViewerWindow->getCurrentMouseY()) && gMouseIdleTimer.getElapsedTimeF32() < 5.f));
 
+	bool name_restricted(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
 	BOOST_FOREACH(av_list_t::value_type& entry, mAvatars)
 	{
 		// Skip if avatar hasn't been around
@@ -737,7 +755,7 @@ void LLFloaterAvatarList::refreshAvatarList()
 			}
 
 			//<edit> custom colors for certain types of avatars!
-			getCustomColor(av_id, color, LLWorld::getInstance()->getRegionFromPosGlobal(entry->getPosition()));
+			getCustomColorRLV(av_id, color, LLWorld::getInstance()->getRegionFromPosGlobal(entry->getPosition()), name_restricted);
 			name.color = color*0.5f + unselected_color*0.5f;
 			element.columns.add(name);
 		}
@@ -997,6 +1015,19 @@ void LLFloaterAvatarList::refreshAvatarList()
 
 }
 
+void LLFloaterAvatarList::resetAvatarNames()
+{
+	bool hide_tags(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS));
+	bool anon_names(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
+	const std::string& hidden(RlvStrings::getString(RLV_STRING_HIDDEN));
+	BOOST_FOREACH(av_list_t::value_type& entry, mAvatars)
+	{
+		entry->resetName(hide_tags, anon_names, hidden);
+	}
+	getChildView("profile_btn")->setEnabled(!hide_tags && !anon_names);
+	getChildView("im_btn")->setEnabled(!hide_tags && !anon_names);
+}
+
 void LLFloaterAvatarList::onClickIM()
 {
 	//llinfos << "LLFloaterFriends::onClickIM()" << llendl;
@@ -1107,6 +1138,11 @@ BOOL LLFloaterAvatarList::handleKeyHere(KEY key, MASK mask)
 			}
 			if (MASK_SHIFT == mask)
 			{
+				if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) // RLVa:LF - Don't you dare!
+				{
+					make_ui_sound("UISndInvalidOp");
+					return true;
+				}
 				onClickIM();
 				return true;
 			}

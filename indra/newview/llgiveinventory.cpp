@@ -327,7 +327,7 @@ void LLGiveInventory::logInventoryOffer(const LLUUID& to_agent, const LLUUID &im
 		gIMMgr->addSystemMessage(im_session_id, "inventory_item_offered", args);
 	}
 // [RLVa:KB] - Checked: 2010-05-26 (RLVa-1.2.2a) | Modified: RLVa-1.2.0h
-	else if ( (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) && (RlvUtil::isNearbyAgent(to_agent)) &&
+	else if ( (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) && (RlvUtil::isNearbyAgent(to_agent)) &&
 		      (!RlvUIEnabler::hasOpenProfile(to_agent)) )
 	{
 		// Log to chat history if the user didn't drop on an IM session or a profile to avoid revealing the name of the recipient

@@ -163,7 +163,7 @@ void LLToolGun::draw()
 		static const LLCachedControl<LLColor4> color("LiruCrosshairColor");
 		LLColor4 targetColor = color;
 		targetColor.mV[VALPHA] = 0.5f;
-		if (show_iff)
+		if (show_iff && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWMINIMAP))
 		{
 			LLVector3d myPosition = gAgentCamera.getCameraPositionGlobal();
 			LLQuaternion myRotation = LLViewerCamera::getInstance()->getQuaternion();
@@ -186,13 +186,15 @@ void LLToolGun::draw()
 				if (magicVector.mdV[VX] > -0.75 && magicVector.mdV[VX] < 0.75 && magicVector.mdV[VZ] > 0.0 && magicVector.mdV[VY] > -1.5 && magicVector.mdV[VY] < 1.5) // Do not fuck with these, cheater. :(
 				{
 					LLAvatarName avatarName;
-					LLAvatarNameCache::get(id, &avatarName);
-					bool name_restricted = gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
+					bool no_names(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS));
+					if (!no_names)
+						LLAvatarNameCache::get(id, &avatarName);
+					bool name_restricted = no_names || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
 					getCustomColorRLV(id, targetColor, world.getRegionFromPosGlobal(targetPosition), name_restricted);
-					const std::string name(name_restricted ? RlvStrings::getAnonym(avatarName.getNSName()) : avatarName.getNSName());
+					const std::string name(no_names ? LLStringUtil::null : name_restricted ? RlvStrings::getAnonym(avatarName.getNSName()) : avatarName.getNSName());
 					targetColor.mV[VALPHA] = 0.5f;
 					LLFontGL::getFontSansSerifBold()->renderUTF8(
-						gRlvHandler.hasBehaviour(RLV_BHVR_SHOWLOC) ? name : llformat("%s : %.2fm", name.c_str(), (targetPosition - myPosition).magVec()),
+						llformat("%s : %.2fm", name.c_str(), (targetPosition - myPosition).magVec()),
 						0, (windowWidth / 2.f), (windowHeight / 2.f) - 25.f, targetColor,
 						LLFontGL::HCENTER, LLFontGL::TOP, LLFontGL::BOLD, LLFontGL::NO_SHADOW
 						);

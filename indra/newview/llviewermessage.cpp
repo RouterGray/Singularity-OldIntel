@@ -3060,7 +3060,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 			if (rlv_handler_t::isEnabled())
 			{
 				// NOTE: the chat message itself will be filtered in LLNearbyChatHandler::processChat()
-				if ( (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) && (!from_group) && (RlvUtil::isNearbyAgent(from_id)) )
+				if ( (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) && (!from_group) && (RlvUtil::isNearbyAgent(from_id)) )
 				{
 					query_string["rlv_shownames"] = TRUE;
 
@@ -7734,6 +7734,7 @@ void send_lures(const LLSD& notification, const LLSD& response)
 	text.append("\r\n").append(slurl.getSLURLString());
 
 // [RLVa:KB] - Checked: 2010-11-30 (RLVa-1.3.0)
+	const std::string& rlv_hidden(RlvStrings::getString(RLV_STRING_HIDDEN));
 	if ( (RlvActions::hasBehaviour(RLV_BHVR_SENDIM)) || (RlvActions::hasBehaviour(RLV_BHVR_SENDIMTO)) )
 	{
 		// Filter the lure message if one of the recipients of the lure can't be sent an IM to
@@ -7742,7 +7743,7 @@ void send_lures(const LLSD& notification, const LLSD& response)
 		{
 			if (!RlvActions::canSendIM(it->asUUID()))
 			{
-				text = RlvStrings::getString(RLV_STRING_HIDDEN);
+				text = rlv_hidden;
 				break;
 			}
 		}
@@ -7757,6 +7758,10 @@ void send_lures(const LLSD& notification, const LLSD& response)
 	msg->nextBlockFast(_PREHASH_Info);
 	msg->addU8Fast(_PREHASH_LureType, (U8)0); // sim will fill this in.
 	msg->addStringFast(_PREHASH_Message, text);
+// [RLVa:KB] - Checked: 2014-03-31 (Catznip-3.6)
+	bool fRlvHideName = gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
+	bool fRlvNoNearbyNames = gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS);
+// [/RLVa:KB]
 	for(LLSD::array_const_iterator it = notification["payload"]["ids"].beginArray();
 		it != notification["payload"]["ids"].endArray();
 		++it)
@@ -7770,13 +7775,15 @@ void send_lures(const LLSD& notification, const LLSD& response)
 		if (notification["payload"]["ids"].size() < 10) // Singu Note: Do NOT spam chat!
 		{
 // [RLVa:KB] - Checked: 2014-03-31 (Catznip-3.6)
-			bool fRlvHideName = notification["payload"]["rlv_shownames"].asBoolean();
+			fRlvHideName |= notification["payload"]["rlv_shownames"].asBoolean();
 // [/RLVa:KB]
 			std::string target_name;
 			gCacheName->getFullName(target_id, target_name);  // for im log filenames
 			LLSD args;
 // [RLVa:KB] - Checked: 2014-03-31 (Catznip-3.6)
-			if (fRlvHideName)
+			if (fRlvNoNearbyNames && RlvUtil::isNearbyAgent(target_id))
+				target_name = rlv_hidden;
+			else if (fRlvHideName)
 				target_name = RlvStrings::getAnonym(target_name);
 			else
 // [/RLVa:KB]

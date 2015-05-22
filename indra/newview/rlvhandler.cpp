@@ -1301,6 +1301,7 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 		// The following block is only valid if there's no option
 		case RLV_BHVR_SHOWLOC:				// @showloc=n|y						- Checked: 2009-12-05 (RLVa-1.1.0h) | Modified: RLVa-1.1.0h
 		case RLV_BHVR_SHOWNAMES:			// @shownames=n|y					- Checked: 2009-12-05 (RLVa-1.1.0h) | Modified: RLVa-1.1.0h
+		case RLV_BHVR_SHOWNAMETAGS:			// @shownametags=n|y					- Checked: 2015-05-20 (RLVa:LF)
 		case RLV_BHVR_EMOTE:				// @emote=n|y						- Checked: 2010-03-26 (RLVa-1.2.0b)
 		case RLV_BHVR_SENDCHAT:				// @sendchat=n|y					- Checked: 2010-03-26 (RLVa-1.2.0b)
 		case RLV_BHVR_CHATWHISPER:			// @chatwhisper=n|y					- Checked: 2010-03-26 (RLVa-1.2.0b)

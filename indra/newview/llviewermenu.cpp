@@ -2500,7 +2500,7 @@ bool enable_object_mute()
 		bool is_self = avatar->isSelf();
 //		return !is_linden && !is_self;
 // [RLVa:KB] - Checked: 2010-08-25 (RLVa-1.2.1b) | Added: RLVa-1.2.1b
-		return !is_linden && !is_self && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
+		return !is_linden && !is_self && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS);
 // [/RLVa:KB]
 	}
 	else
@@ -2534,7 +2534,7 @@ class LLObjectMute : public view_listener_t
 		if (avatar)
 		{
 // [RLVa:KB] - Checked: 2010-08-25 (RLVa-1.2.1b) | Added: RLVa-1.0.0e
-			if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES))
+			if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS))
 				return true;
 // [/RLVa:KB]
 			id = avatar->getID();
@@ -2955,7 +2955,7 @@ void handle_avatar_freeze(const LLSD& avatar_id)
 				LLSD args;
 //				args["AVATAR_NAME"] = fullname;
 // [RLVa:KB] - Checked: 2010-09-28 (RLVa-1.2.1f) | Modified: RLVa-1.0.0e
-				args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) ? fullname : RlvStrings::getAnonym(fullname);
+				args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) ? fullname : RlvStrings::getAnonym(fullname);
 // [/RLVa:KB]
 				LLNotificationsUtil::add("FreezeAvatarFullname",
 							args,
@@ -3155,7 +3155,7 @@ void handle_avatar_eject(const LLSD& avatar_id)
     				LLSD args;
 //					args["AVATAR_NAME"] = fullname;
 // [RLVa:KB] - Checked: 2010-09-28 (RLVa-1.2.1f) | Modified: RLVa-1.0.0e
-					args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) ? fullname : RlvStrings::getAnonym(fullname);
+					args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) ? fullname : RlvStrings::getAnonym(fullname);
 // [/RLVa:KB]
     				LLNotificationsUtil::add("EjectAvatarFullname",
     							args,
@@ -3178,7 +3178,7 @@ void handle_avatar_eject(const LLSD& avatar_id)
     				LLSD args;
 //					args["AVATAR_NAME"] = fullname;
 // [RLVa:KB] - Checked: 2010-09-28 (RLVa-1.2.1f) | Modified: RLVa-1.0.0e
-					args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) ? fullname : RlvStrings::getAnonym(fullname);
+					args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) ? fullname : RlvStrings::getAnonym(fullname);
 // [/RLVa:KB]
     				LLNotificationsUtil::add("EjectAvatarFullnameNoBan",
     							args,
@@ -3281,7 +3281,7 @@ class LLAvatarGiveCard : public view_listener_t
 		LLViewerObject* dest = LLSelectMgr::getInstance()->getSelection()->getPrimaryObject();
 //		if(dest && dest->isAvatar())
 // [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Modified: RLVa-1.2.0d | OK
-		if ( (dest && dest->isAvatar()) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) )
+		if ( (dest && dest->isAvatar()) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) )
 // [/RLVa:KB]
 		{
 			bool found_name = false;
@@ -3739,7 +3739,7 @@ class LLAvatarEnableAddFriend : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object(LLSelectMgr::getInstance()->getSelection()->getPrimaryObject());
 //		bool new_value = avatar && !LLAvatarActions::isFriend(avatar->getID());
 // [RLVa:KB] - Checked: 2010-04-20 (RLVa-1.2.0f) | Modified: RLVa-1.2.0f
-		bool new_value = avatar && !LLAvatarActions::isFriend(avatar->getID()) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
+		bool new_value = avatar && !LLAvatarActions::isFriend(avatar->getID()) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS));
 // [/RLVa:KB]
 		gMenuHolder->findControl(userdata["control"].asString())->setValue(new_value);
 		return true;
@@ -5997,7 +5997,7 @@ class LLAvatarInviteToGroup : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object( LLSelectMgr::getInstance()->getSelection()->getPrimaryObject() );
 //		if(avatar)
 // [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Added: RLVa-1.2.0d
-		if ( (avatar) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) )
+		if ( (avatar) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) )
 // [/RLVa:KB]
 		{
 			LLAvatarActions::inviteToGroup(avatar->getID());
@@ -6013,7 +6013,7 @@ class LLAvatarAddFriend : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object( LLSelectMgr::getInstance()->getSelection()->getPrimaryObject() );
 //		if(avatar && !LLAvatarActions::isFriend(avatar->getID()))
 // [RLVa:KB] - Checked: 2010-04-20 (RLVa-1.2.0f) | Modified: RLVa-1.2.0f
-		if ( (avatar && !LLAvatarActions::isFriend(avatar->getID())) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) )
+		if ( (avatar && !LLAvatarActions::isFriend(avatar->getID())) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) )
 // [/RLVa:KB]
 		{
 			request_friendship(avatar->getID());
@@ -6089,7 +6089,7 @@ bool enable_pay_avatar()
 	LLVOAvatar* avatar = find_avatar_from_object(obj);
 //	return (avatar != NULL);
 // [RLVa:KB] - Checked: 2010-08-25 (RLVa-1.2.1b) | Added: RLVa-1.2.1b
-	return (avatar != NULL) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
+	return (avatar != NULL) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS));
 // [/RLVa:KB]
 }
 
@@ -6357,7 +6357,7 @@ class LLShowAgentProfile : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object(agent_id);
 //		if (avatar)
 // [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Modified: RLVa-1.2.0d
-		if ( (avatar) && ((!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) || (gAgent.getID() == agent_id)) )
+		if ( (avatar) && ((!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) || (gAgent.getID() == agent_id)) )
 // [/RLVa:KB]
 		{
 			LLAvatarActions::showProfile(avatar->getID());
@@ -7013,7 +7013,7 @@ class LLAvatarSendIM : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object( LLSelectMgr::getInstance()->getSelection()->getPrimaryObject() );
 //		if(avatar)
 // [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Added: RLVa-1.2.0d
-		if ((avatar) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)))
+		if ((avatar) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)))
 // [/RLVa:KB]
 		{
 			LLAvatarActions::startIM(avatar->getID());

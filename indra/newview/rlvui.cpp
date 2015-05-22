@@ -67,6 +67,7 @@ RlvUIEnabler::RlvUIEnabler()
 	// onRefreshHoverText()
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWLOC, boost::bind(&RlvUIEnabler::onRefreshHoverText, this)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWNAMES, boost::bind(&RlvUIEnabler::onRefreshHoverText, this)));
+	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWNAMETAGS, boost::bind(&RlvUIEnabler::onRefreshHoverText, this)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWHOVERTEXTALL, boost::bind(&RlvUIEnabler::onRefreshHoverText, this)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWHOVERTEXTWORLD, boost::bind(&RlvUIEnabler::onRefreshHoverText, this)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWHOVERTEXTHUD, boost::bind(&RlvUIEnabler::onRefreshHoverText, this)));
@@ -90,6 +91,7 @@ RlvUIEnabler::RlvUIEnabler()
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWLOC, boost::bind(&RlvUIEnabler::onToggleShowLoc, this)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWMINIMAP, boost::bind(&RlvUIEnabler::onToggleShowMinimap, this)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWNAMES, boost::bind(&RlvUIEnabler::onToggleShowNames, this, _1)));
+	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWNAMETAGS, boost::bind(&RlvUIEnabler::onToggleShowNameTags, this, _1)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWWORLDMAP, boost::bind(&RlvUIEnabler::onToggleShowWorldMap, this)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_UNSIT, boost::bind(&RlvUIEnabler::onToggleUnsit, this)));
 
@@ -305,9 +307,7 @@ void RlvUIEnabler::onToggleShowNames(bool fQuitting)
 	{
 		// Close the "Active Speakers" panel if it's currently visible
 		LLFloaterChat::getInstance()->childSetVisible("active_speakers_panel", false);
-		// Close the "Avatar List/Radar" floater if it's currently visible
-		if (LLFloaterAvatarList::instanceVisible())
-			LLFloaterAvatarList::toggleInstance();
+
 		LLAvatarNameCache::setForceDisplayNames(true);
 	}
 	else
@@ -316,6 +316,23 @@ void RlvUIEnabler::onToggleShowNames(bool fQuitting)
 		const S32 namesys = gSavedSettings.getS32("PhoenixNameSystem");
 		LLAvatarNameCache::setUseDisplayNames(namesys > 0 && namesys < 4);
 	}
+
+	// Reset the names in radar, if it exists
+	if (LLFloaterAvatarList::instanceExists())
+		LLFloaterAvatarList::instance().resetAvatarNames();
+
+	LLVOAvatar::invalidateNameTags();	// See handleDisplayNamesOptionChanged()
+}
+
+// Checked: 2015-05-20 (RLVa:LF)
+void RlvUIEnabler::onToggleShowNameTags(bool fQuitting)
+{
+	if (fQuitting) return; // Nothing to do if the viewer is shutting down
+
+	// Reset the names in radar, if it exists
+	if (LLFloaterAvatarList::instanceExists())
+		LLFloaterAvatarList::instance().resetAvatarNames();
+
 	LLVOAvatar::invalidateNameTags();	// See handleDisplayNamesOptionChanged()
 }
 

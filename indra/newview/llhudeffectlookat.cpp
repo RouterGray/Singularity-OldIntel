@@ -555,7 +555,7 @@ void LLHUDEffectLookAt::render()
 		gGL.popMatrix();
 
 		static LLCachedControl<S32> lookAtNames(gSavedSettings, "LookAtNameSystem", 0);
-		if (lookAtNames >= 0)
+		if (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS) && lookAtNames >= 0)
 		{
 			std::string text;
 			if (!LLAvatarNameCache::getNSName(static_cast<LLVOAvatar*>(mSourceObject.get())->getID(), text, lookAtNames)) return;
