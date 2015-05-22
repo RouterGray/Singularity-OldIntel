@@ -83,6 +83,8 @@
 
 #include "lltrans.h"
 
+#include "rlvhandler.h"
+
 const U32 INCLUDE_SCREENSHOT  = 0x01 << 0;
 
 //-----------------------------------------------------------------------------
@@ -300,7 +302,10 @@ void LLFloaterReporter::callbackAvatarID(const uuid_vec_t& ids, const std::vecto
 {
 	if (ids.empty() || names.empty()) return;
 
-	getChild<LLUICtrl>("abuser_name_edit")->setValue(names[0].getCompleteName());
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS))
+		getChild<LLUICtrl>("abuser_name_edit")->setValue(RlvStrings::getString(RLV_STRING_HIDDEN));
+	else
+		getChild<LLUICtrl>("abuser_name_edit")->setValue(names[0].getCompleteName());
 		
 	mAbuserID = ids[0];
 
@@ -326,9 +331,10 @@ void LLFloaterReporter::onAvatarNameCache(const LLUUID& avatar_id, const LLAvata
 	if (mObjectID == avatar_id)
 	{
 		mOwnerName = av_name.getNSName();
-		getChild<LLUICtrl>("owner_name")->setValue(av_name.getNSName());
-		getChild<LLUICtrl>("object_name")->setValue(av_name.getNSName());
-		getChild<LLUICtrl>("abuser_name_edit")->setValue(av_name.getNSName());
+		const std::string& name(((gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) && RlvUtil::isNearbyAgent(avatar_id)) ? RlvStrings::getString(RLV_STRING_HIDDEN) : mOwnerName);
+		getChild<LLUICtrl>("owner_name")->setValue(name);
+		getChild<LLUICtrl>("object_name")->setValue(name);
+		getChild<LLUICtrl>("abuser_name_edit")->setValue(name);
 	}
 }
 
@@ -506,8 +512,17 @@ void LLFloaterReporter::setPickedObjectProperties(const std::string& object_name
 	getChild<LLUICtrl>("object_name")->setValue(object_name);
 
 
-	getChild<LLUICtrl>("owner_name")->setValue(owner_name);
-	getChild<LLUICtrl>("abuser_name_edit")->setValue(owner_name);
+	if ((gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) && RlvUtil::isNearbyAgent(owner_id))
+	{
+		const std::string& rlv_hidden(RlvStrings::getString(RLV_STRING_HIDDEN));
+		getChild<LLUICtrl>("owner_name")->setValue(rlv_hidden);
+		getChild<LLUICtrl>("abuser_name_edit")->setValue(rlv_hidden);
+	}
+	else
+	{
+		getChild<LLUICtrl>("owner_name")->setValue(owner_name);
+		getChild<LLUICtrl>("abuser_name_edit")->setValue(owner_name);
+	}
 	mAbuserID = owner_id;
 	mOwnerName = owner_name;
 }

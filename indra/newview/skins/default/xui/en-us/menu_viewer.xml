@@ -1075,10 +1075,6 @@
 			<on_click function="ToggleControl" userdata="Nimble"/>
 			<on_check control="Nimble"/>
 		</menu_item_check>
-		<menu_item_check label="Phantom" mouse_opaque="true" name="Phantom">
-			<on_click function="ToggleControl" userdata="Phantom"/>
-			<on_check control="Phantom"/>
-		</menu_item_check>
 		<menu_item_separator mouse_opaque="true" name="separators3"/>
 		<menu_item_check label="Region Tracker" name="Region Tracker">
 			<on_click function="ShowFloater" userdata="region_tracker"/>
