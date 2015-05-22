@@ -792,6 +792,7 @@ void LLSpatialGroup::shift(const LLVector4a &offset)
 	if (!mSpatialPartition->mRenderByGroup && 
 		mSpatialPartition->mPartitionType != LLViewerRegion::PARTITION_TREE &&
 		mSpatialPartition->mPartitionType != LLViewerRegion::PARTITION_TERRAIN &&
+		mSpatialPartition->mPartitionType != LLViewerRegion::PARTITION_ATTACHMENT &&
 		mSpatialPartition->mPartitionType != LLViewerRegion::PARTITION_BRIDGE)
 	{
 		setState(GEOM_DIRTY);

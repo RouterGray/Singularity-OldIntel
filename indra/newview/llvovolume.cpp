@@ -4000,6 +4000,10 @@ U32 LLVOVolume::getPartitionType() const
 	{
 		return LLViewerRegion::PARTITION_HUD;
 	}
+	else if (isAttachment())
+	{
+		return LLViewerRegion::PARTITION_ATTACHMENT;
+	}
 
 	return LLViewerRegion::PARTITION_VOLUME;
 }
@@ -4026,6 +4030,12 @@ LLVolumeBridge::LLVolumeBridge(LLDrawable* drawablep)
 	mBufferUsage = GL_DYNAMIC_DRAW_ARB;
 
 	mSlopRatio = 0.25f;
+}
+
+LLAttachmentBridge::LLAttachmentBridge(LLDrawable* drawablep)
+	: LLVolumeBridge(drawablep)
+{
+	mPartitionType = LLViewerRegion::PARTITION_ATTACHMENT;
 }
 
 bool can_batch_texture(const LLFace* facep)
@@ -6388,11 +6398,6 @@ LLHUDPartition::LLHUDPartition()
 	mDrawableType = LLPipeline::RENDER_TYPE_HUD;
 	mSlopRatio = 0.f;
 	mLODPeriod = 1;
-}
-
-void LLHUDPartition::shift(const LLVector4a &offset)
-{
-	//HUD objects don't shift with region crossing.  That would be silly.
 }
 
 
