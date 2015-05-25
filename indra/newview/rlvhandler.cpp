@@ -1298,10 +1298,42 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 					pObj->mText->setString( (RLV_TYPE_ADD == eType) ? "" : pObj->mText->getObjectText());
 			}
 			break;
+		case RLV_BHVR_CAMZOOMMAX:		// @camzoommax:<max_multiplier>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
+		case RLV_BHVR_CAMZOOMMIN:		// @camzoommin:<min_multiplier>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
+		case RLV_BHVR_CAMDISTMAX:		// @camdistmax:<max_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
+		case RLV_BHVR_CAMDISTMIN:		// @camdistmin:<min_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
+		case RLV_BHVR_CAMDRAWMAX:		// @camdrawmax:<max_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
+		case RLV_BHVR_CAMDRAWMIN:		// @camdrawmin:<min_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
+		case RLV_BHVR_CAMDRAWALPHAMAX:	// @camdrawalphamax:<max_alpha>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
+		case RLV_BHVR_CAMDRAWALPHAMIN:	// @camdrawalphamin:<min_alpha>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
+		case RLV_BHVR_CAMDRAWCOLOR:		// @camdrawcolor:<red>;<green>;<blue>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
+		case RLV_BHVR_CAMAVDIST:		// @camavdist:<distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			break;
 		// The following block is only valid if there's no option
 		case RLV_BHVR_SHOWLOC:				// @showloc=n|y						- Checked: 2009-12-05 (RLVa-1.1.0h) | Modified: RLVa-1.1.0h
 		case RLV_BHVR_SHOWNAMES:			// @shownames=n|y					- Checked: 2009-12-05 (RLVa-1.1.0h) | Modified: RLVa-1.1.0h
 		case RLV_BHVR_SHOWNAMETAGS:			// @shownametags=n|y					- Checked: 2015-05-20 (RLVa:LF)
+		case RLV_BHVR_CAMUNLOCK:		// @camunlock=n|y						- Checked: 2015-05-25 (RLVa:LF)
+		case RLV_BHVR_CAMTEXTURES:		// @camtextures=n|y						- Checked: 2015-05-25 (RLVa:LF)
 		case RLV_BHVR_EMOTE:				// @emote=n|y						- Checked: 2010-03-26 (RLVa-1.2.0b)
 		case RLV_BHVR_SENDCHAT:				// @sendchat=n|y					- Checked: 2010-03-26 (RLVa-1.2.0b)
 		case RLV_BHVR_CHATWHISPER:			// @chatwhisper=n|y					- Checked: 2010-03-26 (RLVa-1.2.0b)

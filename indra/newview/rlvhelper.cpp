@@ -169,7 +169,10 @@ void RlvCommand::initLookupTable()
 				"touchme", "fly", "setgroup", "unsit", "sit", "sittp", "standtp", "setdebug", "setenv", "alwaysrun", "temprun", "detachme", 
 				"attachover", "attachthis", "attachthisover", "attachthis_except", "detachthis", "detachthis_except", "attachall", 
 				"attachallover", "detachall", "attachallthis", "attachallthis_except", "attachallthisover", "detachallthis", 
-				"detachallthis_except", "adjustheight", "tpto", "version", "versionnew", "versionnum", "getattach", "getattachnames", 
+				"detachallthis_except", "adjustheight",
+				"camzoommax", "camzoommin", "camdistmax", "camdistmin", "camdrawmax", "camdrawmin",
+				"camdrawalphamax", "camdrawalphamin", "camdrawcolor", "camunlock", "camavdist", "camtextures",
+				"tpto", "version", "versionnew", "versionnum", "getattach", "getattachnames",
 				"getaddattachnames", "getremattachnames", "getoutfit", "getoutfitnames", "getaddoutfitnames", "getremoutfitnames", 
 				"findfolder", "findfolders", "getpath", "getpathnew", "getinv", "getinvworn", "getgroup", "getsitid", "getcommand", 
 				"getstatus", "getstatusall"
