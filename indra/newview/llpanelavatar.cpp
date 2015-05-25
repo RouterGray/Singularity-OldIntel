@@ -181,7 +181,7 @@ void LLPanelAvatarSecondLife::processProperties(void* data, EAvatarProcessorType
 			LLStringUtil::format_map_t args;
 			args["[ACCTTYPE]"] = LLAvatarPropertiesProcessor::accountType(pAvatarData);
 			args["[PAYMENTINFO]"] = LLAvatarPropertiesProcessor::paymentInfo(pAvatarData);
-			args["[AGEVERIFICATION]"] = " ";
+			args["[AGEVERIFICATION]"] = LLStringUtil::null;
 			
 			getChild<LLUICtrl>("acct")->setValue(getString("CaptionTextAcctInfo", args));
 
@@ -192,8 +192,9 @@ void LLPanelAvatarSecondLife::processProperties(void* data, EAvatarProcessorType
 				using namespace boost::gregorian;
 				int year, month, day;
 				sscanf(pAvatarData->born_on.c_str(),"%d/%d/%d", &month, &day, &year);
+				date birthday(year, month, day), today(day_clock::local_day());
 				std::ostringstream born_on;
-				born_on << pAvatarData->born_on << " (" << day_clock::local_day() - date(year, month, day) << ")";
+				born_on << pAvatarData->born_on << " (" << today - birthday << ')';
 				childSetValue("born", born_on.str());
 			}
 

@@ -1069,28 +1069,12 @@ void LLFloaterIMPanel::onInputEditorKeystroke(LLLineEditor* caller)
 	setTyping(!caller->getText().empty());
 }
 
+void leave_group_chat(const LLUUID& from_id, const LLUUID& session_id);
 void LLFloaterIMPanel::onClose(bool app_quitting)
 {
 	setTyping(false);
 
-	if(mSessionUUID.notNull())
-	{
-		std::string name;
-		gAgent.buildFullname(name);
-		pack_instant_message(
-			gMessageSystem,
-			gAgent.getID(),
-			FALSE,
-			gAgent.getSessionID(),
-			mOtherParticipantUUID,
-			name, 
-			LLStringUtil::null,
-			IM_ONLINE,
-			IM_SESSION_LEAVE,
-			mSessionUUID);
-		gAgent.sendReliableMessage();
-	}
-	gIMMgr->removeSession(mSessionUUID);
+	leave_group_chat(mOtherParticipantUUID, mSessionUUID);
 
 	destroy();
 }
