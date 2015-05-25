@@ -3279,29 +3279,33 @@ class LLAvatarGiveCard : public view_listener_t
 	{
 		llinfos << "handle_give_card()" << llendl;
 		LLViewerObject* dest = LLSelectMgr::getInstance()->getSelection()->getPrimaryObject();
-//		if(dest && dest->isAvatar())
-// [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Modified: RLVa-1.2.0d | OK
-		if ( (dest && dest->isAvatar()) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) )
-// [/RLVa:KB]
+		if (dest && dest->isAvatar())
 		{
 			bool found_name = false;
 			LLSD args;
-			LLSD old_args;
-			LLNameValue* nvfirst = dest->getNVPair("FirstName");
-			LLNameValue* nvlast = dest->getNVPair("LastName");
-			if(nvfirst && nvlast)
+// [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Modified: RLVa-1.2.0d | OK
+			if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS))
 			{
-				args["NAME"] = std::string(nvfirst->getString()) + " " + nvlast->getString();
-				old_args["NAME"] = std::string(nvfirst->getString()) + " " + nvlast->getString();
+				args["NAME"] = RlvStrings::getString(RLV_STRING_HIDDEN);
 				found_name = true;
 			}
-			LLViewerRegion* region = dest->getRegion();
+			else
+// [/RLVa:KB]
+			{
+				LLNameValue* nvfirst = dest->getNVPair("FirstName");
+				LLNameValue* nvlast = dest->getNVPair("LastName");
+				if (nvfirst && nvlast)
+				{
+					args["NAME"] = std::string(nvfirst->getString()) + " " + nvlast->getString();
+					found_name = true;
+				}
+			}
 			LLHost dest_host;
-			if(region)
+			if (LLViewerRegion* region = dest->getRegion())
 			{
 				dest_host = region->getHost();
 			}
-			if(found_name && dest_host.isOk())
+			if (found_name && dest_host.isOk())
 			{
 				LLMessageSystem* msg = gMessageSystem;
 				msg->newMessage("OfferCallingCard");
@@ -3318,7 +3322,7 @@ class LLAvatarGiveCard : public view_listener_t
 			}
 			else
 			{
-				LLNotificationsUtil::add("CantOfferCallingCard", old_args);
+				LLNotificationsUtil::add("CantOfferCallingCard", args);
 			}
 		}
 		return true;
