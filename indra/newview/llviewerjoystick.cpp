@@ -40,6 +40,7 @@
 #include "llagent.h"
 #include "llagentcamera.h"
 #include "llfocusmgr.h"
+#include "rlvhandler.h"
 
 #include <boost/regex.hpp>
 
@@ -1161,7 +1162,8 @@ void LLViewerJoystick::moveFlycam(bool reset)
 // -----------------------------------------------------------------------------
 bool LLViewerJoystick::toggleFlycam()
 {
-	if (!gSavedSettings.getBOOL("JoystickEnabled") || !gSavedSettings.getBOOL("JoystickFlycamEnabled"))
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX) // [RLVa:LF] - @camdistmax means no going away!
+	|| !gSavedSettings.getBOOL("JoystickEnabled") || !gSavedSettings.getBOOL("JoystickFlycamEnabled"))
 	{
 		mOverrideCamera = false;
 		return false;

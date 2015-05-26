@@ -972,6 +972,26 @@ void LLAgentCamera::cameraZoomIn(const F32 fraction)
 //-----------------------------------------------------------------------------
 void LLAgentCamera::cameraOrbitIn(const F32 meters)
 {
+// [RLVa:LF] - @camdistmax, @camdistmin
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX))
+	{
+		F32 dist_max(gRlvHandler.camMax(RLV_BHVR_CAMDISTMAX));
+		if (0 >= dist_max)
+		{
+			if (!cameraMouselook())
+				changeCameraToMouselook();
+			return; // There's no getting out of mouselook
+		}
+	}
+
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMIN))
+	{
+		F32 dist_min(gRlvHandler.camMin(RLV_BHVR_CAMDISTMIN));
+		if (cameraMouselook() && dist_min > 0)
+			changeCameraToDefault(); // Just to be sure we're not in mouselook
+	}
+// [/RLVa:LF]
+
 	if (mFocusOnAvatar && mCameraMode == CAMERA_MODE_THIRD_PERSON)
 	{
 		static const LLCachedControl<F32> camera_offset_scale("CameraOffsetScale");
@@ -2011,6 +2031,35 @@ LLVector3d LLAgentCamera::calcCameraPositionTargetGlobal(BOOL *hit_limit)
 //			}
 	}
 
+// [RLVa:LF] - @camdistmax, @camdistmin
+	if (rlv_handler_t::isEnabled() && !cameraMouselook())
+	{
+		// Constrainy stuffs ish based off above code
+		const LLVector3d agent_pos(gAgent.getPositionGlobal());
+		const LLVector3d offset(camera_position_global - agent_pos);
+		const F32 total_dist(offset.magVec());
+		bool rlvConstrained = false; // You Only Constrain Once
+		if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX))
+		{
+			F32 max_dist(gRlvHandler.camMax(RLV_BHVR_CAMDISTMAX));
+			if (total_dist > max_dist)
+			{
+				camera_position_global = agent_pos + (max_dist/total_dist)*offset;
+				rlvConstrained = isConstrained = true;
+			}
+		}
+		if (!rlvConstrained && gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMIN))
+		{
+			F32 min_dist(gRlvHandler.camMin(RLV_BHVR_CAMDISTMIN));
+			if (total_dist < min_dist)
+			{
+				camera_position_global = agent_pos + (min_dist/total_dist)*offset;
+				rlvConstrained = isConstrained = true;
+			}
+		}
+	}
+// [/RLVa:LF]
+
 	// Don't let camera go underground
 	F32 camera_min_off_ground = getCameraMinOffGround();
 
@@ -2176,6 +2225,8 @@ void LLAgentCamera::resetCamera()
 //-----------------------------------------------------------------------------
 void LLAgentCamera::changeCameraToMouselook(BOOL animate)
 {
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMIN) && gRlvHandler.camMin(RLV_BHVR_CAMDISTMIN) > 0) return; // [RLVa:LF] - @camdistmin
+
 	if (!gSavedSettings.getBOOL("EnableMouselook")
 		|| LLViewerJoystick::getInstance()->getOverrideCamera())
 	{
@@ -2264,6 +2315,8 @@ void LLAgentCamera::changeCameraToDefault()
 //-----------------------------------------------------------------------------
 void LLAgentCamera::changeCameraToFollow(BOOL animate)
 {
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX) && 0 >= gRlvHandler.camMax(RLV_BHVR_CAMDISTMAX)) return; // [RLVa:LF] - @camdistmax
+
 	if (LLViewerJoystick::getInstance()->getOverrideCamera())
 	{
 		return;
@@ -2322,6 +2375,8 @@ void LLAgentCamera::changeCameraToFollow(BOOL animate)
 //-----------------------------------------------------------------------------
 void LLAgentCamera::changeCameraToThirdPerson(BOOL animate)
 {
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX) && 0 >= gRlvHandler.camMax(RLV_BHVR_CAMDISTMAX)) return; // [RLVa:LF] - @camdistmax
+
 	if (LLViewerJoystick::getInstance()->getOverrideCamera())
 	{
 		return;
@@ -2405,6 +2460,8 @@ void LLAgentCamera::changeCameraToThirdPerson(BOOL animate)
 //-----------------------------------------------------------------------------
 void LLAgentCamera::changeCameraToCustomizeAvatar()
 {
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX) && 0 >= gRlvHandler.camMax(RLV_BHVR_CAMDISTMAX)) return; // [RLVa:LF] - @camdistmax
+
 	if (LLViewerJoystick::getInstance()->getOverrideCamera() || !isAgentAvatarValid())
 	{
 		return;

@@ -1365,11 +1365,30 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 			break;
 		}
 		case RLV_BHVR_CAMDISTMAX:		// @camdistmax:<max_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
-			break;
 		case RLV_BHVR_CAMDISTMIN:		// @camdistmin:<min_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+		{
+			F32 zoom;
+			LLStringUtil::convertToF32(strOption, zoom);
+			if (RLV_TYPE_ADD == eType)
+				addException(rlvCmd.getObjectID(), eBhvr, zoom);
+			else
+				removeException(rlvCmd.getObjectID(), eBhvr, zoom);
+			if (hasBehaviour(eBhvr))
+			{
+				if (eBhvr == RLV_BHVR_CAMDISTMAX && zoom <= 0)
+				{
+					if (!gAgentCamera.cameraMouselook())
+						gAgentCamera.changeCameraToMouselook();
+				}
+				else
+				{
+					if (eBhvr == RLV_BHVR_CAMDISTMIN && zoom > 0 && gAgentCamera.cameraMouselook())
+						gAgentCamera.changeCameraToDefault();
+					gAgentCamera.cameraPanUp(0); // Hacky, but meh.
+				}
+			}
 			break;
+		}
 		case RLV_BHVR_CAMDRAWMAX:		// @camdrawmax:<max_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
 			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
 			break;
