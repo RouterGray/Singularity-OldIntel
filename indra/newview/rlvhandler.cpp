@@ -840,6 +840,19 @@ bool RlvHandler::redirectChatOrEmote(const std::string& strUTF8Text) const
 	return true;
 }
 
+LLColor3 RlvHandler::camDrawColor() const
+{
+	LLColor3 ret;
+	U32 count(0);
+	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(RLV_BHVR_CAMDRAWCOLOR), 
+			end = m_Exceptions.upper_bound(RLV_BHVR_CAMDRAWCOLOR); i != end; ++i, ++count)
+		ret += boost::get<LLColor3>(i->second.varOption);
+	ret.mV[0]/=count;
+	ret.mV[1]/=count;
+	ret.mV[2]/=count;
+	return ret;
+}
+
 F32 RlvHandler::camAvDist() const
 {
 	F32 ret(F32_MAX);
@@ -1335,8 +1348,23 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
 			break;
 		case RLV_BHVR_CAMDRAWCOLOR:		// @camdrawcolor:<red>;<green>;<blue>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+		{
+			LLColor3 color;
+			if (!strOption.empty())
+			{
+				boost_tokenizer tokens(strOption, boost::char_separator<char>(";", "", boost::keep_empty_tokens));
+				boost_tokenizer::const_iterator it = tokens.begin();
+				for (U8 i = 0; i < LENGTHOFCOLOR3 && it != tokens.end(); ++it, ++i)
+					LLStringUtil::convertToF32(*it, color.mV[i]);
+				color.clamp();
+			}
+			if (RLV_TYPE_ADD == eType)
+				addException(rlvCmd.getObjectID(), eBhvr, color);
+			else
+				removeException(rlvCmd.getObjectID(), eBhvr, color);
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Hook this up
 			break;
+		}
 		case RLV_BHVR_CAMAVDIST:		// @camavdist:<distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
 		{
 			F32 dist;
