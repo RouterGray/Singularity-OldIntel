@@ -9230,9 +9230,10 @@ void initialize_menus()
 		LLZoomer(F32 val, bool mult=true) : mVal(val), mMult(mult) {}
 		bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 		{
-			F32 new_fov_rad = mMult ? LLViewerCamera::getInstance()->getDefaultFOV() * mVal : mVal;
-			LLViewerCamera::getInstance()->setDefaultFOV(new_fov_rad);
-			gSavedSettings.setF32("CameraAngle", LLViewerCamera::getInstance()->getView()); // setView may have clamped it.
+			LLViewerCamera& inst(LLViewerCamera::instance());
+			F32 new_fov_rad = mMult ? inst.getDefaultFOV() * mVal : mVal;
+			inst.setDefaultFOV(new_fov_rad);
+			gSavedSettings.setF32("CameraAngle", inst.getView()); // setView may have clamped it.
 			return true;
 		}
 	private:

@@ -21,6 +21,7 @@
 #include "llgroupactions.h"
 #include "llhudtext.h"
 #include "llstartup.h"
+#include "llviewercamera.h"
 #include "llviewermessage.h"
 #include "llviewerobjectlist.h"
 #include "llviewerparcelmgr.h"
@@ -840,11 +841,35 @@ bool RlvHandler::redirectChatOrEmote(const std::string& strUTF8Text) const
 	return true;
 }
 
+F32 RlvHandler::camMax(const ERlvBehaviour& bhvr) const
+{
+	F32 ret(F32_MAX);
+	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(bhvr),
+			end = m_Exceptions.upper_bound(bhvr); i != end; ++i)
+	{
+		F32 val(boost::get<F32>(i->second.varOption));
+		if (val < ret) ret = val;
+	}
+	return ret;
+}
+
+F32 RlvHandler::camMin(const ERlvBehaviour& bhvr) const
+{
+	F32 ret(F32_MIN);
+	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(bhvr),
+			end = m_Exceptions.upper_bound(bhvr); i != end; ++i)
+	{
+		F32 val(boost::get<F32>(i->second.varOption));
+		if (val > ret) ret = val;
+	}
+	return ret;
+}
+
 LLColor3 RlvHandler::camDrawColor() const
 {
 	LLColor3 ret;
 	U32 count(0);
-	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(RLV_BHVR_CAMDRAWCOLOR), 
+	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(RLV_BHVR_CAMDRAWCOLOR),
 			end = m_Exceptions.upper_bound(RLV_BHVR_CAMDRAWCOLOR); i != end; ++i, ++count)
 		ret += boost::get<LLColor3>(i->second.varOption);
 	ret.mV[0]/=count;
@@ -856,7 +881,7 @@ LLColor3 RlvHandler::camDrawColor() const
 F32 RlvHandler::camAvDist() const
 {
 	F32 ret(F32_MAX);
-	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(RLV_BHVR_CAMAVDIST), 
+	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(RLV_BHVR_CAMAVDIST),
 			end = m_Exceptions.upper_bound(RLV_BHVR_CAMAVDIST); i != end; ++i)
 	{
 		F32 dist(boost::get<F32>(i->second.varOption));
@@ -1324,11 +1349,21 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 			}
 			break;
 		case RLV_BHVR_CAMZOOMMAX:		// @camzoommax:<max_multiplier>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
-			break;
 		case RLV_BHVR_CAMZOOMMIN:		// @camzoommin:<min_multiplier>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+		{
+			F32 zoom;
+			LLStringUtil::convertToF32(strOption, zoom);
+			if (RLV_TYPE_ADD == eType)
+				addException(rlvCmd.getObjectID(), eBhvr, zoom);
+			else
+				removeException(rlvCmd.getObjectID(), eBhvr, zoom);
+			if (hasBehaviour(eBhvr))
+			{
+				LLViewerCamera& inst(LLViewerCamera::instance());
+				inst.mSavedFOVLoaded ? inst.loadDefaultFOV() : inst.setDefaultFOV(gSavedSettings.getF32("CameraAngle"));
+			}
 			break;
+		}
 		case RLV_BHVR_CAMDISTMAX:		// @camdistmax:<max_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
 			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
 			break;

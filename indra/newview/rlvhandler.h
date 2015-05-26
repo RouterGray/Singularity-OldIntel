@@ -100,7 +100,9 @@ public:
 	bool canTouch(const LLViewerObject* pObj, const LLVector3& posOffset = LLVector3::zero) const;	// @touch
 	bool filterChat(std::string& strUTF8Text, bool fFilterEmote) const;							// @sendchat, @recvchat and @redirchat
 	bool redirectChatOrEmote(const std::string& strUTF8Test) const;								// @redirchat and @rediremote
-	LLColor3 camDrawColor() const;																	// @camdrawcolor
+	F32 camMax(const ERlvBehaviour& bhvr) const;												// @cam*max
+	F32 camMin(const ERlvBehaviour& bhvr) const;												// @cam*min
+	LLColor3 camDrawColor() const;																// @camdrawcolor
 	F32 camAvDist() const;																		// @camavdist
 
 	// Command processing helper functions
