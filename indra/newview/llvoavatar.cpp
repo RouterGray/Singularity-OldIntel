@@ -3795,7 +3795,7 @@ bool LLVOAvatar::isVisuallyMuted() const
 			(mAttachmentGeometryBytes > max_attachment_bytes && max_attachment_bytes > 0) ||
 			(mAttachmentSurfaceArea > max_attachment_area && max_attachment_area > 0.f) ||
 // [RLVa:LF] - RLV 2.9 camavdist
-			(gRlvHandler.hasBehaviour(RLV_BHVR_CAMAVDIST) && (gAgent.getPosGlobalFromAgent(const_cast<LLVOAvatar&>(*this).getCharacterPosition()) - gAgent.getPosGlobalFromAgent(gAgentAvatarp->getRenderPosition())).magVec() > gRlvHandler.camAvDist()) ||
+			(gRlvHandler.hasBehaviour(RLV_BHVR_CAMAVDIST) && (gAgent.getPosGlobalFromAgent(const_cast<LLVOAvatar&>(*this).getCharacterPosition()) - gAgent.getPosGlobalFromAgent(gAgentAvatarp->getRenderPosition())).magVec() > gRlvHandler.camPole(RLV_BHVR_CAMAVDIST)) ||
 // [/RLVa:LF]
 			isLangolier();
 	}

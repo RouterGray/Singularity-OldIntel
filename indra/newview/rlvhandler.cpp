@@ -16,6 +16,7 @@
 
 #include "llviewerprecompiledheaders.h"
 #include "llagent.h"
+#include "llagentcamera.h"
 #include "llappearancemgr.h"
 #include "llappviewer.h"
 #include "llgroupactions.h"
@@ -841,28 +842,16 @@ bool RlvHandler::redirectChatOrEmote(const std::string& strUTF8Text) const
 	return true;
 }
 
-F32 RlvHandler::camMax(const ERlvBehaviour& bhvr) const
+void RlvHandler::updatePole(const ERlvBehaviour& bhvr, bool max)
 {
-	F32 ret(F32_MAX);
+	F32 pole(max ? F32_MAX : F32_MIN);
 	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(bhvr),
 			end = m_Exceptions.upper_bound(bhvr); i != end; ++i)
 	{
 		F32 val(boost::get<F32>(i->second.varOption));
-		if (val < ret) ret = val;
+		if (max ? val < pole : val > pole) pole = val;
 	}
-	return ret;
-}
-
-F32 RlvHandler::camMin(const ERlvBehaviour& bhvr) const
-{
-	F32 ret(F32_MIN);
-	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(bhvr),
-			end = m_Exceptions.upper_bound(bhvr); i != end; ++i)
-	{
-		F32 val(boost::get<F32>(i->second.varOption));
-		if (val > ret) ret = val;
-	}
-	return ret;
+	m_Poles[bhvr] = pole;
 }
 
 LLColor3 RlvHandler::camDrawColor() const
@@ -875,18 +864,6 @@ LLColor3 RlvHandler::camDrawColor() const
 	ret.mV[0]/=count;
 	ret.mV[1]/=count;
 	ret.mV[2]/=count;
-	return ret;
-}
-
-F32 RlvHandler::camAvDist() const
-{
-	F32 ret(F32_MAX);
-	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(RLV_BHVR_CAMAVDIST),
-			end = m_Exceptions.upper_bound(RLV_BHVR_CAMAVDIST); i != end; ++i)
-	{
-		F32 dist(boost::get<F32>(i->second.varOption));
-		if (ret > dist) ret = dist;
-	}
 	return ret;
 }
 
@@ -1357,6 +1334,7 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 				addException(rlvCmd.getObjectID(), eBhvr, zoom);
 			else
 				removeException(rlvCmd.getObjectID(), eBhvr, zoom);
+			updatePole(eBhvr, eBhvr == RLV_BHVR_CAMDISTMAX);
 			if (hasBehaviour(eBhvr))
 			{
 				LLViewerCamera& inst(LLViewerCamera::instance());
@@ -1373,6 +1351,7 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 				addException(rlvCmd.getObjectID(), eBhvr, zoom);
 			else
 				removeException(rlvCmd.getObjectID(), eBhvr, zoom);
+			updatePole(eBhvr, eBhvr == RLV_BHVR_CAMDISTMAX);
 			if (hasBehaviour(eBhvr))
 			{
 				if (eBhvr == RLV_BHVR_CAMDISTMAX && zoom <= 0)
@@ -1427,6 +1406,7 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 				addException(rlvCmd.getObjectID(), eBhvr, dist);
 			else
 				removeException(rlvCmd.getObjectID(), eBhvr, dist);
+			updatePole(eBhvr, false);
 			break;
 		}
 		// The following block is only valid if there's no option

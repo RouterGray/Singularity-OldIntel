@@ -722,9 +722,9 @@ BOOL LLViewerCamera::areVertsVisible(LLViewerObject* volumep, BOOL all_verts)
 
 // RLVa:LF - @camzoommax
 	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMZOOMMAX))
-		vertical_fov_rads = llmin(vertical_fov_rads, gRlvHandler.camMax(RLV_BHVR_CAMZOOMMAX));
+		vertical_fov_rads = llmin(vertical_fov_rads, gRlvHandler.camPole(RLV_BHVR_CAMZOOMMAX));
 	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMZOOMMIN))
-		vertical_fov_rads = llmax(vertical_fov_rads, gRlvHandler.camMin(RLV_BHVR_CAMZOOMMIN));
+		vertical_fov_rads = llmax(vertical_fov_rads, gRlvHandler.camPole(RLV_BHVR_CAMZOOMMIN));
 
 	if (vertical_fov_rads == old_fov) return;
 
