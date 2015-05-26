@@ -840,6 +840,18 @@ bool RlvHandler::redirectChatOrEmote(const std::string& strUTF8Text) const
 	return true;
 }
 
+F32 RlvHandler::camAvDist() const
+{
+	F32 ret(F32_MAX);
+	for (rlv_exception_map_t::const_iterator i = m_Exceptions.lower_bound(RLV_BHVR_CAMAVDIST), 
+			end = m_Exceptions.upper_bound(RLV_BHVR_CAMAVDIST); i != end; ++i)
+	{
+		F32 dist(boost::get<F32>(i->second.varOption));
+		if (ret > dist) ret = dist;
+	}
+	return ret;
+}
+
 // ============================================================================
 // Composite folders
 //
@@ -1326,8 +1338,15 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
 			break;
 		case RLV_BHVR_CAMAVDIST:		// @camavdist:<distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+		{
+			F32 dist;
+			LLStringUtil::convertToF32(strOption, dist);
+			if (RLV_TYPE_ADD == eType)
+				addException(rlvCmd.getObjectID(), eBhvr, dist);
+			else
+				removeException(rlvCmd.getObjectID(), eBhvr, dist);
 			break;
+		}
 		// The following block is only valid if there's no option
 		case RLV_BHVR_SHOWLOC:				// @showloc=n|y						- Checked: 2009-12-05 (RLVa-1.1.0h) | Modified: RLVa-1.1.0h
 		case RLV_BHVR_SHOWNAMES:			// @shownames=n|y					- Checked: 2009-12-05 (RLVa-1.1.0h) | Modified: RLVa-1.1.0h
