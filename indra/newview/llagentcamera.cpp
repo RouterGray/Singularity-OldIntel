@@ -369,6 +369,8 @@ void LLAgentCamera::resetView(BOOL reset_camera, BOOL change_camera)
 //-----------------------------------------------------------------------------
 void LLAgentCamera::unlockView()
 {
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMUNLOCK)) return; // [RLVa:LF] - camunlock
+
 	if (getFocusOnAvatar())
 	{
 		if (isAgentAvatarValid())
@@ -1853,7 +1855,7 @@ LLVector3d LLAgentCamera::calcCameraPositionTargetGlobal(BOOL *hit_limit)
 
 			static const LLCachedControl<bool> sg_ignore_sim_cam_consts("SGIgnoreSimulatorCameraConstraints",false);
 			if ( !mCameraCollidePlane.isExactlyZero()
-				 && !sg_ignore_sim_cam_consts
+				 && (!sg_ignore_sim_cam_consts || gRlvHandler.hasBehaviour(RLV_BHVR_CAMUNLOCK))
 				 && isAgentAvatarValid()
 				 && !gAgentAvatarp->isSitting())
 			{

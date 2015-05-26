@@ -95,6 +95,9 @@ RlvUIEnabler::RlvUIEnabler()
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_SHOWWORLDMAP, boost::bind(&RlvUIEnabler::onToggleShowWorldMap, this)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_UNSIT, boost::bind(&RlvUIEnabler::onToggleUnsit, this)));
 
+	// onToggleCamXXX
+	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_CAMUNLOCK, boost::bind(&RlvUIEnabler::onToggleCamUnlock, this)));
+
 	// onToggleTp
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_TPLOC, boost::bind(&RlvUIEnabler::onToggleTp, this)));
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_TPLM, boost::bind(&RlvUIEnabler::onToggleTp, this)));
@@ -344,6 +347,13 @@ void RlvUIEnabler::onToggleShowWorldMap()
 	// Simulate clicking the Map button [see LLToolBar::onClickMap()]
 	if ((!fEnable) && gFloaterWorldMap->getVisible())
 		LLFloaterWorldMap::toggle();
+}
+
+// Checked: 2015-05-25 (RLVa:LF)
+void RlvUIEnabler::onToggleCamUnlock()
+{
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMUNLOCK))
+		gAgentCamera.resetView(true, true);
 }
 
 // Checked: 2010-08-22 (RLVa-1.2.1a) | Added: RLVa-1.2.1a
