@@ -1369,17 +1369,24 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 			break;
 		}
 		case RLV_BHVR_CAMDRAWMAX:		// @camdrawmax:<max_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
-			break;
 		case RLV_BHVR_CAMDRAWMIN:		// @camdrawmin:<min_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
-			break;
 		case RLV_BHVR_CAMDRAWALPHAMAX:	// @camdrawalphamax:<max_alpha>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
-			break;
 		case RLV_BHVR_CAMDRAWALPHAMIN:	// @camdrawalphamin:<min_alpha>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+		{
+			F32 param;
+			LLStringUtil::convertToF32(strOption, param);
+			if (RLV_TYPE_ADD == eType)
+				addException(rlvCmd.getObjectID(), eBhvr, param);
+			else
+				removeException(rlvCmd.getObjectID(), eBhvr, param);
+			updatePole(eBhvr, eBhvr == RLV_BHVR_CAMDRAWMAX || eBhvr == RLV_BHVR_CAMDRAWALPHAMAX);
+			if (hasBehaviour(eBhvr))
+			{
+				// Singu TODO: Implement
+			}
 			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
 			break;
+		}
 		case RLV_BHVR_CAMDRAWCOLOR:		// @camdrawcolor:<red>;<green>;<blue>=n|y			- Checked: 2015-05-25 (RLVa:LF)
 		{
 			LLColor3 color;
