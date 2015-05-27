@@ -1162,7 +1162,7 @@ void LLViewerJoystick::moveFlycam(bool reset)
 // -----------------------------------------------------------------------------
 bool LLViewerJoystick::toggleFlycam()
 {
-	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX) // [RLVa:LF] - @camdistmax means no going away!
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX) || (gRlvHandler.hasBehaviour(RLV_BHVR_CAMUNLOCK) // [RLVa:LF] - @camdistmax and @camunlock mean no going away!
 	|| !gSavedSettings.getBOOL("JoystickEnabled") || !gSavedSettings.getBOOL("JoystickFlycamEnabled"))
 	{
 		mOverrideCamera = false;
