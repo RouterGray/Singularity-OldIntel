@@ -333,8 +333,8 @@ void LLImageGL::destroyGL(BOOL save_state)
 		gGL.getTexUnit(stage)->unbind(LLTexUnit::TT_TEXTURE);
 	}
 	
-	int stored_count = 0;
 	sAllowReadBackRaw = true ;
+	std::set<LLImageGL*> stored_images;
 	for (std::set<LLImageGL*>::iterator iter = sImageList.begin();
 		 iter != sImageList.end(); iter++)
 	{
@@ -346,20 +346,21 @@ void LLImageGL::destroyGL(BOOL save_state)
 				glimage->mSaveData = new LLImageRaw;
 				if(!glimage->readBackRaw(glimage->mCurrentDiscardLevel, glimage->mSaveData, false)) //necessary, keep it.
 				{
-					glimage->mSaveData = NULL ;
+					delete glimage;
 				}
 				else
 				{
 					glimage->mSaveDiscardLevel = glimage->mCurrentDiscardLevel;
-					stored_count++;
+					stored_images.insert(glimage);
+					glimage->destroyGLTexture();
 				}
 			}
-
-			glimage->destroyGLTexture();
+			
 			stop_glerror();
 		}
 	}
-	llinfos << "Storing " << stored_count << " images..." << llendl;
+	sImageList = stored_images;
+	llinfos << "Storing " << stored_images.size() << " images..." << llendl;
 	sAllowReadBackRaw = false ;
 }
 
@@ -367,7 +368,7 @@ void LLImageGL::destroyGL(BOOL save_state)
 void LLImageGL::restoreGL()
 {
 	
-	int recovered_count = 0;
+	std::set<LLImageGL*> restored_images;
 	for (std::set<LLImageGL*>::iterator iter = sImageList.begin();
 		 iter != sImageList.end(); iter++)
 	{
@@ -376,19 +377,22 @@ void LLImageGL::restoreGL()
 		{
 			llerrs << "tex name is not 0." << llendl ;
 		}
-		if (glimage->mSaveData.notNull())
+		if (glimage->mSaveData.notNull() && glimage->getComponents() &&
+			glimage->mSaveData->getComponents() &&
+			glimage->mSaveDiscardLevel >= 0 &&
+			glimage->createGLTexture(glimage->mSaveDiscardLevel, glimage->mSaveData, 0, TRUE, glimage->getCategory()))
 		{
-			if (glimage->getComponents() && glimage->mSaveData->getComponents() && glimage->mSaveDiscardLevel >= 0)
-			{
-				glimage->createGLTexture(glimage->mSaveDiscardLevel, glimage->mSaveData, 0, TRUE, glimage->getCategory());
 				stop_glerror();
-				recovered_count++;
-			}
-			glimage->mSaveData = NULL; // deletes data
-			glimage->mSaveDiscardLevel = -1;
+				restored_images.insert(glimage);
+		}
+		else
+		{
+			delete glimage;
 		}
 	}
-	llinfos << "Restored " << recovered_count << " images" << llendl;
+
+	restored_images = restored_images;
+	llinfos << "Restored " << restored_images.size() << " images" << llendl;
 }
 
 //static 
