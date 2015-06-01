@@ -91,7 +91,7 @@ public:
 
 		D = lerp(A, B, s[VY]);
 
-		return lerp(C, D, s[VZ]);
+		return lerp(C, D, s[VZ]) * 0.77f;
 	}
 	template <typename T>
 	static F32 turbulence(const T& vec, F32 freq, U32 wrap_at = 256)
@@ -159,7 +159,7 @@ private:
 		const U32 limit = llclamp(wrap_at, U32(1), U32(256));
 		for (U32 i = 0; i < N; ++i)
 		{
-			const S32 t_S32 = lltrunc(vec[i]);
+			const S32 t_S32 = llfloor(vec[i]);
 			b[i][0] = (t_S32) % limit;
 			b[i][1] = (t_S32 + 1) % limit;
 			r[i][0] = vec[i] - F32(t_S32);
