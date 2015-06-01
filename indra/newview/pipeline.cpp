@@ -491,6 +491,8 @@ void LLPipeline::init()
 	gSavedSettings.getControl("RenderFSAASamples")->getCommitSignal()->connect(boost::bind(&LLPipeline::refreshCachedSettings));
 	//gSavedSettings.getControl("RenderAvatarVP")->getCommitSignal()->connect(boost::bind(&LLPipeline::refreshCachedSettings));	//Already registered to handleSetShaderChanged
 	//gSavedSettings.getControl("WindLightUseAtmosShaders")->getCommitSignal()->connect(boost::bind(&LLPipeline::refreshCachedSettings)); //Already registered to handleSetShaderChanged
+
+	gGL.init();
 }
 
 LLPipeline::~LLPipeline()
@@ -6743,6 +6745,8 @@ void LLPipeline::doResetVertexBuffers()
 	//delete all name pool caches
 	LLGLNamePool::cleanupPools();
 
+	gGL.resetVertexBuffers();
+
 	if (LLVertexBuffer::sGLCount > 0)
 	{
 		llwarns << "VBO wipe failed -- " << LLVertexBuffer::sGLCount << " buffers remaining." << llendl;
@@ -6762,6 +6766,8 @@ void LLPipeline::doResetVertexBuffers()
 	LLVertexBuffer::initClass(LLVertexBuffer::sEnableVBOs, LLVertexBuffer::sDisableVBOMapping);
 
 	LLVOPartGroup::restoreGL();
+
+	gGL.restoreVertexBuffers();
 }
 
 void LLPipeline::renderObjects(U32 type, U32 mask, BOOL texture, BOOL batch_texture)

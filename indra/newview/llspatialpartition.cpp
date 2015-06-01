@@ -2175,6 +2175,10 @@ public:
 		for (LLSpatialGroup::element_iter i = group->getDataBegin(); i != group->getDataEnd(); ++i)
 		{
 			LLDrawable* drawable = *i;
+			if (drawable->getVObj().notNull())
+			{
+				drawable->getVObj()->resetVertexBuffers();
+			}
 			if (drawable->getVObj().notNull() && !group->mSpatialPartition->mRenderByGroup)
 			{
 				gPipeline.markRebuild(drawable, LLDrawable::REBUILD_ALL, TRUE);

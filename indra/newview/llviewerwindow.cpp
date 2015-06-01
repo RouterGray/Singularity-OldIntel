@@ -1737,7 +1737,6 @@ LLViewerWindow::LLViewerWindow(
 	}
 	LLVertexBuffer::initClass(gSavedSettings.getBOOL("RenderVBOEnable"), gSavedSettings.getBOOL("RenderVBOMappingDisable"));
 	LL_INFOS("RenderInit") << "LLVertexBuffer initialization done." << LL_ENDL ;
-	gGL.init() ;
 	LLImageGL::initClass(LLViewerTexture::MAX_GL_IMAGE_CATEGORY) ;
 
 	if (LLFeatureManager::getInstance()->isSafe()
@@ -5307,6 +5306,8 @@ void LLViewerWindow::stopGL(BOOL save_state)
 
 		gGLManager.mIsDisabled = TRUE;
 		stop_glerror();
+
+		gGL.resetVertexBuffers();
 		
 		llinfos << "Remaining allocated texture memory: " << LLImageGL::sGlobalTextureMemoryInBytes << " bytes" << llendl;
 	}
@@ -5323,6 +5324,7 @@ void LLViewerWindow::restoreGL(const std::string& progress_message)
 		llinfos << "Restoring GL..." << llendl;
 		gGLManager.mIsDisabled = FALSE;
 		
+		gGL.init();
 		initGLDefaults();
 		gGL.refreshState();	//Singu Note: Call immediately. Cached states may have prevented initGLDefaults from actually applying changes.
 		LLGLState::restoreGL();
