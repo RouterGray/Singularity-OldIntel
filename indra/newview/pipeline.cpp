@@ -1288,11 +1288,13 @@ S32 LLPipeline::setLightingDetail(S32 level)
 	}
 	level = llclamp(level, 0, getMaxLightingDetail());
 	//Bugfix: If setshaders was called with RenderLocalLights off then enabling RenderLocalLights later will not work. Reloading shaders fixes this.
-	if (level != mLightingDetail && LLGLSLShader::sNoFixedFunction)
+	if (level != mLightingDetail)
 	{
-		LLViewerShaderMgr::instance()->setShaders();
+		mLightingDetail = level;
+		if (LLGLSLShader::sNoFixedFunction)
+			LLViewerShaderMgr::instance()->setShaders();
 	}
-	mLightingDetail = level;
+
 	return mLightingDetail;
 }
 
