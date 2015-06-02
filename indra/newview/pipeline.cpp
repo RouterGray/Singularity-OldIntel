@@ -491,6 +491,8 @@ void LLPipeline::init()
 	gSavedSettings.getControl("RenderFSAASamples")->getCommitSignal()->connect(boost::bind(&LLPipeline::refreshCachedSettings));
 	//gSavedSettings.getControl("RenderAvatarVP")->getCommitSignal()->connect(boost::bind(&LLPipeline::refreshCachedSettings));	//Already registered to handleSetShaderChanged
 	//gSavedSettings.getControl("WindLightUseAtmosShaders")->getCommitSignal()->connect(boost::bind(&LLPipeline::refreshCachedSettings)); //Already registered to handleSetShaderChanged
+
+	gGL.init();
 }
 
 LLPipeline::~LLPipeline()
@@ -1206,10 +1208,7 @@ void LLPipeline::restoreGL()
 {
 	assertInitialized();
 
-	if (LLGLSLShader::sNoFixedFunction)
-	{
-		LLViewerShaderMgr::instance()->setShaders();
-	}
+	LLViewerShaderMgr::instance()->setShaders();
 
 	for (LLWorld::region_list_t::const_iterator iter = LLWorld::getInstance()->getRegionList().begin(); 
 			iter != LLWorld::getInstance()->getRegionList().end(); ++iter)
@@ -1291,11 +1290,13 @@ S32 LLPipeline::setLightingDetail(S32 level)
 	}
 	level = llclamp(level, 0, getMaxLightingDetail());
 	//Bugfix: If setshaders was called with RenderLocalLights off then enabling RenderLocalLights later will not work. Reloading shaders fixes this.
-	if (level != mLightingDetail && LLGLSLShader::sNoFixedFunction)
+	if (level != mLightingDetail)
 	{
-		LLViewerShaderMgr::instance()->setShaders();
+		mLightingDetail = level;
+		if (LLGLSLShader::sNoFixedFunction)
+			LLViewerShaderMgr::instance()->setShaders();
 	}
-	mLightingDetail = level;
+
 	return mLightingDetail;
 }
 
@@ -6495,6 +6496,7 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
 		for (U32 j = 0; j < LLViewerRegion::NUM_PARTITIONS; j++)
 		{
 			if ((j == LLViewerRegion::PARTITION_VOLUME) || 
+				(j == LLViewerRegion::PARTITION_ATTACHMENT) ||
 				(j == LLViewerRegion::PARTITION_BRIDGE) || 
 				(j == LLViewerRegion::PARTITION_TERRAIN) ||
 				(j == LLViewerRegion::PARTITION_TREE) ||
@@ -6557,7 +6559,7 @@ LLViewerObject* LLPipeline::lineSegmentIntersectInWorld(const LLVector4a& start,
 		{
 			LLViewerRegion* region = *iter;
 
-			LLSpatialPartition* part = region->getSpatialPartition(LLViewerRegion::PARTITION_BRIDGE);
+			LLSpatialPartition* part = region->getSpatialPartition(LLViewerRegion::PARTITION_ATTACHMENT);
 			if (part && hasRenderType(part->mDrawableType))
 			{
 				LLDrawable* hit = part->lineSegmentIntersect(start, local_end, pick_transparent, face_hit, &position, tex_coord, normal, tangent);
@@ -6743,6 +6745,8 @@ void LLPipeline::doResetVertexBuffers()
 	//delete all name pool caches
 	LLGLNamePool::cleanupPools();
 
+	gGL.resetVertexBuffers();
+
 	if (LLVertexBuffer::sGLCount > 0)
 	{
 		llwarns << "VBO wipe failed -- " << LLVertexBuffer::sGLCount << " buffers remaining." << llendl;
@@ -6762,6 +6766,8 @@ void LLPipeline::doResetVertexBuffers()
 	LLVertexBuffer::initClass(LLVertexBuffer::sEnableVBOs, LLVertexBuffer::sDisableVBOMapping);
 
 	LLVOPartGroup::restoreGL();
+
+	gGL.restoreVertexBuffers();
 }
 
 void LLPipeline::renderObjects(U32 type, U32 mask, BOOL texture, BOOL batch_texture)

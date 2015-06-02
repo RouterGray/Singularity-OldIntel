@@ -4000,6 +4000,10 @@ U32 LLVOVolume::getPartitionType() const
 	{
 		return LLViewerRegion::PARTITION_HUD;
 	}
+	else if (isAttachment())
+	{
+		return LLViewerRegion::PARTITION_ATTACHMENT;
+	}
 
 	return LLViewerRegion::PARTITION_VOLUME;
 }
@@ -4026,6 +4030,12 @@ LLVolumeBridge::LLVolumeBridge(LLDrawable* drawablep)
 	mBufferUsage = GL_DYNAMIC_DRAW_ARB;
 
 	mSlopRatio = 0.25f;
+}
+
+LLAttachmentBridge::LLAttachmentBridge(LLDrawable* drawablep)
+	: LLVolumeBridge(drawablep)
+{
+	mPartitionType = LLViewerRegion::PARTITION_ATTACHMENT;
 }
 
 bool can_batch_texture(const LLFace* facep)
@@ -5209,29 +5219,22 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
 	//PROCESS NON-ALPHA FACES
 	U32 simple_mask = LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_NORMAL | LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_COLOR;
 	U32 alpha_mask = simple_mask | 0x80000000; //hack to give alpha verts their own VBO
-	U32 bump_mask = simple_mask | LLVertexBuffer::MAP_TEXCOORD1 | LLVertexBuffer::MAP_TANGENT;
+	U32 bump_mask = simple_mask | LLVertexBuffer::MAP_TEXCOORD1;
 	U32 fullbright_mask = LLVertexBuffer::MAP_TEXCOORD0 | LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_COLOR;
 
 	U32 norm_mask = simple_mask | LLVertexBuffer::MAP_TEXCOORD1 | LLVertexBuffer::MAP_TANGENT;
 	U32 normspec_mask = norm_mask | LLVertexBuffer::MAP_TEXCOORD2;
 	U32 spec_mask = simple_mask | LLVertexBuffer::MAP_TEXCOORD2;
 
-	if (emissive)
-	{ //emissive faces are present, include emissive byte to preserve batching
-		simple_mask = simple_mask | LLVertexBuffer::MAP_EMISSIVE;
-		alpha_mask = alpha_mask | LLVertexBuffer::MAP_EMISSIVE;
-		bump_mask = bump_mask | LLVertexBuffer::MAP_EMISSIVE;
-		fullbright_mask = fullbright_mask | LLVertexBuffer::MAP_EMISSIVE;
-		norm_mask = norm_mask | LLVertexBuffer::MAP_EMISSIVE;
-		normspec_mask = normspec_mask | LLVertexBuffer::MAP_EMISSIVE;
-		spec_mask = spec_mask | LLVertexBuffer::MAP_EMISSIVE;
-	}
-
 	BOOL batch_textures = LLGLSLShader::sNoFixedFunction;
 
 	U32 additional_flags = 0x0;
 	if(batch_textures)
 		additional_flags |= LLVertexBuffer::MAP_TEXTURE_INDEX;
+	if (LLPipeline::sRenderDeferred)
+		bump_mask = norm_mask;
+
+	//emissive faces are present, include emissive byte to preserve batching
 	if(emissive)
 		additional_flags |= LLVertexBuffer::MAP_EMISSIVE;
 
@@ -6388,11 +6391,6 @@ LLHUDPartition::LLHUDPartition()
 	mDrawableType = LLPipeline::RENDER_TYPE_HUD;
 	mSlopRatio = 0.f;
 	mLODPeriod = 1;
-}
-
-void LLHUDPartition::shift(const LLVector4a &offset)
-{
-	//HUD objects don't shift with region crossing.  That would be silly.
 }
 
 

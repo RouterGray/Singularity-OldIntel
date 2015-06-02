@@ -35,15 +35,7 @@
 class LLPerlinNoise
 {
 public:
-	template<typename T>
-	static F32 noise(const T& x, U32 wrap_at);
-	template<typename T>
-	static F32 noise(const T& x)
-	{
-		return noise(x, 256);
-	}
-	template<>
-	static F32 noise(const F32& x, U32 wrap_at)
+	static F32 noise(const F32& x, U32 wrap_at = 256)
 	{
 		U8 b[1][2];
 		F32 r[1][2], s[1], u, v;
@@ -55,8 +47,7 @@ public:
 
 		return lerp(u, v, s[VX]);
 	}
-	template <>
-	static F32 noise(const LLVector2& vec, U32 wrap_at)
+	static F32 noise(const LLVector2& vec, U32 wrap_at = 256)
 	{
 		U8 b[2][2];
 		F32 r[2][2], s[2], u, v, A, B;
@@ -73,8 +64,7 @@ public:
 
 		return lerp(A, B, s[VY]);
 	}
-	template <>
-	static F32 noise(const LLVector3& vec, U32 wrap_at)
+	static F32 noise(const LLVector3& vec, U32 wrap_at = 256)
 	{
 		U8 b[3][2];
 		F32 r[3][2], s[3], u, v, A, B, C, D;
@@ -101,7 +91,7 @@ public:
 
 		D = lerp(A, B, s[VY]);
 
-		return lerp(C, D, s[VZ]);
+		return lerp(C, D, s[VZ]) * 0.77f;
 	}
 	template <typename T>
 	static F32 turbulence(const T& vec, F32 freq, U32 wrap_at = 256)
@@ -169,7 +159,7 @@ private:
 		const U32 limit = llclamp(wrap_at, U32(1), U32(256));
 		for (U32 i = 0; i < N; ++i)
 		{
-			const S32 t_S32 = lltrunc(vec[i]);
+			const S32 t_S32 = llfloor(vec[i]);
 			b[i][0] = (t_S32) % limit;
 			b[i][1] = (t_S32 + 1) % limit;
 			r[i][0] = vec[i] - F32(t_S32);

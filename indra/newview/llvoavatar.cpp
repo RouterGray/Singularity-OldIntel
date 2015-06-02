@@ -9029,7 +9029,7 @@ void LLVOAvatar::updateSoftwareSkinnedVertices(const LLMeshSkinInfo* skin, const
 U32 LLVOAvatar::getPartitionType() const
 { 
 	// Avatars merely exist as drawables in the bridge partition
-	return LLViewerRegion::PARTITION_BRIDGE;
+	return LLViewerRegion::PARTITION_ATTACHMENT;
 }
 
 //static

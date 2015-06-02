@@ -380,6 +380,7 @@ void LLViewerRegion::initPartitions()
 	mImpl->mObjectPartition.push_back(new LLGrassPartition());		//PARTITION_GRASS
 	mImpl->mObjectPartition.push_back(new LLVolumePartition());	//PARTITION_VOLUME
 	mImpl->mObjectPartition.push_back(new LLBridgePartition());	//PARTITION_BRIDGE
+	mImpl->mObjectPartition.push_back(new LLAttachmentPartition());	//PARTITION_ATTACHMENT
 	mImpl->mObjectPartition.push_back(new LLHUDParticlePartition());//PARTITION_HUD_PARTICLE
 	mImpl->mObjectPartition.push_back(NULL);						//PARTITION_NONE
 }

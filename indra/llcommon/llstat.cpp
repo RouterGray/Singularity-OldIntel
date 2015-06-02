@@ -113,8 +113,8 @@ void LLStat::addValue(const F32 value)
 	}
 
 	// Increment the bin counters.
-	mCurBin = ++mCurBin % mNumBins;
-	mNextBin = ++mNextBin % mNumBins;
+	mCurBin = (mCurBin+1) % mNumBins;
+	mNextBin = (mNextBin+1) % mNumBins;
 
 	mBins[mCurBin].mValue = value;
 	if (mUseFrameTimer)

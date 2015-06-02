@@ -1056,6 +1056,10 @@ LLSpatialPartition* LLDrawable::getSpatialPartition()
 			{
 				setSpatialBridge(new LLHUDBridge(this));
 			}
+			else if (mVObjp->isAttachment())
+			{
+				setSpatialBridge(new LLAttachmentBridge(this));
+			}
 			else
 			{
 				setSpatialBridge(new LLVolumeBridge(this));
@@ -1663,10 +1667,16 @@ void LLDrawable::updateFaceSize(S32 idx)
 LLBridgePartition::LLBridgePartition()
 : LLSpatialPartition(0, FALSE, 0) 
 { 
-	mDrawableType = LLPipeline::RENDER_TYPE_AVATAR; 
+	mDrawableType = LLPipeline::RENDER_TYPE_VOLUME;
 	mPartitionType = LLViewerRegion::PARTITION_BRIDGE;
 	mLODPeriod = 16;
 	mSlopRatio = 0.25f;
+}
+
+LLAttachmentPartition::LLAttachmentPartition()
+: LLBridgePartition()
+{
+	mDrawableType = LLPipeline::RENDER_TYPE_AVATAR;
 }
 
 LLHUDBridge::LLHUDBridge(LLDrawable* drawablep)

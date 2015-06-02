@@ -550,6 +550,11 @@ const S32 LEAF_VERTICES = 16;
 
 static LLFastTimer::DeclareTimer FTM_UPDATE_TREE("Update Tree");
 
+void LLVOTree::resetVertexBuffers()
+{
+	mReferenceBuffer = NULL;
+}
+
 BOOL LLVOTree::updateGeometry(LLDrawable *drawable)
 {
 	LLFastTimer ftm(FTM_UPDATE_TREE);

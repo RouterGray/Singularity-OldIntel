@@ -792,6 +792,7 @@ void LLSpatialGroup::shift(const LLVector4a &offset)
 	if (!mSpatialPartition->mRenderByGroup && 
 		mSpatialPartition->mPartitionType != LLViewerRegion::PARTITION_TREE &&
 		mSpatialPartition->mPartitionType != LLViewerRegion::PARTITION_TERRAIN &&
+		mSpatialPartition->mPartitionType != LLViewerRegion::PARTITION_ATTACHMENT &&
 		mSpatialPartition->mPartitionType != LLViewerRegion::PARTITION_BRIDGE)
 	{
 		setState(GEOM_DIRTY);
@@ -2174,6 +2175,10 @@ public:
 		for (LLSpatialGroup::element_iter i = group->getDataBegin(); i != group->getDataEnd(); ++i)
 		{
 			LLDrawable* drawable = *i;
+			if (drawable->getVObj().notNull())
+			{
+				drawable->getVObj()->resetVertexBuffers();
+			}
 			if (drawable->getVObj().notNull() && !group->mSpatialPartition->mRenderByGroup)
 			{
 				gPipeline.markRebuild(drawable, LLDrawable::REBUILD_ALL, TRUE);
