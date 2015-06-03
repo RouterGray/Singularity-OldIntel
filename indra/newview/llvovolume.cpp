@@ -6232,7 +6232,7 @@ void LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFac
 
 					bool is_bump = te->getBumpmap() > 0 && te->getBumpmap() < 18;
 
-					if(is_bump)
+					if(is_bump && LLPipeline::sRenderDeferred)
 					{
 						llassert_always(mask & LLVertexBuffer::MAP_TANGENT);
 					}
