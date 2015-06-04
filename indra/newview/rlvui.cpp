@@ -97,6 +97,12 @@ RlvUIEnabler::RlvUIEnabler()
 
 	// onToggleCamXXX
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_CAMUNLOCK, boost::bind(&RlvUIEnabler::onToggleCamUnlock, this)));
+	void onToggleCamZoom(const ERlvBehaviour& eBhvr);
+	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_CAMZOOMMAX, boost::bind(onToggleCamZoom, RLV_BHVR_CAMZOOMMAX)));
+	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_CAMZOOMMIN, boost::bind(onToggleCamZoom, RLV_BHVR_CAMZOOMMIN)));
+	void onToggleCamDist(const ERlvBehaviour& eBhvr);
+	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_CAMDISTMAX, boost::bind(onToggleCamDist, RLV_BHVR_CAMDISTMAX)));
+	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_CAMDISTMIN, boost::bind(onToggleCamDist, RLV_BHVR_CAMDISTMIN)));
 
 	// onToggleTp
 	m_Handlers.insert(std::pair<ERlvBehaviour, behaviour_handler_t>(RLV_BHVR_TPLOC, boost::bind(&RlvUIEnabler::onToggleTp, this)));
@@ -354,6 +360,35 @@ void RlvUIEnabler::onToggleCamUnlock()
 {
 	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMUNLOCK))
 		gAgentCamera.resetView(true, true);
+}
+
+// Checked: 2015-06-04 (RLVa:LF)
+void onToggleCamZoom(const ERlvBehaviour& eBhvr)
+{
+	if (gRlvHandler.hasBehaviour(eBhvr))
+	{
+		LLViewerCamera& inst(LLViewerCamera::instance());
+		inst.mSavedFOVLoaded ? inst.loadDefaultFOV() : inst.setDefaultFOV(gSavedSettings.getF32("CameraAngle"));
+	}
+}
+
+// Checked: 2015-06-04 (RLVa:LF)
+void onToggleCamDist(const ERlvBehaviour& eBhvr)
+{
+	if (gRlvHandler.hasBehaviour(eBhvr))
+	{
+		if (eBhvr == RLV_BHVR_CAMDISTMAX && gRlvHandler.camPole(eBhvr) <= 0)
+		{
+			if (!gAgentCamera.cameraMouselook())
+				gAgentCamera.changeCameraToMouselook();
+		}
+		else
+		{
+			if (eBhvr == RLV_BHVR_CAMDISTMIN && gRlvHandler.camPole(eBhvr) > 0 && gAgentCamera.cameraMouselook())
+				gAgentCamera.changeCameraToDefault();
+			gAgentCamera.cameraPanUp(0); // Hacky, but meh, issues a proper call to calcCameraPositionTargetGlobal().
+		}
+	}
 }
 
 // Checked: 2010-08-22 (RLVa-1.2.1a) | Added: RLVa-1.2.1a

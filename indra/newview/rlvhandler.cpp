@@ -22,7 +22,6 @@
 #include "llgroupactions.h"
 #include "llhudtext.h"
 #include "llstartup.h"
-#include "llviewercamera.h"
 #include "llviewermessage.h"
 #include "llviewerobjectlist.h"
 #include "llviewerparcelmgr.h"
@@ -1327,67 +1326,24 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 			break;
 		case RLV_BHVR_CAMZOOMMAX:		// @camzoommax:<max_multiplier>=n|y			- Checked: 2015-05-25 (RLVa:LF)
 		case RLV_BHVR_CAMZOOMMIN:		// @camzoommin:<min_multiplier>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-		{
-			F32 zoom;
-			LLStringUtil::convertToF32(strOption, zoom);
-			if (RLV_TYPE_ADD == eType)
-				addException(rlvCmd.getObjectID(), eBhvr, zoom);
-			else
-				removeException(rlvCmd.getObjectID(), eBhvr, zoom);
-			updatePole(eBhvr, eBhvr == RLV_BHVR_CAMDISTMAX);
-			if (hasBehaviour(eBhvr))
-			{
-				LLViewerCamera& inst(LLViewerCamera::instance());
-				inst.mSavedFOVLoaded ? inst.loadDefaultFOV() : inst.setDefaultFOV(gSavedSettings.getF32("CameraAngle"));
-			}
-			break;
-		}
 		case RLV_BHVR_CAMDISTMAX:		// @camdistmax:<max_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
 		case RLV_BHVR_CAMDISTMIN:		// @camdistmin:<min_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-		{
-			F32 zoom;
-			LLStringUtil::convertToF32(strOption, zoom);
-			if (RLV_TYPE_ADD == eType)
-				addException(rlvCmd.getObjectID(), eBhvr, zoom);
-			else
-				removeException(rlvCmd.getObjectID(), eBhvr, zoom);
-			updatePole(eBhvr, eBhvr == RLV_BHVR_CAMDISTMAX);
-			if (hasBehaviour(eBhvr))
-			{
-				if (eBhvr == RLV_BHVR_CAMDISTMAX && zoom <= 0)
-				{
-					if (!gAgentCamera.cameraMouselook())
-						gAgentCamera.changeCameraToMouselook();
-				}
-				else
-				{
-					if (eBhvr == RLV_BHVR_CAMDISTMIN && zoom > 0 && gAgentCamera.cameraMouselook())
-						gAgentCamera.changeCameraToDefault();
-					gAgentCamera.cameraPanUp(0); // Hacky, but meh.
-				}
-			}
-			break;
-		}
 		case RLV_BHVR_CAMDRAWMAX:		// @camdrawmax:<max_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
 		case RLV_BHVR_CAMDRAWMIN:		// @camdrawmin:<min_distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
 		case RLV_BHVR_CAMDRAWALPHAMAX:	// @camdrawalphamax:<max_alpha>=n|y			- Checked: 2015-05-25 (RLVa:LF)
 		case RLV_BHVR_CAMDRAWALPHAMIN:	// @camdrawalphamin:<min_alpha>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+		case RLV_BHVR_CAMAVDIST:		// @camavdist:<distance>=n|y				- Checked: 2015-05-25 (RLVa:LF)
 		{
 			F32 param;
-			LLStringUtil::convertToF32(strOption, param);
+			VERIFY_OPTION_REF(LLStringUtil::convertToF32(strOption, param));
 			if (RLV_TYPE_ADD == eType)
 				addException(rlvCmd.getObjectID(), eBhvr, param);
 			else
 				removeException(rlvCmd.getObjectID(), eBhvr, param);
-			updatePole(eBhvr, eBhvr == RLV_BHVR_CAMDRAWMAX || eBhvr == RLV_BHVR_CAMDRAWALPHAMAX);
-			if (hasBehaviour(eBhvr))
-			{
-				// Singu TODO: Implement
-			}
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Implement
+			updatePole(eBhvr, eBhvr == RLV_BHVR_CAMDISTMAX || eBhvr == RLV_BHVR_CAMZOOMMAX || eBhvr == RLV_BHVR_CAMDRAWMAX || eBhvr == RLV_BHVR_CAMDRAWALPHAMAX);
 			break;
 		}
-		case RLV_BHVR_CAMDRAWCOLOR:		// @camdrawcolor:<red>;<green>;<blue>=n|y			- Checked: 2015-05-25 (RLVa:LF)
+		case RLV_BHVR_CAMDRAWCOLOR:		// @camdrawcolor:<red>;<green>;<blue>=n|y	- Checked: 2015-05-25 (RLVa:LF)
 		{
 			LLColor3 color;
 			if (!strOption.empty())
@@ -1402,18 +1358,8 @@ ERlvCmdRet RlvHandler::processAddRemCommand(const RlvCommand& rlvCmd)
 				addException(rlvCmd.getObjectID(), eBhvr, color);
 			else
 				removeException(rlvCmd.getObjectID(), eBhvr, color);
-			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Hook this up
-			break;
-		}
-		case RLV_BHVR_CAMAVDIST:		// @camavdist:<distance>=n|y			- Checked: 2015-05-25 (RLVa:LF)
-		{
-			F32 dist;
-			LLStringUtil::convertToF32(strOption, dist);
-			if (RLV_TYPE_ADD == eType)
-				addException(rlvCmd.getObjectID(), eBhvr, dist);
-			else
-				removeException(rlvCmd.getObjectID(), eBhvr, dist);
-			updatePole(eBhvr, false);
+			// Singu TODO: If there is work to be done immediately after this is toggled, add to the onToggleCamXXX section in rlvui.cpp
+			eRet = RLV_RET_FAILED_UNKNOWN; // Singu TODO: Hook this up and remove this line.
 			break;
 		}
 		// The following block is only valid if there's no option

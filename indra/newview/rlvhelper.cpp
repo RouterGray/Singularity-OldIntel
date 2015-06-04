@@ -169,9 +169,10 @@ void RlvCommand::initLookupTable()
 				"touchme", "fly", "setgroup", "unsit", "sit", "sittp", "standtp", "setdebug", "setenv", "alwaysrun", "temprun", "detachme", 
 				"attachover", "attachthis", "attachthisover", "attachthis_except", "detachthis", "detachthis_except", "attachall", 
 				"attachallover", "detachall", "attachallthis", "attachallthis_except", "attachallthisover", "detachallthis", 
-				"detachallthis_except", "adjustheight",
-				"camzoommax", "camzoommin", "camdistmax", "camdistmin", "camdrawmax", "camdrawmin",
-				"camdrawalphamax", "camdrawalphamin", "camdrawcolor", "camunlock", "camavdist", "camtextures",
+				"detachallthis_except", "adjustheight", "camzoommax", "camzoommin", "camdistmax", "camdistmin",
+				// Singu TODO: Implement the RLV 2.9 graphics options and remove TODO from their strings so they work (and report as working)
+				// If there is work to be done immediately after these is toggled, add to the onToggleCamXXX section in rlvui.cpp
+				"TODOcamdrawmax", "TODOcamdrawmin", "TODOcamdrawalphamax", "TODOcamdrawalphamin", "TODOcamdrawcolor", "camunlock", "camavdist", "TODOcamtextures",
 				"tpto", "version", "versionnew", "versionnum", "getattach", "getattachnames",
 				"getaddattachnames", "getremattachnames", "getoutfit", "getoutfitnames", "getaddoutfitnames", "getremoutfitnames", 
 				"findfolder", "findfolders", "getpath", "getpathnew", "getinv", "getinvworn", "getgroup", "getsitid", "getcommand", 
