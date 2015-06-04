@@ -4045,6 +4045,8 @@ void reset_view_final( BOOL proceed )
 		return;
 	}
 
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX) && gRlvHandler.camPole(RLV_BHVR_CAMDISTMAX) <= 0) return; // RLVa:LF - Trapped in mouselook; avoid extra work (and potential glitches)
+
 	if (!gViewerWindow->getLeftMouseDown() && gAgentCamera.cameraThirdPerson() && gSavedSettings.getBOOL("ResetViewTurnsAvatar") && !gSavedSettings.getBOOL("FreezeTime"))
 	{
 		gAgentCamera.setFocusOnAvatar(TRUE, ANIMATE);
