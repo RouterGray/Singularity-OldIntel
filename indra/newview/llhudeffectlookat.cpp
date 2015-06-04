@@ -545,9 +545,13 @@ void LLHUDEffectLookAt::render()
 				const std::string targname = (*mAttentions)[mTargetType].mName;
 				if (targname != "None" && targname != "Idle" && targname != "AutoListen")
 				{
-					LLVector3 dist = (mSourceObject->getWorldPosition() - mTargetPos) * 10/3;
-					gGL.vertex3f(0.f, 0.f, 0.f);
-					gGL.vertex3f(dist.mV[VX], dist.mV[VY], dist.mV[VZ] + 0.5f);
+					const LLVector3& source_pos(mSourceObject->getWorldPosition());
+					if (!gRlvHandler.hasBehaviour(RLV_BHVR_CAMAVDIST) || (gAgent.getPosGlobalFromAgent(source_pos) - gAgent.getPositionGlobal()).magVec() <= gRlvHandler.camPole(RLV_BHVR_CAMAVDIST))
+					{
+						LLVector3 dist = (source_pos - mTargetPos) * 10/3;
+						gGL.vertex3f(0.f, 0.f, 0.f);
+						gGL.vertex3f(dist.mV[VX], dist.mV[VY], dist.mV[VZ] + 0.5f);
+					}
 				}
 			}
 		}

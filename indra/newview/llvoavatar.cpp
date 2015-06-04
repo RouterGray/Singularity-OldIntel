@@ -2593,7 +2593,7 @@ void LLVOAvatar::idleUpdateVoiceVisualizer(bool voice_enabled)
 			render_visualizer = false;
 		}
 	}
-	else if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) // RLVa:LF - You get nothing now!
+	else if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS) || (gRlvHandler.hasBehaviour(RLV_BHVR_CAMAVDIST) && (gAgent.getPosGlobalFromAgent(getCharacterPosition()) - gAgent.getPosGlobalFromAgent(gAgentAvatarp->getRenderPosition())).magVec() > gRlvHandler.camPole(RLV_BHVR_CAMAVDIST))) // RLVa:LF - You get nothing now!
 	{
 		render_visualizer = false;
 	}
@@ -3079,6 +3079,11 @@ void LLVOAvatar::idleUpdateNameTag(const LLVector3& root_pos_last)
 // [RLVa:KB] - Checked: 2010-04-04 (RLVa-1.2.2a) | Added: RLVa-0.2.0b
 	if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS))
 		return; // No tags
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMAVDIST) && (gAgent.getPosGlobalFromAgent(getCharacterPosition()) - gAgent.getPosGlobalFromAgent(gAgentAvatarp->getRenderPosition())).magVec() > gRlvHandler.camPole(RLV_BHVR_CAMAVDIST))
+	{
+		clearNameTag(); // Dynamically remove this avatar's tag
+		return;
+	}
 	bool fRlvShowNames = gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
 // [/RLVa:KB]
 	BOOL visible_avatar = isVisible() || mNeedsAnimUpdate;
@@ -3283,6 +3288,11 @@ void LLVOAvatar::idleUpdateNameTagText(BOOL new_name)
 // [RLVa:KB] - Checked: 2010-10-31 (RLVa-1.2.2a) | Added: RLVa-1.2.2a
 	if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS))
 		return; // No tags
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMAVDIST) && (gAgent.getPosGlobalFromAgent(getCharacterPosition()) - gAgent.getPosGlobalFromAgent(gAgentAvatarp->getRenderPosition())).magVec() > gRlvHandler.camPole(RLV_BHVR_CAMAVDIST))
+	{
+		clearNameTag(); // Dynamically remove this avatar's tag
+		return;
+	}
 	bool fRlvShowNames = gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
 // [/RLVa:KB]
 	bool is_away = mSignaledAnimations.find(ANIM_AGENT_AWAY)  != mSignaledAnimations.end();
