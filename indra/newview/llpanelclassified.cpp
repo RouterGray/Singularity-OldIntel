@@ -773,7 +773,8 @@ void LLPanelClassifiedInfo::gotMature()
 void LLPanelClassifiedInfo::callbackGotPriceForListing(const std::string& text)
 {
 	S32 price_for_listing = strtol(text.c_str(), NULL, 10);
-	if (price_for_listing < MINIMUM_PRICE_FOR_LISTING)
+	const HippoGridInfo& grid(*gHippoGridManager->getConnectedGrid());
+	if (grid.isSecondLife() && price_for_listing < MINIMUM_PRICE_FOR_LISTING)
 	{
 		LLSD args;
 		args["MIN_PRICE"] = llformat("%d", MINIMUM_PRICE_FOR_LISTING);
@@ -787,7 +788,7 @@ void LLPanelClassifiedInfo::callbackGotPriceForListing(const std::string& text)
 
 	LLSD args;
 	args["AMOUNT"] = llformat("%d", price_for_listing);
-	args["CURRENCY"] = gHippoGridManager->getConnectedGrid()->getCurrencySymbol();
+	args["CURRENCY"] = grid.getCurrencySymbol();
 	LLNotificationsUtil::add("PublishClassified", args, LLSD(), 
 									boost::bind(&LLPanelClassifiedInfo::confirmPublish, this, _1, _2));
 }
