@@ -75,7 +75,6 @@
 #include "rlvhandler.h"
 // [/RLVa:KB]
 
-const S32 MINIMUM_PRICE_FOR_LISTING = 50;	// L$
 const S32 MATURE_UNDEFINED = -1;
 const S32 MATURE_CONTENT = 1;
 const S32 PG_CONTENT = 2;
@@ -774,10 +773,11 @@ void LLPanelClassifiedInfo::callbackGotPriceForListing(const std::string& text)
 {
 	S32 price_for_listing = strtol(text.c_str(), NULL, 10);
 	const HippoGridInfo& grid(*gHippoGridManager->getConnectedGrid());
-	if (grid.isSecondLife() && price_for_listing < MINIMUM_PRICE_FOR_LISTING)
+	const int& min_fee(grid.getClassifiedFee());
+	if (price_for_listing < min_fee)
 	{
 		LLSD args;
-		args["MIN_PRICE"] = llformat("%d", MINIMUM_PRICE_FOR_LISTING);
+		args["MIN_PRICE"] = llformat("%d", min_fee);
 		LLNotificationsUtil::add("MinClassifiedPrice", args);
 		return;
 	}
@@ -972,7 +972,7 @@ BOOL LLFloaterPriceForListing::postBuild()
 	if (edit)
 	{
 		edit->setPrevalidate(LLLineEditor::prevalidateNonNegativeS32);
-		std::string min_price = llformat("%d", MINIMUM_PRICE_FOR_LISTING);
+		std::string min_price = llformat("%d", gHippoGridManager->getConnectedGrid()->getClassifiedFee());
 		edit->setText(min_price);
 		edit->selectAll();
 		edit->setFocus(TRUE);

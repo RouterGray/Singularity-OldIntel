@@ -33,6 +33,7 @@ HippoGridInfo HippoGridInfo::FALLBACK_GRIDINFO("");
 // ********************************************************************
 // ********************************************************************
 
+const S32 MINIMUM_PRICE_FOR_LISTING = 50;	// L$
 
 // ********************************************************************
 // Initialize
@@ -62,6 +63,7 @@ HippoGridInfo::HippoGridInfo(const std::string& gridName) :
 	mCurrencySymbol("OS$"),
 	mCurrencyText("OS Dollars"),
 	mRealCurrencySymbol("US$"),
+	mClassifiedFee(MINIMUM_PRICE_FOR_LISTING),
 	mDirectoryFee(30),
 	mUPCSupported(false)
 {
@@ -237,7 +239,7 @@ void HippoGridInfo::setRenderCompat(bool compat)
 
 void HippoGridInfo::setCurrencySymbol(const std::string& sym)
 {
-	mCurrencySymbol = sym.substr(0, 3);
+	mCurrencySymbol = sym;
 }
 
 void HippoGridInfo::setCurrencyText(const std::string& text)
@@ -248,11 +250,6 @@ void HippoGridInfo::setCurrencyText(const std::string& text)
 void HippoGridInfo::setRealCurrencySymbol(const std::string& sym)
 {
 	mRealCurrencySymbol = sym.substr(0, 3);
-}
-
-void HippoGridInfo::setDirectoryFee(int fee)
-{
-	mDirectoryFee = fee;
 }
 
 
