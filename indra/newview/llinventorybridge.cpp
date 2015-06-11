@@ -6339,9 +6339,8 @@ void LLLinkFolderBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 	else
 	{
 		getClipboardEntries(false, items, disabled_items, flags);
-		if (LLInventoryView* iv = LLInventoryView::getActiveInventory())
-			if (!isOutboxFolder() && isAgentInventory())
-				build_context_menu_folder_options(getInventoryModel(), getFolderID(), items, disabled_items);
+		if (LLInventoryView::getActiveInventory() && !isOutboxFolder() && isAgentInventory())
+			build_context_menu_folder_options(getInventoryModel(), getFolderID(), items, disabled_items);
 		addDeleteContextMenuOptions(items, disabled_items);
 	}
 	hide_context_entries(menu, items, disabled_items);
