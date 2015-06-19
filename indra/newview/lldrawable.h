@@ -44,7 +44,6 @@
 #include "llvector4a.h"
 #include "llquaternion.h"
 #include "xform.h"
-#include "lldarray.h"
 #include "llviewerobject.h"
 #include "llrect.h"
 #include "llappviewer.h" // for gFrameTimeSeconds
@@ -341,7 +340,7 @@ private:
 	static U32 sCurVisible; // Counter for what value of mVisible means currently visible
 
 	static U32 sNumZombieDrawables;
-	static LLDynamicArrayPtr<LLPointer<LLDrawable> > sDeadList;
+	static std::vector<LLPointer<LLDrawable> > sDeadList;
 } LL_ALIGN_POSTFIX(16);
 
 

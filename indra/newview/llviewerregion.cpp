@@ -1180,10 +1180,10 @@ public:
 		S32 target_index = input["body"]["Index"][0]["Prey"].asInteger();
 		S32 you_index    = input["body"]["Index"][0]["You" ].asInteger();
 
-		LLDynamicArray<U32>* avatar_locs = &region->mMapAvatars;
-		LLDynamicArray<LLUUID>* avatar_ids = &region->mMapAvatarIDs;
-		avatar_locs->reset();
-		avatar_ids->reset();
+		std::vector<U32>* avatar_locs = &region->mMapAvatars;
+		std::vector<LLUUID>* avatar_ids = &region->mMapAvatarIDs;
+		avatar_locs->clear();
+		avatar_ids->clear();
 
 		//LL_INFOS() << "coarse locations agent[0] " << input["body"]["AgentData"][0]["AgentID"].asUUID() << LL_ENDL;
 		//LL_INFOS() << "my agent id = " << gAgent.getID() << LL_ENDL;
@@ -1223,13 +1223,13 @@ public:
 				pos |= y;
 				pos <<= 8;
 				pos |= z;
-				avatar_locs->put(pos);
+				avatar_locs->push_back(pos);
 				//LL_INFOS() << "next pos: " << x << "," << y << "," << z << ": " << pos << LL_ENDL;
 				if(has_agent_data) // for backwards compatibility with old message format
 				{
 					LLUUID agent_id(agents_it->get("AgentID").asUUID());
 					//LL_INFOS() << "next agent: " << agent_id.asString() << LL_ENDL;
-					avatar_ids->put(agent_id);
+					avatar_ids->push_back(agent_id);
 				}
 			}
 			if (has_agent_data)
@@ -1250,8 +1250,8 @@ LLHTTPRegistration<CoarseLocationUpdate>
 void LLViewerRegion::updateCoarseLocations(LLMessageSystem* msg)
 {
 	//LL_INFOS() << "CoarseLocationUpdate" << LL_ENDL;
-	mMapAvatars.reset();
-	mMapAvatarIDs.reset(); // only matters in a rare case but it's good to be safe.
+	mMapAvatars.clear();
+	mMapAvatarIDs.clear(); // only matters in a rare case but it's good to be safe.
 
 	U8 x_pos = 0;
 	U8 y_pos = 0;
@@ -1300,10 +1300,10 @@ void LLViewerRegion::updateCoarseLocations(LLMessageSystem* msg)
 			pos |= y_pos;
 			pos <<= 8;
 			pos |= z_pos;
-			mMapAvatars.put(pos);
+			mMapAvatars.push_back(pos);
 			if(has_agent_data)
 			{
-				mMapAvatarIDs.put(agent_id);
+				mMapAvatarIDs.push_back(agent_id);
 			}
 		}
 	}
@@ -1449,14 +1449,14 @@ LLDataPacker *LLViewerRegion::getDP(U32 local_id, U32 crc, U8 &cache_miss_type)
 		{
 			// LL_INFOS() << "CRC miss for " << local_id << LL_ENDL;
 		cache_miss_type = CACHE_MISS_TYPE_CRC;
-			mCacheMissCRC.put(local_id);
+			mCacheMissCRC.push_back(local_id);
 		}
 	}
 	else
 	{
 		// LL_INFOS() << "Cache miss for " << local_id << LL_ENDL;
 	cache_miss_type = CACHE_MISS_TYPE_FULL;
-		mCacheMissFull.put(local_id);
+		mCacheMissFull.push_back(local_id);
 	}
 
 	return NULL;
@@ -1464,13 +1464,13 @@ LLDataPacker *LLViewerRegion::getDP(U32 local_id, U32 crc, U8 &cache_miss_type)
 
 void LLViewerRegion::addCacheMissFull(const U32 local_id)
 {
-	mCacheMissFull.put(local_id);
+	mCacheMissFull.push_back(local_id);
 }
 
 void LLViewerRegion::requestCacheMisses()
 {
-	S32 full_count = mCacheMissFull.count();
-	S32 crc_count = mCacheMissCRC.count();
+	S32 full_count = mCacheMissFull.size();
+	S32 crc_count = mCacheMissCRC.size();
 	if (full_count == 0 && crc_count == 0) return;
 
 	LLMessageSystem* msg = gMessageSystem;
@@ -1535,8 +1535,8 @@ void LLViewerRegion::requestCacheMisses()
 	{
 		sendReliableMessage();
 	}
-	mCacheMissFull.reset();
-	mCacheMissCRC.reset();
+	mCacheMissFull.clear();
+	mCacheMissCRC.clear();
 
 	mCacheDirty = TRUE ;
 	// LL_INFOS() << "KILLDEBUG Sent cache miss full " << full_count << " crc " << crc_count << LL_ENDL;

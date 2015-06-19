@@ -1242,7 +1242,7 @@ void LLPanelEditWearable::saveChanges(bool force_save_as, std::string new_name)
 			LLAppearanceMgr::instance().findCOFItemLinks(getWearable()->getItemID());
 		if (links.size()>0)
 		{
-			link_item = links.get(0).get();
+			link_item = links.at(0).get();
 			if (link_item && link_item->getIsLinkType())
 			{
 				description = link_item->getActualDescription();

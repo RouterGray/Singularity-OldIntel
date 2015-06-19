@@ -408,7 +408,7 @@ void LLLibraryOutfitsFetch::folderDone()
 	
 	// Early out if we already have items in My Outfits
 	// except the case when My Outfits contains just initial outfit
-	if (cat_array.count() > 1)
+	if (cat_array.size() > 1)
 	{
 		mOutfitsPopulated = true;
 		return;
@@ -424,9 +424,9 @@ void LLLibraryOutfitsFetch::folderDone()
 									cat_array, wearable_array, 
 									LLInventoryModel::EXCLUDE_TRASH,
 									matchFolderFunctor);
-	if (cat_array.count() > 0)
+	if (cat_array.size() > 0)
 	{
-		const LLViewerInventoryCategory *cat = cat_array.get(0);
+		const LLViewerInventoryCategory *cat = cat_array.at(0);
 		mLibraryClothingID = cat->getUUID();
 	}
 
@@ -483,7 +483,7 @@ void LLLibraryOutfitsFetch::outfitsDone()
 									matchFolderFunctor);
 	if (cat_array.size() > 0)
 	{
-		const LLViewerInventoryCategory *cat = cat_array.get(0);
+		const LLViewerInventoryCategory *cat = cat_array.at(0);
 		mImportedClothingID = cat->getUUID();
 	}
 	

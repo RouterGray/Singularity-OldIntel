@@ -741,7 +741,7 @@ void LLFloaterCustomize::saveCurrentWearables()
 					LLAppearanceMgr::instance().findCOFItemLinks(wearable->getItemID());
 				if (links.size()>0)
 				{
-					link_item = links.get(0).get();
+					link_item = links.at(0).get();
 					if (link_item && link_item->getIsLinkType())
 					{
 						description = link_item->getActualDescription();

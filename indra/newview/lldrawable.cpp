@@ -78,7 +78,7 @@ extern bool gShiftFrame;
 U32 LLDrawable::sCurVisible = 0;
 U32 LLDrawable::sNumZombieDrawables = 0;
 F32 LLDrawable::sCurPixelAngle = 0;
-LLDynamicArrayPtr<LLPointer<LLDrawable> > LLDrawable::sDeadList;
+std::vector<LLPointer<LLDrawable> > LLDrawable::sDeadList;
 
 #define FORCE_INVISIBLE_AREA 16.f
 
@@ -163,7 +163,7 @@ void LLDrawable::markDead()
 	// We're dead.  Free up all of our references to other objects
 	setState(DEAD);
 	cleanupReferences();
-//	sDeadList.put(this);
+//	sDeadList.push_back(this);
 }
 
 LLVOVolume* LLDrawable::getVOVolume() const
@@ -236,7 +236,7 @@ void LLDrawable::cleanupDeadDrawables()
 		}
 	}
 	*/
-	sDeadList.reset();
+	sDeadList.clear();
 }
 
 S32 LLDrawable::findReferences(LLDrawable *drawablep)

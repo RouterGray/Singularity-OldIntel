@@ -2600,11 +2600,11 @@ BOOL LLVOAvatarSelf::canGrabBakedTexture(EBakedTextureIndex baked_index) const
 													asset_id_matches);
 
 					BOOL can_grab = FALSE;
-					LL_DEBUGS() << "item count for asset " << texture_id << ": " << items.count() << LL_ENDL;
-					if (items.count())
+					LL_DEBUGS() << "item count for asset " << texture_id << ": " << items.size() << LL_ENDL;
+					if (items.size())
 					{
 						// search for full permissions version
-						for (S32 i = 0; i < items.count(); i++)
+						for (S32 i = 0; i < items.size(); i++)
 						{
 							LLViewerInventoryItem* itemp = items[i];
 												if (itemp->getIsFullPerm())

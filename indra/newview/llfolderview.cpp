@@ -1053,9 +1053,9 @@ void LLFolderView::removeCutItems()
 		return;
 
 	// Get the list of clipboard item uuids and iterate through them
-	LLDynamicArray<LLUUID> objects;
+	std::vector<LLUUID> objects;
 	LLInventoryClipboard::instance().retrieve(objects);
-	for (LLDynamicArray<LLUUID>::const_iterator iter = objects.begin();
+	for (std::vector<LLUUID>::const_iterator iter = objects.begin();
 		 iter != objects.end();
 		 ++iter)
 	{
@@ -1123,7 +1123,7 @@ void LLFolderView::removeSelectedItems( void )
 		}
 		else if (count > 1)
 		{
-			LLDynamicArray<LLFolderViewEventListener*> listeners;
+			std::vector<LLFolderViewEventListener*> listeners;
 			LLFolderViewEventListener* listener;
 			LLFolderViewItem* last_item = items[count - 1];
 			LLFolderViewItem* new_selection = last_item->getNextOpenNode(FALSE);
@@ -1151,12 +1151,12 @@ void LLFolderView::removeSelectedItems( void )
 			for(S32 i = 0; i < count; ++i)
 			{
 				listener = items[i]->getListener();
-				if(listener && (listeners.find(listener) == LLDynamicArray<LLFolderViewEventListener*>::FAIL))
+				if(listener && (std::find(listeners.begin(), listeners.end(), listener) == listeners.end()))
 				{
-					listeners.put(listener);
+					listeners.push_back(listener);
 				}
 			}
-			listener = listeners.get(0);
+			listener = listeners.at(0);
 			if(listener)
 			{
 				listener->removeBatch(listeners);

@@ -103,7 +103,7 @@ public:
 	virtual BOOL isItemInTrash() const;
 	virtual BOOL isLink() const;
 	//virtual BOOL removeItem() = 0;
-	virtual void removeBatch(LLDynamicArray<LLFolderViewEventListener*>& batch);
+	virtual void removeBatch(std::vector<LLFolderViewEventListener*>& batch);
 	virtual void move(LLFolderViewEventListener* new_parent_bridge) {}
 	virtual BOOL isItemCopyable() const { return FALSE; }
 	virtual BOOL copyToClipboard() const;
@@ -161,7 +161,7 @@ protected:
 									 LLViewerInventoryCategory* item,
 									 const LLUUID& new_parent,
 									 BOOL restamp);
-	void removeBatchNoCheck(LLDynamicArray<LLFolderViewEventListener*>& batch);
+	void removeBatchNoCheck(std::vector<LLFolderViewEventListener*>& batch);
 protected:
 	LLHandle<LLInventoryPanel> mInventoryPanel;
 	LLFolderView* mRoot;

@@ -286,7 +286,7 @@ void LLInvFVBridge::showProperties()
 	*/
 }
 
-void LLInvFVBridge::removeBatch(LLDynamicArray<LLFolderViewEventListener*>& batch)
+void LLInvFVBridge::removeBatch(std::vector<LLFolderViewEventListener*>& batch)
 {
 	// Deactivate gestures when moving them into Trash
 	LLInvFVBridge* bridge;
@@ -295,11 +295,11 @@ void LLInvFVBridge::removeBatch(LLDynamicArray<LLFolderViewEventListener*>& batc
 	LLViewerInventoryCategory* cat = NULL;
 	LLInventoryModel::cat_array_t	descendent_categories;
 	LLInventoryModel::item_array_t	descendent_items;
-	S32 count = batch.count();
+	S32 count = batch.size();
 	S32 i,j;
 	for(i = 0; i < count; ++i)
 	{
-		bridge = (LLInvFVBridge*)(batch.get(i));
+		bridge = (LLInvFVBridge*)(batch.at(i));
 		if(!bridge || !bridge->isItemRemovable()) continue;
 		item = (LLViewerInventoryItem*)model->getItem(bridge->getUUID());
 		if (item)
@@ -312,13 +312,13 @@ void LLInvFVBridge::removeBatch(LLDynamicArray<LLFolderViewEventListener*>& batc
 	}
 	for(i = 0; i < count; ++i)
 	{
-		bridge = (LLInvFVBridge*)(batch.get(i));
+		bridge = (LLInvFVBridge*)(batch.at(i));
 		if(!bridge || !bridge->isItemRemovable()) continue;
 		cat = (LLViewerInventoryCategory*)model->getCategory(bridge->getUUID());
 		if (cat)
 		{
 			gInventory.collectDescendents( cat->getUUID(), descendent_categories, descendent_items, FALSE );
-			for (j=0; j<descendent_items.count(); j++)
+			for (j=0; j<descendent_items.size(); j++)
 			{
 				if(LLAssetType::AT_GESTURE == descendent_items[j]->getType())
 				{
@@ -330,7 +330,7 @@ void LLInvFVBridge::removeBatch(LLDynamicArray<LLFolderViewEventListener*>& batc
 	removeBatchNoCheck(batch);
 }
 
-void LLInvFVBridge::removeBatchNoCheck(LLDynamicArray<LLFolderViewEventListener*>& batch)
+void LLInvFVBridge::removeBatchNoCheck(std::vector<LLFolderViewEventListener*>& batch)
 {
 	// this method moves a bunch of items and folders to the trash. As
 	// per design guidelines for the inventory model, the message is
@@ -346,14 +346,14 @@ void LLInvFVBridge::removeBatchNoCheck(LLDynamicArray<LLFolderViewEventListener*
 	uuid_vec_t move_ids;
 	LLInventoryModel::update_map_t update;
 	bool start_new_message = true;
-	S32 count = batch.count();
+	S32 count = batch.size();
 	S32 i;
 
 	// first, hide any 'preview' floaters that correspond to the items
 	// being deleted.
 	for(i = 0; i < count; ++i)
 	{
-		bridge = (LLInvFVBridge*)(batch.get(i));
+		bridge = (LLInvFVBridge*)(batch.at(i));
 		if(!bridge || !bridge->isItemRemovable()) continue;
 		item = (LLViewerInventoryItem*)model->getItem(bridge->getUUID());
 		if(item)
@@ -366,7 +366,7 @@ void LLInvFVBridge::removeBatchNoCheck(LLDynamicArray<LLFolderViewEventListener*
 
 	for(i = 0; i < count; ++i)
 	{
-		bridge = (LLInvFVBridge*)(batch.get(i));
+		bridge = (LLInvFVBridge*)(batch.at(i));
 		if(!bridge || !bridge->isItemRemovable()) continue;
 		item = (LLViewerInventoryItem*)model->getItem(bridge->getUUID());
 		if(item)
@@ -407,7 +407,7 @@ void LLInvFVBridge::removeBatchNoCheck(LLDynamicArray<LLFolderViewEventListener*
 
 	for(i = 0; i < count; ++i)
 	{
-		bridge = (LLInvFVBridge*)(batch.get(i));
+		bridge = (LLInvFVBridge*)(batch.at(i));
 		if(!bridge || !bridge->isItemRemovable()) continue;
 		LLViewerInventoryCategory* cat = (LLViewerInventoryCategory*)model->getCategory(bridge->getUUID());
 		if(cat)
@@ -481,12 +481,12 @@ BOOL LLInvFVBridge::isClipboardPasteable() const
 
 	// In normal mode, we need to check each element of the clipboard to know if we can paste or not
 	LLInventoryPanel* panel = dynamic_cast<LLInventoryPanel*>(mInventoryPanel.get());
-	LLDynamicArray<LLUUID> objects;
+	std::vector<LLUUID> objects;
 	LLInventoryClipboard::instance().retrieve(objects);
-	S32 count = objects.count();
+	S32 count = objects.size();
 	for(S32 i = 0; i < count; i++)
 	{
-		const LLUUID &item_id = objects.get(i);
+		const LLUUID &item_id = objects.at(i);
 
 		// Folders are pasteable if all items in there are copyable
 		const LLInventoryCategory *cat = model->getCategory(item_id);
@@ -523,12 +523,12 @@ bool LLInvFVBridge::isClipboardPasteableAsCopy() const
 
 	// In copy mode, we need to check each element of the clipboard to know if it's a link
 	LLInventoryPanel* panel = dynamic_cast<LLInventoryPanel*>(mInventoryPanel.get());
-	LLDynamicArray<LLUUID> objects;
+	std::vector<LLUUID> objects;
 	LLInventoryClipboard::instance().retrieve(objects);
-	const S32 count = objects.count();
+	const S32 count = objects.size();
 	for(S32 i = 0; i < count; i++)
 	{
-		const LLUUID &item_id = objects.get(i);
+		const LLUUID &item_id = objects.at(i);
 
 		// Folders may be links
 		const LLInventoryCategory *cat = model->getCategory(item_id);
@@ -565,12 +565,12 @@ BOOL LLInvFVBridge::isClipboardPasteableAsLink() const
 		return FALSE;
 	}
 
-	LLDynamicArray<LLUUID> objects;
+	std::vector<LLUUID> objects;
 	LLInventoryClipboard::instance().retrieve(objects);
-	S32 count = objects.count();
+	S32 count = objects.size();
 	for(S32 i = 0; i < count; i++)
 	{
-		const LLInventoryItem *item = model->getItem(objects.get(i));
+		const LLInventoryItem *item = model->getItem(objects.at(i));
 		if (item)
 		{
 			if (!LLAssetType::lookupCanLink(item->getActualType()))
@@ -578,7 +578,7 @@ BOOL LLInvFVBridge::isClipboardPasteableAsLink() const
 				return FALSE;
 			}
 		}
-		const LLViewerInventoryCategory *cat = model->getCategory(objects.get(i));
+		const LLViewerInventoryCategory *cat = model->getCategory(objects.at(i));
 		if (cat && LLFolderType::lookupIsProtectedType(cat->getPreferredType()))
 		{
 			return FALSE;
@@ -933,7 +933,7 @@ BOOL LLInvFVBridge::startDrag(EDragAndDropType* type, LLUUID* id) const
 		}
 
 		*id = obj->getUUID();
-		//object_ids.put(obj->getUUID());
+		//object_ids.push_back(obj->getUUID());
 
 		if (*type == DAD_CATEGORY)
 		{
@@ -2012,15 +2012,15 @@ BOOL LLFolderBridge::isClipboardPasteable() const
 			return FALSE;
 		}
 
-		LLDynamicArray<LLUUID> objects;
+		std::vector<LLUUID> objects;
 		LLInventoryClipboard::instance().retrieve(objects);
 		const LLViewerInventoryCategory *current_cat = getCategory();
 
 		// Search for the direct descendent of current Friends subfolder among all pasted items,
 		// and return false if is found.
-		for(S32 i = objects.count() - 1; i >= 0; --i)
+		for(S32 i = objects.size() - 1; i >= 0; --i)
 		{
-			const LLUUID &obj_id = objects.get(i);
+			const LLUUID &obj_id = objects.at(i);
 			if ( LLFriendCardsManager::instance().isObjDirectDescendentOfCategory(model->getObject(obj_id), current_cat) )
 			{
 				return FALSE;
@@ -2060,12 +2060,12 @@ BOOL LLFolderBridge::isClipboardPasteableAsLink() const
 		const BOOL is_in_friend_folder = LLFriendCardsManager::instance().isCategoryInFriendFolder(current_cat);
 */
 		const LLUUID &current_cat_id = current_cat->getUUID();
-		LLDynamicArray<LLUUID> objects;
+		std::vector<LLUUID> objects;
 		LLInventoryClipboard::instance().retrieve(objects);
-		S32 count = objects.count();
+		S32 count = objects.size();
 		for (S32 i = 0; i < count; i++)
 		{
-			const LLUUID &obj_id = objects.get(i);
+			const LLUUID &obj_id = objects.at(i);
 			const LLInventoryCategory *cat = model->getCategory(obj_id);
 			if (cat)
 			{
@@ -2138,9 +2138,9 @@ int get_folder_levels(LLInventoryCategory* inv_cat)
 
 	int max_child_levels = 0;
 
-	for (S32 i=0; i < cats->count(); ++i)
+	for (S32 i=0; i < cats->size(); ++i)
 	{
-		LLInventoryCategory* category = cats->get(i);
+		LLInventoryCategory* category = cats->at(i);
 		max_child_levels = llmax(max_child_levels, get_folder_levels(category));
 	}
 
@@ -2248,7 +2248,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 		if (is_movable)
 		{
 			model->collectDescendents(cat_id, descendent_categories, descendent_items, FALSE);
-			for (S32 i=0; i < descendent_categories.count(); ++i)
+			for (S32 i=0; i < descendent_categories.size(); ++i)
 			{
 				LLInventoryCategory* category = descendent_categories[i];
 				if(LLFolderType::lookupIsProtectedType(category->getPreferredType()))
@@ -2261,7 +2261,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 		}
 		if (is_movable && move_is_into_trash)
 		{
-			for (S32 i=0; i < descendent_items.count(); ++i)
+			for (S32 i=0; i < descendent_items.size(); ++i)
 			{
 				LLInventoryItem* item = descendent_items[i];
 				if (get_is_item_worn(item->getUUID()))
@@ -2273,7 +2273,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 		}
 		if (is_movable && move_is_into_landmarks)
 		{
-			for (S32 i=0; i < descendent_items.count(); ++i)
+			for (S32 i=0; i < descendent_items.size(); ++i)
 			{
 				LLViewerInventoryItem* item = descendent_items[i];
 
@@ -2303,7 +2303,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 			}
 			else
 			{
-				int dragged_folder_count = descendent_categories.count();
+				int dragged_folder_count = descendent_categories.size();
 				int existing_item_count = 0;
 				int existing_folder_count = 0;
 				
@@ -2342,8 +2342,8 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 
 					model->collectDescendents(master_folder->getUUID(), existing_categories, existing_items, FALSE);
 					
-					existing_folder_count += existing_categories.count();
-					existing_item_count += existing_items.count();
+					existing_folder_count += existing_categories.size();
+					existing_item_count += existing_items.size();
 				}
 				else
 				{
@@ -2353,7 +2353,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 				}
 
 				const int nested_folder_count = existing_folder_count + dragged_folder_count;
-				const int nested_item_count = existing_item_count + descendent_items.count();
+				const int nested_item_count = existing_item_count + descendent_items.size();
 				
 				if (nested_folder_count > (S32)gSavedSettings.getU32("InventoryOutboxMaxFolderCount"))
 				{
@@ -2366,7 +2366,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 				
 				if (is_movable == TRUE)
 				{
-					for (S32 i=0; i < descendent_items.count(); ++i)
+					for (S32 i=0; i < descendent_items.size(); ++i)
 					{
 						LLInventoryItem* item = descendent_items[i];
 						if (!can_move_to_outbox(item))
@@ -2389,7 +2389,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 			// Look for any gestures and deactivate them
 			if (move_is_into_trash)
 			{
-				for (S32 i=0; i < descendent_items.count(); i++)
+				for (S32 i=0; i < descendent_items.size(); i++)
 				{
 					LLInventoryItem* item = descendent_items[i];
 					if (item->getType() == LLAssetType::AT_GESTURE
@@ -2645,13 +2645,13 @@ void LLRightClickInventoryFetchDescendentsObserver::execute(bool clear_observer)
 		S32 item_count(0);
 		if (item_array)
 		{
-			item_count = item_array->count();
+			item_count = item_array->size();
 		}
 
 		S32 cat_count(0);
 		if (cat_array)
 		{
-			cat_count = cat_array->count();
+			cat_count = cat_array->size();
 		}
 	
 		// Move to next if current folder empty
@@ -2669,7 +2669,7 @@ void LLRightClickInventoryFetchDescendentsObserver::execute(bool clear_observer)
 		{
 			for (S32 i = 0; i < item_count; ++i)
 			{
-				ids.push_back(item_array->get(i)->getUUID());
+				ids.push_back(item_array->at(i)->getUUID());
 			}
 			outfit = new LLRightClickInventoryFetchObserver(ids);
 		}
@@ -2678,7 +2678,7 @@ void LLRightClickInventoryFetchDescendentsObserver::execute(bool clear_observer)
 		{
 			for (S32 i = 0; i < cat_count; ++i)
 			{
-				ids.push_back(cat_array->get(i)->getUUID());
+				ids.push_back(cat_array->at(i)->getUUID());
 			}
 			categories = new LLRightClickInventoryFetchDescendentsObserver(ids);
 		}
@@ -3074,7 +3074,7 @@ void LLFolderBridge::pasteFromClipboard(bool only_copies)
 		const BOOL move_is_into_outfit = (getCategory() && getCategory()->getPreferredType()==LLFolderType::FT_OUTFIT);
 		const BOOL move_is_into_outbox = model->isObjectDescendentOf(mUUID, outbox_id);
 
-		LLDynamicArray<LLUUID> objects;
+		std::vector<LLUUID> objects;
 		LLInventoryClipboard::instance().retrieve(objects);
 
 		if (move_is_into_outbox)
@@ -3087,7 +3087,7 @@ void LLFolderBridge::pasteFromClipboard(bool only_copies)
 
 				BOOL can_list = TRUE;
 
-				for (LLDynamicArray<LLUUID>::const_iterator iter = objects.begin();
+				for (std::vector<LLUUID>::const_iterator iter = objects.begin();
 					(iter != objects.end()) && (can_list == TRUE);
 					++iter)
 				{
@@ -3118,7 +3118,7 @@ void LLFolderBridge::pasteFromClipboard(bool only_copies)
 
 		const LLUUID parent_id(mUUID);
 
-		for (LLDynamicArray<LLUUID>::const_iterator iter = objects.begin();
+		for (std::vector<LLUUID>::const_iterator iter = objects.begin();
 			 iter != objects.end();
 			 ++iter)
 		{
@@ -3226,9 +3226,9 @@ void LLFolderBridge::pasteLinkFromClipboard()
 
 		const LLUUID parent_id(mUUID);
 
-		LLDynamicArray<LLUUID> objects;
+		std::vector<LLUUID> objects;
 		LLInventoryClipboard::instance().retrieve(objects);
-		for (LLDynamicArray<LLUUID>::const_iterator iter = objects.begin();
+		for (std::vector<LLUUID>::const_iterator iter = objects.begin();
 			 iter != objects.end();
 			 ++iter)
 		{
@@ -3289,7 +3289,7 @@ BOOL LLFolderBridge::checkFolderForContentsOfType(LLInventoryModel* model, LLInv
 								LLInventoryModel::EXCLUDE_TRASH,
 								is_type,
 								true);
-	return ((item_array.count() > 0) ? TRUE : FALSE );
+	return ((item_array.size() > 0) ? TRUE : FALSE );
 }
 
 void LLFolderBridge::buildContextMenuBaseOptions(U32 flags)
@@ -4014,7 +4014,7 @@ BOOL LLFolderBridge::dragItemIntoFolder(LLInventoryItem* inv_item,
 					
 					gInventory.collectDescendents(master_folder->getUUID(), existing_categories, existing_items, FALSE);
 					
-					existing_item_count += existing_items.count();
+					existing_item_count += existing_items.size();
 				}
 				
 				if (existing_item_count > (S32)gSavedSettings.getU32("InventoryOutboxMaxItemCount"))
@@ -5671,7 +5671,7 @@ void remove_inventory_category_from_avatar_step2( BOOL proceed, LLUUID category_
 										is_wearable,
 										true);
 		S32 i;
-		S32 wearable_count = item_array.count();
+		S32 wearable_count = item_array.size();
 
 		LLInventoryModel::cat_array_t	obj_cat_array;
 		LLInventoryModel::item_array_t	obj_item_array;
@@ -5682,7 +5682,7 @@ void remove_inventory_category_from_avatar_step2( BOOL proceed, LLUUID category_
 										LLInventoryModel::EXCLUDE_TRASH,
 										is_object,
 										true);
-		S32 obj_count = obj_item_array.count();
+		S32 obj_count = obj_item_array.size();
 
 		// Find all gestures in this folder
 		LLInventoryModel::cat_array_t	gest_cat_array;
@@ -5694,13 +5694,13 @@ void remove_inventory_category_from_avatar_step2( BOOL proceed, LLUUID category_
 										LLInventoryModel::EXCLUDE_TRASH,
 										is_gesture,
 										true);
-		S32 gest_count = gest_item_array.count();
+		S32 gest_count = gest_item_array.size();
 
 		if (wearable_count > 0)	//Loop through wearables.  If worn, remove.
 		{
 			for(i = 0; i  < wearable_count; ++i)
 			{
-				LLViewerInventoryItem *item = item_array.get(i);
+				LLViewerInventoryItem *item = item_array.at(i);
 				if (item->getType() == LLAssetType::AT_BODYPART)
 					continue;
 				if (gAgent.isTeen() && item->isWearableType() &&
@@ -5728,7 +5728,7 @@ void remove_inventory_category_from_avatar_step2( BOOL proceed, LLUUID category_
 		{
 			for(i = 0; i  < obj_count; ++i)
 			{
-				LLViewerInventoryItem *obj_item = obj_item_array.get(i);
+				LLViewerInventoryItem *obj_item = obj_item_array.at(i);
 				if (get_is_item_worn(obj_item->getUUID()))
 				{
 					LLVOAvatarSelf::detachAttachmentIntoInventory(obj_item->getLinkedUUID());
@@ -5740,7 +5740,7 @@ void remove_inventory_category_from_avatar_step2( BOOL proceed, LLUUID category_
 		{
 			for(i = 0; i  < gest_count; ++i)
 			{
-				LLViewerInventoryItem *gest_item = gest_item_array.get(i);
+				LLViewerInventoryItem *gest_item = gest_item_array.at(i);
 				if (get_is_item_worn(gest_item->getUUID()))
 				{
 					LLGestureMgr::instance().deactivateGesture( gest_item->getLinkedUUID() );

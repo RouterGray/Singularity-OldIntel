@@ -205,7 +205,7 @@ private:
 bool send_start_session_messages(
 	const LLUUID& temp_session_id,
 	const LLUUID& other_participant_id,
-	const LLDynamicArray<LLUUID>& ids,
+	const std::vector<LLUUID>& ids,
 	EInstantMessage dialog)
 {
 	if ( dialog == IM_SESSION_GROUP_START )
@@ -229,7 +229,7 @@ bool send_start_session_messages(
 		LLSD agents;
 		for (int i = 0; i < (S32) ids.size(); i++)
 		{
-			agents.append(ids.get(i));
+			agents.append(ids.at(i));
 		}
 
 		//we have a new way of starting conference calls now
@@ -274,7 +274,7 @@ LLFloaterIMPanel::LLFloaterIMPanel(
 	const LLUUID& session_id,
 	const LLUUID& other_participant_id,
 	const EInstantMessage& dialog,
-	const LLDynamicArray<LLUUID>& ids) :
+	const std::vector<LLUUID>& ids) :
 	LLFloater(log_label, LLRect(), log_label),
 	mStartCallOnInitialize(false),
 	mInputEditor(NULL),
@@ -652,7 +652,7 @@ private:
 	LLUUID mSessionID;
 };
 
-bool LLFloaterIMPanel::inviteToSession(const LLDynamicArray<LLUUID>& ids)
+bool LLFloaterIMPanel::inviteToSession(const std::vector<LLUUID>& ids)
 {
 	LLViewerRegion* region = gAgent.getRegion();
 	if (!region)
@@ -660,7 +660,7 @@ bool LLFloaterIMPanel::inviteToSession(const LLDynamicArray<LLUUID>& ids)
 		return FALSE;
 	}
 	
-	S32 count = ids.count();
+	S32 count = ids.size();
 
 	if( isInviteAllowed() && (count > 0) )
 	{
@@ -673,7 +673,7 @@ bool LLFloaterIMPanel::inviteToSession(const LLDynamicArray<LLUUID>& ids)
 		data["params"] = LLSD::emptyArray();
 		for (int i = 0; i < count; i++)
 		{
-			data["params"].append(ids.get(i));
+			data["params"].append(ids.at(i));
 		}
 
 		data["method"] = "invite";
@@ -900,8 +900,8 @@ BOOL LLFloaterIMPanel::dropCallingCard(LLInventoryItem* item, BOOL drop)
 	{
 		if (drop)
 		{
-			LLDynamicArray<LLUUID> ids;
-			ids.put(item->getCreatorUUID());
+			std::vector<LLUUID> ids;
+			ids.push_back(item->getCreatorUUID());
 			inviteToSession(ids);
 		}
 		return true;
@@ -922,17 +922,17 @@ BOOL LLFloaterIMPanel::dropCategory(LLInventoryCategory* category, BOOL drop)
 										items,
 										LLInventoryModel::EXCLUDE_TRASH,
 										buddies);
-		S32 count = items.count();
+		S32 count = items.size();
 		if(count == 0)
 		{
 			return false;
 		}
 		else if(drop)
 		{
-			LLDynamicArray<LLUUID> ids;
+			std::vector<LLUUID> ids;
 			for(S32 i = 0; i < count; ++i)
 			{
-				ids.put(items.get(i)->getCreatorUUID());
+				ids.push_back(items.at(i)->getCreatorUUID());
 			}
 			inviteToSession(ids);
 		}

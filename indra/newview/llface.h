@@ -37,7 +37,6 @@
 #include "v4coloru.h"
 #include "llquaternion.h"
 #include "xform.h"
-#include "lldarrayptr.h"
 #include "llvertexbuffer.h"
 #include "llviewertexture.h"
 #include "llstat.h"
