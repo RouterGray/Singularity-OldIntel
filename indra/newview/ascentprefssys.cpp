@@ -97,7 +97,7 @@ LLPrefsAscentSys::~LLPrefsAscentSys()
 
 void LLPrefsAscentSys::onCommitCheckBox(LLUICtrl* ctrl, const LLSD& value)
 {
-//    llinfos << "Change to " << ctrl->getControlName()  << " aka " << ctrl->getName() << llendl;
+//    LL_INFOS() << "Change to " << ctrl->getControlName()  << " aka " << ctrl->getName() << LL_ENDL;
 
 	const std::string name = ctrl->getName();
 	bool enabled = value.asBoolean();

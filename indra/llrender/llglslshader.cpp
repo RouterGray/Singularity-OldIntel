@@ -275,13 +275,13 @@ void LLGLSLShader::attachObject(GLhandleARB object)
 		{
 			if((*it).second.mHandle == object)
 			{
-				LL_DEBUGS("ShaderLoading") << "Attached: " << (*it).first << llendl;
+				LL_INFOS("ShaderLoading") << "Attached: " << (*it).first << LL_ENDL;
 				break;
 			}
 		}
 		if(it == LLShaderMgr::instance()->mShaderObjects.end())
 		{
-			LL_WARNS("ShaderLoading") << "Attached unknown shader!" << llendl;
+			LL_WARNS("ShaderLoading") << "Attached unknown shader!" << LL_ENDL;
 		}
 		
 		stop_glerror();
@@ -511,7 +511,7 @@ BOOL LLGLSLShader::mapUniforms(const vector<LLStaticHashedString> * uniforms)
 
 	unbind();
 
-	LL_DEBUGS("ShaderLoading") << "Total Uniform Size: " << mTotalUniformSize << llendl;
+	LL_DEBUGS("ShaderLoading") << "Total Uniform Size: " << mTotalUniformSize << LL_ENDL;
 	return res;
 }
 
@@ -657,7 +657,7 @@ S32 LLGLSLShader::disableTexture(S32 uniform, LLTexUnit::eTextureType mode)
 			}
 			else
 			{
-				llerrs << "Texture channel " << index << " texture type corrupted." << llendl;
+				LL_ERRS() << "Texture channel " << index << " texture type corrupted." << LL_ENDL;
 			}
 		}
 		gGL.getTexUnit(index)->disable();

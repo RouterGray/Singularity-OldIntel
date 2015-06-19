@@ -100,7 +100,7 @@ void LLSurfacePatch::dirty()
 	}
 	else
 	{
-		llwarns << "No viewer object for this surface patch!" << llendl;
+		LL_WARNS() << "No viewer object for this surface patch!" << LL_ENDL;
 	}
 
 	mDirtyZStats = TRUE;

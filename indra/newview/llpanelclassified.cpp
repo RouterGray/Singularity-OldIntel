@@ -139,7 +139,7 @@ public:
 			url += tokens[i].asString();
 			url += "/";
 		}
-		llinfos << "classified teleport to " << url << llendl;
+		LL_INFOS() << "classified teleport to " << url << LL_ENDL;
 		// *TODO: separately track old search, sidebar, and new search
 		// Right now detail HTML pages count as new search.
 		const bool from_search = true;
@@ -318,7 +318,7 @@ void LLPanelClassifiedInfo::processProperties(void* data, EAvatarProcessorType t
 {
 	if(APT_CLASSIFIED_INFO == type)
 	{
-		lldebugs << "processClassifiedInfoReply()" << llendl;
+		LL_DEBUGS() << "processClassifiedInfoReply()" << LL_ENDL;
 
 		LLAvatarClassifiedInfo* c_info = static_cast<LLAvatarClassifiedInfo*>(data);
 		if(c_info && mClassifiedID == c_info->classified_id)
@@ -572,7 +572,7 @@ void LLPanelClassifiedInfo::sendClassifiedInfoRequest()
 
 		if (!url.empty())
 		{
-			llinfos << "Classified stat request via capability" << llendl;
+			LL_INFOS() << "Classified stat request via capability" << LL_ENDL;
 			LLHTTPClient::post(url, body, new LLClassifiedStatsResponder(((LLView*)this)->getHandle(), mClassifiedID));
 		}
 	}
@@ -941,7 +941,7 @@ void LLPanelClassifiedInfo::sendClassifiedClickMessage(const std::string& type)
 	body["region_name"] = mSimName;
 
 	std::string url = gAgent.getRegion()->getCapability("SearchStatTracking");
-	llinfos << "LLPanelClassifiedInfo::sendClassifiedClickMessage via capability" << llendl;
+	LL_INFOS() << "LLPanelClassifiedInfo::sendClassifiedClickMessage via capability" << LL_ENDL;
 	LLHTTPClient::post(url, body, new LLHTTPClient::ResponderIgnore);
 }
 

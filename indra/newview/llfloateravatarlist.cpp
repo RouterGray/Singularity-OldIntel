@@ -155,7 +155,7 @@ void LLAvatarListEntry::processProperties(void* data, EAvatarProcessorType type)
 			}
 			catch(const std::exception&)
 			{
-				llwarns << "Failed to extract age from APT_PROPERTIES for " << mID << ", received \"" << pAvatarData->born_on << "\". Requesting properties again." << llendl;
+				LL_WARNS() << "Failed to extract age from APT_PROPERTIES for " << mID << ", received \"" << pAvatarData->born_on << "\". Requesting properties again." << LL_ENDL;
 				LLAvatarPropertiesProcessor::getInstance()->addObserver(mID, this);
 				LLAvatarPropertiesProcessor::getInstance()->sendAvatarPropertiesRequest(mID);
 				return;
@@ -520,7 +520,7 @@ void updateParticleActivity(LLDrawable *drawablep)
 
 void LLFloaterAvatarList::updateAvatarList()
 {
-	//llinfos << "radar refresh: updating map" << llendl;
+	//LL_INFOS() << "radar refresh: updating map" << LL_ENDL;
 
 	// Check whether updates are enabled
 	if (!mUpdate)
@@ -594,7 +594,7 @@ void LLFloaterAvatarList::updateAvatarList()
 		}
 	}
 
-//	llinfos << "radar refresh: done" << llendl;
+//	LL_INFOS() << "radar refresh: done" << LL_ENDL;
 
 	expireAvatarList();
 
@@ -615,7 +615,7 @@ void LLFloaterAvatarList::updateAvatarList()
 
 void LLFloaterAvatarList::expireAvatarList()
 {
-//	llinfos << "radar: expiring" << llendl;
+//	LL_INFOS() << "radar: expiring" << LL_ENDL;
 	for(av_list_t::iterator it = mAvatars.begin(); it != mAvatars.end();)
 	{
 		LLAvatarListEntry* entry = it->get();
@@ -993,13 +993,13 @@ void LLFloaterAvatarList::refreshAvatarList()
 	
 	mDirtyAvatarSorting = true;
 
-//	llinfos << "radar refresh: done" << llendl;
+//	LL_INFOS() << "radar refresh: done" << LL_ENDL;
 
 }
 
 void LLFloaterAvatarList::onClickIM()
 {
-	//llinfos << "LLFloaterFriends::onClickIM()" << llendl;
+	//LL_INFOS() << "LLFloaterFriends::onClickIM()" << LL_ENDL;
 	const uuid_vec_t ids = mAvatarList->getSelectedIDs();
 	if (!ids.empty())
 	{
@@ -1065,7 +1065,7 @@ void LLFloaterAvatarList::refreshTracker()
 	{	// Tracker stopped.
 		LLTracker::stopTracking(false);
 		mTracking = false;
-//		llinfos << "Tracking stopped." << llendl;
+//		LL_INFOS() << "Tracking stopped." << LL_ENDL;
 	}
 }
 
@@ -1100,7 +1100,7 @@ BOOL LLFloaterAvatarList::handleKeyHere(KEY key, MASK mask)
 			{
 				if (const LLAvatarListEntry* entry = getAvatarEntry(agent_id))
 				{
-//					llinfos << "Trying to teleport to " << entry->getName() << " at " << entry->getPosition() << llendl;
+//					LL_INFOS() << "Trying to teleport to " << entry->getName() << " at " << entry->getPosition() << LL_ENDL;
 					gAgent.teleportViaLocation(entry->getPosition());
 				}
 				return true;
@@ -1349,7 +1349,7 @@ static void send_estate_message(
 	// replying to. I think this can be ignored for now.
 	invoice.generate();
 
-	llinfos << "Sending estate request '" << request << "'" << llendl;
+	LL_INFOS() << "Sending estate request '" << request << "'" << LL_ENDL;
 	msg->newMessage("EstateOwnerMessage");
 	msg->nextBlockFast(_PREHASH_AgentData);
 	msg->addUUIDFast(_PREHASH_AgentID, gAgentID);
@@ -1396,7 +1396,7 @@ void LLFloaterAvatarList::doCommand(avlist_command_t func, bool single/*=false*/
 		if (avid.isNull()) continue;
 		if (LLAvatarListEntry* entry = getAvatarEntry(avid))
 		{
-			llinfos << "Executing command on " << entry->getName() << llendl;
+			LL_INFOS() << "Executing command on " << entry->getName() << LL_ENDL;
 			func(entry);
 		}
 	}

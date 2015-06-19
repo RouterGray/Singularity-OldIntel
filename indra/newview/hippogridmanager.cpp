@@ -119,7 +119,7 @@ void HippoGridInfo::setPlatform(const std::string& platform)
 	else 
 	{
 		setPlatform(PLATFORM_OTHER);
-		llwarns << "Unknown platform '" << platform << "' for " << mGridName << "." << llendl;
+		LL_WARNS() << "Unknown platform '" << platform << "' for " << mGridName << "." << LL_ENDL;
 	}
 }
 
@@ -396,7 +396,7 @@ void HippoGridInfo::getGridInfo()
 		THROW_ALERTC(result, xml_desc, AIArgs("[ERROR]", reply));
 	}
 
-	llinfos << "Received: " << reply << llendl;
+	LL_INFOS() << "Received: " << reply << LL_ENDL;
 
 	XML_Parser parser = XML_ParserCreate(0);
 	XML_SetUserData(parser, this);
@@ -551,7 +551,7 @@ void HippoGridInfo::setSupportsInvLinks(bool b)
 {
 	if (b == true && mInvLinks == false)
 	{
-		llinfos << "Inventory Link support detected" << llendl;
+		LL_INFOS() << "Inventory Link support detected" << LL_ENDL;
 	}
 	mInvLinks = b;
 }
@@ -705,13 +705,13 @@ void HippoGridManager::addGrid(HippoGridInfo* grid)
 	const std::string& nick = grid->getGridName();
 	if (nick == "") 
 	{
-		llwarns << "Ignoring to try adding grid with empty nick." << llendl;
+		LL_WARNS() << "Ignoring to try adding grid with empty nick." << LL_ENDL;
 		delete grid;
 		return;
 	}
 	if (mGridInfo.find(nick) != mGridInfo.end()) 
 	{
-		llwarns << "Ignoring to try adding existing grid " << nick << '.' << llendl;
+		LL_WARNS() << "Ignoring to try adding existing grid " << nick << '.' << LL_ENDL;
 		delete grid;
 		return;
 	}
@@ -723,12 +723,12 @@ void HippoGridManager::deleteGrid(const std::string& grid)
 {
 	GridIterator it = mGridInfo.find(grid);
 	if (it == mGridInfo.end()) {
-		llwarns << "Trying to delete non-existing grid " << grid << '.' << llendl;
+		LL_WARNS() << "Trying to delete non-existing grid " << grid << '.' << LL_ENDL;
 		return;
 	}
 	mGridInfo.erase(it);
-	llinfos << "Number of grids now: " << mGridInfo.size() << llendl;
-	if (mGridInfo.empty()) llinfos << "Grid info map is empty." << llendl;
+	LL_INFOS() << "Number of grids now: " << mGridInfo.size() << LL_ENDL;
+	if (mGridInfo.empty()) LL_INFOS() << "Grid info map is empty." << LL_ENDL;
 	if (grid == mDefaultGrid)
 		setDefaultGrid(LLStringUtil::null);  // sets first grid, if map not empty
 	if (grid == mCurrentGrid)
@@ -768,7 +768,7 @@ void HippoGridManager::setCurrentGrid(const std::string& grid)
 	} 
 	else if (!mGridInfo.empty()) 
 	{
-		llwarns << "Unknown grid '" << grid << "'. Setting to default grid." << llendl;
+		LL_WARNS() << "Unknown grid '" << grid << "'. Setting to default grid." << LL_ENDL;
 	    mCurrentGrid = mDefaultGrid;
 	}
 	if(mCurrentGridChangeSignal)
@@ -798,7 +798,7 @@ void HippoGridManager::parseUrl()
 	const std::string& url(gSavedSettings.getString("GridUpdateList"));
 	if (url.empty()) return;
 
-	llinfos << "Loading grid info from '" << url << "'." << llendl;
+	LL_INFOS() << "Loading grid info from '" << url << "'." << LL_ENDL;
 
 	// query update server
 	std::string escaped_url = LLWeb::escapeURL(url);
@@ -808,9 +808,9 @@ void HippoGridManager::parseUrl()
 	S32 status = response["status"].asInteger();
 	if ((status != 200) || !response["body"].isArray()) 
 	{
-		llinfos << "GridInfo Update failed (" << status << "): "
+		LL_INFOS() << "GridInfo Update failed (" << status << "): "
 			<< (response["body"].isString()? response["body"].asString(): "<unknown error>")
-			<< llendl;
+			<< LL_ENDL;
 		return;
 	}
 
@@ -824,18 +824,18 @@ void HippoGridManager::parseFile(const std::string& fileName, bool mergeIfNewer)
 	infile.open(fileName.c_str());
 	if (!infile.is_open()) 
 	{
-		llwarns << "Cannot find grid info file " << fileName << " to load." << llendl;
+		LL_WARNS() << "Cannot find grid info file " << fileName << " to load." << LL_ENDL;
 		return;
 	}
 
 	LLSD gridInfo;
 	if (LLSDSerialize::fromXML(gridInfo, infile) <= 0) 
 	{
-		llwarns << "Unable to parse grid info file " << fileName << '.' << llendl;		
+		LL_WARNS() << "Unable to parse grid info file " << fileName << '.' << LL_ENDL;		
 		return;
 	}
 
-	llinfos << "Loading grid info file " << fileName << '.' << llendl;
+	LL_INFOS() << "Loading grid info file " << fileName << '.' << LL_ENDL;
 	parseData(gridInfo, mergeIfNewer);
 }
 
@@ -857,12 +857,12 @@ void HippoGridManager::parseData(LLSD &gridInfo, bool mergeIfNewer)
 		}
 		if (it == end) 
 		{
-			llwarns << "Grid data has no version number." << llendl;
+			LL_WARNS() << "Grid data has no version number." << LL_ENDL;
 			return;
 		}
 	}
 
-	llinfos << "Loading grid data." << llendl;
+	LL_INFOS() << "Loading grid data." << LL_ENDL;
 
 	LLSD::array_const_iterator it, end = gridInfo.endArray();
 	for (it = gridInfo.beginArray(); it != end; ++it) 
@@ -968,10 +968,10 @@ void HippoGridManager::saveFile()
 	{
 		LLSDSerialize::toPrettyXML(gridInfo, file);
 		file.close();
-		llinfos << "Saved grids to " << fileName << llendl;
+		LL_INFOS() << "Saved grids to " << fileName << LL_ENDL;
 	} 
 	else 
 	{
-		llwarns << "Unable to open grid info file for save: " << fileName << llendl;
+		LL_WARNS() << "Unable to open grid info file for save: " << fileName << LL_ENDL;
 	}
 }

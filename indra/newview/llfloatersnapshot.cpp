@@ -1331,7 +1331,7 @@ LLFloaterFeed* LLSnapshotLivePreview::getCaptionAndSaveFeed()
 	if (mFullScreenPreviewTexture.isNull())
 	{
 		// This should never happen!
-		llwarns << "The snapshot image has not been generated!" << llendl;
+		LL_WARNS() << "The snapshot image has not been generated!" << LL_ENDL;
 		saveDone(SNAPSHOT_FEED, false, sSnapshotIndex);
 		return NULL;
 	}
@@ -1344,7 +1344,7 @@ LLFloaterFeed* LLSnapshotLivePreview::getCaptionAndSaveFeed()
 	LLImagePNG* png = dynamic_cast<LLImagePNG*>(mFormattedImage.get());
 	if (!png)
 	{
-		llwarns << "Formatted image not a PNG" << llendl;
+		LL_WARNS() << "Formatted image not a PNG" << LL_ENDL;
 		saveDone(SNAPSHOT_FEED, false, sSnapshotIndex);
 		return NULL;
 	}
@@ -1369,7 +1369,7 @@ LLFloaterPostcard* LLSnapshotLivePreview::savePostcard()
 	if(mFullScreenPreviewTexture.isNull())
 	{
 		//this should never happen!!
-		llwarns << "The snapshot image has not been generated!" << llendl ;
+		LL_WARNS() << "The snapshot image has not been generated!" << LL_ENDL ;
 		saveDone(SNAPSHOT_POSTCARD, false, sSnapshotIndex);
 		return NULL ;
 	}
@@ -1384,7 +1384,7 @@ LLFloaterPostcard* LLSnapshotLivePreview::savePostcard()
 	LLImageJPEG* jpg = dynamic_cast<LLImageJPEG*>(mFormattedImage.get());
 	if(!jpg)
 	{
-		llwarns << "Formatted image not a JPEG" << llendl;
+		LL_WARNS() << "Formatted image not a JPEG" << LL_ENDL;
 		saveDone(SNAPSHOT_POSTCARD, false, sSnapshotIndex);
 		return NULL;
 	}
@@ -1513,7 +1513,7 @@ void LLSnapshotLivePreview::saveDone(ESnapshotType type, bool success, int index
 		// The snapshot was already replaced, so this callback has nothing to do with us anymore.
 		if (!success)
 		{
-			llwarns << "Permanent failure to upload or save snapshot" << llendl;
+			LL_WARNS() << "Permanent failure to upload or save snapshot" << LL_ENDL;
 		}
 		return;
 	}

@@ -181,7 +181,7 @@ void display_startup()
 
 void display_update_camera(bool tiling=false)
 {
-	llpushcallstacks;
+	LL_PUSH_CALLSTACKS();
 	// TODO: cut draw distance down if customizing avatar?
 	// TODO: cut draw distance on per-parcel basis?
 
@@ -225,8 +225,8 @@ void display_stats()
 	if (fps_log_freq > 0.f && gRecentFPSTime.getElapsedTimeF32() >= fps_log_freq)
 	{
 		F32 fps = gRecentFrameCount / fps_log_freq;
-		llinfos << llformat("FPS: %.02f", fps) << llendl;
-		llinfos << llformat("VBO: %d  glVBO: %d", LLVertexBuffer::sCount, LLVertexBuffer::sGLCount) << llendl;
+		LL_INFOS() << llformat("FPS: %.02f", fps) << LL_ENDL;
+		LL_INFOS() << llformat("VBO: %d  glVBO: %d", LLVertexBuffer::sCount, LLVertexBuffer::sGLCount) << LL_ENDL;
 #ifdef LL_OCTREE_STATS
 		OctreeStats::getInstance()->dump();
 #endif
@@ -238,9 +238,9 @@ void display_stats()
 	{
 		gMemoryAllocated = LLMemory::getCurrentRSS();
 		U32 memory = (U32)(gMemoryAllocated / (1024*1024));
-		llinfos << llformat("MEMORY: %d MB", memory) << llendl;
-		llinfos << "THREADS: "<< LLThread::getCount() << llendl;
-		llinfos << "MALLOC: " << SGMemStat::getPrintableStat() <<llendl;
+		LL_INFOS() << llformat("MEMORY: %d MB", memory) << LL_ENDL;
+		LL_INFOS() << "THREADS: "<< LLThread::getCount() << LL_ENDL;
+		LL_INFOS() << "MALLOC: " << SGMemStat::getPrintableStat() <<LL_ENDL;
 		LLMemory::logMemoryInfo(TRUE) ;
 		gRecentMemoryTime.reset();
 	}
@@ -815,7 +815,7 @@ void display(BOOL rebuild, F32 zoom_factor, int subfield, BOOL for_snapshot, boo
 		// Doing this here gives hardware occlusion queries extra time to complete
 		LLAppViewer::instance()->pingMainloopTimeout("Display:UpdateImages");
 		LLError::LLCallStacks::clear() ;
-		llpushcallstacks ;
+		LL_PUSH_CALLSTACKS();
 		gFrameStats.start(LLFrameStats::IMAGE_UPDATE);
 
 		{
@@ -847,7 +847,7 @@ void display(BOOL rebuild, F32 zoom_factor, int subfield, BOOL for_snapshot, boo
 				stop_glerror();
 			}*/
 		}
-		llpushcallstacks ;
+		LL_PUSH_CALLSTACKS();
 		LLGLState::checkStates();
 		LLGLState::checkClientArrays();
 
@@ -1573,7 +1573,7 @@ void render_disconnected_background()
 {
 	if (!gDisconnectedImagep && gDisconnected)
 	{
-		llinfos << "Loading last bitmap..." << llendl;
+		LL_INFOS() << "Loading last bitmap..." << LL_ENDL;
 
 		std::string temp_str;
 		temp_str = gDirUtilp->getLindenUserDir() + gDirUtilp->getDirDelimiter() + SCREEN_LAST_FILENAME;
@@ -1581,14 +1581,14 @@ void render_disconnected_background()
 		LLPointer<LLImageBMP> image_bmp = new LLImageBMP;
 		if( !image_bmp->load(temp_str) )
 		{
-			//llinfos << "Bitmap load failed" << llendl;
+			//LL_INFOS() << "Bitmap load failed" << LL_ENDL;
 			return;
 		}
 		
 		LLPointer<LLImageRaw> raw = new LLImageRaw;
 		if (!image_bmp->decode(raw, 0.0f))
 		{
-			llinfos << "Bitmap decode failed" << llendl;
+			LL_INFOS() << "Bitmap decode failed" << LL_ENDL;
 			gDisconnectedImagep = NULL;
 			return;
 		}

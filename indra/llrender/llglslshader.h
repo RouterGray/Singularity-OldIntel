@@ -332,7 +332,7 @@ public:
 					stop_glerror();
 					if (iter->second != glGetUniformLocationARB(mProgramObject, uniform.String().c_str()))
 					{
-						llerrs << "Uniform does not match." << llendl;
+						LL_ERRS() << "Uniform does not match." << LL_ENDL;
 					}
 					stop_glerror();
 				}

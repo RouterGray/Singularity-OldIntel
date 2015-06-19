@@ -2066,11 +2066,11 @@ class LLObjectDerender : public view_listener_t
 		if(node)
 		{
 			root_key = node->getObject()->getID();
-			llinfos << "Derender node has key " << root_key << llendl;
+			LL_INFOS() << "Derender node has key " << root_key << LL_ENDL;
 		}
 		else
 		{
-			llinfos << "Derender node is null " << llendl;
+			LL_INFOS() << "Derender node is null " << LL_ENDL;
 		}
 
 		LLViewerRegion* cur_region = gAgent.getRegion();
@@ -3277,7 +3277,7 @@ class LLAvatarGiveCard : public view_listener_t
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 	{
-		llinfos << "handle_give_card()" << llendl;
+		LL_INFOS() << "handle_give_card()" << LL_ENDL;
 		LLViewerObject* dest = LLSelectMgr::getInstance()->getSelection()->getPrimaryObject();
 //		if(dest && dest->isAvatar())
 // [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Modified: RLVa-1.2.0d | OK
@@ -3447,7 +3447,7 @@ void handle_buy_contents(LLSaleInfo sale_info)
 
 void handle_region_dump_temp_asset_data(void*)
 {
-	llinfos << "Dumping temporary asset data to simulator logs" << llendl;
+	LL_INFOS() << "Dumping temporary asset data to simulator logs" << LL_ENDL;
 	std::vector<std::string> strings;
 	LLUUID invoice;
 	send_generic_message("dumptempassetdata", strings, invoice);
@@ -3455,7 +3455,7 @@ void handle_region_dump_temp_asset_data(void*)
 
 void handle_region_clear_temp_asset_data(void*)
 {
-	llinfos << "Clearing temporary asset data" << llendl;
+	LL_INFOS() << "Clearing temporary asset data" << LL_ENDL;
 	std::vector<std::string> strings;
 	LLUUID invoice;
 	send_generic_message("cleartempassetdata", strings, invoice);
@@ -3466,14 +3466,14 @@ void handle_region_dump_settings(void*)
 	LLViewerRegion* regionp = gAgent.getRegion();
 	if (regionp)
 	{
-		llinfos << "Damage:    " << (regionp->getAllowDamage() ? "on" : "off") << llendl;
-		llinfos << "Landmark:  " << (regionp->getAllowLandmark() ? "on" : "off") << llendl;
-		llinfos << "SetHome:   " << (regionp->getAllowSetHome() ? "on" : "off") << llendl;
-		llinfos << "ResetHome: " << (regionp->getResetHomeOnTeleport() ? "on" : "off") << llendl;
-		llinfos << "SunFixed:  " << (regionp->getSunFixed() ? "on" : "off") << llendl;
-		llinfos << "BlockFly:  " << (regionp->getBlockFly() ? "on" : "off") << llendl;
-		llinfos << "AllowP2P:  " << (regionp->getAllowDirectTeleport() ? "on" : "off") << llendl;
-		llinfos << "Water:     " << (regionp->getWaterHeight()) << llendl;
+		LL_INFOS() << "Damage:    " << (regionp->getAllowDamage() ? "on" : "off") << LL_ENDL;
+		LL_INFOS() << "Landmark:  " << (regionp->getAllowLandmark() ? "on" : "off") << LL_ENDL;
+		LL_INFOS() << "SetHome:   " << (regionp->getAllowSetHome() ? "on" : "off") << LL_ENDL;
+		LL_INFOS() << "ResetHome: " << (regionp->getResetHomeOnTeleport() ? "on" : "off") << LL_ENDL;
+		LL_INFOS() << "SunFixed:  " << (regionp->getSunFixed() ? "on" : "off") << LL_ENDL;
+		LL_INFOS() << "BlockFly:  " << (regionp->getBlockFly() ? "on" : "off") << LL_ENDL;
+		LL_INFOS() << "AllowP2P:  " << (regionp->getAllowDirectTeleport() ? "on" : "off") << LL_ENDL;
+		LL_INFOS() << "Water:     " << (regionp->getWaterHeight()) << LL_ENDL;
 	}
 }
 
@@ -3509,7 +3509,7 @@ void handle_dump_focus(void *)
 {
 	LLUICtrl *ctrl = dynamic_cast<LLUICtrl*>(gFocusMgr.getKeyboardFocus());
 
-	llinfos << "Keyboard focus " << (ctrl ? ctrl->getName() : "(none)") << llendl;
+	LL_INFOS() << "Keyboard focus " << (ctrl ? ctrl->getName() : "(none)") << LL_ENDL;
 }
 
 class LLSelfSitOrStand : public view_listener_t
@@ -3665,7 +3665,7 @@ void process_grant_godlike_powers(LLMessageSystem* msg, void**)
 	}
 	else
 	{
-		llwarns << "Grant godlike for wrong agent " << agent_id << llendl;
+		LL_WARNS() << "Grant godlike for wrong agent " << agent_id << LL_ENDL;
 	}
 }
 
@@ -3921,8 +3921,8 @@ class LLCreateLandmarkCallback : public LLInventoryCallback
 public:
 	/*virtual*/ void fire(const LLUUID& inv_item)
 	{
-		llinfos << "Created landmark with inventory id " << inv_item
-			<< llendl;
+		LL_INFOS() << "Created landmark with inventory id " << inv_item
+			<< LL_ENDL;
 	}
 };
 
@@ -3977,7 +3977,7 @@ void velocity_interpolate( void* data )
 		msg->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
 		msg->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
 		gAgent.sendReliableMessage();
-		llinfos << "Velocity Interpolation On" << llendl;
+		LL_INFOS() << "Velocity Interpolation On" << LL_ENDL;
 	}
 	else
 	{
@@ -3986,7 +3986,7 @@ void velocity_interpolate( void* data )
 		msg->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
 		msg->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
 		gAgent.sendReliableMessage();
-		llinfos << "Velocity Interpolation Off" << llendl;
+		LL_INFOS() << "Velocity Interpolation Off" << LL_ENDL;
 	}
 	// BUG this is a hack because of the change in menu behavior.  The
 	// old menu system would automatically change a control's value,
@@ -4143,7 +4143,7 @@ class LLEditEnableDuplicate : public view_listener_t
 
 void handle_duplicate_in_place(void*)
 {
-	llinfos << "handle_duplicate_in_place" << llendl;
+	LL_INFOS() << "handle_duplicate_in_place" << LL_ENDL;
 
 	LLVector3 offset(0.f, 0.f, 0.f);
 	LLSelectMgr::getInstance()->selectDuplicate(offset, TRUE);
@@ -4323,7 +4323,7 @@ void handle_dump_archetype_xml_continued(LLVOAvatar* avatar, AIFilePicker* filep
 {
 	if (!filepicker->hasFilename())
 	{
-		llwarns << "No file" << llendl;
+		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
 	avatar->dumpArchetypeXML_cont(filepicker->getFilename(), false);
@@ -4385,7 +4385,7 @@ static bool get_derezzable_objects(
 			&& dest != DRD_RETURN_TO_OWNER)
 		{
 			// this object is an asset container, derez its contents, not it
-			llwarns << "Attempt to derez deprecated AssetContainer object type not supported." << llendl;
+			LL_WARNS() << "Attempt to derez deprecated AssetContainer object type not supported." << LL_ENDL;
 			/*
 			object->requestInventory(container_inventory_arrived, 
 				(void *)(BOOL)(DRD_TAKE_INTO_AGENT_INVENTORY == dest));
@@ -4456,7 +4456,7 @@ static void derez_objects(
 		// get them from selection
 		if (!get_derezzable_objects(dest, error, first_region, &derez_objects, false))
 		{
-			llwarns << "No objects to derez" << llendl;
+			LL_WARNS() << "No objects to derez" << LL_ENDL;
 			return;
 		}
 
@@ -4969,7 +4969,7 @@ bool callback_show_buy_currency(const LLSD& notification, const LLSD& response)
 	S32 option = LLNotification::getSelectedOption(notification, response);
 	if (0 == option)
 	{
-		llinfos << "Loading page " << BUY_CURRENCY_URL << llendl;
+		LL_INFOS() << "Loading page " << BUY_CURRENCY_URL << LL_ENDL;
 		LLWeb::loadURL(BUY_CURRENCY_URL);
 	}
 	return false;
@@ -5710,7 +5710,7 @@ void print_agent_nvpairs(void*)
 {
 	LLViewerObject *objectp;
 
-	llinfos << "Agent Name Value Pairs" << llendl;
+	LL_INFOS() << "Agent Name Value Pairs" << LL_ENDL;
 
 	objectp = gAgentAvatarp;
 	if (objectp)
@@ -5719,10 +5719,10 @@ void print_agent_nvpairs(void*)
 	}
 	else
 	{
-		llinfos << "Can't find agent object" << llendl;
+		LL_INFOS() << "Can't find agent object" << LL_ENDL;
 	}
 
-	llinfos << "Camera at " << gAgentCamera.getCameraPositionGlobal() << llendl;
+	LL_INFOS() << "Camera at " << gAgentCamera.getCameraPositionGlobal() << LL_ENDL;
 }
 
 void show_debug_menus()
@@ -5772,7 +5772,7 @@ void toggle_debug_menus(void*)
 // 	{
 // 		return;
 // 	}
-// 	llinfos << "Exporting selected objects:" << llendl;
+// 	LL_INFOS() << "Exporting selected objects:" << LL_ENDL;
 
 // 	gExporterRequestID.generate();
 // 	gExportDirectory = "";
@@ -5791,7 +5791,7 @@ void toggle_debug_menus(void*)
 // 		LLViewerObject* object = node->getObject();
 // 		msg->nextBlockFast(_PREHASH_ObjectData);
 // 		msg->addUUIDFast(_PREHASH_ObjectID, object->getID());
-// 		llinfos << "Object: " << object->getID() << llendl;
+// 		LL_INFOS() << "Object: " << object->getID() << LL_ENDL;
 // 	}
 // 	msg->sendReliable(gAgent.getRegion()->getHost());
 
@@ -5810,7 +5810,7 @@ void handle_reload_settings(void*)
 	gSavedSettings.resetToDefaults();
 	gSavedSettings.loadFromFile(gSavedSettings.getString("ClientSettingsFile"));
 
-	llinfos << "Loading colors from colors.xml" << llendl;
+	LL_INFOS() << "Loading colors from colors.xml" << LL_ENDL;
 	std::string color_file = gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS,"colors.xml");
 	gColors.resetToDefaults();
 	gColors.loadFromFileLegacy(color_file, FALSE, TYPE_COL4U);
@@ -5911,13 +5911,13 @@ class LLWorldCreateLandmark : public view_listener_t
 		LLViewerRegion* agent_region = gAgent.getRegion();
 		if(!agent_region)
 		{
-			llwarns << "No agent region" << llendl;
+			LL_WARNS() << "No agent region" << LL_ENDL;
 			return true;
 		}
 		LLParcel* agent_parcel = LLViewerParcelMgr::getInstance()->getAgentParcel();
 		if (!agent_parcel)
 		{
-			llwarns << "No agent parcel" << llendl;
+			LL_WARNS() << "No agent parcel" << LL_ENDL;
 			return true;
 		}
 		if (!agent_parcel->getAllowLandmark()
@@ -6293,7 +6293,7 @@ class LLPromptShowURL : public view_listener_t
 		}
 		else
 		{
-			llinfos << "PromptShowURL invalid parameters! Expecting \"ALERT,URL\"." << llendl;
+			LL_INFOS() << "PromptShowURL invalid parameters! Expecting \"ALERT,URL\"." << LL_ENDL;
 		}
 		return true;
 	}
@@ -6326,7 +6326,7 @@ class LLPromptShowFile : public view_listener_t
 		}
 		else
 		{
-			llinfos << "PromptShowFile invalid parameters! Expecting \"ALERT,FILE\"." << llendl;
+			LL_INFOS() << "PromptShowFile invalid parameters! Expecting \"ALERT,FILE\"." << LL_ENDL;
 		}
 		return true;
 	}
@@ -6568,7 +6568,7 @@ void callback_attachment_drop(const LLSD& notification, const LLSD& response)
 	
 	if (!object)
 	{
-		llwarns << "handle_drop_attachment() - no object to drop" << llendl;
+		LL_WARNS() << "handle_drop_attachment() - no object to drop" << LL_ENDL;
 		return;
 	}
 
@@ -6585,13 +6585,13 @@ void callback_attachment_drop(const LLSD& notification, const LLSD& response)
 
 	if (!object)
 	{
-		llwarns << "handle_detach() - no object to detach" << llendl;
+		LL_WARNS() << "handle_detach() - no object to detach" << LL_ENDL;
 		return;
 	}
 
 	if (object->isAvatar())
 	{
-		llwarns << "Trying to detach avatar from avatar." << llendl;
+		LL_WARNS() << "Trying to detach avatar from avatar." << LL_ENDL;
 		return;
 	}
 	
@@ -6634,7 +6634,7 @@ class LLAttachmentDrop : public view_listener_t
 		}
 		else
 		{
-			llwarns << "Drop object not found" << llendl;
+			LL_WARNS() << "Drop object not found" << LL_ENDL;
 			return true;
 		}
 
@@ -6729,7 +6729,7 @@ class LLAttachmentDetach : public view_listener_t
 		LLViewerObject *object = LLSelectMgr::getInstance()->getSelection()->getPrimaryObject();
 		if (!object)
 		{
-			llwarns << "handle_detach() - no object to detach" << llendl;
+			LL_WARNS() << "handle_detach() - no object to detach" << LL_ENDL;
 			return true;
 		}
 
@@ -6746,13 +6746,13 @@ class LLAttachmentDetach : public view_listener_t
 
 		if (!object)
 		{
-			llwarns << "handle_detach() - no object to detach" << llendl;
+			LL_WARNS() << "handle_detach() - no object to detach" << LL_ENDL;
 			return true;
 		}
 
 		if (object->isAvatar())
 		{
-			llwarns << "Trying to detach avatar from avatar." << llendl;
+			LL_WARNS() << "Trying to detach avatar from avatar." << LL_ENDL;
 			return true;
 		}
 
@@ -7068,14 +7068,14 @@ void queue_actions(LLFloaterScriptQueue* q, const std::string& msg)
 		}
 		else
 		{
-			llerrs << "Bad logic." << llendl;
+			LL_ERRS() << "Bad logic." << LL_ENDL;
 		}
 	}
 	else
 	{
 		if (!q->start())
 		{
-			llwarns << "Unexpected script compile failure." << llendl;
+			LL_WARNS() << "Unexpected script compile failure." << LL_ENDL;
 		}
 	}
 }
@@ -7129,7 +7129,7 @@ class LLToolsSelectedScriptAction : public view_listener_t
 		}
 		else
 		{
-			llwarns << "Failed to generate LLFloaterScriptQueue with action: " << action << llendl;
+			LL_WARNS() << "Failed to generate LLFloaterScriptQueue with action: " << action << LL_ENDL;
 		}
 		return true;
 	}
@@ -7245,7 +7245,7 @@ void handle_toggle_pg(void*)
 
 	LLFloaterWorldMap::reloadIcons(NULL);
 
-	llinfos << "PG status set to " << gAgent.isTeen() << llendl;
+	LL_INFOS() << "PG status set to " << gAgent.isTeen() << LL_ENDL;
 }
 
 void handle_dump_attachments(void*)
@@ -7268,12 +7268,12 @@ void handle_dump_attachments(void*)
 							!attached_object->mDrawable->isRenderType(0));
 			LLVector3 pos;
 			if (visible) pos = attached_object->mDrawable->getPosition();
-			llinfos << "ATTACHMENT " << key << ": item_id=" << attached_object->getAttachmentItemID()
+			LL_INFOS() << "ATTACHMENT " << key << ": item_id=" << attached_object->getAttachmentItemID()
 					<< (attached_object ? " present " : " absent ")
 					<< (visible ? "visible " : "invisible ")
 					<<  " at " << pos
 					<< " and " << (visible ? attached_object->getPosition() : LLVector3::zero)
-					<< llendl;
+					<< LL_ENDL;
 		}
 	}
 }
@@ -7815,7 +7815,7 @@ class LLToolsEditLinkedParts : public view_listener_t
 
 void reload_personal_settings_overrides(void *)
 {
-	llinfos << "Loading overrides from " << gDirUtilp->getExpandedFilename(LL_PATH_PER_SL_ACCOUNT,"overrides.xml") << llendl;
+	LL_INFOS() << "Loading overrides from " << gDirUtilp->getExpandedFilename(LL_PATH_PER_SL_ACCOUNT,"overrides.xml") << LL_ENDL;
 	
 	gSavedSettings.loadFromFile(gDirUtilp->getExpandedFilename(LL_PATH_PER_SL_ACCOUNT,"overrides.xml"));
 }
@@ -7958,7 +7958,7 @@ void handle_mesh_save_llm(void* data)
 
 	if (!mesh_name)
 	{
-		llwarns << "LPolyMesh::getSharedMeshName returned NULL" << llendl;
+		LL_WARNS() << "LPolyMesh::getSharedMeshName returned NULL" << LL_ENDL;
 		return;
 	}
 
@@ -7971,14 +7971,14 @@ static void handle_mesh_save_llm_continued(void* data, AIFilePicker* filepicker)
 {
 	if (!filepicker->hasFilename())
 	{
-		llwarns << "No file" << llendl;
+		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
 	std::string selected_filename = filepicker->getFilename();
 	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
 	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
 
-	llinfos << "Selected " << selected_filename << " for mesh " << *mesh_name <<llendl;
+	LL_INFOS() << "Selected " << selected_filename << " for mesh " << *mesh_name <<LL_ENDL;
 
 	std::string bak_filename = selected_filename + ".bak";
 
@@ -7995,7 +7995,7 @@ static void handle_mesh_save_llm_continued(void* data, AIFilePicker* filepicker)
 		// The selected file exists, but there is no backup yet, so make one.
 		if (LLFile::rename(selected_filename, bak_filename) != 0 )
 		{
-			llerrs << "can't rename: " << selected_filename << llendl;
+			LL_ERRS() << "can't rename: " << selected_filename << LL_ENDL;
 			return;
 		}
 	}
@@ -8003,7 +8003,7 @@ static void handle_mesh_save_llm_continued(void* data, AIFilePicker* filepicker)
 	LLFILE* fp = LLFile::fopen(selected_filename, "wb");
 	if (!fp)
 	{
-		llerrs << "can't open: " << selected_filename << llendl;
+		LL_ERRS() << "can't open: " << selected_filename << LL_ENDL;
 
 		if ((LLFile::stat(bak_filename, &stat_bak) == 0)
 		&&  (LLFile::stat(selected_filename, &stat_selected) != 0) )
@@ -8011,7 +8011,7 @@ static void handle_mesh_save_llm_continued(void* data, AIFilePicker* filepicker)
 			// Rename the backup to its original name
 			if (LLFile::rename(bak_filename, selected_filename) != 0 )
 			{
-				llerrs << "can't rename: " << bak_filename << " back to " << selected_filename << llendl;
+				LL_ERRS() << "can't rename: " << bak_filename << " back to " << selected_filename << LL_ENDL;
 				return;
 			}
 		}
@@ -8031,7 +8031,7 @@ void handle_mesh_save_current_obj(void* data)
 
 	if (!mesh_name)
 	{
-		llwarns << "LPolyMesh::getSharedMeshName returned NULL" << llendl;
+		LL_WARNS() << "LPolyMesh::getSharedMeshName returned NULL" << LL_ENDL;
 		return;
 	}
 
@@ -8047,19 +8047,19 @@ static void handle_mesh_save_current_obj_continued(void* data, AIFilePicker* fil
 {
 	if(!filepicker->hasFilename())
 	{
-		llwarns << "No file" << llendl;
+		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
 	std::string selected_filename = filepicker->getFilename();
 	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*)data;
 	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
 
-	llinfos << "Selected " << selected_filename << " for mesh " << *mesh_name <<llendl;
+	LL_INFOS() << "Selected " << selected_filename << " for mesh " << *mesh_name <<LL_ENDL;
 
 	LLFILE* fp = LLFile::fopen(selected_filename, "wb");			/*Flawfinder: ignore*/
 	if (!fp)
 	{
-		llerrs << "can't open: " << selected_filename << llendl;
+		LL_ERRS() << "can't open: " << selected_filename << LL_ENDL;
 		return;
 	}
 
@@ -8080,7 +8080,7 @@ void handle_mesh_save_obj(void* data)
 
 	if (!mesh_name)
 	{
-		llwarns << "LPolyMesh::getSharedMeshName returned NULL" << llendl;
+		LL_WARNS() << "LPolyMesh::getSharedMeshName returned NULL" << LL_ENDL;
 		return;
 	}
 
@@ -8096,19 +8096,19 @@ static void handle_mesh_save_obj_continued(void* data, AIFilePicker* filepicker)
 {
 	if(!filepicker->hasFilename())
 	{
-		llwarns << "No file" << llendl;
+		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
 	std::string selected_filename = filepicker->getFilename();
 	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
 	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
 
-	llinfos << "Selected " << selected_filename << " for mesh " << *mesh_name <<llendl;
+	LL_INFOS() << "Selected " << selected_filename << " for mesh " << *mesh_name <<LL_ENDL;
 
 	LLFILE* fp = LLFile::fopen(selected_filename, "wb");			/*Flawfinder: ignore*/
 	if (!fp)
 	{
-		llerrs << "can't open: " << selected_filename << llendl;
+		LL_ERRS() << "can't open: " << selected_filename << LL_ENDL;
 		return;
 	}
 
@@ -8126,7 +8126,7 @@ void handle_mesh_load_obj(void* data)
 
 	if (!mesh_name)
 	{
-		llwarns << "LPolyMesh::getSharedMeshName returned NULL" << llendl;
+		LL_WARNS() << "LPolyMesh::getSharedMeshName returned NULL" << LL_ENDL;
 		return;
 	}
 
@@ -8139,19 +8139,19 @@ static void handle_mesh_load_obj_continued(void* data, AIFilePicker* filepicker)
 {
 	if(!filepicker->hasFilename())
 	{
-		llwarns << "No file" << llendl;
+		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
 	std::string selected_filename = filepicker->getFilename();
 	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
 	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
 
-	llinfos << "Selected " << selected_filename << " for mesh " << *mesh_name <<llendl;
+	LL_INFOS() << "Selected " << selected_filename << " for mesh " << *mesh_name <<LL_ENDL;
 
 	LLFILE* fp = LLFile::fopen(selected_filename, "rb");			/*Flawfinder: ignore*/
 	if (!fp)
 	{
-		llerrs << "can't open: " << selected_filename << llendl;
+		LL_ERRS() << "can't open: " << selected_filename << LL_ENDL;
 		return;
 	}
 
@@ -8171,11 +8171,11 @@ void handle_morph_save_obj(void* data)
 
 	if (!mesh_name)
 	{
-		llwarns << "LPolyMesh::getSharedMeshName returned NULL" << llendl;
+		LL_WARNS() << "LPolyMesh::getSharedMeshName returned NULL" << LL_ENDL;
 		return;
 	}
 
-	llinfos << "Save morph OBJ " << morph_name << " of mesh " << *mesh_name <<llendl;
+	LL_INFOS() << "Save morph OBJ " << morph_name << " of mesh " << *mesh_name <<LL_ENDL;
 
 	std::string file_name = *mesh_name + "." + morph_name + ".obj";
 	std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
@@ -8189,18 +8189,18 @@ static void handle_morph_save_obj_continued(void* data, AIFilePicker* filepicker
 {
 	if (!filepicker->hasFilename())
 	{
-		llwarns << "No file" << llendl;
+		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
 	std::string selected_filename = filepicker->getFilename();
 	LLPolyMorphData* morph_data = (LLPolyMorphData*)data;
 
-	llinfos << "Selected " << selected_filename << llendl;
+	LL_INFOS() << "Selected " << selected_filename << LL_ENDL;
 
 	LLFILE* fp = LLFile::fopen(selected_filename, "wb");			/*Flawfinder: ignore*/
 	if (!fp)
 	{
-		llerrs << "can't open: " << selected_filename << llendl;
+		LL_ERRS() << "can't open: " << selected_filename << LL_ENDL;
 		return;
 	}
 
@@ -8219,11 +8219,11 @@ void handle_morph_load_obj(void* data)
 
 	if (!mesh_name)
 	{
-		llwarns << "LPolyMesh::getSharedMeshName returned NULL" << llendl;
+		LL_WARNS() << "LPolyMesh::getSharedMeshName returned NULL" << LL_ENDL;
 		return;
 	}
 
-	llinfos << "Load morph OBJ " << morph_name << " of mesh " << *mesh_name <<llendl;
+	LL_INFOS() << "Load morph OBJ " << morph_name << " of mesh " << *mesh_name <<LL_ENDL;
 
 	AIFilePicker* filepicker = AIFilePicker::create();
 	filepicker->open(FFLOAD_ALL, default_path, "mesh_obj");
@@ -8234,19 +8234,19 @@ static void handle_morph_load_obj_continued(void* data, AIFilePicker* filepicker
 {
 	if(!filepicker->hasFilename())
 	{
-		llwarns << "No file" << llendl;
+		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
 	std::string selected_filename = filepicker->getFilename();
 	LLPolyMorphData* morph_data = (LLPolyMorphData*) data;
 	LLPolyMeshSharedData* mesh_shared = morph_data->mMesh;
 
-	llinfos << "Selected " << selected_filename <<llendl;
+	LL_INFOS() << "Selected " << selected_filename <<LL_ENDL;
 
 	LLFILE* fp = LLFile::fopen(selected_filename, "rb");			/*Flawfinder: ignore*/
 	if (!fp)
 	{
-		llerrs << "can't open: " << selected_filename << llendl;
+		LL_ERRS() << "can't open: " << selected_filename << LL_ENDL;
 		return;
 	}
 
@@ -8470,7 +8470,7 @@ void handle_buy_currency_test(void*)
 	replace["[LANGUAGE]"] = LLUI::getLanguage();
 	LLStringUtil::format(url, replace);
 
-	llinfos << "buy currency url " << url << llendl;
+	LL_INFOS() << "buy currency url " << url << LL_ENDL;
 
 	LLFloaterHtmlCurrency* floater = LLFloaterHtmlCurrency::showInstance(url);
 	// Needed so we can use secondlife:///app/floater/self/close SLURLs
@@ -8760,7 +8760,7 @@ class LLWorldEnableEnvSettings : public view_listener_t
 			}
 			else
 			{
-				llwarns << "Unknown item" << llendl;
+				LL_WARNS() << "Unknown item" << LL_ENDL;
 			}
 		}
 		return result;
