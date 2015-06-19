@@ -1716,7 +1716,7 @@ void LLVOAvatar::getSpatialExtents(LLVector4a& newMin, LLVector4a& newMax)
 	for (polymesh_map_t::iterator i = mPolyMeshes.begin(); i != mPolyMeshes.end(); ++i)
 	{
 		LLPolyMesh* mesh = i->second;
-		for (S32 joint_num = 0; joint_num < mesh->mJointRenderData.size(); joint_num++)
+		for (U32 joint_num = 0; joint_num < mesh->mJointRenderData.size(); joint_num++)
 		{
 			update_min_max(newMin, newMax, mesh->mJointRenderData[joint_num]->mWorldMatrix->getRow<LLMatrix4a::ROW_TRANS>());
 		}

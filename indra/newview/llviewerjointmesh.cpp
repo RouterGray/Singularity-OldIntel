@@ -110,7 +110,7 @@ static LLVector4	gJointPivot[32];
 //-----------------------------------------------------------------------------
 void LLViewerJointMesh::uploadJointMatrices()
 {
-	S32 joint_num;
+	U32 joint_num;
 	LLPolyMesh *reference_mesh = mMesh->getReferenceMesh();
 	LLDrawPool *poolp = mFace ? mFace->getPool() : NULL;
 	BOOL hardware_skinning = (poolp && poolp->getVertexShaderLevel() > 0) ? TRUE : FALSE;

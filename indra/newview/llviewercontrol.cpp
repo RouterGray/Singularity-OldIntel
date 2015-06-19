@@ -582,13 +582,13 @@ bool handleWindlightCloudChanged(const LLSD& new_value)
 	{
 		cloudNoiseFilename = gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, "windlight/clouds", "Default.tga");
 	}
-	llinfos << "loading WindLight cloud noise from " << cloudNoiseFilename << LL_ENDL;
+	LL_INFOS() << "loading WindLight cloud noise from " << cloudNoiseFilename << LL_ENDL;
 
 	LLPointer<LLImageFormatted> cloudNoiseFile(LLImageFormatted::createFromExtension(cloudNoiseFilename));
 
 	if (cloudNoiseFile.isNull())
 	{
-		llwarns << "Error: Failed to load cloud noise image " << cloudNoiseFilename << LL_ENDL;
+		LL_WARNS() << "Error: Failed to load cloud noise image " << cloudNoiseFilename << LL_ENDL;
 		return true;
 	}
 
@@ -599,7 +599,7 @@ bool handleWindlightCloudChanged(const LLSD& new_value)
 		if (cloudNoiseFile->decode(LLDrawPoolWLSky::sCloudNoiseRawImage, 0.0f))
 		{
 			//debug use
-			lldebugs << "cloud noise raw image width: " << LLDrawPoolWLSky::sCloudNoiseRawImage->getWidth() << " : height: " << LLDrawPoolWLSky::sCloudNoiseRawImage->getHeight() << " : components: " <<
+			LL_DEBUGS() << "cloud noise raw image width: " << LLDrawPoolWLSky::sCloudNoiseRawImage->getWidth() << " : height: " << LLDrawPoolWLSky::sCloudNoiseRawImage->getHeight() << " : components: " <<
 				(S32) LLDrawPoolWLSky::sCloudNoiseRawImage->getComponents() << " : data size: " << LLDrawPoolWLSky::sCloudNoiseRawImage->getDataSize() << LL_ENDL;
 			llassert_always(LLDrawPoolWLSky::sCloudNoiseRawImage->getData());
 
