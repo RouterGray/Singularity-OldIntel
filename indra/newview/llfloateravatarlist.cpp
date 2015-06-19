@@ -76,9 +76,16 @@ namespace
 {
 	void chat_avatar_status(const std::string& name, const LLUUID& key, ERadarStatType type, bool entering, const F32& dist)
 	{
-		if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) return; // RLVa:LF Don't announce people are around when blind, that cheats the system.
 		static LLCachedControl<bool> radar_chat_alerts(gSavedSettings, "RadarChatAlerts");
 		if (!radar_chat_alerts) return;
+		// <Alchemy>
+		// If we're teleporting, we don't want to see the radar's alerts about EVERY agent leaving.
+		if (!entering && gAgent.getTeleportState() != LLAgent::TELEPORT_NONE)
+		{
+			return;
+		}
+		// </Alchemy>
+		if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) return; // RLVa:LF Don't announce people are around when blind, that cheats the system.
 		static LLCachedControl<bool> radar_alert_sim(gSavedSettings, "RadarAlertSim");
 		static LLCachedControl<bool> radar_alert_draw(gSavedSettings, "RadarAlertDraw");
 		static LLCachedControl<bool> radar_alert_shout_range(gSavedSettings, "RadarAlertShoutRange");
