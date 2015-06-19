@@ -116,7 +116,7 @@ LLPanelGroupGeneral::~LLPanelGroupGeneral()
 
 BOOL LLPanelGroupGeneral::postBuild()
 {
-	llinfos << "LLPanelGroupGeneral::postBuild()" << llendl;
+	LL_INFOS() << "LLPanelGroupGeneral::postBuild()" << LL_ENDL;
 
 	bool recurse = true;
 
@@ -375,7 +375,7 @@ bool LLPanelGroupGeneral::apply(std::string& mesg)
 
 	if (has_power_in_group || mGroupID.isNull())
 	{
-		llinfos << "LLPanelGroupGeneral::apply" << llendl;
+		LL_INFOS() << "LLPanelGroupGeneral::apply" << LL_ENDL;
 
 		// Check to make sure mature has been set
 		if(mComboMature &&
@@ -843,7 +843,7 @@ void LLPanelGroupGeneral::updateMembers()
 
 	if (mMemberProgress == gdatap->mMembers.end())
 	{
-		lldebugs << "   member list completed." << llendl;
+		LL_DEBUGS() << "   member list completed." << LL_ENDL;
 		mListVisibleMembers->setEnabled(TRUE);
 	}
 	else

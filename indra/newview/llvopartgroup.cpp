@@ -424,7 +424,7 @@ BOOL LLVOPartGroup::updateGeometry(LLDrawable *drawable)
 		facep = drawable->getFace(i);
 		if (!facep)
 		{
-			llwarns << "No face found for index " << i << "!" << llendl;
+			LL_WARNS() << "No face found for index " << i << "!" << LL_ENDL;
 			continue;
 		}
 
@@ -470,7 +470,7 @@ BOOL LLVOPartGroup::updateGeometry(LLDrawable *drawable)
 		LLFace* facep = drawable->getFace(i);
 		if (!facep)
 		{
-			llwarns << "No face found for index " << i << "!" << llendl;
+			LL_WARNS() << "No face found for index " << i << "!" << LL_ENDL;
 			continue;
 		}
 		facep->setTEOffset(i);

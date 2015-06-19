@@ -302,7 +302,7 @@ static bool handleGammaChanged(const LLSD& newvalue)
 		// Only save it if it's changed
 		if (!gViewerWindow->getWindow()->setGamma(gamma))
 		{
-			llwarns << "setGamma failed!" << llendl;
+			LL_WARNS() << "setGamma failed!" << LL_ENDL;
 		}
 	}
 
@@ -561,7 +561,7 @@ bool handleVelocityInterpolate(const LLSD& newvalue)
 		msg->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
 		msg->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
 		gAgent.sendReliableMessage();
-		llinfos << "Velocity Interpolation On" << llendl;
+		LL_INFOS() << "Velocity Interpolation On" << LL_ENDL;
 	}
 	else
 	{
@@ -570,7 +570,7 @@ bool handleVelocityInterpolate(const LLSD& newvalue)
 		msg->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
 		msg->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
 		gAgent.sendReliableMessage();
-		llinfos << "Velocity Interpolation Off" << llendl;
+		LL_INFOS() << "Velocity Interpolation Off" << LL_ENDL;
 	}
 	return true;
 }
@@ -629,7 +629,7 @@ bool handleCloudSettingsChanged(const LLSD& newvalue)
 
 bool handleAscentAvatarModifier(const LLSD& newvalue)
 {
-	llinfos << "Calling gAgent.sendAgentSetAppearance() because AscentAvatar*Modifier changed." << llendl;
+	LL_INFOS() << "Calling gAgent.sendAgentSetAppearance() because AscentAvatar*Modifier changed." << LL_ENDL;
 	gAgent.sendAgentSetAppearance();
 	return true;
 }

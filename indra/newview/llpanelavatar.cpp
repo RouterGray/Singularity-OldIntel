@@ -518,7 +518,7 @@ void LLPanelAvatarWeb::refresh()
 {
 	if (!mNavigateTo.empty())
 	{
-		llinfos << "Loading " << mNavigateTo << llendl;
+		LL_INFOS() << "Loading " << mNavigateTo << LL_ENDL;
 		mWebBrowser->navigateTo(mNavigateTo);
 		mNavigateTo = "";
 	}
@@ -946,7 +946,7 @@ void LLPanelAvatarPicks::processProperties(void* data, EAvatarProcessorType type
 				panel_pick->markForServerRequest();
 
 				// The button should automatically truncate long names for us
-				llinfos << "Adding tab for " << mAvatarID << " " << (self ? "Self" : "Other") << ": '" << it->second << "'" << llendl;
+				LL_INFOS() << "Adding tab for " << mAvatarID << " " << (self ? "Self" : "Other") << ": '" << it->second << "'" << LL_ENDL;
 				tabs->addTabPanel(panel_pick, it->second);
 			}
 
@@ -1383,7 +1383,7 @@ void LLPanelAvatar::onClickCopy(const LLSD& val)
 {
 	if (val.isUndefined())
 	{
-		llinfos << "Copy agent id: " << mAvatarID << llendl;
+		LL_INFOS() << "Copy agent id: " << mAvatarID << LL_ENDL;
 		gViewerWindow->getWindow()->copyTextToClipboard(utf8str_to_wstring(mAvatarID.asString()));
 	}
 	else
@@ -1423,7 +1423,7 @@ void LLPanelAvatar::onClickCancel()
 
 void LLPanelAvatar::sendAvatarPropertiesRequest()
 {
-	lldebugs << "LLPanelAvatar::sendAvatarPropertiesRequest()" << llendl; 
+	LL_DEBUGS() << "LLPanelAvatar::sendAvatarPropertiesRequest()" << LL_ENDL; 
 
 	LLAvatarPropertiesProcessor::getInstance()->sendAvatarPropertiesRequest(mAvatarID);
 }
@@ -1490,7 +1490,7 @@ void LLPanelAvatar::enableOKIfReady()
 
 void LLPanelAvatar::sendAvatarPropertiesUpdate()
 {
-	llinfos << "Sending avatarinfo update" << llendl;
+	LL_INFOS() << "Sending avatarinfo update" << LL_ENDL;
 	LLAvatarData avatar_data;
 	avatar_data.image_id = mPanelSecondLife->getChild<LLTextureCtrl>("img")->getImageAssetID();
 	avatar_data.fl_image_id = mPanelFirstLife ? mPanelFirstLife->getChild<LLTextureCtrl>("img")->getImageAssetID() : LLUUID::null;

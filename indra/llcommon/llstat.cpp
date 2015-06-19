@@ -64,7 +64,7 @@ LLStat::LLStat(std::string name, S32 num_bins, BOOL use_frame_timer)
 	{
 		stat_map_t::iterator iter = getStatList().find(mName);
 		if (iter != getStatList().end())
-			llwarns << "LLStat with duplicate name: " << mName << llendl;
+			LL_WARNS() << "LLStat with duplicate name: " << mName << LL_ENDL;
 		getStatList().insert(std::make_pair(mName, this));
 	}
 }

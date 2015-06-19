@@ -361,7 +361,7 @@ LLNotifyBox::LLNotifyBox(LLNotificationPtr notification)
 		}
 		
 		if (++sNotifyBoxCount <= 0)
-			llwarns << "A notification was mishandled. sNotifyBoxCount = " << sNotifyBoxCount << llendl;
+			LL_WARNS() << "A notification was mishandled. sNotifyBoxCount = " << sNotifyBoxCount << LL_ENDL;
 		// If this is the only notify box, don't show the next button
 		else if (sNotifyBoxCount == 1 && mNextBtn)
 			mNextBtn->setVisible(false);

@@ -368,7 +368,7 @@ void process_layer_data(LLMessageSystem *mesgsys, void **user_data)
 
 	if(!regionp || gNoRender)
 	{
-		llwarns << "Invalid region for layer data." << llendl;
+		LL_WARNS() << "Invalid region for layer data." << LL_ENDL;
 		return;
 	}
 	S32 size;
@@ -1190,7 +1190,7 @@ void open_inventory_offer(const uuid_vec_t& objects, const std::string& from_nam
 		const LLInventoryObject *obj = gInventory.getObject(obj_id);
 		if (!obj)
 		{
-			llwarns << "Cannot find object [ itemID:" << obj_id << " ] to open." << llendl;
+			LL_WARNS() << "Cannot find object [ itemID:" << obj_id << " ] to open." << LL_ENDL;
 			continue;
 		}
 
@@ -2231,7 +2231,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 		if((U32)std::abs(std::distance(iter, boost::sregex_iterator())) > SpamNewlines)
 		{
 			NACLAntiSpamRegistry::blockOnQueue((U32)NACLAntiSpamRegistry::QUEUE_IM,from_id);
-			llinfos << "[antispam] blocked owner due to too many newlines: " << from_id << llendl;
+			LL_INFOS() << "[antispam] blocked owner due to too many newlines: " << from_id << LL_ENDL;
 			if(gSavedSettings.getBOOL("AntiSpamNotify"))
 			{
 				LLSD args;
@@ -2271,7 +2271,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 
 	// <edit>
 	if (region_id.notNull())
-		llinfos << "RegionID: " << region_id.asString() << llendl;
+		LL_INFOS() << "RegionID: " << region_id.asString() << LL_ENDL;
 	// </edit>
 
 	bool is_do_not_disturb = gAgent.isDoNotDisturb();
@@ -3713,7 +3713,7 @@ protected:
 		}
 		else
 		{
-			llwarns << "Hippo AuthHandler: non-OK HTTP status " << mStatus << " for URL " << mURL << " (" << mReason << "). Error body: \"" << content << "\"." << llendl;
+			LL_WARNS() << "Hippo AuthHandler: non-OK HTTP status " << mStatus << " for URL " << mURL << " (" << mReason << "). Error body: \"" << content << "\"." << LL_ENDL;
 		}
 	}
 
@@ -3857,13 +3857,13 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 				{
 					if (key.isNull())
 					{
-						llwarns << "Nameplate from chat on NULL avatar (ignored)" << llendl;
+						LL_WARNS() << "Nameplate from chat on NULL avatar (ignored)" << LL_ENDL;
 						return;
 					}	
 					LLVOAvatar *avatar = gObjectList.findAvatar(key);
 					if (!avatar)
 					{
-						llwarns << "Nameplate from chat on invalid avatar (ignored)" << llendl;
+						LL_WARNS() << "Nameplate from chat on invalid avatar (ignored)" << LL_ENDL;
 						return;							
 					}
 					if (mesg.size() == 39)
@@ -5040,7 +5040,7 @@ void send_agent_update(BOOL force_send, BOOL send_reliable)
 				update_sec = cur_sec;
 				//msg_number = 0;
 				max_update_count = llmax(max_update_count, update_count);
-				llinfos << "Sent " << update_count << " AgentUpdate messages per second, max is " << max_update_count << llendl;
+				LL_INFOS() << "Sent " << update_count << " AgentUpdate messages per second, max is " << max_update_count << LL_ENDL;
 			}
 			update_sec = cur_sec;
 			update_count = 0;
@@ -6235,8 +6235,8 @@ static std::string reason_from_transaction_type(S32 transaction_type,
 			return std::string();
 
 		default:
-			llwarns << "Unknown transaction type "
-				<< transaction_type << llendl;
+			LL_WARNS() << "Unknown transaction type "
+				<< transaction_type << LL_ENDL;
 			return std::string();
 	}
 }
@@ -6653,7 +6653,7 @@ bool attempt_standard_notification(LLMessageSystem* msgsystem)
 			std::istringstream llsdData(llsdRaw);
 			if (!LLSDSerialize::deserialize(llsdBlock, llsdData, llsdRaw.length()))
 			{
-				llwarns << "attempt_standard_notification: Attempted to read notification parameter data into LLSD but failed:" << llsdRaw << llendl;
+				LL_WARNS() << "attempt_standard_notification: Attempted to read notification parameter data into LLSD but failed:" << llsdRaw << LL_ENDL;
 			}
 		}
 		
@@ -7554,7 +7554,7 @@ void process_teleport_failed(LLMessageSystem *msg, void**)
 			std::istringstream llsd_data(llsd_raw);
 			if (!LLSDSerialize::deserialize(llsd_block, llsd_data, llsd_raw.length()))
 			{
-				llwarns << "process_teleport_failed: Attempted to read alert parameter data into LLSD but failed:" << llsd_raw << llendl;
+				LL_WARNS() << "process_teleport_failed: Attempted to read alert parameter data into LLSD but failed:" << llsd_raw << LL_ENDL;
 			}
 			else
 			{
@@ -7888,7 +7888,7 @@ bool teleport_request_callback(const LLSD& notification, const LLSD& response)
 	LLUUID from_id = notification["payload"]["from_id"].asUUID();
 	if(from_id.isNull())
 	{
-		llwarns << "from_id is NULL" << llendl;
+		LL_WARNS() << "from_id is NULL" << LL_ENDL;
 		return false;
 	}
 
@@ -8120,7 +8120,7 @@ void process_script_dialog(LLMessageSystem* msg, void**)
 	S32 button_count = msg->getNumberOfBlocks("Buttons");
 	if (button_count > SCRIPT_DIALOG_MAX_BUTTONS)
 	{
-		llwarns << "Too many script dialog buttons - omitting some" << llendl;
+		LL_WARNS() << "Too many script dialog buttons - omitting some" << LL_ENDL;
 		button_count = SCRIPT_DIALOG_MAX_BUTTONS;
 	}
 
@@ -8318,7 +8318,7 @@ void process_initiate_download(LLMessageSystem* msg, void**)
 
 	if (!gXferManager->validateFileForRequest(viewer_filename))
 	{
-		llwarns << "SECURITY: Unauthorized download to local file " << viewer_filename << llendl;
+		LL_WARNS() << "SECURITY: Unauthorized download to local file " << viewer_filename << LL_ENDL;
 		return;
 	}
 	gXferManager->requestFile(viewer_filename,

@@ -308,7 +308,7 @@ LLFloaterIMPanel::LLFloaterIMPanel(
 {
 	if (mOtherParticipantUUID.isNull())
 	{
-		llwarns << "Other participant is NULL" << llendl;
+		LL_WARNS() << "Other participant is NULL" << LL_ENDL;
 	}
 
 	// set P2P type by default
@@ -339,7 +339,7 @@ LLFloaterIMPanel::LLFloaterIMPanel(
 		mVoiceChannel = new LLVoiceChannelGroup(mSessionUUID, mLogLabel);
 		break;
 	default:
-		llwarns << "Unknown session type: " << mDialog << llendl;
+		LL_WARNS() << "Unknown session type: " << mDialog << LL_ENDL;
 		// fallthrough, Singu TODO: Find out which cases this happens in, seems to only be P2P, though.
 	// just received text from another user
 	case IM_NOTHING_SPECIAL:
@@ -673,7 +673,7 @@ public:
 
 	/*virtual*/ void httpFailure()
 	{
-		llwarns << "Error inviting all agents to session [status:" << mStatus << "]: " << mReason << llendl;
+		LL_WARNS() << "Error inviting all agents to session [status:" << mStatus << "]: " << mReason << LL_ENDL;
 		//throw something back to the viewer here?
 	}
 	/*virtual*/ char const* getName() const { return "LLSessionInviteResponder"; }
@@ -694,7 +694,7 @@ bool LLFloaterIMPanel::inviteToSession(const LLDynamicArray<LLUUID>& ids)
 
 	if( isInviteAllowed() && (count > 0) )
 	{
-		llinfos << "LLFloaterIMPanel::inviteToSession() - inviting participants" << llendl;
+		LL_INFOS() << "LLFloaterIMPanel::inviteToSession() - inviting participants" << LL_ENDL;
 
 		std::string url = region->getCapability("ChatSessionRequest");
 
@@ -716,9 +716,9 @@ bool LLFloaterIMPanel::inviteToSession(const LLDynamicArray<LLUUID>& ids)
 	}
 	else
 	{
-		llinfos << "LLFloaterIMPanel::inviteToSession -"
+		LL_INFOS() << "LLFloaterIMPanel::inviteToSession -"
 				<< " no need to invite agents for "
-				<< mDialog << llendl;
+				<< mDialog << LL_ENDL;
 		// successful add, because everyone that needed to get added
 		// was added.
 	}
@@ -1165,7 +1165,7 @@ void LLFloaterIMPanel::onSendMsg()
 		&& (mSessionType == P2P_SESSION)
 		&& mOtherParticipantUUID.isNull())
 	{
-		llinfos << "Cannot send IM to everyone unless you're a god." << llendl;
+		LL_INFOS() << "Cannot send IM to everyone unless you're a god." << LL_ENDL;
 		return;
 	}
 

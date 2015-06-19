@@ -373,7 +373,7 @@ void LLFrameStatView::addStat(LLStat *statp, const std::string& label, const LLC
 {
 	if( mNumStats >= MAX_STATS )
 	{
-		llwarns << "LLFrameStatView::addStat - too many stats!" << llendl;
+		LL_WARNS() << "LLFrameStatView::addStat - too many stats!" << LL_ENDL;
 		return;
 	}
 

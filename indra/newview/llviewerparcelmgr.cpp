@@ -232,22 +232,22 @@ LLViewerParcelMgr::~LLViewerParcelMgr()
 
 void LLViewerParcelMgr::dump()
 {
-	llinfos << "Parcel Manager Dump" << llendl;
-	llinfos << "mSelected " << S32(mSelected) << llendl;
-	llinfos << "Selected parcel: " << llendl;
-	llinfos << mWestSouth << " to " << mEastNorth << llendl;
+	LL_INFOS() << "Parcel Manager Dump" << LL_ENDL;
+	LL_INFOS() << "mSelected " << S32(mSelected) << LL_ENDL;
+	LL_INFOS() << "Selected parcel: " << LL_ENDL;
+	LL_INFOS() << mWestSouth << " to " << mEastNorth << LL_ENDL;
 	mCurrentParcel->dump();
-	llinfos << "banning " << mCurrentParcel->mBanList.size() << llendl;
+	LL_INFOS() << "banning " << mCurrentParcel->mBanList.size() << LL_ENDL;
 	
 	access_map_const_iterator cit = mCurrentParcel->mBanList.begin();
 	access_map_const_iterator end = mCurrentParcel->mBanList.end();
 	for ( ; cit != end; ++cit)
 	{
-		llinfos << "ban id " << (*cit).first << llendl;
+		LL_INFOS() << "ban id " << (*cit).first << LL_ENDL;
 	}
-	llinfos << "Hover parcel:" << llendl;
+	LL_INFOS() << "Hover parcel:" << LL_ENDL;
 	mHoverParcel->dump();
-	llinfos << "Agent parcel:" << llendl;
+	LL_INFOS() << "Agent parcel:" << LL_ENDL;
 	mAgentParcel->dump();
 }
 
@@ -992,7 +992,7 @@ void LLViewerParcelMgr::sendParcelGodForceOwner(const LLUUID& owner_id)
 		return;
 	}
 
-	llinfos << "Claiming " << mWestSouth << " to " << mEastNorth << llendl;
+	LL_INFOS() << "Claiming " << mWestSouth << " to " << mEastNorth << LL_ENDL;
 
 	// BUG: Only works for the region containing mWestSouthBottom
 	LLVector3d east_north_region_check( mEastNorth );
@@ -1015,7 +1015,7 @@ void LLViewerParcelMgr::sendParcelGodForceOwner(const LLUUID& owner_id)
 		return;
 	}
 
-	llinfos << "Region " << region->getOriginGlobal() << llendl;
+	LL_INFOS() << "Region " << region->getOriginGlobal() << LL_ENDL;
 
 	LLSD payload;
 	payload["owner_id"] = owner_id;
@@ -1155,8 +1155,8 @@ LLViewerParcelMgr::ParcelBuyInfo* LLViewerParcelMgr::setupParcelBuy(
 	
 	if (is_claim)
 	{
-		llinfos << "Claiming " << mWestSouth << " to " << mEastNorth << llendl;
-		llinfos << "Region " << region->getOriginGlobal() << llendl;
+		LL_INFOS() << "Claiming " << mWestSouth << " to " << mEastNorth << LL_ENDL;
+		LL_INFOS() << "Region " << region->getOriginGlobal() << LL_ENDL;
 
 		// BUG: Only works for the region containing mWestSouthBottom
 		LLVector3d east_north_region_check( mEastNorth );
@@ -1326,7 +1326,7 @@ void LLViewerParcelMgr::sendParcelPropertiesUpdate(LLParcel* parcel, bool use_ag
 
 	LLViewerRegion *region = use_agent_region ? gAgent.getRegion() : LLWorld::getInstance()->getRegionFromPosGlobal( mWestSouth );
 	if (!region) return;
-	//llinfos << "found region: " << region->getName() << llendl;
+	//LL_INFOS() << "found region: " << region->getName() << LL_ENDL;
 
 	LLSD body;
 	std::string url = region->getCapability("ParcelPropertiesUpdate");
@@ -1336,8 +1336,8 @@ void LLViewerParcelMgr::sendParcelPropertiesUpdate(LLParcel* parcel, bool use_ag
 		U32 message_flags = 0x01;
 		body["flags"] = ll_sd_from_U32(message_flags);
 		parcel->packMessage(body);
-		llinfos << "Sending parcel properties update via capability to: "
-			<< url << llendl;
+		LL_INFOS() << "Sending parcel properties update via capability to: "
+			<< url << LL_ENDL;
 		LLHTTPClient::post(url, body, new LLHTTPClient::ResponderIgnore);
 	}
 	else
@@ -1433,7 +1433,7 @@ void LLViewerParcelMgr::processParcelOverlay(LLMessageSystem *msg, void **user)
 
 	if (packed_overlay_size <= 0)
 	{
-		llwarns << "Overlay size " << packed_overlay_size << llendl;
+		LL_WARNS() << "Overlay size " << packed_overlay_size << LL_ENDL;
 		return;
 	}
 
@@ -1444,8 +1444,8 @@ void LLViewerParcelMgr::processParcelOverlay(LLMessageSystem *msg, void **user)
 // </FS:CR> Aurora Sim
 	if (packed_overlay_size != expected_size)
 	{
-		llwarns << "Got parcel overlay size " << packed_overlay_size
-			<< " expecting " << expected_size << llendl;
+		LL_WARNS() << "Got parcel overlay size " << packed_overlay_size
+			<< " expecting " << expected_size << LL_ENDL;
 		return;
 	}
 
@@ -1518,7 +1518,7 @@ void LLViewerParcelMgr::processParcelProperties(LLMessageSystem *msg, void **use
 	if (request_result == PARCEL_RESULT_NO_DATA)
 	{
 		// no valid parcel data
-		llinfos << "no valid parcel data" << llendl;
+		LL_INFOS() << "no valid parcel data" << LL_ENDL;
 		return;
 	}
 
@@ -1550,9 +1550,9 @@ void LLViewerParcelMgr::processParcelProperties(LLMessageSystem *msg, void **use
 	}
 	else
 	{
-		llinfos << "out of order agent parcel sequence id " << sequence_id
+		LL_INFOS() << "out of order agent parcel sequence id " << sequence_id
 			<< " last good " << parcel_mgr.mAgentParcelSequenceID
-			<< llendl;
+			<< LL_ENDL;
 		return;
 	}
 
@@ -1825,14 +1825,14 @@ void LLViewerParcelMgr::processParcelProperties(LLMessageSystem *msg, void **use
 						}
 						else
 						{
-							llinfos << "Stopping parcel music (invalid audio stream URL)" << llendl;
+							LL_INFOS() << "Stopping parcel music (invalid audio stream URL)" << LL_ENDL;
 							// clears the URL 
 							gAudiop->startInternetStream(LLStringUtil::null); 
 						}
 					}
 					else if (!gAudiop->getInternetStreamURL().empty())
 					{
-						llinfos << "Stopping parcel music (parcel stream URL is empty)" << llendl;
+						LL_INFOS() << "Stopping parcel music (parcel stream URL is empty)" << LL_ENDL;
 						gAudiop->startInternetStream(LLStringUtil::null);
 					}
 				}
@@ -1851,7 +1851,7 @@ void optionally_start_music(LLParcel* parcel)
 	if (gSavedSettings.getBOOL("AudioStreamingMusic"))
 	{
 		// Make the user click the start button on the overlay bar. JC
-		//		llinfos << "Starting parcel music " << parcel->getMusicURL() << llendl;
+		//		LL_INFOS() << "Starting parcel music " << parcel->getMusicURL() << LL_ENDL;
 
 		// now only play music when you enter a new parcel if the control is in PLAY state
 		// changed as part of SL-4878
@@ -1891,8 +1891,8 @@ void LLViewerParcelMgr::processParcelAccessListReply(LLMessageSystem *msg, void 
 
 	if (parcel_id != parcel->getLocalID())
 	{
-		llwarns << "processParcelAccessListReply for parcel " << parcel_id
-			<< " which isn't the selected parcel " << parcel->getLocalID()<< llendl;
+		LL_WARNS() << "processParcelAccessListReply for parcel " << parcel_id
+			<< " which isn't the selected parcel " << parcel->getLocalID()<< LL_ENDL;
 		return;
 	}
 

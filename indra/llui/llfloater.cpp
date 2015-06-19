@@ -789,7 +789,7 @@ BOOL LLFloater::canSnapTo(const LLView* other_view)
 {
 	if (NULL == other_view)
 	{
-		llwarns << "other_view is NULL" << llendl;
+		LL_WARNS() << "other_view is NULL" << LL_ENDL;
 		return FALSE;
 	}
 
@@ -2580,7 +2580,7 @@ void LLFloater::initFloaterXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFactor
 
 	if (!result)
 	{
-		llerrs << "Failed to construct floater " << name << llendl;
+		LL_ERRS() << "Failed to construct floater " << name << LL_ENDL;
 	}
 
 	applyRectControl();
