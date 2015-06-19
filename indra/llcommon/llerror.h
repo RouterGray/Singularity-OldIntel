@@ -72,14 +72,9 @@ const int LL_ERR_NOERR = 0;
 
 #endif // !_DEBUG
 
-#define liru_slashpos			std::string(__FILE__).find_last_of("/\\")
-#define liru_slashpos2			std::string(__FILE__).substr(0,liru_slashpos).find_last_of("/\\")
-#define liru_assert_strip		/*strip path down to lastlevel directory and filename for assert.*/\
-	(liru_slashpos == std::string::npos ? std::string(__FILE__)/*just filename, print as is*/\
-		: liru_slashpos2 == std::string::npos ? std::string(__FILE__)/*Apparently, we're in / or perhaps the top of the drive, print as is*/\
-			: std::string(__FILE__).substr(1+liru_slashpos2))/*print foo/bar.cpp or perhaps foo\bar.cpp*/
+static const std::string liru_assert_strip(const std::string& file) { return file.substr(1+file.substr(0, file.find_last_of("/\\")).find_last_of("/\\")); } //return foo/bar.cpp or perhaps foo\bar.cpp
 
-#define llassert_always_msg(func, msg) do { if (LL_UNLIKELY(!(func))) LL_ERRS() << "ASSERT (" << msg << ")\nfile:" << liru_assert_strip << " line:" << std::dec << __LINE__ << LL_ENDL; } while (0)
+#define llassert_always_msg(func, msg) if (LL_UNLIKELY(!(func))) LL_ERRS() << "ASSERT (" << msg << ")\nfile:" << liru_assert_strip(__FILE__) << " line:" << std::dec << __LINE__ << LL_ENDL
 
 #define llassert_always(func)	llassert_always_msg(func, #func)
 

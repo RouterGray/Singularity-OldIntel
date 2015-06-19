@@ -485,8 +485,6 @@ namespace LLError
 		SettingsConfigPtr mSettingsConfig;
 	};
 	
-	static AIThreadSafeSimple<Settings>* sSettings;
-	
 	SettingsConfig::SettingsConfig()
 		: LLRefCount(),
 		mPrintLocation(false),

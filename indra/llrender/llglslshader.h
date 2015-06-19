@@ -108,7 +108,7 @@ public:
 		{
 			if (uniform >= 0)
 			{
-				std::vector<std::pair<GLint, T> >::iterator iter = std::find_if(cache.begin(), cache.end(), boost::bind(&std::pair<GLint, T>::first, _1) == uniform);
+				typename std::vector<std::pair<GLint, T> >::iterator iter = std::find_if(cache.begin(), cache.end(), boost::bind(&std::pair<GLint, T>::first, _1) == uniform);
 				if (iter == cache.end())
 				{
 					T tmp;
@@ -166,7 +166,7 @@ public:
 	}
 	void uniform1iv(U32 index, U32 count, const GLint* v)
 	{
-		F32 val[] = { v[0] };
+		F32 val[] = { static_cast<const F32>(v[0]) };
 		if (updateUniform<LLVector4, 1>(mValueVec4, getUniformFromIndex(index), val) || count > 1)
 		{
 			glUniform1ivARB(mUniform[index], count, v);
