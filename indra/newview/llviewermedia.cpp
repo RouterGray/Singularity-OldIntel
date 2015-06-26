@@ -1483,7 +1483,7 @@ void LLViewerMedia::openIDSetup(const std::string &openid_url, const std::string
 
 	// postRaw() takes ownership of the buffer and releases it later, so we need to allocate a new buffer here.
 	size_t size = openid_token.size();
-	char* data = new char[size];
+	U8* data = new U8[size];
 	memcpy(data, openid_token.data(), size);
 
 	LLHTTPClient::postRaw(

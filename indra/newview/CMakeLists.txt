@@ -296,6 +296,7 @@ set(viewer_SOURCE_FILES
     llgroupnotify.cpp
     llhomelocationresponder.cpp
     llhoverview.cpp
+    llhttpretrypolicy.cpp
     llhudeffect.cpp
     llhudeffectbeam.cpp
     llhudeffectlookat.cpp
@@ -824,6 +825,7 @@ set(viewer_HEADER_FILES
     llgroupactions.h
     llgroupmgr.h
     llgroupnotify.h
+    llhttpretrypolicy.h
     llhomelocationresponder.h
     llhoverview.h
     llhudeffect.h

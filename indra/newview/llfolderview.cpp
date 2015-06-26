@@ -176,7 +176,7 @@ void LLCloseAllFoldersFunctor::doItem(LLFolderViewItem* item)
 
 // Default constructor
 LLFolderView::LLFolderView( const std::string& name,
-						   const LLRect& rect, const LLUUID& source_id, LLPanel* parent_panel, LLFolderViewEventListener* listener ) :
+						   const LLRect& rect, const LLUUID& source_id, LLPanel* parent_panel, LLFolderViewEventListener* listener, LLFolderViewGroupedItemModel* group_model ) :
 #if LL_WINDOWS
 #pragma warning( push )
 #pragma warning( disable : 4355 ) // warning C4355: 'this' : used in base member initializer list
@@ -211,7 +211,8 @@ LLFolderView::LLFolderView( const std::string& name,
 	mUseEllipses(FALSE),
 	mDraggingOverItem(NULL),
 	mStatusTextBox(NULL),
-	mSearchType(1)
+	mSearchType(1),
+	mGroupedItemModel(group_model)
 {
 	LLPanel* panel = parent_panel;
 	mParentPanel = panel->getHandle();
@@ -2360,6 +2361,14 @@ void LLFolderView::updateMenuOptions(LLMenuGL* menu)
 		LLFolderViewItem* selected_item = (*item_itor);
 		selected_item->buildContextMenu(*menu, flags);
 		flags = 0x0;
+	}
+
+	// This adds a check for restrictions based on the entire
+	// selection set - for example, any one wearable may not push you
+	// over the limit, but all wearables together still might.
+	if (getFolderViewGroupedItemModel())
+	{
+		getFolderViewGroupedItemModel()->groupFilterContextMenu(mSelectedItems, *menu);
 	}
 
 	addNoOptions(menu);

@@ -903,6 +903,11 @@ void LLInventoryView::toggleFindOptions()
 	}
 }
 
+LLFolderView* LLInventoryView::getRootFolder() const
+{
+	return mActivePanel ? (mActivePanel->getRootFolder()) : NULL;
+}
+
 void LLInventoryView::setSelectCallback(const LLFolderView::signal_t::slot_type& cb)
 {
 	getChild<LLInventoryPanel>("All Items")->setSelectCallback(cb);

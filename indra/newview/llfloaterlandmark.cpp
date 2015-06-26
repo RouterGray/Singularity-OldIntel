@@ -352,15 +352,6 @@ void LLFloaterLandmark::onBtnDelete()
 			gInventory.notifyObservers();
 		}
 	}
-
-	// Delete the item entirely
-	/*
-	item->removeFromServer();
-	gInventory.deleteObject(item->getUUID());
-	gInventory.notifyObservers();
-	*/
-
-
 }
 
 void LLFloaterLandmark::onBtnRename()

@@ -239,7 +239,7 @@ public:
 	void doneIdle()
 	{
 		// NOTE: the code above makes the assumption that COF is empty which won't be the case the way it's used now
-		LLInventoryModel::item_array_t initial_items;
+		LLInventoryObject::const_object_list_t initial_items;
 		for (uuid_vec_t::iterator itItem = mIDs.begin(); itItem != mIDs.end(); ++itItem)
 		{
 			LLViewerInventoryItem* pItem = gInventory.getItem(*itItem);
@@ -415,7 +415,7 @@ void LLLibraryOutfitsFetch::folderDone()
 	}
 
 	mClothingID = gInventory.findCategoryUUIDForType(LLFolderType::FT_CLOTHING);
-	mLibraryClothingID = gInventory.findCategoryUUIDForType(LLFolderType::FT_CLOTHING, false, true);
+	mLibraryClothingID = gInventory.findLibraryCategoryUUIDForType(LLFolderType::FT_CLOTHING, false);
 
 	// If Library->Clothing->Initial Outfits exists, use that.
 	LLNameCategoryCollector matchFolderFunctor("Initial Outfits");
@@ -666,13 +666,9 @@ void LLLibraryOutfitsFetch::contentsDone()
 			 wearable_iter != wearable_array.end();
 			 ++wearable_iter)
 		{
-			const LLViewerInventoryItem *item = wearable_iter->get();
-			link_inventory_item(gAgent.getID(),
-								item->getLinkedUUID(),
-								new_outfit_folder_id,
-								item->getName(),
-								item->getDescription(),
-								LLAssetType::AT_LINK,
+			LLConstPointer<LLInventoryObject> item = wearable_iter->get();
+			link_inventory_object(new_outfit_folder_id,
+								item,
 								order_myoutfits_on_destroy);
 		}
 	}

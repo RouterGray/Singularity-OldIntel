@@ -1165,7 +1165,7 @@ bool RlvFolderLocks::getLockedItems(const LLUUID& idFolder, LLInventoryModel::it
 		if (!fItemLocked)
 		{
 			LLInventoryModel::item_array_t itemLinks = 
-				gInventory.collectLinkedItems(pItem->getUUID(), RlvInventory::instance().getSharedRootID());
+				gInventory.collectLinksTo(pItem->getUUID(), RlvInventory::instance().getSharedRootID());
 			for (LLInventoryModel::item_array_t::iterator itItemLink = itemLinks.begin(); 
 					(itItemLink < itemLinks.end()) && (!fItemLocked); ++itItemLink)
 			{

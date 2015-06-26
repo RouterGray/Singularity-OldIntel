@@ -61,6 +61,7 @@ class LLTextBox;
 class LLIconCtrl;
 class LLSaveFolderState;
 class LLInvPanelComplObserver;
+class LLFolderViewGroupedItemBridge;
 
 class LLInventoryPanel : public LLPanel
 {
@@ -169,6 +170,7 @@ protected:
 	LLHandle<LLFolderView>				mFolderRoot;
 	LLScrollContainer*	mScroller;
 
+    LLPointer<LLFolderViewGroupedItemBridge> mGroupedItemBridge;
 	/**
 	 * Pointer to LLInventoryFVBridgeBuilder.
 	 *

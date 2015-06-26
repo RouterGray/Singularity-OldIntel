@@ -491,8 +491,8 @@ public:
 	static void put(std::string const& url, LLSD const& body, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off))
 	    { AIHTTPHeaders headers; put(url, body, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug)); }
 
-	static void putRaw(const std::string& url, const char* data, S32 size, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off));
-	static void putRaw(const std::string& url, const char* data, S32 size, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off))
+	static void putRaw(const std::string& url, const U8* data, S32 size, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off));
+	static void putRaw(const std::string& url, const U8* data, S32 size, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off))
 	    { AIHTTPHeaders headers; putRaw(url, data, size, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug)); }
 
 	static void getHeaderOnly(std::string const& url, ResponderHeadersOnly* responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off));
@@ -517,8 +517,8 @@ public:
 	    { AIHTTPHeaders headers; postXMLRPC(url, method, value, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug), keepalive); }
 
 	/** Takes ownership of data and deletes it when sent */
-	static void postRaw(std::string const& url, const char* data, S32 size, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive);
-	static void postRaw(std::string const& url, const char* data, S32 size, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive)
+	static void postRaw(std::string const& url, const U8* data, S32 size, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive);
+	static void postRaw(std::string const& url, const U8* data, S32 size, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive)
 	    { AIHTTPHeaders headers; postRaw(url, data, size, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug), keepalive); }
 
 	static void postFile(std::string const& url, std::string const& filename, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive);

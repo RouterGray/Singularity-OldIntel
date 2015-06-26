@@ -87,6 +87,7 @@ public:
 	LLInventoryPanel* getPanel() { return mActivePanel; }
 	LLInventoryPanel* getActivePanel() { return mActivePanel; }
 	const LLInventoryPanel* getActivePanel() const { return mActivePanel; }
+	LLFolderView* getRootFolder() const;
 
 	const std::string& getFilterText() const { return mFilterText; }
 

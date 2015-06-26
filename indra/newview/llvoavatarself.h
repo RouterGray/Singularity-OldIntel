@@ -32,6 +32,7 @@
 #include "llvoavatar.h"
 
 struct LocalTextureData;
+class LLInventoryCallback;
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,17 +103,12 @@ public:
 	/*virtual*/ BOOL setVisualParamWeight(const char* param_name, F32 weight, bool upload_bake = false );
 	/*virtual*/ BOOL setVisualParamWeight(S32 index, F32 weight, bool upload_bake = false );
 	/*virtual*/ void updateVisualParams();
+	void writeWearablesToAvatar();
 	/*virtual*/ void idleUpdateAppearanceAnimation();
-
-	/*virtual*/ U32  processUpdateMessage(LLMessageSystem *mesgsys,
-													 void **user_data,
-													 U32 block_num,
-													 const EObjectUpdateType update_type,
-													 LLDataPacker *dp);
 
 private:
 	// helper function. Passed in param is assumed to be in avatar's parameter list.
-	BOOL setParamWeight(const LLViewerVisualParam *param, F32 weight, bool upload_bake = FALSE );
+	BOOL setParamWeight(const LLViewerVisualParam *param, F32 weight, bool upload_bake = false );
 
 
 
@@ -140,6 +136,7 @@ public:
 public:
 	/*virtual*/ BOOL 	updateCharacter(LLAgent &agent);
 	/*virtual*/ void 	idleUpdateTractorBeam();
+	bool				checkStuckAppearance();
 
 	//--------------------------------------------------------------------
 	// Loading state
@@ -352,6 +349,7 @@ private:
 public:
 	static void		onCustomizeStart(bool disable_camera_switch = false);
 	static void		onCustomizeEnd(bool disable_camera_switch = false);
+	LLPointer<LLInventoryCallback> mEndCustomizeCallback;
 
 	//--------------------------------------------------------------------
 	// Visibility

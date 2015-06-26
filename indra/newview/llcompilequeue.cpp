@@ -416,8 +416,8 @@ void LLFloaterCompileQueue::scriptArrived(LLVFS *vfs, const LLUUID& asset_id,
 			{
 				// Read script source in to buffer.
 				U32 script_size = file.getSize();
-				char* script_data = new char[script_size];
-				file.read((U8*)script_data, script_size);
+				U8* script_data = new U8[script_size];
+				file.read(script_data, script_size);
 
 				queue->mUploadQueue->queue(filename, data->mTaskId, 
 				data->mItemId, is_running, queue->mMono, queue->getID(),
