@@ -89,6 +89,7 @@
 #include "rlvhandler.h"
 #include "rlvlocks.h"
 // [/RLVa:KB]
+#include <boost/foreach.hpp>
 
 // Marketplace outbox current disabled
 #define ENABLE_MERCHANT_OUTBOX_CONTEXT_MENU	1
@@ -2511,7 +2512,10 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 						LLInventoryModel::item_array_t items;
 						model->collectDescendents(cat_id, cats, items, LLInventoryModel::EXCLUDE_TRASH);
 						LLInventoryObject::const_object_list_t citems;
-						citems.insert(citems.begin(), items.begin(), items.end());
+						BOOST_FOREACH(LLPointer<LLViewerInventoryItem> item, items)
+						{
+							citems.push_back(item.get());
+						}
 						link_inventory_array(mUUID, citems, NULL);
 					}
 				}

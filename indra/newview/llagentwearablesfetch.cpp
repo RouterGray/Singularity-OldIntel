@@ -177,7 +177,7 @@ void LLInitialWearablesFetch::processContents()
 // [/SL:KB]
 
 	LLAppearanceMgr::instance().setAttachmentInvLinkEnable(true);
-//	if (wearable_array.count() > 0)
+//	if (wearable_array.size() > 0)
 // [SL:KB] - Patch: Appearance-MixedViewers | Checked: 2010-04-28 (Catznip-3.0.0a) | Modified: Catznip-2.0.0e
 	if (fUpdateFromCOF)
 // [/SL:KB]
@@ -456,7 +456,7 @@ void LLLibraryOutfitsFetch::outfitsDone()
 	gInventory.collectDescendents(mLibraryClothingID, cat_array, wearable_array, 
 								  LLInventoryModel::EXCLUDE_TRASH);
 	
-	llassert(cat_array.count() > 0);
+	llassert(cat_array.size() > 0);
 	for (LLInventoryModel::cat_array_t::const_iterator iter = cat_array.begin();
 		 iter != cat_array.end();
 		 ++iter)

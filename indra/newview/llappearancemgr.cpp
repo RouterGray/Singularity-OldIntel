@@ -2977,11 +2977,6 @@ void LLAppearanceMgr::addCOFItemLink(const LLInventoryItem *item,
 		const LLViewerInventoryItem* inv_item = item_array.at(i).get();
 		const LLWearableType::EType wearable_type = inv_item->getWearableType();
 
-		const bool is_body_part =    (wearable_type == LLWearableType::WT_SHAPE) 
-								  || (wearable_type == LLWearableType::WT_HAIR) 
-								  || (wearable_type == LLWearableType::WT_EYES)
-								  || (wearable_type == LLWearableType::WT_SKIN);
-
 		if (inv_item->getLinkedUUID() == vitem->getLinkedUUID())
 		{
 			linked_already = true;

@@ -282,7 +282,6 @@ protected:
 protected:
 	LLHandle<LLView>					mPopupMenuHandle;
 	
-	typedef std::deque<LLFolderViewItem*> selected_items_t;
 	selected_items_t				mSelectedItems;
 	BOOL							mKeyboardSelection;
 	BOOL							mAllowMultiSelect;
