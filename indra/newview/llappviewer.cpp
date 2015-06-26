@@ -1862,6 +1862,8 @@ bool LLAppViewer::cleanup()
 
 	ll_close_fail_log();
 
+	LLError::LLCallStacks::cleanup();
+
 	MEM_TRACK_RELEASE
 
     LL_INFOS() << "Goodbye!" << LL_ENDL;
