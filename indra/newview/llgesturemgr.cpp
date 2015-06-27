@@ -827,9 +827,17 @@ void LLGestureMgr::stepGesture(LLMultiGesture* gesture)
 		 gest_it != gesture->mPlayingAnimIDs.end(); 
 		 )
 	{
+		if (gesture->mLocal)
+		{
+			// Local, erase if no longer playing (or gone)
+			LLMotion* motion = gAgentAvatarp->findMotion(*gest_it);
+			if (!motion || motion->isStopped())
+				gesture->mPlayingAnimIDs.erase(gest_it);
+			++gest_it;
+		}
 		// look in signaled animations (simulator's view of what is
 		// currently playing.
-		if (gesture->mLocal ? !!gAgentAvatarp->findMotion(*gest_it) : (gAgentAvatarp->mSignaledAnimations.find(*gest_it) != gAgentAvatarp->mSignaledAnimations.end()))
+		else if (gAgentAvatarp->mSignaledAnimations.find(*gest_it) != gAgentAvatarp->mSignaledAnimations.end())
 		{
 			++gest_it;
 		}

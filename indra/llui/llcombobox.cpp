@@ -197,9 +197,10 @@ LLView* LLComboBox::fromXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFactory *
 	//Do this AFTER combo_items are set up so setValue is actually able to select the correct initial entry.
 	combo_box->initFromXML(node, parent);
 
+	// if we haven't already gotten a value from our control_name and
 	// if providing user text entry or descriptive label
 	// don't select an item under the hood
-	if (!combo_box->acceptsTextInput() && combo_box->mLabel.empty())
+	if (combo_box->getControlName().empty() && !combo_box->acceptsTextInput() && combo_box->mLabel.empty())
 	{
 		combo_box->selectFirstItem();
 	}

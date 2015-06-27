@@ -299,7 +299,7 @@ void LLFloaterAvatarPicker::onList()
 		RLV_ASSERT( (pTabs) && (pNearMePanel) );
 		if ( (pTabs) && (pNearMePanel) )
 		{
-			bool fRlvEnable = !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
+			bool fRlvEnable = !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS);
 			pTabs->enableTabButton(pTabs->getIndexForPanel(pNearMePanel), fRlvEnable);
 			if ( (!fRlvEnable) && (pTabs->getCurrentPanel() == pNearMePanel) )
 				pTabs->selectTabByName("SearchPanel");

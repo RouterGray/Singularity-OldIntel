@@ -752,7 +752,11 @@ void LLViewerTexture::addFace(U32 ch, LLFace* facep)
 //virtual
 void LLViewerTexture::removeFace(U32 ch, LLFace* facep) 
 {
-	llassert(ch < LLRender::NUM_TEXTURE_CHANNELS);
+	if (ch >= LLRender::NUM_TEXTURE_CHANNELS)  // Suppress Linux warning, this should NEVER happen!
+	{
+		LL_ERRS() << ch << " >= LLRender::NUM_TEXTURE_CHANNELS!!!" << LL_ENDL;
+		return;
+	}
 
 	if(mNumFaces[ch] > 1)
 	{
