@@ -917,7 +917,7 @@ void RlvForceWear::updatePendingAttachments()
 	if (RlvForceWear::instanceExists())
 	{
 		RlvForceWear* pThis = RlvForceWear::getInstance();
-		for (const pendingattachments_map_t::value_type& itAttach : pThis->m_pendingAttachments)
+		BOOST_FOREACH(const pendingattachments_map_t::value_type& itAttach, pThis->m_pendingAttachments)
 			LLAttachmentsMgr::instance().addAttachment(itAttach.first, itAttach.second & ~ATTACHMENT_ADD, itAttach.second & ATTACHMENT_ADD);
 		pThis->m_pendingAttachments.clear();
 	}
@@ -926,7 +926,7 @@ void RlvForceWear::updatePendingAttachments()
 // Checked: 2015-05-05 (RLVa-1.4.12)
 void RlvForceWear::addPendingAttachment(const LLUUID& idItem, U8 idxPoint)
 {
-	auto itAttach = m_pendingAttachments.find(idItem);
+	pendingattachments_map_t::iterator itAttach = m_pendingAttachments.find(idItem);
 	if (m_pendingAttachments.end() == itAttach)
 		m_pendingAttachments.insert(std::make_pair(idItem, idxPoint));
 	else
@@ -987,10 +987,10 @@ void RlvForceWear::done()
 
 	// Wearables need to be split into AT_BODYPART and AT_CLOTHING for COF
 	LLInventoryModel::item_array_t addBodyParts, addClothing;
-	for (addwearables_map_t::const_iterator itAddWearables = m_addWearables.cbegin(); itAddWearables != m_addWearables.cend(); ++itAddWearables)
+	for (addwearables_map_t::const_iterator itAddWearables = m_addWearables.begin(); itAddWearables != m_addWearables.end(); ++itAddWearables)
 	{
 		// NOTE: LLAppearanceMgr will filter our duplicates so no need for us to check here
-		for (LLViewerInventoryItem* pItem : itAddWearables->second)
+		BOOST_FOREACH(LLViewerInventoryItem* pItem, itAddWearables->second)
 		{
 			if (LLAssetType::AT_BODYPART == pItem->getType())
 				addBodyParts.push_back(pItem);
@@ -1001,9 +1001,9 @@ void RlvForceWear::done()
 	m_addWearables.clear();
 
 	// Until LL provides a way for updateCOF to selectively attach add/replace we have to deal with attachments ourselves
-	for (addattachments_map_t::const_iterator itAddAttachments = m_addAttachments.cbegin(); itAddAttachments != m_addAttachments.cend(); ++itAddAttachments)
+	for (addattachments_map_t::const_iterator itAddAttachments = m_addAttachments.begin(); itAddAttachments != m_addAttachments.end(); ++itAddAttachments)
 	{
-		for (const LLViewerInventoryItem* pItem : itAddAttachments->second)
+		BOOST_FOREACH(const LLViewerInventoryItem* pItem, itAddAttachments->second)
 			addPendingAttachment(pItem->getLinkedUUID(), itAddAttachments->first);
 	}
 	m_addAttachments.clear();
