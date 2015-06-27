@@ -4214,6 +4214,8 @@ bool process_login_success_response(std::string& password, U32& first_sim_size_x
 		gSavedSettings.setString("AvatarPickerURL", tmp);
 		gMenuBarView->getChildView("Avatar Picker")->setVisible(!tmp.empty());
 		gSavedSettings.setString("DestinationGuideURL", response["destination_guide_url"].asString());
+		tmp = response["classified_fee"].asString();
+		gHippoGridManager->getConnectedGrid()->setClassifiedFee(tmp.empty() ? 0 : atoi(tmp.c_str()));
 	}
 	tmp = response["currency"].asString();
 	if (!tmp.empty())

@@ -446,19 +446,36 @@ void LLPanelPermissions::refresh()
 		if ( (creators_identical) && (mCreatorID != gAgent.getID()) && ((mCreatorID == mOwnerID) || (RlvUtil::isNearbyAgent(mCreatorID))) )
 		{
 			creator_name = RlvStrings::getAnonym(creator_name);
-			fRlvEnableOwner = false;
+			fRlvEnableCreator = false;
 		}
 
 		// Only anonymize the owner name if all of the selection is owned by the same avie and isn't group owned
 		if ( (owners_identical) && (!LLSelectMgr::getInstance()->selectIsGroupOwned()) && (mOwnerID != gAgent.getID()) )
 		{
 			owner_name = RlvStrings::getAnonym(owner_name);
-			fRlvEnableCreator = false;
+			fRlvEnableOwner = false;
 		}
 
 		if (RlvUtil::isNearbyAgent(mLastOwnerID))
 		{
+			last_owner_name = RlvStrings::getAnonym(last_owner_name);
+			fRlvEnableLastOwner = false;
+		}
+	}
+	else if ((objectp->isAttachment() || objectp->isAvatar()) && gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS) && mOwnerID != gAgentID)
+	{
+		owner_name = RlvStrings::getAnonym(owner_name);
+		fRlvEnableOwner = false;
+
+		if (mOwnerID == mCreatorID)
+		{
 			creator_name = RlvStrings::getAnonym(creator_name);
+			fRlvEnableCreator = false;
+		}
+
+		if (mOwnerID == mLastOwnerID)
+		{
+			last_owner_name = RlvStrings::getAnonym(last_owner_name);
 			fRlvEnableLastOwner = false;
 		}
 	}

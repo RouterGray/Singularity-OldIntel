@@ -2500,7 +2500,7 @@ bool enable_object_mute()
 		bool is_self = avatar->isSelf();
 //		return !is_linden && !is_self;
 // [RLVa:KB] - Checked: 2010-08-25 (RLVa-1.2.1b) | Added: RLVa-1.2.1b
-		return !is_linden && !is_self && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
+		return !is_linden && !is_self && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS);
 // [/RLVa:KB]
 	}
 	else
@@ -2534,7 +2534,7 @@ class LLObjectMute : public view_listener_t
 		if (avatar)
 		{
 // [RLVa:KB] - Checked: 2010-08-25 (RLVa-1.2.1b) | Added: RLVa-1.0.0e
-			if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES))
+			if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS))
 				return true;
 // [/RLVa:KB]
 			id = avatar->getID();
@@ -2955,7 +2955,7 @@ void handle_avatar_freeze(const LLSD& avatar_id)
 				LLSD args;
 //				args["AVATAR_NAME"] = fullname;
 // [RLVa:KB] - Checked: 2010-09-28 (RLVa-1.2.1f) | Modified: RLVa-1.0.0e
-				args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) ? fullname : RlvStrings::getAnonym(fullname);
+				args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) ? fullname : RlvStrings::getAnonym(fullname);
 // [/RLVa:KB]
 				LLNotificationsUtil::add("FreezeAvatarFullname",
 							args,
@@ -3155,7 +3155,7 @@ void handle_avatar_eject(const LLSD& avatar_id)
     				LLSD args;
 //					args["AVATAR_NAME"] = fullname;
 // [RLVa:KB] - Checked: 2010-09-28 (RLVa-1.2.1f) | Modified: RLVa-1.0.0e
-					args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) ? fullname : RlvStrings::getAnonym(fullname);
+					args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) ? fullname : RlvStrings::getAnonym(fullname);
 // [/RLVa:KB]
     				LLNotificationsUtil::add("EjectAvatarFullname",
     							args,
@@ -3178,7 +3178,7 @@ void handle_avatar_eject(const LLSD& avatar_id)
     				LLSD args;
 //					args["AVATAR_NAME"] = fullname;
 // [RLVa:KB] - Checked: 2010-09-28 (RLVa-1.2.1f) | Modified: RLVa-1.0.0e
-					args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) ? fullname : RlvStrings::getAnonym(fullname);
+					args["AVATAR_NAME"] = (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) ? fullname : RlvStrings::getAnonym(fullname);
 // [/RLVa:KB]
     				LLNotificationsUtil::add("EjectAvatarFullnameNoBan",
     							args,
@@ -3279,29 +3279,33 @@ class LLAvatarGiveCard : public view_listener_t
 	{
 		LL_INFOS() << "handle_give_card()" << LL_ENDL;
 		LLViewerObject* dest = LLSelectMgr::getInstance()->getSelection()->getPrimaryObject();
-//		if(dest && dest->isAvatar())
-// [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Modified: RLVa-1.2.0d | OK
-		if ( (dest && dest->isAvatar()) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) )
-// [/RLVa:KB]
+		if (dest && dest->isAvatar())
 		{
 			bool found_name = false;
 			LLSD args;
-			LLSD old_args;
-			LLNameValue* nvfirst = dest->getNVPair("FirstName");
-			LLNameValue* nvlast = dest->getNVPair("LastName");
-			if(nvfirst && nvlast)
+// [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Modified: RLVa-1.2.0d | OK
+			if (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS))
 			{
-				args["NAME"] = std::string(nvfirst->getString()) + " " + nvlast->getString();
-				old_args["NAME"] = std::string(nvfirst->getString()) + " " + nvlast->getString();
+				args["NAME"] = RlvStrings::getString(RLV_STRING_HIDDEN);
 				found_name = true;
 			}
-			LLViewerRegion* region = dest->getRegion();
+			else
+// [/RLVa:KB]
+			{
+				LLNameValue* nvfirst = dest->getNVPair("FirstName");
+				LLNameValue* nvlast = dest->getNVPair("LastName");
+				if (nvfirst && nvlast)
+				{
+					args["NAME"] = std::string(nvfirst->getString()) + " " + nvlast->getString();
+					found_name = true;
+				}
+			}
 			LLHost dest_host;
-			if(region)
+			if (LLViewerRegion* region = dest->getRegion())
 			{
 				dest_host = region->getHost();
 			}
-			if(found_name && dest_host.isOk())
+			if (found_name && dest_host.isOk())
 			{
 				LLMessageSystem* msg = gMessageSystem;
 				msg->newMessage("OfferCallingCard");
@@ -3318,7 +3322,7 @@ class LLAvatarGiveCard : public view_listener_t
 			}
 			else
 			{
-				LLNotificationsUtil::add("CantOfferCallingCard", old_args);
+				LLNotificationsUtil::add("CantOfferCallingCard", args);
 			}
 		}
 		return true;
@@ -3739,7 +3743,7 @@ class LLAvatarEnableAddFriend : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object(LLSelectMgr::getInstance()->getSelection()->getPrimaryObject());
 //		bool new_value = avatar && !LLAvatarActions::isFriend(avatar->getID());
 // [RLVa:KB] - Checked: 2010-04-20 (RLVa-1.2.0f) | Modified: RLVa-1.2.0f
-		bool new_value = avatar && !LLAvatarActions::isFriend(avatar->getID()) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
+		bool new_value = avatar && !LLAvatarActions::isFriend(avatar->getID()) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS));
 // [/RLVa:KB]
 		gMenuHolder->findControl(userdata["control"].asString())->setValue(new_value);
 		return true;
@@ -4040,6 +4044,8 @@ void reset_view_final( BOOL proceed )
 	{
 		return;
 	}
+
+	if (gRlvHandler.hasBehaviour(RLV_BHVR_CAMDISTMAX) && gRlvHandler.camPole(RLV_BHVR_CAMDISTMAX) <= 0) return; // RLVa:LF - Trapped in mouselook; avoid extra work (and potential glitches)
 
 	if (!gViewerWindow->getLeftMouseDown() && gAgentCamera.cameraThirdPerson() && gSavedSettings.getBOOL("ResetViewTurnsAvatar") && !gSavedSettings.getBOOL("FreezeTime"))
 	{
@@ -5997,7 +6003,7 @@ class LLAvatarInviteToGroup : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object( LLSelectMgr::getInstance()->getSelection()->getPrimaryObject() );
 //		if(avatar)
 // [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Added: RLVa-1.2.0d
-		if ( (avatar) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) )
+		if ( (avatar) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) )
 // [/RLVa:KB]
 		{
 			LLAvatarActions::inviteToGroup(avatar->getID());
@@ -6013,7 +6019,7 @@ class LLAvatarAddFriend : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object( LLSelectMgr::getInstance()->getSelection()->getPrimaryObject() );
 //		if(avatar && !LLAvatarActions::isFriend(avatar->getID()))
 // [RLVa:KB] - Checked: 2010-04-20 (RLVa-1.2.0f) | Modified: RLVa-1.2.0f
-		if ( (avatar && !LLAvatarActions::isFriend(avatar->getID())) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) )
+		if ( (avatar && !LLAvatarActions::isFriend(avatar->getID())) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) )
 // [/RLVa:KB]
 		{
 			request_friendship(avatar->getID());
@@ -6089,7 +6095,7 @@ bool enable_pay_avatar()
 	LLVOAvatar* avatar = find_avatar_from_object(obj);
 //	return (avatar != NULL);
 // [RLVa:KB] - Checked: 2010-08-25 (RLVa-1.2.1b) | Added: RLVa-1.2.1b
-	return (avatar != NULL) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
+	return (avatar != NULL) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS));
 // [/RLVa:KB]
 }
 
@@ -6357,7 +6363,7 @@ class LLShowAgentProfile : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object(agent_id);
 //		if (avatar)
 // [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Modified: RLVa-1.2.0d
-		if ( (avatar) && ((!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) || (gAgent.getID() == agent_id)) )
+		if ( (avatar) && ((!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) || (gAgent.getID() == agent_id)) )
 // [/RLVa:KB]
 		{
 			LLAvatarActions::showProfile(avatar->getID());
@@ -7013,7 +7019,7 @@ class LLAvatarSendIM : public view_listener_t
 		LLVOAvatar* avatar = find_avatar_from_object( LLSelectMgr::getInstance()->getSelection()->getPrimaryObject() );
 //		if(avatar)
 // [RLVa:KB] - Checked: 2010-06-04 (RLVa-1.2.0d) | Added: RLVa-1.2.0d
-		if ((avatar) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)))
+		if ((avatar) && (!gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) && !gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)))
 // [/RLVa:KB]
 		{
 			LLAvatarActions::startIM(avatar->getID());
@@ -9226,9 +9232,10 @@ void initialize_menus()
 		LLZoomer(F32 val, bool mult=true) : mVal(val), mMult(mult) {}
 		bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 		{
-			F32 new_fov_rad = mMult ? LLViewerCamera::getInstance()->getDefaultFOV() * mVal : mVal;
-			LLViewerCamera::getInstance()->setDefaultFOV(new_fov_rad);
-			gSavedSettings.setF32("CameraAngle", LLViewerCamera::getInstance()->getView()); // setView may have clamped it.
+			LLViewerCamera& inst(LLViewerCamera::instance());
+			F32 new_fov_rad = mMult ? inst.getDefaultFOV() * mVal : mVal;
+			inst.setDefaultFOV(new_fov_rad);
+			gSavedSettings.setF32("CameraAngle", inst.getView()); // setView may have clamped it.
 			return true;
 		}
 	private:

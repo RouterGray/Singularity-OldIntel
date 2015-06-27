@@ -771,9 +771,9 @@ LLFloaterNotRunQueue::~LLFloaterNotRunQueue()
 void LLFloaterCompileQueue::removeItemByItemID(const LLUUID& asset_id)
 {
 	LL_INFOS() << "LLFloaterCompileQueue::removeItemByAssetID()" << LL_ENDL;
-	for(S32 i = 0; i < mCurrentScripts.size(); )
+	for(size_t i = 0; i < mCurrentScripts.size(); )
 	{
-		if(asset_id == mCurrentScripts.at(i)->getUUID())
+		if(asset_id == mCurrentScripts[i]->getUUID())
 		{
 			vector_replace_with_last(mCurrentScripts, mCurrentScripts.begin() + i);
 		}

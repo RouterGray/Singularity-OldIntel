@@ -163,13 +163,17 @@ void RlvCommand::initLookupTable()
 				"unsharedwear", "unsharedunwear", "emote", "sendchat", "recvchat", "recvchatfrom", "recvemote", "recvemotefrom",
 				"redirchat", "rediremote", "chatwhisper", "chatnormal", "chatshout", "sendchannel", "sendim", "sendimto",
 				"recvim", "recvimfrom", "startim", "startimto", "permissive", "notify", "showinv", "showminimap", "showworldmap", "showloc",
-				"shownames", "showhovertext", "showhovertexthud", "showhovertextworld", "showhovertextall", "tplm", "tploc", "tplure", "tprequest",
+				"shownames", "shownametags", "showhovertext", "showhovertexthud", "showhovertextworld", "showhovertextall", "tplm", "tploc", "tplure", "tprequest",
 				"viewnote", "viewscript", "viewtexture", "acceptpermission", "accepttp", "accepttprequest", "allowidle", "edit", "editobj", "rez",
 				"fartouch", "interact", "touchthis", "touchattach", "touchattachself", "touchattachother", "touchhud", "touchworld", "touchall",
 				"touchme", "fly", "setgroup", "unsit", "sit", "sittp", "standtp", "setdebug", "setenv", "alwaysrun", "temprun", "detachme", 
 				"attachover", "attachthis", "attachthisover", "attachthis_except", "detachthis", "detachthis_except", "attachall", 
 				"attachallover", "detachall", "attachallthis", "attachallthis_except", "attachallthisover", "detachallthis", 
-				"detachallthis_except", "adjustheight", "tpto", "version", "versionnew", "versionnum", "getattach", "getattachnames", 
+				"detachallthis_except", "adjustheight", "camzoommax", "camzoommin", "camdistmax", "camdistmin",
+				// Singu TODO: Implement the RLV 2.9 graphics options and remove TODO from their strings so they work (and report as working)
+				// If there is work to be done immediately after these is toggled, add to the onToggleCamXXX section in rlvui.cpp
+				"TODOcamdrawmax", "TODOcamdrawmin", "TODOcamdrawalphamax", "TODOcamdrawalphamin", "TODOcamdrawcolor", "camunlock", "camavdist", "TODOcamtextures",
+				"tpto", "version", "versionnew", "versionnum", "getattach", "getattachnames",
 				"getaddattachnames", "getremattachnames", "getoutfit", "getoutfitnames", "getaddoutfitnames", "getremoutfitnames", 
 				"findfolder", "findfolders", "getpath", "getpathnew", "getinv", "getinvworn", "getgroup", "getsitid", "getcommand", 
 				"getstatus", "getstatusall"
@@ -330,6 +334,25 @@ bool RlvCommandOptionGetPath::getItemIDs(LLWearableType::EType wtType, uuid_vec_
 	}
 
 	return (cntItemsPrev != idItems.size());
+}
+
+// Checked: 2015-03-30 (RLVa-1.5.0)
+RlvCommandOptionAdjustHeight::RlvCommandOptionAdjustHeight(const RlvCommand& rlvCmd)
+	: m_nPelvisToFoot(0.0f), m_nPelvisToFootDeltaMult(0.0f), m_nPelvisToFootOffset(0.0f)
+{
+	std::vector<std::string> cmdTokens;
+	boost::split(cmdTokens, rlvCmd.getOption(), boost::is_any_of(std::string(";")));
+	if (1 == cmdTokens.size())
+	{
+		m_fValid = (LLStringUtil::convertToF32(cmdTokens[0], m_nPelvisToFootOffset));
+		m_nPelvisToFootOffset /= 100;
+	}
+	else if ( (2 <= cmdTokens.size()) && (cmdTokens.size() <= 3) )
+	{
+		m_fValid = (LLStringUtil::convertToF32(cmdTokens[0], m_nPelvisToFoot)) &&
+			 (LLStringUtil::convertToF32(cmdTokens[1], m_nPelvisToFootDeltaMult)) && 
+			 ( (2 == cmdTokens.size()) || (LLStringUtil::convertToF32(cmdTokens[2], m_nPelvisToFootOffset)) );
+	}
 }
 
 // Checked: 2011-03-28 (RLVa-1.3.0f) | Added: RLVa-1.3.0f

@@ -485,8 +485,6 @@ namespace LLError
 		SettingsConfigPtr mSettingsConfig;
 	};
 	
-	static AIThreadSafeSimple<Settings>* sSettings;
-	
 	SettingsConfig::SettingsConfig()
 		: LLRefCount(),
 		mPrintLocation(false),
@@ -569,7 +567,7 @@ namespace LLError
 		mTags(new const char*[tag_count]),
 		mTagCount(tag_count)
 	{
-		for (int i = 0; i < tag_count; i++)
+		for (size_t i = 0; i < tag_count; i++)
 		{
 			mTags[i] = tags[i];
 		}

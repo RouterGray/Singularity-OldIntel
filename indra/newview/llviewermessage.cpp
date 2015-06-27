@@ -2496,8 +2496,15 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 		{
 			// standard message, not from system
 			bool mute_im = is_muted;
-			if(accept_im_from_only_friend&&!is_friend)
+			if (accept_im_from_only_friend && !is_friend && !is_linden)
 			{
+				if (!gIMMgr->isNonFriendSessionNotified(session_id))
+				{
+					std::string message = LLTrans::getString("IM_unblock_only_groups_friends");
+					gIMMgr->addMessage(session_id, from_id, name, message);
+					gIMMgr->addNotifiedNonFriendSessionID(session_id);
+				}
+
 				mute_im = true;
 			}
 
@@ -2513,20 +2520,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 
 			LL_INFOS("Messaging") << "process_improved_im: session_id( " << session_id << " ), from_id( " << from_id << " )" << LL_ENDL;
 
-/*
-			bool mute_im = is_muted;
-			if (accept_im_from_only_friend && !is_friend)
-			{
-				if (!gIMMgr->isNonFriendSessionNotified(session_id))
-				{
-					std::string message = LLTrans::getString("IM_unblock_only_groups_friends");
-					gIMMgr->addMessage(session_id, from_id, name, message);
-					gIMMgr->addNotifiedNonFriendSessionID(session_id);
-				}
-
-				mute_im = true;
-			}
-*/
+			// Muted nonfriend code moved up
 
 // [RLVa:KB] - Checked: 2010-11-30 (RLVa-1.3.0)
 			// Don't block offline IMs, or IMs from Lindens
@@ -2563,7 +2557,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 				LLFloaterChat::addChat(chat, true, true);
 
 				// Autoresponse to muted avatars
-				if (gSavedPerAccountSettings.getBOOL("AutoresponseMuted"))
+				if (!gIMMgr->isNonFriendSessionNotified(session_id) && gSavedPerAccountSettings.getBOOL("AutoresponseMuted"))
 				{
 					std::string my_name;
 					LLAgentUI::buildFullname(my_name);
@@ -2579,8 +2573,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 						IM_BUSY_AUTO_RESPONSE,
 						session_id);
 					gAgent.sendReliableMessage();
-					LLAvatarName av_name;
-					autoresponder_finish(gSavedPerAccountSettings.getBOOL("AutoresponseMutedShow"), computed_session_id, from_id, LLAvatarNameCache::get(from_id, &av_name) ? av_name.getNSName() : name, gSavedPerAccountSettings.getBOOL("AutoresponseMutedItem") ? static_cast<LLUUID>(gSavedPerAccountSettings.getString("AutoresponseMutedItemID")) : LLUUID::null, true);
+					autoresponder_finish(gSavedPerAccountSettings.getBOOL("AutoresponseMutedShow"), computed_session_id, from_id, name, gSavedPerAccountSettings.getBOOL("AutoresponseMutedItem") ? static_cast<LLUUID>(gSavedPerAccountSettings.getString("AutoresponseMutedItemID")) : LLUUID::null, true);
 				}
 			}
 		}
@@ -3067,7 +3060,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 			if (rlv_handler_t::isEnabled())
 			{
 				// NOTE: the chat message itself will be filtered in LLNearbyChatHandler::processChat()
-				if ( (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES)) && (!from_group) && (RlvUtil::isNearbyAgent(from_id)) )
+				if ( (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS)) && (!from_group) && (RlvUtil::isNearbyAgent(from_id)) )
 				{
 					query_string["rlv_shownames"] = TRUE;
 
@@ -7741,6 +7734,7 @@ void send_lures(const LLSD& notification, const LLSD& response)
 	text.append("\r\n").append(slurl.getSLURLString());
 
 // [RLVa:KB] - Checked: 2010-11-30 (RLVa-1.3.0)
+	const std::string& rlv_hidden(RlvStrings::getString(RLV_STRING_HIDDEN));
 	if ( (RlvActions::hasBehaviour(RLV_BHVR_SENDIM)) || (RlvActions::hasBehaviour(RLV_BHVR_SENDIMTO)) )
 	{
 		// Filter the lure message if one of the recipients of the lure can't be sent an IM to
@@ -7749,7 +7743,7 @@ void send_lures(const LLSD& notification, const LLSD& response)
 		{
 			if (!RlvActions::canSendIM(it->asUUID()))
 			{
-				text = RlvStrings::getString(RLV_STRING_HIDDEN);
+				text = rlv_hidden;
 				break;
 			}
 		}
@@ -7764,6 +7758,10 @@ void send_lures(const LLSD& notification, const LLSD& response)
 	msg->nextBlockFast(_PREHASH_Info);
 	msg->addU8Fast(_PREHASH_LureType, (U8)0); // sim will fill this in.
 	msg->addStringFast(_PREHASH_Message, text);
+// [RLVa:KB] - Checked: 2014-03-31 (Catznip-3.6)
+	bool fRlvHideName = gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
+	bool fRlvNoNearbyNames = gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS);
+// [/RLVa:KB]
 	for(LLSD::array_const_iterator it = notification["payload"]["ids"].beginArray();
 		it != notification["payload"]["ids"].endArray();
 		++it)
@@ -7777,13 +7775,15 @@ void send_lures(const LLSD& notification, const LLSD& response)
 		if (notification["payload"]["ids"].size() < 10) // Singu Note: Do NOT spam chat!
 		{
 // [RLVa:KB] - Checked: 2014-03-31 (Catznip-3.6)
-			bool fRlvHideName = notification["payload"]["rlv_shownames"].asBoolean();
+			fRlvHideName |= notification["payload"]["rlv_shownames"].asBoolean();
 // [/RLVa:KB]
 			std::string target_name;
 			gCacheName->getFullName(target_id, target_name);  // for im log filenames
 			LLSD args;
 // [RLVa:KB] - Checked: 2014-03-31 (Catznip-3.6)
-			if (fRlvHideName)
+			if (fRlvNoNearbyNames && RlvUtil::isNearbyAgent(target_id))
+				target_name = rlv_hidden;
+			else if (fRlvHideName)
 				target_name = RlvStrings::getAnonym(target_name);
 			else
 // [/RLVa:KB]

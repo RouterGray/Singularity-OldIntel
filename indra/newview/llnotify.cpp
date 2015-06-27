@@ -378,7 +378,7 @@ LLButton* LLNotifyBox::addButton(const std::string& name, const std::string& lab
 {
 	// make caution notification buttons slightly narrower
 	// so that 3 of them can fit without overlapping the "next" button
-	S32 btn_width = mIsCaution ? 84 : 90;
+	S32 btn_width = (mIsCaution || mNumOptions >= 3) ? 84 : 90;
 
 	LLRect btn_rect;
 	S32 btn_height= BTN_HEIGHT;
