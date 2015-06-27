@@ -1778,7 +1778,7 @@ EAcceptance LLToolDragAndDrop::dad3dRezAttachmentFromInv(
 //			LLPointer<LLInventoryCallback> cb = new RezAttachmentCallback(0);
 // [SL:KB] - Patch: Appearance-DnDWear | Checked: 2010-09-28 (Catznip-3.0.0a) | Added: Catznip-2.2.0a
 			// Make this behave consistent with dad3dWearItem
-			LLPointer<LLInventoryCallback> cb = new LLBoostFuncInventoryCallback(boost::bind(&rez_attachment_cb, _1, (LLViewerJointAttachment*)0, !(mask & MASK_CONTROL)));
+			LLPointer<LLInventoryCallback> cb = new LLBoostFuncInventoryCallback(boost::bind(&rez_attachment_cb, _1, (LLViewerJointAttachment*)0, fReplace));
 // [/SL:KB]
 			copy_inventory_item(
 				gAgent.getID(),

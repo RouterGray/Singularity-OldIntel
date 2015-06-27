@@ -264,17 +264,6 @@ private:
 	// Support classes
 	//--------------------------------------------------------------------------------
 private:
-	class createStandardWearablesAllDoneCallback : public LLRefCount
-	{
-	protected:
-		~createStandardWearablesAllDoneCallback();
-	};
-	class sendAgentWearablesUpdateCallback : public LLRefCount
-	{
-	protected:
-		~sendAgentWearablesUpdateCallback();
-	};
-
 	class AddWearableToAgentInventoryCallback : public LLInventoryCallback
 	{
 	public:

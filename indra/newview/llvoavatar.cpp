@@ -345,6 +345,25 @@ struct LLTextureMaskData
  **
  **/
 
+struct LLAppearanceMessageContents
+{
+	LLAppearanceMessageContents():
+		mAppearanceVersion(-1),
+		mParamAppearanceVersion(-1),
+		mCOFVersion(LLViewerInventoryCategory::VERSION_UNKNOWN)
+	{
+	}
+	LLTEContents mTEContents;
+	S32 mAppearanceVersion;
+	S32 mParamAppearanceVersion;
+	S32 mCOFVersion;
+	// For future use:
+	//U32 appearance_flags = 0;
+	std::vector<F32> mParamWeights;
+	std::vector<LLVisualParam*> mParams;
+	LLVector3 mHoverOffset;
+	bool mHoverOffsetWasSet;
+};
 //-----------------------------------------------------------------------------
 // class LLBodyNoiseMotion
 //-----------------------------------------------------------------------------
@@ -6950,23 +6969,6 @@ LLViewerObject* LLVOAvatar::getWornAttachment( const LLUUID& inv_item_id )
 	return NULL;
 }
 
-const std::string LLVOAvatar::getAttachedPointName(const LLUUID& inv_item_id)
-{
-	const LLUUID& base_inv_item_id = gInventory.getLinkedItemID(inv_item_id);
-	for (attachment_map_t::iterator iter = mAttachmentPoints.begin();
-		 iter != mAttachmentPoints.end(); )
-	{
-		attachment_map_t::iterator curiter = iter++;
-		LLViewerJointAttachment* attachment = curiter->second;
-		if (attachment->getAttachedObject(base_inv_item_id))
-		{
-			return attachment->getName();
-		}
-	}
-
-	return LLStringUtil::null;
-}
-
 LLViewerObject *	LLVOAvatar::findAttachmentByID( const LLUUID & target_id ) const
 {
 	for(attachment_map_t::const_iterator attachment_points_iter = mAttachmentPoints.begin();
@@ -7319,11 +7321,9 @@ BOOL LLVOAvatar::isFullyLoaded() const
 
 // [SL:KB] - Patch: Appearance-SyncAttach | Checked: 2010-09-22 (Catznip-2.2.0a) | Added: Catznip-2.2.0a
 	// Changes to LLAppearanceMgr::updateAppearanceFromCOF() expect this function to actually return mFullyLoaded for gAgentAvatarp
-	if ( (!isSelf()) && render_unloaded_avatar )
-		return TRUE;
-	else
-		return mFullyLoaded;
+	return (render_unloaded_avatar && !isSelf()) ||(mFullyLoaded);
 // [/SL:KB]
+//	return (render_unloaded_avatar || mFullyLoaded);
 }
 
 bool LLVOAvatar::isTooComplex() const
@@ -7985,26 +7985,6 @@ void LLVOAvatar::dumpAppearanceMsgParams( const std::string& dump_prefix,
 		apr_file_printf( file, "\t\t<texture te=\"%i\" uuid=\"%s\"/>\n", i, uuid_str.c_str());
 	}
 }
-
-struct LLAppearanceMessageContents
-{
-	LLAppearanceMessageContents():
-		mAppearanceVersion(-1),
-		mParamAppearanceVersion(-1),
-		mCOFVersion(LLViewerInventoryCategory::VERSION_UNKNOWN)
-	{
-	}
-	LLTEContents mTEContents;
-	S32 mAppearanceVersion;
-	S32 mParamAppearanceVersion;
-	S32 mCOFVersion;
-	// For future use:
-	//U32 appearance_flags = 0;
-	std::vector<F32> mParamWeights;
-	std::vector<LLVisualParam*> mParams;
-	LLVector3 mHoverOffset;
-	bool mHoverOffsetWasSet;
-};
 
 void LLVOAvatar::parseAppearanceMessage(LLMessageSystem* mesgsys, LLAppearanceMessageContents& contents)
 {

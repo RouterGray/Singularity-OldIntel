@@ -133,7 +133,7 @@ void RlvInventory::fetchSharedLinks()
 
 	// Grab all the inventory links under the shared root
 	LLInventoryModel::cat_array_t folders; LLInventoryModel::item_array_t items; RlvIsLinkType f;
-	gInventory.collectDescendentsIf(pRlvRoot->getUUID(), folders, items, FALSE, f, FALSE);
+	gInventory.collectDescendentsIf(pRlvRoot->getUUID(), folders, items, FALSE, f, false);
 
 	// Add them to the "to fetch" list based on link type
 	uuid_vec_t idFolders, idItems;
@@ -282,11 +282,11 @@ LLViewerInventoryCategory* RlvInventory::getSharedFolder(const LLUUID& idParent,
 	for (LLInventoryModel::cat_array_t::const_iterator itFolder = pFolders->begin(); itFolder != pFolders->end(); ++itFolder)
 	{
 		LLViewerInventoryCategory* pFolder = *itFolder;
-		std::string strName = pFolder->getName();
+		const std::string& strName = pFolder->getName();
 
 		if (boost::iequals(strName, strFolderName))
 			return pFolder;		// Found an exact match, no need to keep on going
-		else if ( (fMatchPartial) && (!pPartial) && (RLV_FOLDER_PREFIX_HIDDEN != strName[0]) && (boost::icontains(strName, strFolderName) ) )
+		else if ( (fMatchPartial) && (!pPartial) && (RLV_FOLDER_PREFIX_HIDDEN != strName[0]) && (boost::icontains(strName, strFolderName)) )
 			pPartial = pFolder;	// Found a partial (non-hidden) match, but we might still find an exact one (first partial match wins)
 	}
 
@@ -405,8 +405,9 @@ void RlvRenameOnWearObserver::doneIdle()
 		LLInventoryModel::item_array_t items;
 		if (gInventory.isObjectDescendentOf(idAttachItem, pRlvRoot->getUUID()))
 			items.push_back(gInventory.getItem(idAttachItem));
-		else
-			items = gInventory.collectLinksTo(idAttachItem, pRlvRoot->getUUID());
+//		// LL kind of messed up the collectLinkedItems (now collectLinksTo) function but I'm not sure if this use-case if worth fixing it for
+//		else
+//			items = gInventory.collectLinkedItems(idAttachItem, pRlvRoot->getUUID());
 		if (items.empty())
 			continue;
 

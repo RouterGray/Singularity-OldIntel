@@ -57,8 +57,7 @@
 
 // [RLVa:KB] - Checked: 2011-05-22 (RLVa-1.3.1)
 #include "rlvhandler.h"
-#include "rlvinventory.h"
-#include "llattachmentsmgr.h"
+#include "rlvlocks.h"
 // [/RLVa:KB]
 
 #include "hippogridmanager.h"
@@ -240,18 +239,6 @@ void LLAgentWearables::setAvatarObject(LLVOAvatarSelf *avatar)
 		}
 		setAvatarAppearance(avatar);
 	}
-}
-
-// wearables
-LLAgentWearables::createStandardWearablesAllDoneCallback::~createStandardWearablesAllDoneCallback()
-{
-	LL_INFOS() << "destructor - all done?" << LL_ENDL;
-	gAgentWearables.createStandardWearablesAllDone();
-}
-
-LLAgentWearables::sendAgentWearablesUpdateCallback::~sendAgentWearablesUpdateCallback()
-{
-	gAgentWearables.sendAgentWearablesUpdate();
 }
 
 /**
@@ -1892,15 +1879,9 @@ void LLAgentWearables::userAttachMultipleAttachments(LLInventoryModel::item_arra
 	if ( (rlv_handler_t::isEnabled()) && (sInitialAttachmentsRequested) && (gRlvAttachmentLocks.hasLockedAttachmentPoint(RLV_LOCK_ANY)) )
 	{
 		// Fall-back code: everything should really already have been pruned before we get this far
-		for (S32 idxItem = obj_item_array.size() - 1; idxItem >= 0; idxItem--)
-		{
-			const LLInventoryItem* pItem = obj_item_array.at(idxItem).get();
-			if (!gRlvAttachmentLocks.canAttach(pItem))
-			{
-				obj_item_array.erase( obj_item_array.begin() + idxItem );
-				RLV_ASSERT(false);
-			}
-		}
+		LLInventoryModel::item_array_t::size_type cntAttach = obj_item_array.size();
+		obj_item_array.erase(std::remove_if(obj_item_array.begin(), obj_item_array.end(), RlvPredCanNotWearItem(RLV_WEAR)), obj_item_array.end());
+		RLV_ASSERT(cntAttach == obj_item_array.size());
 	}
 // [/RLVa:KB]
 

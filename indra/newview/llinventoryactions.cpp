@@ -418,10 +418,9 @@ struct LLAttachObject : public inventory_panel_listener_t
 		LLUUID id = *selected_items.begin();
 
 		std::string joint_name = userdata.asString();
-		LLVOAvatar *avatarp = gAgentAvatarp;
 		LLViewerJointAttachment* attachmentp = NULL;
-		for (LLVOAvatar::attachment_map_t::iterator iter = avatarp->mAttachmentPoints.begin(); 
-			 iter != avatarp->mAttachmentPoints.end(); )
+		for (LLVOAvatar::attachment_map_t::iterator iter = gAgentAvatarp->mAttachmentPoints.begin();
+			 iter != gAgentAvatarp->mAttachmentPoints.end(); )
 		{
 			LLVOAvatar::attachment_map_t::iterator curiter = iter++;
 			LLViewerJointAttachment* attachment = curiter->second;
@@ -435,7 +434,7 @@ struct LLAttachObject : public inventory_panel_listener_t
 		{
 			return true;
 		}
-		if (LLViewerInventoryItem* item = (LLViewerInventoryItem*)gInventory.getItem(id))
+		if (LLViewerInventoryItem* item = (LLViewerInventoryItem*)gInventory.getLinkedItem(id))
 		{
 			if(gInventory.isObjectDescendentOf(id, gInventory.getRootFolderID()))
 			{
@@ -444,7 +443,10 @@ struct LLAttachObject : public inventory_panel_listener_t
 			else if(item->isFinished())
 			{
 				// must be in library. copy it to our inventory and put it on.
-				LLPointer<LLInventoryCallback> cb = new LLBoostFuncInventoryCallback(boost::bind(rez_attachment_cb, _1, attachmentp, false));
+//				LLPointer<LLInventoryCallback> cb = new LLBoostFuncInventoryCallback(boost::bind(&rez_attachment_cb, _1, attachmentp));
+// [SL:KB] - Patch: Appearance-DnDWear | Checked: 2013-02-04 (Catznip-3.4)
+				LLPointer<LLInventoryCallback> cb = new LLBoostFuncInventoryCallback(boost::bind(&rez_attachment_cb, _1, attachmentp, false));
+// [/SL;KB]
 				copy_inventory_item(
 					gAgentID,
 					item->getPermissions().getOwner(),

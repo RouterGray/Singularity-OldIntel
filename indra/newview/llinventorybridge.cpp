@@ -86,6 +86,7 @@
 #include "hippogridmanager.h"
 
 // [RLVa:KB] - Checked: 2011-05-22 (RLVa-1.3.1)
+#include "rlvactions.h"
 #include "rlvhandler.h"
 #include "rlvlocks.h"
 // [/RLVa:KB]
@@ -5364,7 +5365,7 @@ void LLObjectBridge::performAction(LLInventoryModel* model, std::string action)
 		else if(item && item->isFinished())
 		{
 			// must be in library. copy it to our inventory and put it on.
-			LLPointer<LLInventoryCallback> cb = new LLBoostFuncInventoryCallback(boost::bind(rez_attachment_cb, _1, (LLViewerJointAttachment*)0, false));
+			LLPointer<LLInventoryCallback> cb = new LLBoostFuncInventoryCallback(boost::bind(&rez_attachment_cb, _1, (LLViewerJointAttachment*)0, false));
 			copy_inventory_item(
 				gAgent.getID(),
 				item->getPermissions().getOwner(),
@@ -5406,19 +5407,25 @@ std::string LLObjectBridge::getLabelSuffix() const
 		{
 			return LLItemBridge::getLabelSuffix() + LLTrans::getString("worn");
 		}
-		std::string attachment_point_name = gAgentAvatarp->getAttachedPointName(mUUID);
-		if (attachment_point_name == LLStringUtil::null) // Error condition, invalid attach point
+		std::string attachment_point_name;
+		if (gAgentAvatarp->getAttachedPointName(mUUID, attachment_point_name))
 		{
-			attachment_point_name = "Invalid Attachment";
-		}
-		// e.g. "(worn on ...)" / "(attached to ...)"
-		LLStringUtil::format_map_t args;
-		args["[ATTACHMENT_POINT]"] =  LLTrans::getString(attachment_point_name);
 
-		if (gRlvAttachmentLocks.canDetach(getItem()))
-			return LLItemBridge::getLabelSuffix() + LLTrans::getString("WornOnAttachmentPoint", args);
+			// e.g. "(worn on ...)" / "(attached to ...)"
+			LLStringUtil::format_map_t args;
+			args["[ATTACHMENT_POINT]"] =  LLTrans::getString(attachment_point_name);
+
+			if (gRlvAttachmentLocks.canDetach(getItem()))
+				return LLItemBridge::getLabelSuffix() + LLTrans::getString("WornOnAttachmentPoint", args);
+			else
+				return LLItemBridge::getLabelSuffix() + LLTrans::getString("LockedOnAttachmentPoint", args);
+		}
 		else
-			return LLItemBridge::getLabelSuffix() + LLTrans::getString("LockedOnAttachmentPoint", args);
+		{
+			LLStringUtil::format_map_t args;
+			args["[ATTACHMENT_ERROR]"] =  LLTrans::getString(attachment_point_name);
+			return LLItemBridge::getLabelSuffix() + LLTrans::getString("AttachmentErrorMessage", args);
+		}
 	}
 	return LLItemBridge::getLabelSuffix();
 }

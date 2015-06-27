@@ -767,12 +767,19 @@ void LLInventoryModel::collectDescendents(const LLUUID& id,
 	collectDescendentsIf(id, cats, items, include_trash, always);
 }
 
+//void LLInventoryModel::collectDescendentsIf(const LLUUID& id,
+//											cat_array_t& cats,
+//											item_array_t& items,
+//											BOOL include_trash,
+//											LLInventoryCollectFunctor& add)
+// [RLVa:KB] - Checked: 2013-04-15 (RLVa-1.4.8)
 void LLInventoryModel::collectDescendentsIf(const LLUUID& id,
 											cat_array_t& cats,
 											item_array_t& items,
 											BOOL include_trash,
 											LLInventoryCollectFunctor& add,
-											BOOL follow_folder_links)
+											bool follow_folder_links)
+// [/RLVa:KB]
 {
 	// Start with categories
 	if(!include_trash)
@@ -792,7 +799,10 @@ void LLInventoryModel::collectDescendentsIf(const LLUUID& id,
 			{
 				cats.push_back(cat);
 			}
-			collectDescendentsIf(cat->getUUID(), cats, items, include_trash, add);
+// [RLVa:KB] - Checked: 2013-04-15 (RLVa-1.4.8)
+			collectDescendentsIf(cat->getUUID(), cats, items, include_trash, add, follow_folder_links);
+// [/RLVa:KB]
+//			collectDescendentsIf(cat->getUUID(), cats, items, include_trash, add);
 		}
 	}
 
@@ -820,7 +830,6 @@ void LLInventoryModel::collectDescendentsIf(const LLUUID& id,
 	// This breaks the "finish collecting all folders before collecting items (top to bottom and then bottom to top)" 
 	// assumption but no functor is (currently) relying on it (and likely never should since it's an implementation detail?)
 	// [Only LLAppearanceMgr actually ever passes in 'follow_folder_links == TRUE']
-// [/RLVa:KB]
 	// Follow folder links recursively.  Currently never goes more
 	// than one level deep (for current outfit support)
 	// Note: if making it fully recursive, need more checking against infinite loops.
@@ -845,11 +854,12 @@ void LLInventoryModel::collectDescendentsIf(const LLUUID& id,
 						// outfit traversal.
 						cats.push_back(LLPointer<LLViewerInventoryCategory>(linked_cat));
 					}
-					collectDescendentsIf(linked_cat->getUUID(), cats, items, include_trash, add, FALSE);
+					collectDescendentsIf(linked_cat->getUUID(), cats, items, include_trash, add, false);
 				}
 			}
 		}
 	}
+// [/RLVa:KB]
 }
 
 void LLInventoryModel::addChangedMaskForLinks(const LLUUID& object_id, U32 mask)

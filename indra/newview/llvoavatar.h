@@ -784,7 +784,6 @@ public:
 	BOOL 			isWearingAttachment( const LLUUID& inv_item_id );
 	LLViewerObject* getWornAttachment( const LLUUID& inv_item_id );
 
-	const std::string getAttachedPointName(const LLUUID& inv_item_id);
 
 /**                    Wearables
  **                                                                            **
