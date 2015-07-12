@@ -1460,6 +1460,12 @@ void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
         {
             continue;
         }
+		else if (item_to_wear->isWearableType())
+		{
+			LLViewerWearable* wearable = gAgentWearables.getWearableFromAssetID(item_to_wear->getAssetUUID());
+			if (wearable && (!replace || wearable != gAgentWearables.getTopWearable(item_to_wear->getWearableType())))
+				continue;
+		}
 
 // [RLVa:KB] - Checked: 2013-02-12 (RLVa-1.4.8)
 	replace |= (LLAssetType::AT_BODYPART == item_to_wear->getType()); // Body parts should always replace

@@ -5932,6 +5932,8 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 					items.push_back(std::string("Take Off"));
 					// Fallthrough since clothing and bodypart share wear options
 				case LLAssetType::AT_BODYPART:
+					items.push_back(std::string("Wearable And Object Wear"));
+
 					if (get_is_item_worn(item->getUUID()))
 					{
 						disabled_items.push_back(std::string("Wearable And Object Wear"));
@@ -5943,10 +5945,15 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 					}
 					else
 					{
-						items.push_back(std::string("Wearable And Object Wear"));
 						disabled_items.push_back(std::string("Take Off"));
 						disabled_items.push_back(std::string("Wearable Edit"));
-
+						if (gAgentWearables.getWearableFromAssetID(item->getAssetUUID()))
+						{
+							disabled_items.push_back(std::string("Wearable Add"));
+							LLViewerWearable* wearable = gAgentWearables.getWearableFromAssetID(item->getAssetUUID());
+							if (cof_pending || (wearable && wearable != gAgentWearables.getTopWearable(mWearableType)))
+								disabled_items.push_back(std::string("Wearable And Object Wear"));
+						}
 // [RLVa:KB] - Checked: 2010-06-09 (RLVa-1.2.0g) | Modified: RLVa-1.2.0g
 						if (rlv_handler_t::isEnabled())
 						{
@@ -5971,11 +5978,7 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 						if(!is_worn || !gAgentWearables.canMoveWearable(item->getUUID(),true))
 							disabled_items.push_back(std::string("Wearable Move Back"));
 
-//						if (!gAgentWearables.canAddWearable(mWearableType))
-// [SL:KB] - Patch: Appearance-WearableDuplicateAssets | Checked: 2011-07-24 (Catznip-2.6.0e) | Added: Catznip-2.6.0e
-						if (!gAgentWearables.canAddWearable(mWearableType) ||
-							 (gAgentWearables.getWearableFromAssetID(item->getAssetUUID())) )
-// [/SL:KB]
+						if (!gAgentWearables.canAddWearable(mWearableType))
 						{
 							disabled_items.push_back(std::string("Wearable Add"));
 						}

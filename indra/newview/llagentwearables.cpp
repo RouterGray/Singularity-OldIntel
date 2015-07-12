@@ -1389,7 +1389,7 @@ void LLAgentWearables::setWearableOutfit(const LLInventoryItem::item_array_t& it
 	llassert(items.size() == count);
 
 	// Check for whether outfit already matches the one requested
-	S32 matched = 0, mismatched = 0;
+	S32 matched = 0, mismatched = 0, local_updates = 0;
 	const S32 arr_size = LLWearableType::WT_COUNT;
 	S32 type_counts[arr_size];
 	std::fill(type_counts,type_counts+arr_size,0);
@@ -1408,9 +1408,38 @@ void LLAgentWearables::setWearableOutfit(const LLInventoryItem::item_array_t& it
 		S32 index = type_counts[type];
 		type_counts[type]++;
 
-		LLViewerWearable *curr_wearable = dynamic_cast<LLViewerWearable*>(getWearable(type,index));
-		if (!new_wearable || !curr_wearable ||
-			new_wearable->getAssetID() != curr_wearable->getAssetID())
+		LLViewerWearable *curr_wearable = dynamic_cast<LLViewerWearable*>(getWearable(type, index));
+
+		const LLUUID curr_id = curr_wearable ? curr_wearable->getItemID() : LLUUID::null;
+		const std::string curr_name = curr_wearable ? curr_wearable->getName() : std::string();
+
+		if (curr_id == new_item->getUUID())	//Nothing to do. No change..
+		{
+			matched++;
+			continue;
+		}
+
+		new_wearable->setName(new_item->getName());
+		new_wearable->setItemID(new_item->getUUID());
+		
+		bool matching_asset = new_wearable && curr_wearable && new_wearable->getAssetID() == curr_wearable->getAssetID();
+
+		if (matching_asset || LLWearableType::getAssetType(type) == LLAssetType::AT_BODYPART)
+		{
+			//Simple replacement at index.
+			setWearable(type, index, new_wearable);	//Stomp the old wearable, but don't increment mismatched. setWearable calls wearableUpdate.
+			if (new_wearable == curr_wearable)	//If both new and cur are the same underlying wearable, then the old id got overwritten in the setItemId call above.
+												//Need to manually call addChangedMasked on the prior id.
+			{
+				gInventory.addChangedMask(LLInventoryObserver::LABEL, curr_id);
+			}
+			if (matching_asset)
+				local_updates++;
+			else
+				mismatched++;	//Need to update visual parameters and such things.
+			continue;
+		}
+		else
 		{
 			LL_DEBUGS("Avatar") << "mismatch, type " << type << " index " << index
 								<< " names " << (curr_wearable ? curr_wearable->getName() : "NONE")  << ","
@@ -1451,6 +1480,11 @@ void LLAgentWearables::setWearableOutfit(const LLInventoryItem::item_array_t& it
 	{
 		LL_DEBUGS("Avatar") << "no changes, bailing out" << LL_ENDL;
 		mCOFChangeInProgress = false;
+		if (local_updates)
+		{
+			LL_DEBUGS("Avatar") << "local_updates " << local_updates << " wearable itemIDs" << LL_ENDL;
+			gInventory.notifyObservers();
+		}
 		return;
 	}
 	
@@ -1475,22 +1509,11 @@ void LLAgentWearables::setWearableOutfit(const LLInventoryItem::item_array_t& it
 		if (new_wearable)
 		{
 			const LLWearableType::EType type = new_wearable->getType();
-
-			new_wearable->setName(new_item->getName());
-			new_wearable->setDescription(new_item->getDescription());
-			new_wearable->setItemID(new_item->getUUID());
-
-			if (LLWearableType::getAssetType(type) == LLAssetType::AT_BODYPART)
+		
+			if (LLWearableType::getAssetType(type) == LLAssetType::AT_CLOTHING)
 			{
-				// exactly one wearable per body part
-				setWearable(type,0,new_wearable);
+				pushWearable(type,new_wearable);	//pushWearable calls wearableUpdate.
 			}
-			else
-			{
-				pushWearable(type,new_wearable);
-			}
-			const BOOL removed = FALSE;
-			wearableUpdated(new_wearable, removed);
 		}
 	}
 

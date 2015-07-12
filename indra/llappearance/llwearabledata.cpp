@@ -88,7 +88,10 @@ void LLWearableData::setWearable(const LLWearableType::EType type, U32 index, LL
 	else
 	{
 		wearable_vec[index] = wearable;
-		old_wearable->setUpdated();
+		if (old_wearable != wearable)	//Avoid redundant update
+		{
+			old_wearable->setUpdated();
+		}
 		const BOOL removed = FALSE;
 		wearableUpdated(wearable, removed);
 	}
