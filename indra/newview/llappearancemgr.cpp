@@ -1937,6 +1937,10 @@ bool LLAppearanceMgr::canAddWearables(const uuid_vec_t& item_ids)
 		{
 			++n_clothes;
 		}
+		else if (item->getType() == LLAssetType::AT_BODYPART)
+		{
+			return false;	//If we have a bodypart in selection we cannot use 'add'.
+		}
 		else
 		{
 			LL_WARNS() << "Unexpected wearable type" << LL_ENDL;
