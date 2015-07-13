@@ -1322,7 +1322,7 @@ void update_inventory_item(
 
 	if (obj)
 	{
-		new_item->copyViewerItem(obj);
+		new_item = new LLViewerInventoryItem(obj);
 		new_item->fromLLSD(updates,false);
 
 		LLInventoryModel::LLCategoryUpdate up(new_item->getParentUUID(), 0);
