@@ -521,10 +521,6 @@ LLUpdateAppearanceOnDestroy::~LLUpdateAppearanceOnDestroy()
 	}
 }
 
-LLUpdateAppearanceAndEditWearableOnDestroy::LLUpdateAppearanceAndEditWearableOnDestroy(const LLUUID& item_id):
-	mItemID(item_id)
-{
-}
 
 void edit_wearable_and_customize_avatar(LLUUID item_id)
 {
@@ -538,16 +534,6 @@ void edit_wearable_and_customize_avatar(LLUUID item_id)
 		LLFloaterCustomize::getInstance()->switchToDefaultSubpart();
 	}
 
-}
-
-LLUpdateAppearanceAndEditWearableOnDestroy::~LLUpdateAppearanceAndEditWearableOnDestroy()
-{
-	if (!LLApp::isExiting())
-	{
-		LLAppearanceMgr::instance().updateAppearanceFromCOF(
-			true,true,
-			boost::bind(edit_wearable_and_customize_avatar, mItemID));
-	}
 }
 
 
@@ -1483,7 +1469,7 @@ void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
                 {
                     if (!cb && do_update)
                     {
-                        cb = new LLUpdateAppearanceAndEditWearableOnDestroy(item_id_to_wear);
+						cb = new LLUpdateAppearanceOnDestroy(true, true, boost::bind(&edit_wearable_and_customize_avatar, item_id_to_wear));
                     }
                     LLWearableType::EType type = item_to_wear->getWearableType();
                     S32 wearable_count = gAgentWearables.getWearableCount(type);
@@ -1510,7 +1496,7 @@ void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
                 // Remove existing body parts anyway because we must not be able to wear e.g. two skins.
                 if (!cb && do_update)
                 {
-                    cb = new LLUpdateAppearanceAndEditWearableOnDestroy(item_id_to_wear);
+					cb = new LLUpdateAppearanceOnDestroy(true, true, boost::bind(&edit_wearable_and_customize_avatar, item_id_to_wear));
                 }
 				removeCOFLinksOfType(item_to_wear->getWearableType(), NULL, true);
                 items_to_link.push_back(item_to_wear);

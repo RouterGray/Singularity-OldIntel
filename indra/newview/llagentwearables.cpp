@@ -289,7 +289,7 @@ void LLAgentWearables::AddWearableToAgentInventoryCallback::fire(const LLUUID& i
 	if (mTodo & CALL_WEARITEM)
 	{
 		LLAppearanceMgr::instance().addCOFItemLink(inv_item, 
-			new LLUpdateAppearanceAndEditWearableOnDestroy(inv_item), mDescription);
+			new LLUpdateAppearanceOnDestroy(true, true, boost::bind(&edit_wearable_and_customize_avatar, inv_item)), mDescription);
 	}
 }
 

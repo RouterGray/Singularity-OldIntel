@@ -357,19 +357,8 @@ protected:
 	LLUUID m_idAttachItem;
 };
 // [/SL:KB]
+void edit_wearable_and_customize_avatar(LLUUID item_id);
 
-class LLUpdateAppearanceAndEditWearableOnDestroy: public LLInventoryCallback
-{
-public:
-	LLUpdateAppearanceAndEditWearableOnDestroy(const LLUUID& item_id);
-
-	/* virtual */ void fire(const LLUUID& item_id) {}
-
-	~LLUpdateAppearanceAndEditWearableOnDestroy();
-	
-private:
-	LLUUID mItemID;
-};
 
 LLUUID findDescendentCategoryIDByName(const LLUUID& parent_id,const std::string& name);
 
