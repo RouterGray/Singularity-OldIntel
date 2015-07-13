@@ -1508,11 +1508,11 @@ void LLAppearanceMgr::wearItemsOnAvatar(const uuid_vec_t& item_ids_to_wear,
                 
                 // Remove the existing wearables of the same type.
                 // Remove existing body parts anyway because we must not be able to wear e.g. two skins.
-                removeCOFLinksOfType(item_to_wear->getWearableType());
                 if (!cb && do_update)
                 {
                     cb = new LLUpdateAppearanceAndEditWearableOnDestroy(item_id_to_wear);
                 }
+				removeCOFLinksOfType(item_to_wear->getWearableType(), NULL, true);
                 items_to_link.push_back(item_to_wear);
             }
             break;
@@ -3203,7 +3203,7 @@ void LLAppearanceMgr::removeCOFItemLinks(const LLUUID& item_id, LLPointer<LLInve
 	}
 }
 
-void LLAppearanceMgr::removeCOFLinksOfType(LLWearableType::EType type, LLPointer<LLInventoryCallback> cb)
+void LLAppearanceMgr::removeCOFLinksOfType(LLWearableType::EType type, LLPointer<LLInventoryCallback> cb, bool immediate_delete)
 {
 	LLFindWearablesOfType filter_wearables_of_type(type);
 	LLInventoryModel::cat_array_t cats;
@@ -3222,7 +3222,7 @@ void LLAppearanceMgr::removeCOFLinksOfType(LLWearableType::EType type, LLPointer
 				RLV_ASSERT(rlvPredCanRemoveItem(item));
 			}
 // [/RLVa:KB]
-			remove_inventory_item(item->getUUID(), cb);
+			remove_inventory_item(item->getUUID(), cb, immediate_delete);
 		}
 	}
 }
