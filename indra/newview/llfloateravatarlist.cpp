@@ -411,7 +411,10 @@ BOOL LLFloaterAvatarList::postBuild()
 	mAvatarList->setCommitCallback(boost::bind(&LLFloaterAvatarList::onSelectName,this));
 	mAvatarList->setDoubleClickCallback(boost::bind(&LLFloaterAvatarList::onClickFocus,this));
 	mAvatarList->setSortChangedCallback(boost::bind(&LLFloaterAvatarList::onAvatarSortingChanged,this));
-	refreshAvatarList();
+	BOOST_FOREACH(LLViewerRegion* region, LLWorld::instance().getRegionList())
+	{
+		updateAvatarList(region);
+	}
 
 	assessColumns();
 
