@@ -268,6 +268,7 @@ void LLFloaterAvatarList::draw()
 
 void LLFloaterAvatarList::onOpen()
 {
+	if (mAvatars.size()) refreshAvatarList();
 }
 
 void LLFloaterAvatarList::onClose(bool app_quitting)
