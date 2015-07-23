@@ -109,6 +109,7 @@ set(viewer_SOURCE_FILES
     lggdicdownload.cpp
     lgghunspell_wrapper.cpp
     llaccountingcostmanager.cpp
+    llaisapi.cpp
     llagent.cpp
     llagentaccess.cpp
     llagentcamera.cpp
@@ -639,6 +640,7 @@ set(viewer_HEADER_FILES
     lggdicdownload.h
     lgghunspell_wrapper.h
     llaccountingcostmanager.h
+    llaisapi.h
     llagent.h
     llagentaccess.h
     llagentcamera.h

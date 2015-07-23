@@ -5951,7 +5951,7 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 						{
 							disabled_items.push_back(std::string("Wearable Add"));
 							LLViewerWearable* wearable = gAgentWearables.getWearableFromAssetID(item->getAssetUUID());
-							if (cof_pending || (wearable && wearable != gAgentWearables.getTopWearable(mWearableType)))
+							if ((wearable && wearable != gAgentWearables.getTopWearable(mWearableType)))
 								disabled_items.push_back(std::string("Wearable And Object Wear"));
 						}
 // [RLVa:KB] - Checked: 2010-06-09 (RLVa-1.2.0g) | Modified: RLVa-1.2.0g

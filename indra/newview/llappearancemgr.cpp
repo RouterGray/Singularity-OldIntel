@@ -51,6 +51,7 @@
 #include "llwearablelist.h"
 #include "llsdutil.h"
 #include "llhttpretrypolicy.h"
+#include "llaisapi.h"
 #include "llinventorypanel.h"
 #include "llfloatercustomize.h"
 // [RLVa:KB] - Checked: 2011-05-22 (RLVa-1.3.1a)
@@ -2791,6 +2792,25 @@ void LLAppearanceMgr::wearInventoryCategory(LLInventoryCategory* category, bool 
 	LL_INFOS("Avatar") << self_av_string() << "wearInventoryCategory( " << category->getName()
 			 << " )" << LL_ENDL;
 
+	// If we are copying from library, attempt to use AIS to copy the category.
+	bool ais_ran=false;
+	if (copy && AISCommand::isAPIAvailable())
+	{
+		LLUUID parent_id;
+		parent_id = gInventory.findCategoryUUIDForType(LLFolderType::FT_CLOTHING);
+		if (parent_id.isNull())
+		{
+			parent_id = gInventory.getRootFolderID();
+		}
+
+		LLPointer<LLInventoryCallback> copy_cb = new LLWearCategoryAfterCopy(append);
+		LLPointer<LLInventoryCallback> track_cb = new LLTrackPhaseWrapper(
+													std::string("wear_inventory_category_callback"), copy_cb);
+		boost::intrusive_ptr <AISCommand> cmd_ptr = new CopyLibraryCategoryCommand(category->getUUID(), parent_id, track_cb);
+		ais_ran=cmd_ptr->run_command();
+	}
+
+	if (!ais_ran)
 	{
 		selfStartPhase("wear_inventory_category_fetch");
 		callAfterCategoryFetch(category->getUUID(),boost::bind(&LLAppearanceMgr::wearCategoryFinal,

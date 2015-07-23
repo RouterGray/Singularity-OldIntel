@@ -31,6 +31,7 @@
 #include "llsdserialize.h"
 #include "message.h"
 
+#include "llaisapi.h"
 #include "llagent.h"
 #include "llagentcamera.h"
 #include "llagentwearables.h"
@@ -1224,6 +1225,17 @@ void link_inventory_array(const LLUUID& category,
 						   << " UUID:" << category << " ] " << LL_ENDL;
 #endif
 	}
+
+	bool ais_ran = false;
+	if (AISCommand::isAPIAvailable())
+	{
+		LLSD new_inventory = LLSD::emptyMap();
+		new_inventory["links"] = links;
+		boost::intrusive_ptr<AISCommand> cmd_ptr = new CreateInventoryCommand(category, new_inventory, cb);
+		ais_ran = cmd_ptr->run_command();
+	}
+
+	if (!ais_ran)
 	{
 		LLMessageSystem* msg = gMessageSystem;
 		for (LLSD::array_iterator iter = links.beginArray(); iter != links.endArray(); ++iter )
@@ -1280,6 +1292,25 @@ void update_inventory_item(
 	LLPointer<LLInventoryCallback> cb)
 {
 	const LLUUID& item_id = update_item->getUUID();
+	bool ais_ran = false;
+	if (AISCommand::isAPIAvailable())
+	{
+		LLSD updates = update_item->asLLSD();
+		// Replace asset_id and/or shadow_id with transaction_id (hash_id)
+		if (updates.has("asset_id"))
+		{
+			updates.erase("asset_id");
+			updates["hash_id"] = update_item->getTransactionID();
+		}
+		if (updates.has("shadow_id"))
+		{
+			updates.erase("shadow_id");
+			updates["hash_id"] = update_item->getTransactionID();
+		}
+		boost::intrusive_ptr<AISCommand> cmd_ptr = new UpdateItemCommand(item_id, updates, cb);
+		ais_ran = cmd_ptr->run_command();
+	}
+	if (!ais_ran)
 	{
 		LLPointer<LLViewerInventoryItem> obj = gInventory.getItem(item_id);
 		LL_DEBUGS(LOG_INV) << "item_id: [" << item_id << "] name " << (update_item ? update_item->getName() : "(NOT FOUND)") << LL_ENDL;
@@ -1331,6 +1362,13 @@ void update_inventory_item(
 	}
 // [/SL:KB]
 
+	bool ais_ran = false;
+	if (AISCommand::isAPIAvailable())
+	{
+		boost::intrusive_ptr<AISCommand> cmd_ptr = new UpdateItemCommand(item_id, updates, cb);
+		ais_ran = cmd_ptr->run_command();
+	}
+	if (!ais_ran)
 	{
 //		LLPointer<LLViewerInventoryItem> obj = gInventory.getItem(item_id);
 //		LL_DEBUGS(LOG_INV) << "item_id: [" << item_id << "] name " << (obj ? obj->getName() : "(NOT FOUND)") << LL_ENDL;
@@ -1383,6 +1421,14 @@ void update_inventory_category(
 
 		LLPointer<LLViewerInventoryCategory> new_cat = new LLViewerInventoryCategory(obj);
 		new_cat->fromLLSD(updates);
+		// FIXME - restore this once the back-end work has been done.
+		if (AISCommand::isAPIAvailable())
+		{
+			LLSD new_llsd = new_cat->asLLSD();
+			boost::intrusive_ptr<AISCommand> cmd_ptr = new UpdateCategoryCommand(cat_id, new_llsd, cb);
+			cmd_ptr->run_command();
+		}
+		else // no cap
 		{
 			LLMessageSystem* msg = gMessageSystem;
 			msg->newMessageFast(_PREHASH_UpdateInventoryFolder);
@@ -1442,6 +1488,17 @@ void remove_inventory_item(
 	{
 		const LLUUID item_id(obj->getUUID());
 		LL_DEBUGS(LOG_INV) << "item_id: [" << item_id << "] name " << obj->getName() << LL_ENDL;
+		if (AISCommand::isAPIAvailable())
+		{
+			boost::intrusive_ptr<AISCommand> cmd_ptr = new RemoveItemCommand(item_id, cb);
+			cmd_ptr->run_command();
+
+			if (immediate_delete)
+			{
+				gInventory.onObjectDeletedFromServer(item_id);
+			}
+		}
+		else // no cap
 		{
 			LLMessageSystem* msg = gMessageSystem;
 			msg->newMessageFast(_PREHASH_RemoveInventoryItem);
@@ -1507,6 +1564,12 @@ void remove_inventory_category(
 			LLNotificationsUtil::add("CannotRemoveProtectedCategories");
 			return;
 		}
+		if (AISCommand::isAPIAvailable())
+		{
+			boost::intrusive_ptr<AISCommand> cmd_ptr = new RemoveCategoryCommand(cat_id, cb);
+			cmd_ptr->run_command();
+		}
+		else // no cap
 		{
 			// RemoveInventoryFolder does not remove children, so must
 			// clear descendents first.
@@ -1604,6 +1667,12 @@ void purge_descendents_of(const LLUUID& id, LLPointer<LLInventoryCallback> cb)
 		}
 		else
 		{
+			if (AISCommand::isAPIAvailable())
+			{
+				boost::intrusive_ptr<AISCommand> cmd_ptr = new PurgeDescendentsCommand(id, cb);
+				cmd_ptr->run_command();
+			}
+			else // no cap
 			{
 				// Fast purge
 				LL_DEBUGS(LOG_INV) << "purge_descendents_of fast case " << cat->getName() << LL_ENDL;
@@ -1814,6 +1883,14 @@ void slam_inventory_folder(const LLUUID& folder_id,
 						   const LLSD& contents,
 						   LLPointer<LLInventoryCallback> cb)
 {
+	if (AISCommand::isAPIAvailable())
+	{
+		LL_DEBUGS(LOG_INV) << "using AISv3 to slam folder, id " << folder_id
+						   << " new contents: " << ll_pretty_print_sd(contents) << LL_ENDL;
+		boost::intrusive_ptr<AISCommand> cmd_ptr = new SlamFolderCommand(folder_id, contents, cb);
+		cmd_ptr->run_command();
+	}
+	else // no cap
 	{
 // [RLVa:KB] - Checked: 2014-11-02 (RLVa-1.4.11)
 		LL_DEBUGS(LOG_INV) << "using item-by-item calls to slam folder, id " << folder_id

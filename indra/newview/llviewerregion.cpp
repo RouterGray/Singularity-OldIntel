@@ -36,6 +36,7 @@
 
 // linden libraries
 #include "indra_constants.h"
+#include "llaisapi.h"
 #include "llavatarnamecache.h"		// name lookup cap url
 //#include "llfloaterreg.h"
 #include "llmath.h"
@@ -89,8 +90,8 @@
 
 class AIHTTPTimeoutPolicy;
 extern AIHTTPTimeoutPolicy baseCapabilitiesComplete_timeout;
-extern AIHTTPTimeoutPolicy gamingDataReceived_timeout;
-extern AIHTTPTimeoutPolicy simulatorFeaturesReceived_timeout;
+extern AIHTTPTimeoutPolicy baseCapabilitiesCompleteTracker_timeout;
+extern AIHTTPTimeoutPolicy baseFeaturesReceived_timeout;
 
 const F32 WATER_TEXTURE_SCALE = 8.f;			//  Number of times to repeat the water texture across a region
 const S16 MAX_MAP_DIST = 10;
@@ -102,6 +103,8 @@ const S32 MAX_SEED_CAP_ATTEMPTS_BEFORE_LOGIN = 3;
 const S32 MAX_CAP_REQUEST_ATTEMPTS = 30;
 
 typedef std::map<std::string, std::string> CapabilityMap;
+
+static void log_capabilities(const CapabilityMap &capmap);
 
 class LLViewerRegionImpl {
 public:
@@ -158,6 +161,7 @@ public:
 	LLUUID mCacheID;
 
 	CapabilityMap mCapabilities;
+	CapabilityMap mSecondCapabilitiesTracker; 
 	
 	LLEventPoll* mEventPoll;
 
@@ -219,15 +223,25 @@ class BaseCapabilitiesComplete : public LLHTTPClient::ResponderWithResult
 {
 	LOG_CLASS(BaseCapabilitiesComplete);
 public:
-    BaseCapabilitiesComplete(U64 region_handle, S32 id)
+	BaseCapabilitiesComplete(U64 region_handle, S32 id)
 		: mRegionHandle(region_handle), mID(id)
-    { }
+	{ }
 	virtual ~BaseCapabilitiesComplete()
 	{ }
 
+	static boost::intrusive_ptr<BaseCapabilitiesComplete> build( U64 region_handle, S32 id )
+	{
+		return boost::intrusive_ptr<BaseCapabilitiesComplete>( 
+				new BaseCapabilitiesComplete(region_handle, id) );
+	}
+
+	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return baseCapabilitiesComplete_timeout; }
+	/*virtual*/ char const* getName(void) const { return "BaseCapabilitiesComplete"; }
+
+private:
     void httpFailure(void)
     {
-		LL_WARNS("AppInit", "Capabilities") << mStatus << ": " << mReason << LL_ENDL;
+		LL_WARNS("AppInit", "Capabilities") << dumpResponse() << LL_ENDL;
 		LLViewerRegion *regionp = LLWorld::getInstance()->getRegionFromHandle(mRegionHandle);
 		if (regionp)
 		{
@@ -246,15 +260,23 @@ public:
 		if( mID != regionp->getHttpResponderID() ) // region is no longer referring to this responder
 		{
 			LL_WARNS("AppInit", "Capabilities") << "Received results for a stale http responder!" << LL_ENDL;
+			regionp->failedSeedCapability();
 			return ;
 		}
 
+		const LLSD& content = getContent();
+		if (!content.isMap())
+		{
+			failureResult(400, "Malformed response contents", content);
+			return;
+		}
 		LLSD::map_const_iterator iter;
-		for(iter = mContent.beginMap(); iter != mContent.endMap(); ++iter)
+		for(iter = content.beginMap(); iter != content.endMap(); ++iter)
 		{
 			regionp->setCapability(iter->first, iter->second);
-			LL_DEBUGS("AppInit", "Capabilities") << "got capability for " 
-				<< iter->first << LL_ENDL;
+
+			LL_DEBUGS("AppInit", "Capabilities")
+				<< "Capability '" << iter->first << "' is '" << iter->second << "'" << LL_ENDL;
 
 			/* HACK we're waiting for the ServerReleaseNotes */
 			if (iter->first == "ServerReleaseNotes" && regionp->getReleaseNotesRequested())
@@ -271,18 +293,101 @@ public:
 		}
 	}
 
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return baseCapabilitiesComplete_timeout; }
-	/*virtual*/ char const* getName(void) const { return "BaseCapabilitiesComplete"; }
-
-    static boost::intrusive_ptr<BaseCapabilitiesComplete> build( U64 region_handle, S32 id )
-    {
-		return boost::intrusive_ptr<BaseCapabilitiesComplete>( 
-				new BaseCapabilitiesComplete(region_handle, id) );
-    }
-
 private:
 	U64 mRegionHandle;
 	S32 mID;
+};
+
+class BaseCapabilitiesCompleteTracker :  public LLHTTPClient::ResponderWithResult
+{
+	LOG_CLASS(BaseCapabilitiesCompleteTracker);
+public:
+	BaseCapabilitiesCompleteTracker( U64 region_handle)
+	: mRegionHandle(region_handle)
+	{ }
+	
+	virtual ~BaseCapabilitiesCompleteTracker()
+	{ }
+
+    static boost::intrusive_ptr<BaseCapabilitiesCompleteTracker> build( U64 region_handle )
+    {
+		return boost::intrusive_ptr<BaseCapabilitiesCompleteTracker>( 
+				new BaseCapabilitiesCompleteTracker(region_handle));
+    }
+
+	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return baseCapabilitiesCompleteTracker_timeout; }
+	/*virtual*/ char const* getName(void) const { return "BaseCapabilitiesCompleteTracker"; }
+
+private:
+	/* virtual */ void httpFailure()
+	{
+		LL_WARNS() << dumpResponse() << LL_ENDL;
+	}
+
+	/* virtual */ void httpSuccess()
+	{
+		LLViewerRegion *regionp = LLWorld::getInstance()->getRegionFromHandle(mRegionHandle);
+		if( !regionp ) 
+		{
+			LL_WARNS("AppInit", "Capabilities") << "Received results for region that no longer exists!" << LL_ENDL;
+			return ;
+		}
+
+		const LLSD& content = getContent();
+		if (!content.isMap())
+		{
+			failureResult(400, "Malformed response contents", content);
+			return;
+		}
+		LLSD::map_const_iterator iter;
+		for(iter = content.beginMap(); iter != content.endMap(); ++iter)
+		{
+			regionp->setCapabilityDebug(iter->first, iter->second);	
+			//LL_INFOS()<<"BaseCapabilitiesCompleteTracker New Caps "<<iter->first<<" "<< iter->second<<LL_ENDL;
+		}
+		
+		if ( regionp->getRegionImpl()->mCapabilities.size() != regionp->getRegionImpl()->mSecondCapabilitiesTracker.size() )
+		{
+			LL_WARNS("AppInit", "Capabilities") 
+				<< "Sim sent duplicate base caps that differ in size from what we initially received - most likely content. "
+				<< "mCapabilities == " << regionp->getRegionImpl()->mCapabilities.size()
+				<< " mSecondCapabilitiesTracker == " << regionp->getRegionImpl()->mSecondCapabilitiesTracker.size()
+				<< LL_ENDL;
+//#ifdef DEBUG_CAPS_GRANTS
+			LL_WARNS("AppInit", "Capabilities")
+				<< "Initial Base capabilities: " << LL_ENDL;
+
+			log_capabilities(regionp->getRegionImpl()->mCapabilities);
+
+			LL_WARNS("AppInit", "Capabilities")
+							<< "Latest base capabilities: " << LL_ENDL;
+
+			log_capabilities(regionp->getRegionImpl()->mSecondCapabilitiesTracker);
+
+//#endif
+
+			if (regionp->getRegionImpl()->mSecondCapabilitiesTracker.size() > regionp->getRegionImpl()->mCapabilities.size() )
+			{
+				// *HACK Since we were granted more base capabilities in this grant request than the initial, replace
+				// the old with the new. This shouldn't happen i.e. we should always get the same capabilities from a
+				// sim. The simulator fix from SH-3895 should prevent it from happening, at least in the case of the
+				// inventory api capability grants.
+
+				// Need to clear a std::map before copying into it because old keys take precedence.
+				regionp->getRegionImplNC()->mCapabilities.clear();
+				regionp->getRegionImplNC()->mCapabilities = regionp->getRegionImpl()->mSecondCapabilitiesTracker;
+			}
+		}
+		else
+		{
+			LL_DEBUGS("CrossingCaps") << "Sim sent multiple base cap grants with matching sizes." << LL_ENDL;
+		}
+		regionp->getRegionImplNC()->mSecondCapabilitiesTracker.clear();
+	}
+
+
+private:
+	U64 mRegionHandle;
 };
 
 
@@ -1786,6 +1891,7 @@ void LLViewerRegionImpl::buildCapabilityNames(LLSD& capabilityNames)
 	capabilityNames.append("FetchInventoryDescendents2");
 	capabilityNames.append("IncrementCOFVersion");
 	capabilityNames.append("GamingData"); //Used by certain grids.
+	AISCommand::getCapabilityNames(capabilityNames);
 	capabilityNames.append("GetDisplayNames");
 	capabilityNames.append("GetMesh");
 	capabilityNames.append("GetMesh2");		// Used on SecondLife(tm) sim versions 280647 and higher (13.09.17).
@@ -1851,8 +1957,16 @@ void LLViewerRegionImpl::buildCapabilityNames(LLSD& capabilityNames)
 void LLViewerRegion::setSeedCapability(const std::string& url)
 {
 	if (getCapability("Seed") == url)
-    {
-		// LL_WARNS() << "Ignoring duplicate seed capability" << LL_ENDL;
+    {	
+		setCapabilityDebug("Seed", url);
+		LL_DEBUGS("CrossingCaps") <<  "Received duplicate seed capability, posting to seed " <<
+				url	<< LL_ENDL;
+
+		//Instead of just returning we build up a second set of seed caps and compare them 
+		//to the "original" seed cap received and determine why there is problem!
+		LLSD capabilityNames = LLSD::emptyArray();
+		mImpl->buildCapabilityNames( capabilityNames );
+		LLHTTPClient::post( url, capabilityNames, BaseCapabilitiesCompleteTracker::build(getHandle() ));
 		return;
     }
 	
@@ -1913,19 +2027,19 @@ void LLViewerRegion::failedSeedCapability()
 	}
 }
 
-class SimulatorFeaturesReceived : public LLHTTPClient::ResponderWithResult
+class BaseFeaturesReceived : public LLHTTPClient::ResponderWithResult
 {
-	LOG_CLASS(SimulatorFeaturesReceived);
+	LOG_CLASS(BaseFeaturesReceived);
 public:
-    SimulatorFeaturesReceived(const std::string& retry_url, U64 region_handle, 
+	BaseFeaturesReceived(const std::string& retry_url, U64 region_handle, const char* classname, boost::function<void(LLViewerRegion*, const LLSD&)> fn,
 			S32 attempt = 0, S32 max_attempts = MAX_CAP_REQUEST_ATTEMPTS)
-	: mRetryURL(retry_url), mRegionHandle(region_handle), mAttempt(attempt), mMaxAttempts(max_attempts)
+	: mRetryURL(retry_url), mRegionHandle(region_handle), mAttempt(attempt), mMaxAttempts(max_attempts), mClassName(classname), mFunction(fn)
     { }
 	
 	
     void httpFailure(void)
     {
-		LL_WARNS("AppInit", "SimulatorFeatures") << mStatus << ": " << mReason << LL_ENDL;
+		LL_WARNS("AppInit", mClassName) << dumpResponse() << LL_ENDL;
 		retry();
     }
 
@@ -1934,24 +2048,32 @@ public:
 		LLViewerRegion *regionp = LLWorld::getInstance()->getRegionFromHandle(mRegionHandle);
 		if(!regionp) //region is removed or responder is not created.
 		{
-			LL_WARNS("AppInit", "SimulatorFeatures") << "Received results for region that no longer exists!" << LL_ENDL;
+			LL_WARNS("AppInit", mClassName)
+				<< "Received results for region that no longer exists!" << LL_ENDL;
 			return ;
 		}
 		
-		regionp->setSimulatorFeatures(mContent);
+		const LLSD& content = getContent();
+		if (!content.isMap())
+		{
+			failureResult(400, "Malformed response contents", content);
+			return;
+		}
+		mFunction(regionp, content);
 	}
-
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return simulatorFeaturesReceived_timeout; }
-	/*virtual*/ char const* getName(void) const { return "SimulatorFeaturesReceived"; }
+	
+	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return baseFeaturesReceived_timeout; }
+	/*virtual*/ char const* getName(void) const { return mClassName; }
 
 private:
+
 	void retry()
 	{
 		if (mAttempt < mMaxAttempts)
 		{
 			mAttempt++;
-			LL_WARNS("AppInit", "SimulatorFeatures") << "Re-trying '" << mRetryURL << "'.  Retry #" << mAttempt << LL_ENDL;
-			LLHTTPClient::get(mRetryURL, new SimulatorFeaturesReceived(*this));
+			LL_WARNS("AppInit", mClassName) << "Re-trying '" << mRetryURL << "'.  Retry #" << mAttempt << LL_ENDL;
+			LLHTTPClient::get(mRetryURL, new BaseFeaturesReceived(*this));
 		}
 	}
 	
@@ -1959,48 +2081,9 @@ private:
 	U64 mRegionHandle;
 	S32 mAttempt;
 	S32 mMaxAttempts;
+	const char* mClassName;
+	boost::function<void(LLViewerRegion*, const LLSD&)> mFunction;
 };
-
-class GamingDataReceived : public LLHTTPClient::ResponderWithResult
-{
-	LOG_CLASS(GamingDataReceived);
-public:
-	GamingDataReceived(const std::string& retry_url, U64 region_handle, S32 attempt = 0, S32 max_attempts = MAX_CAP_REQUEST_ATTEMPTS)
-	: mRetryURL(retry_url), mRegionHandle(region_handle), mAttempt(attempt), mMaxAttempts(max_attempts)
-	{}
-
-	/*virtual*/ void httpFailure(void)
-	{
-		LL_WARNS("AppInit", "GamingData") << mStatus << ": " << mReason << LL_ENDL;
-		retry();
-	}
-
-	/*virtual*/ void httpSuccess(void)
-	{
-		LLViewerRegion *regionp = LLWorld::getInstance()->getRegionFromHandle(mRegionHandle);
-		if(regionp) regionp->setGamingData(mContent);
-	}
-
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return gamingDataReceived_timeout; }
-	/*virtual*/ char const* getName(void) const { return "GamingDataReceived"; }
-
-private:
-	void retry()
-	{
-		if (mAttempt < mMaxAttempts)
-		{
-			mAttempt++;
-			LL_WARNS("AppInit", "GamingData") << "Retrying '" << mRetryURL << "'.  Retry #" << mAttempt << LL_ENDL;
-			LLHTTPClient::get(mRetryURL, new GamingDataReceived(*this));
-		}
-	}
-
-	std::string mRetryURL;
-	U64 mRegionHandle;
-	S32 mAttempt;
-	S32 mMaxAttempts;
-};
-
 
 void LLViewerRegion::setCapability(const std::string& name, const std::string& url)
 {
@@ -2020,13 +2103,13 @@ void LLViewerRegion::setCapability(const std::string& name, const std::string& u
 		mImpl->mCapabilities[name] = url;
 
 		// kick off a request for simulator features
-		LLHTTPClient::get(url, new SimulatorFeaturesReceived(url, getHandle()));
+		LLHTTPClient::get(url, new BaseFeaturesReceived(url, getHandle(), "SimulatorFeaturesReceived", &LLViewerRegion::setSimulatorFeatures));
 	}
 	else if (name == "GamingData")
 	{
 		LLSD gamingRequest = LLSD::emptyMap();
 		// request settings from simulator
-		LLHTTPClient::post(url, gamingRequest, new GamingDataReceived(url, getHandle()));
+		LLHTTPClient::post(url, gamingRequest, new BaseFeaturesReceived(url, getHandle(), "GamingDataReceived", &LLViewerRegion::setGamingData));
 	}
 	else
 	{
@@ -2038,6 +2121,20 @@ void LLViewerRegion::setCapability(const std::string& name, const std::string& u
 	}
 }
 
+void LLViewerRegion::setCapabilityDebug(const std::string& name, const std::string& url)
+{
+	// Continue to not add certain caps, as we do in setCapability. This is so they match up when we check them later.
+	if ( ! ( name == "EventQueueGet" || name == "UntrustedSimulatorMessage" || name == "SimulatorFeatures" ) )
+	{
+		mImpl->mSecondCapabilitiesTracker[name] = url;
+		if(name == "GetTexture")
+		{
+			mHttpUrl = url ;
+		}
+	}
+
+}
+
 bool LLViewerRegion::isSpecialCapabilityName(const std::string &name)
 {
 	return name == "EventQueueGet" || name == "UntrustedSimulatorMessage";
@@ -2047,7 +2144,7 @@ std::string LLViewerRegion::getCapability(const std::string& name) const
 {
 	if (!capabilitiesReceived() && (name!=std::string("Seed")) && (name!=std::string("ObjectMedia")))
 	{
-		LL_WARNS() << "getCapability("<<name<<") called before caps received" << LL_ENDL;
+		LL_WARNS() << "getCapability called before caps received for " << name << LL_ENDL;
 	}
 	
 	CapabilityMap::const_iterator iter = mImpl->mCapabilities.find(name);
@@ -2057,6 +2154,22 @@ std::string LLViewerRegion::getCapability(const std::string& name) const
 	}
 
 	return iter->second;
+}
+
+bool LLViewerRegion::isCapabilityAvailable(const std::string& name) const
+{
+	if (!capabilitiesReceived() && (name!=std::string("Seed")) && (name!=std::string("ObjectMedia")))
+	{
+		LL_WARNS() << "isCapabilityAvailable called before caps received for " << name << LL_ENDL;
+	}
+	
+	CapabilityMap::const_iterator iter = mImpl->mCapabilities.find(name);
+	if(iter == mImpl->mCapabilities.end())
+	{
+		return false;
+	}
+
+	return true;
 }
 
 bool LLViewerRegion::capabilitiesReceived() const
@@ -2210,7 +2323,21 @@ bool LLViewerRegion::avatarHoverHeightEnabled() const
 	return ( mSimulatorFeatures.has("AvatarHoverHeightEnabled") &&
 			 mSimulatorFeatures["AvatarHoverHeightEnabled"].asBoolean());
 }
+/* Static Functions */
 
+void log_capabilities(const CapabilityMap &capmap)
+{
+	S32 count = 0;
+	CapabilityMap::const_iterator iter;
+	for (iter = capmap.begin(); iter != capmap.end(); ++iter, ++count)
+	{
+		if (!iter->second.empty())
+		{
+			LL_INFOS() << "log_capabilities: " << iter->first << " URL is " << iter->second << LL_ENDL;
+		}
+	}
+	LL_INFOS() << "log_capabilities: Dumped " << count << " entries." << LL_ENDL;
+}
 void LLViewerRegion::resetMaterialsCapThrottle()
 {
 	F32 requests_per_sec = 	1.0f; // original default;

@@ -121,6 +121,8 @@ public:
 		HTTP_POST,
 		HTTP_DELETE,
 		HTTP_MOVE, // Caller will need to set 'Destination' header
+		HTTP_PATCH,
+		HTTP_COPY,
 		REQUEST_ACTION_COUNT
 	};
 
@@ -499,6 +501,10 @@ public:
 	static void getHeaderOnly(std::string const& url, ResponderHeadersOnly* responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off))
 	    { AIHTTPHeaders headers; getHeaderOnly(url, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug)); }
 
+	static void patch(std::string const& url, LLSD const& body, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive, AIStateMachine* parent = NULL, U32 new_parent_state = 0);
+	static void patch(std::string const& url, LLSD const& body, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive, AIStateMachine* parent = NULL, U32 new_parent_state = 0)
+		{ AIHTTPHeaders headers; patch(url, body, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug), keepalive, parent, new_parent_state); }
+
 	static void post(std::string const& url, LLSD const& body, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive, AIStateMachine* parent = NULL, U32 new_parent_state = 0);
 	static void post(std::string const& url, LLSD const& body, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off), EKeepAlive keepalive = keep_alive, AIStateMachine* parent = NULL, U32 new_parent_state = 0)
 	    { AIHTTPHeaders headers; post(url, body, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug), keepalive, parent, new_parent_state); }
@@ -549,6 +555,12 @@ public:
 	    { AIHTTPHeaders headers; move(url, destination, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug)); }
 
 	//@}
+
+	static void copy(std::string const& url, std::string const& destination, ResponderPtr responder, AIHTTPHeaders& headers/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off));
+	static void copy(std::string const& url, std::string const& destination, ResponderPtr responder/*,*/ DEBUG_CURLIO_PARAM(EDebugCurl debug = debug_off))
+	{
+		AIHTTPHeaders headers; copy(url, destination, responder, headers/*,*/ DEBUG_CURLIO_PARAM(debug));
+	}
 
 	/**
 	 * @brief Blocking HTTP GET that returns an LLSD map of status and body.

@@ -27,6 +27,7 @@
 #include "llviewerprecompiledheaders.h"
 #include "llinventorymodel.h"
 
+#include "llaisapi.h"
 #include "llagent.h"
 #include "llagentwearables.h"
 #include "llappearancemgr.h"
@@ -1290,6 +1291,19 @@ void LLInventoryModel::changeCategoryParent(LLViewerInventoryCategory* cat,
 	new_cat->updateParentOnServer(restamp);
 	updateCategory(new_cat);
 	notifyObservers();
+}
+
+void LLInventoryModel::onAISUpdateReceived(const std::string& context, const LLSD& update)
+{
+	LLTimer timer;
+	if (gSavedSettings.getBOOL("DebugAvatarAppearanceMessage"))
+	{
+		dump_sequential_xml(gAgentAvatarp->getFullname() + "_ais_update", update);
+	}
+
+	AISUpdate ais_update(update); // parse update llsd into stuff to do.
+	ais_update.doUpdate(); // execute the updates in the appropriate order.
+	LL_INFOS(LOG_INV) << "elapsed: " << timer.getElapsedTimeF32() << LL_ENDL;
 }
 
 // Does not appear to be used currently.
