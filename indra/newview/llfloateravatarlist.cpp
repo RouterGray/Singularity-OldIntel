@@ -88,22 +88,22 @@ namespace
 		static LLCachedControl<bool> radar_alert_chat_range(gSavedSettings, "RadarAlertChatRange");
 		static LLCachedControl<bool> radar_alert_age(gSavedSettings, "RadarAlertAge");
 
-		LLFloaterAvatarList* self = LLFloaterAvatarList::getInstance();
+		LLFloaterAvatarList& inst(LLFloaterAvatarList::instance());
 		LLStringUtil::format_map_t args;
 		LLChat chat;
 		switch(type)
 		{
-			case STAT_TYPE_SIM:			if (radar_alert_sim)			args["[RANGE]"] = self->getString("the_sim");											break;
-			case STAT_TYPE_DRAW:		if (radar_alert_draw)			args["[RANGE]"] = self->getString("draw_distance");										break;
-			case STAT_TYPE_SHOUTRANGE:	if (radar_alert_shout_range)	args["[RANGE]"] = self->getString("shout_range");										break;
-			case STAT_TYPE_CHATRANGE:	if (radar_alert_chat_range)		args["[RANGE]"] = self->getString("chat_range");										break;
-			case STAT_TYPE_AGE:			if (radar_alert_age)			chat.mText = name + " " + self->getString("has_triggered_your_avatar_age_alert") + ".";	break;
+			case STAT_TYPE_SIM:			if (radar_alert_sim)			args["[RANGE]"] = inst.getString("the_sim");											break;
+			case STAT_TYPE_DRAW:		if (radar_alert_draw)			args["[RANGE]"] = inst.getString("draw_distance");										break;
+			case STAT_TYPE_SHOUTRANGE:	if (radar_alert_shout_range)	args["[RANGE]"] = inst.getString("shout_range");										break;
+			case STAT_TYPE_CHATRANGE:	if (radar_alert_chat_range)		args["[RANGE]"] = inst.getString("chat_range");										break;
+			case STAT_TYPE_AGE:			if (radar_alert_age)			chat.mText = name + " " + inst.getString("has_triggered_your_avatar_age_alert") + ".";	break;
 			default:					llassert(type);																											break;
 		}
 		args["[NAME]"] = name;
-		args["[ACTION]"] = self->getString(entering ? "has_entered" : "has_left");
+		args["[ACTION]"] = inst.getString(entering ? "has_entered" : "has_left");
 		if (args.find("[RANGE]") != args.end())
-			chat.mText = self->getString("template", args);
+			chat.mText = inst.getString("template", args);
 		else if (chat.mText.empty()) return;
 		if (entering) // Note: If we decide to make this for leaving as well, change this check to dist != F32_MIN
 		{
@@ -138,13 +138,14 @@ LLAvatarListEntry::LLAvatarListEntry(const LLUUID& id, const std::string& name, 
 		mActivityType(ACTIVITY_NEW), mActivityTimer(),
 		mIsInList(false), mAge(-1), mTime(time(NULL))
 {
-	LLAvatarPropertiesProcessor::getInstance()->addObserver(mID, this);
-	LLAvatarPropertiesProcessor::getInstance()->sendAvatarPropertiesRequest(mID);
+	LLAvatarPropertiesProcessor& inst(LLAvatarPropertiesProcessor::instance());
+	inst.addObserver(mID, this);
+	inst.sendAvatarPropertiesRequest(mID);
 }
 
 LLAvatarListEntry::~LLAvatarListEntry()
 {
-	LLAvatarPropertiesProcessor::getInstance()->removeObserver(mID, this);
+	LLAvatarPropertiesProcessor::instance().removeObserver(mID, this);
 }
 
 // virtual
@@ -152,7 +153,8 @@ void LLAvatarListEntry::processProperties(void* data, EAvatarProcessorType type)
 {
 	if (type == APT_PROPERTIES)
 	{
-		LLAvatarPropertiesProcessor::getInstance()->removeObserver(mID, this);
+		LLAvatarPropertiesProcessor& inst(LLAvatarPropertiesProcessor::instance());
+		inst.removeObserver(mID, this);
 		const LLAvatarData* pAvatarData = static_cast<const LLAvatarData*>(data);
 		if (pAvatarData && (pAvatarData->avatar_id != LLUUID::null))
 		{
@@ -166,8 +168,8 @@ void LLAvatarListEntry::processProperties(void* data, EAvatarProcessorType type)
 			catch(const std::exception&)
 			{
 				LL_WARNS() << "Failed to extract age from APT_PROPERTIES for " << mID << ", received \"" << pAvatarData->born_on << "\". Requesting properties again." << LL_ENDL;
-				LLAvatarPropertiesProcessor::getInstance()->addObserver(mID, this);
-				LLAvatarPropertiesProcessor::getInstance()->sendAvatarPropertiesRequest(mID);
+				inst.addObserver(mID, this);
+				inst.sendAvatarPropertiesRequest(mID);
 				return;
 			}
 			if (!mStats[STAT_TYPE_AGE] && mAge >= 0) //Only announce age once per entry.
@@ -210,7 +212,7 @@ void LLAvatarListEntry::resetName(const bool& hide_tags, const bool& anon_names,
 const F32 ACTIVITY_TIMEOUT = 1.0f;
 void LLAvatarListEntry::setActivity(ACTIVITY_TYPE activity)
 {
-	if ( activity >= mActivityType || mActivityTimer.getElapsedTimeF32() > ACTIVITY_TIMEOUT )
+	if (activity >= mActivityType || mActivityTimer.getElapsedTimeF32() > ACTIVITY_TIMEOUT)
 	{
 		mActivityType = activity;
 		mActivityTimer.start();
@@ -266,20 +268,15 @@ void LLFloaterAvatarList::draw()
 
 void LLFloaterAvatarList::onOpen()
 {
-	gSavedSettings.setBOOL("ShowRadar", true);
+	if (mAvatars.size()) refreshAvatarList();
 }
 
 void LLFloaterAvatarList::onClose(bool app_quitting)
 {
-	setVisible(false);
-	if (!app_quitting)
-	{
-		gSavedSettings.setBOOL("ShowRadar", false);
-	}
-	if (!gSavedSettings.getBOOL("RadarKeepOpen") || app_quitting)
-	{
+	if (app_quitting || !gSavedSettings.getBOOL("RadarKeepOpen"))
 		destroy();
-	}
+	else
+		setVisible(false);
 }
 
 BOOL LLFloaterAvatarList::handleRightMouseDown(S32 x, S32 y, MASK mask)
@@ -414,7 +411,10 @@ BOOL LLFloaterAvatarList::postBuild()
 	mAvatarList->setCommitCallback(boost::bind(&LLFloaterAvatarList::onSelectName,this));
 	mAvatarList->setDoubleClickCallback(boost::bind(&LLFloaterAvatarList::onClickFocus,this));
 	mAvatarList->setSortChangedCallback(boost::bind(&LLFloaterAvatarList::onAvatarSortingChanged,this));
-	refreshAvatarList();
+	BOOST_FOREACH(LLViewerRegion* region, LLWorld::instance().getRegionList())
+	{
+		updateAvatarList(region);
+	}
 
 	assessColumns();
 
@@ -906,8 +906,8 @@ void LLFloaterAvatarList::refreshAvatarList()
 			agep.column = "age";
 			agep.type = "text";
 			color = sDefaultListText;
-			std::string age = boost::lexical_cast<std::string>(entry->mAge);
-			if (entry->mAge > -1)
+			bool age_set(entry->mAge > -1);
+			if (age_set)
 			{
 				static const LLCachedControl<U32> sAvatarAgeAlertDays(gSavedSettings, "AvatarAgeAlertDays");
 				if ((U32)entry->mAge < sAvatarAgeAlertDays)
@@ -916,11 +916,7 @@ void LLFloaterAvatarList::refreshAvatarList()
 					color = sRadarTextYoung;
 				}
 			}
-			else
-			{
-				age = "?";
-			}
-			agep.value = age;
+			agep.value = age_set ? boost::lexical_cast<std::string>(entry->mAge) : "?";
 			agep.color = color;
 			element.columns.add(agep);
 		}
@@ -981,7 +977,6 @@ void LLFloaterAvatarList::refreshAvatarList()
 	mDirtyAvatarSorting = true;
 
 //	LL_INFOS() << "radar refresh: done" << LL_ENDL;
-
 }
 
 void LLFloaterAvatarList::resetAvatarNames()
@@ -1042,7 +1037,7 @@ void LLFloaterAvatarList::onClickTrack()
 		mTracking = true;
 		mTrackedAvatar = agent_id;
 //		trackAvatar only works for friends allowing you to see them on map...
-//		LLTracker::trackAvatar(agent_id, self->mAvatars[agent_id].getName());
+//		LLTracker::trackAvatar(agent_id, mAvatars[agent_id].getName());
 		trackAvatar(getAvatarEntry(mTrackedAvatar));
 	}
 }
