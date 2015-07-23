@@ -43,8 +43,6 @@
 #include "lluuid.h"
 //#include "lldir.h" // Do not need.
 
-const S32 MAX_COLUMN_WIDTH = 80;
-
 // static
 BOOL LLXMLNode::sStripEscapedStrings = TRUE;
 BOOL LLXMLNode::sStripWhitespaceValues = FALSE;
@@ -147,13 +145,15 @@ LLXMLNodePtr LLXMLNode::deepCopy()
 		for (LLXMLChildList::iterator iter = mChildren->map.begin();
 			 iter != mChildren->map.end(); ++iter)	
 		{
-			newnode->addChild(iter->second->deepCopy());
+			LLXMLNodePtr temp_ptr_for_gcc(iter->second->deepCopy());
+			newnode->addChild(temp_ptr_for_gcc);
 		}
 	}
 	for (LLXMLAttribList::iterator iter = mAttributes.begin();
 		 iter != mAttributes.end(); ++iter)
 	{
-		newnode->addChild(iter->second->deepCopy());
+		LLXMLNodePtr temp_ptr_for_gcc(iter->second->deepCopy());
+		newnode->addChild(temp_ptr_for_gcc);
 	}
 
 	return newnode;
