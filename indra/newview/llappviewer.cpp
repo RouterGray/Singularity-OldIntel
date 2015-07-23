@@ -611,6 +611,7 @@ void load_default_bindings(bool zqsd)
 	}
 }
 
+/* Singu unused
 namespace {
 // With Xcode 6, _exit() is too magical to use with boost::bind(), so provide
 // this little helper function.
@@ -619,6 +620,7 @@ void fast_exit(int rc)
 	_exit(rc);
 }
 }
+*/
 
 bool LLAppViewer::init()
 {	
