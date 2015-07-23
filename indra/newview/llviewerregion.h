@@ -74,11 +74,13 @@ class LLDataPacker;
 class LLDataPackerBinaryBuffer;
 class LLHost;
 class LLBBox;
+class LLSpatialGroup;
 // [SL:KB] - Patch: World-MinimapOverlay | Checked: 2012-07-26 (Catznip-3.3)
 class LLViewerTexture;
 // [/SL:KB]
 
 class LLViewerRegionImpl;
+class LLViewerOctreeGroup;
 
 class LLViewerRegion: public LLCapabilityProvider // implements this interface
 {

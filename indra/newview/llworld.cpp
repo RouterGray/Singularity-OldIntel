@@ -154,6 +154,10 @@ void LLWorld::destroyClass()
 	{
 		mEdgeWaterObjects[i] = NULL;
 	}
+
+	//make all visible drawbles invisible.
+	LLDrawable::incrementVisible();
+	
 }
 
 void LLWorld::setRegionSize(const U32& width, const U32& length)
@@ -700,7 +704,7 @@ void LLWorld::updateVisibilities()
 		if (part)
 		{
 			LLSpatialGroup* group = (LLSpatialGroup*) part->mOctree->getListener(0);
-			const LLVector4a* bounds = group->mBounds;
+			const LLVector4a* bounds = group->getBounds();
 			if (LLViewerCamera::getInstance()->AABBInFrustum(bounds[0], bounds[1]))
 			{
 				mCulledRegionList.erase(curiter);
@@ -724,7 +728,7 @@ void LLWorld::updateVisibilities()
 		if (part)
 		{
 			LLSpatialGroup* group = (LLSpatialGroup*) part->mOctree->getListener(0);
-			const LLVector4a* bounds = group->mBounds;
+			const LLVector4a* bounds = group->getBounds();
 			if (LLViewerCamera::getInstance()->AABBInFrustum(bounds[0], bounds[1]))
 			{
 				regionp->calculateCameraDistance();

@@ -177,7 +177,7 @@ public:
 	LLCapabilityListener mCapabilityListener;
 
 	//spatial partitions for objects in this region
-	std::vector<LLSpatialPartition*> mObjectPartition;
+	std::vector<LLViewerOctreePartition*> mObjectPartition;
 };
 
 // support for secondlife:///app/region/{REGION} SLapps
@@ -532,9 +532,9 @@ LLViewerRegion::~LLViewerRegion()
 	delete mImpl->mEventPoll;
 	LLHTTPSender::clearSender(mImpl->mHost);
 	
-	saveObjectCache();
-
 	std::for_each(mImpl->mObjectPartition.begin(), mImpl->mObjectPartition.end(), DeletePointer());
+
+	saveObjectCache();
 
 	delete mImpl;
 	mImpl = NULL;
@@ -2226,7 +2226,7 @@ LLSpatialPartition* LLViewerRegion::getSpatialPartition(U32 type)
 {
 	if (type < mImpl->mObjectPartition.size())
 	{
-		return mImpl->mObjectPartition[type];
+		return (LLSpatialPartition*)mImpl->mObjectPartition[type];
 	}
 	return NULL;
 }

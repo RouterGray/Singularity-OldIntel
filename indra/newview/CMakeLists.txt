@@ -523,6 +523,7 @@ set(viewer_SOURCE_FILES
     llviewerobject.cpp
     llviewerobjectbackup.cpp
     llviewerobjectlist.cpp
+    llvieweroctree.cpp
     llviewerparcelmedia.cpp
     llviewerparcelmediaautoplay.cpp
     llviewerparcelmgr.cpp
@@ -1059,6 +1060,7 @@ set(viewer_HEADER_FILES
     llviewerobject.h
     llviewerobjectbackup.h
     llviewerobjectlist.h
+    llvieweroctree.h
     llviewerparcelmedia.h
     llviewerparcelmediaautoplay.h
     llviewerparcelmgr.h
