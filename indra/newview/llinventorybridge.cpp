@@ -5926,6 +5926,7 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 		// Disable wear and take off based on whether the item is worn.
 		if(item)
 		{
+			bool cof_pending = LLUpdateAppearanceOnDestroy::sActiveCallbacks;
 			switch (item->getType())
 			{
 				case LLAssetType::AT_CLOTHING:
@@ -5934,12 +5935,12 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 				case LLAssetType::AT_BODYPART:
 					items.push_back(std::string("Wearable And Object Wear"));
 
-					if (get_is_item_worn(item->getUUID()))
+					if (!cof_pending && get_is_item_worn(item->getUUID()))
 					{
 						disabled_items.push_back(std::string("Wearable And Object Wear"));
 						disabled_items.push_back(std::string("Wearable Add"));
 // [RLVa:KB] - Checked: 2010-04-04 (RLVa-1.2.0c) | Added: RLVa-1.2.0c
-						if ( (rlv_handler_t::isEnabled()) && (!gRlvWearableLocks.canRemove(item)) )
+						if (cof_pending || (rlv_handler_t::isEnabled()) && (!gRlvWearableLocks.canRemove(item)))
 							disabled_items.push_back(std::string("Take Off"));
 // [/RLVa:KB]
 					}
@@ -5947,11 +5948,11 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 					{
 						disabled_items.push_back(std::string("Take Off"));
 						disabled_items.push_back(std::string("Wearable Edit"));
-						if (gAgentWearables.getWearableFromAssetID(item->getAssetUUID()))
+						if (cof_pending || gAgentWearables.getWearableFromAssetID(item->getAssetUUID()))
 						{
 							disabled_items.push_back(std::string("Wearable Add"));
 							LLViewerWearable* wearable = gAgentWearables.getWearableFromAssetID(item->getAssetUUID());
-							if ((wearable && wearable != gAgentWearables.getTopWearable(mWearableType)))
+							if (cof_pending || (wearable && wearable != gAgentWearables.getTopWearable(mWearableType)))
 								disabled_items.push_back(std::string("Wearable And Object Wear"));
 						}
 // [RLVa:KB] - Checked: 2010-06-09 (RLVa-1.2.0g) | Modified: RLVa-1.2.0g
@@ -5973,12 +5974,12 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 						items.push_back(std::string("Wearable Move Back"));
 
 						bool is_worn = get_is_item_worn(item->getUUID());
-						if(!is_worn || !gAgentWearables.canMoveWearable(item->getUUID(),false))
+						if (cof_pending || !is_worn || !gAgentWearables.canMoveWearable(item->getUUID(), false))
 							disabled_items.push_back(std::string("Wearable Move Forward"));
-						if(!is_worn || !gAgentWearables.canMoveWearable(item->getUUID(),true))
+						if (cof_pending || !is_worn || !gAgentWearables.canMoveWearable(item->getUUID(), true))
 							disabled_items.push_back(std::string("Wearable Move Back"));
 
-						if (!gAgentWearables.canAddWearable(mWearableType))
+						if (cof_pending || !gAgentWearables.canAddWearable(mWearableType))
 						{
 							disabled_items.push_back(std::string("Wearable Add"));
 						}

@@ -494,6 +494,7 @@ LLUpdateAppearanceOnDestroy::LLUpdateAppearanceOnDestroy(bool enforce_item_restr
 	mEnforceOrdering(enforce_ordering),
 	mPostUpdateFunc(post_update_func)
 {
+	sActiveCallbacks++;
 	selfStartPhase("update_appearance_on_destroy");
 }
 
@@ -509,6 +510,7 @@ void LLUpdateAppearanceOnDestroy::fire(const LLUUID& inv_item)
 
 LLUpdateAppearanceOnDestroy::~LLUpdateAppearanceOnDestroy()
 {
+	--sActiveCallbacks;
 	if (!LLApp::isExiting())
 	{
 		// speculative fix for MAINT-1150
@@ -522,6 +524,7 @@ LLUpdateAppearanceOnDestroy::~LLUpdateAppearanceOnDestroy()
 	}
 }
 
+U32 LLUpdateAppearanceOnDestroy::sActiveCallbacks = 0;
 
 void edit_wearable_and_customize_avatar(LLUUID item_id)
 {

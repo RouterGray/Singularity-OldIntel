@@ -336,6 +336,7 @@ public:
 	virtual ~LLUpdateAppearanceOnDestroy();
 	/* virtual */ void fire(const LLUUID& inv_item);
 
+	static U32 sActiveCallbacks;
 private:
 	U32 mFireCount;
 	bool mEnforceItemRestrictions;
