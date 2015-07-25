@@ -650,7 +650,8 @@ void LLAgent::moveUp(S32 direction)
 		setControlFlags(AGENT_CONTROL_UP_NEG | AGENT_CONTROL_FAST_UP);
 	}
 
-	if (!mCrouch) camera_reset_on_motion();
+	if (!mCrouch)
+		camera_reset_on_motion();
 }
 
 //-----------------------------------------------------------------------------
@@ -694,7 +695,7 @@ void LLAgent::movePitch(F32 mag)
 
 bool LLAgent::isCrouching() const
 {
-	return mCrouch && !getFlying(); // Never crouch when flying
+	return mCrouch && !getFlying();
 }
 
 

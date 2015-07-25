@@ -70,13 +70,14 @@ LLViewerKeyboard gViewerKeyboard;
 void agent_jump( EKeystate s )
 {
 	if( KEYSTATE_UP == s  ) return;
+	static LLCachedControl<bool> sAutomaticFly(gSavedSettings, "AutomaticFly");
 	F32 time = gKeyboard->getCurKeyElapsedTime();
 	S32 frame_count = ll_round(gKeyboard->getCurKeyElapsedFrameCount());
 
 	if( time < FLY_TIME 
 		|| frame_count <= FLY_FRAMES 
 		|| gAgent.upGrabbed()
-		|| !gSavedSettings.getBOOL("AutomaticFly"))
+		|| !sAutomaticFly())
 	{
 		gAgent.moveUp(1);
 	}
@@ -91,7 +92,10 @@ void agent_toggle_down( EKeystate s )
 {
 	if (KEYSTATE_UP == s) return;
 
-	if (KEYSTATE_DOWN == s && !gAgent.getFlying() && gSavedSettings.getBOOL("SGShiftCrouchToggle"))
+	static LLCachedControl<bool> sCrouchToggle(gSavedSettings, "SGShiftCrouchToggle");
+	if (KEYSTATE_DOWN == s
+		&& !gAgent.getFlying()
+		&& sCrouchToggle())
 	{
 		gAgent.toggleCrouch();
 	}
@@ -101,7 +105,7 @@ void agent_toggle_down( EKeystate s )
 
 void agent_push_down( EKeystate s )
 {
-	if( KEYSTATE_UP == s  ) return;
+	if( KEYSTATE_UP == s ) return;
 	gAgent.moveUp(-1);
 }
 
