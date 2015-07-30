@@ -58,13 +58,13 @@
 // to get added to the login cgi script, so we want this to cause an
 // error if we get compiled for a different platform.
 #if LL_WINDOWS
-static const char* PLATFORM_STRING = "Win";
+static const char* PLATFORM_STRING = "win";
 #elif LL_DARWIN
-static const char* PLATFORM_STRING = "Mac";
+static const char* PLATFORM_STRING = "mac";
 #elif LL_LINUX
-static const char* PLATFORM_STRING = "Lnx";
+static const char* PLATFORM_STRING = "lnx";
 #elif LL_SOLARIS
-static const char* PLATFORM_STRING = "Sol";
+static const char* PLATFORM_STRING = "sol";
 #else
 #error("Unknown platform defined!")
 #endif
