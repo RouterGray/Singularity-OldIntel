@@ -754,7 +754,7 @@ const LLUUID& LLFloaterTexturePicker::findItemID(const LLUUID& asset_id, BOOL co
 	if (items.size())
 	{
 		// search for copyable version first
-		for (S32 i = 0; i < items.size(); i++)
+		for (U32 i = 0; i < items.size(); i++)
 		{
 			LLInventoryItem* itemp = items[i];
 			LLPermissions item_permissions = itemp->getPermissions();

@@ -1775,7 +1775,7 @@ void LLAgentWearables::findAttachmentsAddRemoveInfo(LLInventoryModel::item_array
 
 	std::set<LLUUID> requested_item_ids;
 	std::set<LLUUID> current_item_ids;
-	for (S32 i=0; i<obj_item_array.size(); i++)
+	for (U32 i=0; i<obj_item_array.size(); i++)
 	{
 		const LLUUID & requested_id = obj_item_array[i].get()->getLinkedUUID();
 		//LL_INFOS() << "Requested attachment id " << requested_id << LL_ENDL;

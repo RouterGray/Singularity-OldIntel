@@ -2648,7 +2648,7 @@ BOOL LLVOAvatarSelf::canGrabBakedTexture(EBakedTextureIndex baked_index) const
 					if (items.size())
 					{
 						// search for full permissions version
-						for (S32 i = 0; i < items.size(); i++)
+						for (U32 i = 0; i < items.size(); i++)
 						{
 							LLViewerInventoryItem* itemp = items[i];
 												if (itemp->getIsFullPerm())

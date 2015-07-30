@@ -318,8 +318,8 @@ void LLInvFVBridge::removeBatch(std::vector<LLFolderViewEventListener*>& batch)
 	LLViewerInventoryCategory* cat = NULL;
 	LLInventoryModel::cat_array_t	descendent_categories;
 	LLInventoryModel::item_array_t	descendent_items;
-	S32 count = batch.size();
-	S32 i,j;
+	U32 count = batch.size();
+	U32 i,j;
 	for(i = 0; i < count; ++i)
 	{
 		bridge = (LLInvFVBridge*)(batch.at(i));
@@ -2319,7 +2319,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 		if (is_movable)
 		{
 			model->collectDescendents(cat_id, descendent_categories, descendent_items, FALSE);
-			for (S32 i=0; i < descendent_categories.size(); ++i)
+			for (U32 i=0; i < descendent_categories.size(); ++i)
 			{
 				LLInventoryCategory* category = descendent_categories[i];
 				if(LLFolderType::lookupIsProtectedType(category->getPreferredType()))
@@ -2354,7 +2354,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 		}
 		if (is_movable && move_is_into_trash)
 		{
-			for (S32 i=0; i < descendent_items.size(); ++i)
+			for (U32 i=0; i < descendent_items.size(); ++i)
 			{
 				LLInventoryItem* item = descendent_items[i];
 				if (get_is_item_worn(item->getUUID()))
@@ -2366,7 +2366,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 		}
 		if (is_movable && move_is_into_landmarks)
 		{
-			for (S32 i=0; i < descendent_items.size(); ++i)
+			for (U32 i=0; i < descendent_items.size(); ++i)
 			{
 				LLViewerInventoryItem* item = descendent_items[i];
 
@@ -2482,7 +2482,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 			// Look for any gestures and deactivate them
 			if (move_is_into_trash)
 			{
-				for (S32 i=0; i < descendent_items.size(); i++)
+				for (U32 i=0; i < descendent_items.size(); i++)
 				{
 					LLInventoryItem* item = descendent_items[i];
 					if (item->getType() == LLAssetType::AT_GESTURE

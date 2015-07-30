@@ -4513,7 +4513,7 @@ static void derez_objects(
 			msg->addU8Fast(_PREHASH_PacketCount, packet_count);
 			msg->addU8Fast(_PREHASH_PacketNumber, packet_number);
 			objects_in_packet = 0;
-			while((object_index < objectsp->size())
+			while((object_index < (S32)objectsp->size())
 				  && (objects_in_packet++ < MAX_ROOTS_PER_PACKET))
 
 			{

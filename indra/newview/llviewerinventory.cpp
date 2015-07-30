@@ -1932,7 +1932,7 @@ void remove_folder_contents(const LLUUID& category, bool keep_outfit_links,
 	LLInventoryModel::item_array_t items;
 	gInventory.collectDescendents(category, cats, items,
 								  LLInventoryModel::EXCLUDE_TRASH);
-	for (S32 i = 0; i < items.size(); ++i)
+	for (U32 i = 0; i < items.size(); ++i)
 	{
 		LLViewerInventoryItem *item = items.at(i);
 		if (keep_outfit_links && (item->getActualType() == LLAssetType::AT_LINK_FOLDER))

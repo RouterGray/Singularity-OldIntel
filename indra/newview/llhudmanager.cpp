@@ -66,7 +66,7 @@ static LLFastTimer::DeclareTimer FTM_HUD_EFFECTS("Hud Effects");
 void LLHUDManager::updateEffects()
 {
 	LLFastTimer ftm(FTM_HUD_EFFECTS);
-	S32 i;
+	U32 i;
 	for (i = 0; i < mHUDEffects.size(); i++)
 	{
 		LLHUDEffect *hep = mHUDEffects[i];
@@ -141,7 +141,7 @@ void LLHUDManager::shutdownClass()
 
 void LLHUDManager::cleanupEffects()
 {
-	S32 i = 0;
+	U32 i = 0;
 
 	while (i < mHUDEffects.size())
 	{
@@ -194,7 +194,7 @@ void LLHUDManager::processViewerEffect(LLMessageSystem *mesgsys, void **user_dat
 	{
 		effectp = NULL;
 		LLHUDEffect::getIDType(mesgsys, k, effect_id, effect_type);
-		S32 i;
+		U32 i;
 		for (i = 0; i < LLHUDManager::getInstance()->mHUDEffects.size(); i++)
 		{
 			LLHUDEffect *cur_effectp = LLHUDManager::getInstance()->mHUDEffects[i];

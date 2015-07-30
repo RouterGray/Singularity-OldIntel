@@ -195,7 +195,7 @@ void LLFrameStats::dump()
 
 		fprintf(fp, "Time\tNumTriangles\t");
 
-		S32 i;
+		U32 i;
 		for (i = 0; i < NUM_STATS; i++)
 		{
 			fprintf(fp, "%s\t", sStatLabels[i].c_str());

@@ -2303,9 +2303,9 @@ void LLInventoryModel::buildParentChildMap()
 	// Now we have a structure with all of the categories that we can
 	// iterate over and insert into the correct place in the child
 	// category tree. 
-	S32 count = cats.size();
-	S32 i;
-	S32 lost = 0;
+	U32 count = cats.size();
+	U32 i;
+	U32 lost = 0;
 	cat_array_t lost_cats;
 	for(i = 0; i < count; ++i)
 	{
@@ -3745,7 +3745,7 @@ bool LLInventoryModel::validate() const
 		{
 			item_lock++;
 		}
-		for (S32 i = 0; i<items->size(); i++)
+		for (U32 i = 0; i<items->size(); i++)
 		{
 			LLViewerInventoryItem *item = items->at(i);
 
@@ -3823,7 +3823,7 @@ bool LLInventoryModel::validate() const
 			else
 			{
 				bool found = false;
-				for (S32 i = 0; i<cats->size(); i++)
+				for (U32 i = 0; i<cats->size(); i++)
 				{
 					LLViewerInventoryCategory *kid_cat = cats->at(i);
 					if (kid_cat == cat)
@@ -3869,7 +3869,7 @@ bool LLInventoryModel::validate() const
 			else
 			{
 				bool found = false;
-				for (S32 i=0; i<items->size(); ++i)
+				for (U32 i=0; i<items->size(); ++i)
 				{
 					if (items->at(i) == item) 
 					{
