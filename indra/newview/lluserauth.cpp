@@ -57,9 +57,7 @@
 // Don't define PLATFORM_STRING for unknown platforms - they need
 // to get added to the login cgi script, so we want this to cause an
 // error if we get compiled for a different platform.
-// *FIX: This is misreporting on linux. Change this so that linux is
-// in fact reporting linux.
-#if LL_WINDOWS || LL_LINUX  
+#if LL_WINDOWS
 static const char* PLATFORM_STRING = "Win";
 #elif LL_DARWIN
 static const char* PLATFORM_STRING = "Mac";
