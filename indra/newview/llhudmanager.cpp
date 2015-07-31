@@ -84,7 +84,7 @@ void LLHUDManager::sendEffects()
 	static LLCachedControl<bool> disable_pointat_effect(gSavedSettings, "DisablePointAtAndBeam", false);
 	static LLCachedControl<bool> broadcast_viewer_effects(gSavedSettings, "BroadcastViewerEffects", true);
 
-	S32 i;
+	U32 i;
 	for (i = 0; i < mHUDEffects.size(); i++)
 	{
 		LLHUDEffect *hep = mHUDEffects[i];
