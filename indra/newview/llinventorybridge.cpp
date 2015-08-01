@@ -98,11 +98,6 @@
 #define ENABLE_MERCHANT_SEND_TO_MARKETPLACE_CONTEXT_MENU 1
 #define BLOCK_WORN_ITEMS_IN_OUTBOX 1
 
-bool InventoryLinksEnabled()
-{
-	return gHippoGridManager->getConnectedGrid()->supportsInvLinks();
-}
-
 typedef std::pair<LLUUID, LLUUID> two_uuids_t;
 typedef std::list<two_uuids_t> two_uuids_list_t;
 
@@ -574,10 +569,6 @@ bool LLInvFVBridge::isClipboardPasteableAsCopy() const
 
 BOOL LLInvFVBridge::isClipboardPasteableAsLink() const
 {
-	if (!InventoryLinksEnabled())
-	{
-		return FALSE;
-	}
 	if (!LLInventoryClipboard::instance().hasContents() || !isAgentInventory())
 	{
 		return FALSE;
@@ -814,7 +805,7 @@ void LLInvFVBridge::getClipboardEntries(bool show_asset_id,
 	{
 		items.push_back(std::string("Paste"));
 		// Paste as copy if we have links.
-		if (InventoryLinksEnabled() && isClipboardPasteableAsCopy())
+		if (isClipboardPasteableAsCopy())
 		{
 			items.push_back(std::string("Paste As Copy"));
 			paste_as_copy = true;
@@ -827,7 +818,7 @@ void LLInvFVBridge::getClipboardEntries(bool show_asset_id,
 		paste_as_copy = false;
 	}
 
-	if (!paste_as_copy && InventoryLinksEnabled())
+	if (!paste_as_copy)
 	{
 		items.push_back(std::string("Paste As Link"));
 		if (!isClipboardPasteableAsLink() || (flags & FIRST_SELECTED_ITEM) == 0)
@@ -1852,21 +1843,18 @@ BOOL LLItemBridge::removeItem()
 // [SL:KB] - Patch: Inventory-Links | Checked: 2010-06-01 (Catznip-2.2.0a) | Added: Catznip-2.0.1a
 	// Users move folders around and reuse links that way... if we know something has links then it's just bad not to warn them :|
 // [/SL:KB]
-//	if (!InventoryLinksEnabled())
+	if (!item->getIsLinkType())
 	{
-		if (!item->getIsLinkType())
+		LLInventoryModel::item_array_t item_array = gInventory.collectLinksTo(mUUID);
+		const U32 num_links = item_array.size();
+		if (num_links > 0)
 		{
-			LLInventoryModel::item_array_t item_array = gInventory.collectLinksTo(mUUID);
-			const U32 num_links = item_array.size();
-			if (num_links > 0)
-			{
-				// Warn if the user is will break any links when deleting this item.
-				LLNotifications::instance().add(params);
-				return FALSE;
-			}
+			// Warn if the user is will break any links when deleting this item.
+			LLNotifications::instance().add(params);
+			return FALSE;
 		}
 	}
-	
+
 	LLNotifications::instance().forceResponse(params, 0);
 	return TRUE;
 }
@@ -1924,7 +1912,7 @@ BOOL LLItemBridge::isItemCopyable() const
 		// NOTE: we do *not* want to return TRUE on everything like LL seems to do in SL-2.1.0 because not all types are "linkable"
 		return (item->getPermissions().allowCopyBy(gAgent.getID())) || (LLAssetType::lookupCanLink(item->getType()));
 // [/SL:KB]
-//		return item->getPermissions().allowCopyBy(gAgent.getID()) || InventoryLinksEnabled();
+//		return item->getPermissions().allowCopyBy(gAgent.getID());
 	}
 	return FALSE;
 }
