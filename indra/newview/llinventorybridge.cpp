@@ -3573,15 +3573,13 @@ void build_context_menu_folder_options(LLInventoryModel* model, const LLUUID& mU
 		// Only enable add/replace outfit for non-system folders.
 		if (!is_system_folder)
 		{
-			if (InventoryLinksEnabled() /*&&
 			// Adding an outfit onto another (versus replacing) doesn't make sense.
 			// <singu/> Actually, it does make a bit of sense, in some cases.
-				!is_outfit*/)
+			//if(!is_outfit)
 			{
 				items.push_back(std::string("Add To Outfit"));
 			}
-			else //if(!InventoryLinksEnabled())
-				items.push_back(std::string("Wearable And Object Wear"));
+			//items.push_back(std::string("Wearable And Object Wear"));
 
 			items.push_back(std::string("Replace Outfit"));
 		}
@@ -5603,8 +5601,7 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 			{
 				items.push_back(std::string("Wearable And Object Separator"));
 				items.push_back(std::string("Wearable And Object Wear"));
-				if (InventoryLinksEnabled())
-					items.push_back(std::string("Wearable Add"));
+				items.push_back(std::string("Wearable Add"));
 				items.push_back(std::string("Attach To"));
 				items.push_back(std::string("Attach To HUD"));
 				// commented out for DEV-32347 - AND Commented back in for non-morons. -HgB

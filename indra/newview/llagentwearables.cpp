@@ -1941,11 +1941,10 @@ void LLAgentWearables::userAttachMultipleAttachments(LLInventoryModel::item_arra
 		}
 
 		const LLInventoryItem* item = obj_item_array.at(i).get();
-		bool replace = !gHippoGridManager->getConnectedGrid()->supportsInvLinks();
 		msg->nextBlockFast(_PREHASH_ObjectData );
 		msg->addUUIDFast(_PREHASH_ItemID, item->getLinkedUUID());
 		msg->addUUIDFast(_PREHASH_OwnerID, item->getPermissions().getOwner());
-		msg->addU8Fast(_PREHASH_AttachmentPt, replace? 0 : ATTACHMENT_ADD);	// Wear at the previous or default attachment point
+		msg->addU8Fast(_PREHASH_AttachmentPt, ATTACHMENT_ADD);	// Wear at the previous or default attachment point
 // [RLVa:KB] - Checked: 2011-05-22 (RLVa-1.3.1)
 		if ( (rlv_handler_t::isEnabled()) && (sInitialAttachmentsRequested) && (gRlvAttachmentLocks.hasLockedAttachmentPoint(RLV_LOCK_ANY)) )
 		{
