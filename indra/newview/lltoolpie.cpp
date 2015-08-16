@@ -583,7 +583,7 @@ BOOL LLToolPie::handleHover(S32 x, S32 y, MASK mask)
 	mHoverPick = gViewerWindow->pickImmediate(x, y, FALSE);
 	LLViewerObject *parent = NULL;
 	LLViewerObject *object = mHoverPick.getObject();
-	LLSelectMgr::getInstance()->setHoverObject(object, mHoverPick.mObjectFace);
+	//LLSelectMgr::getInstance()->setHoverObject(object, mHoverPick.mObjectFace); // Singu TODO: remove llhoverview.cpp
 // [RLVa:KB] - Checked: 2010-03-11 (RLVa-1.2.0e) | Modified: RLVa-1.1.0l
 	// Block all special click action cursors when:
 	//   - @fartouch=n restricted and the object is out of range
