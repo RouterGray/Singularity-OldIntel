@@ -30,7 +30,10 @@
 #include "v3math.h"
 #include "llstring.h"
 #include "llxmltree.h"
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 
 class LLPolyMesh;
 class LLXmlTreeNode;

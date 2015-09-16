@@ -35,7 +35,10 @@
 #define LL_LLLANDMARK_H
 
 #include <map>
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 #include "llframetimer.h"
 #include "lluuid.h"
 #include "v3dmath.h"

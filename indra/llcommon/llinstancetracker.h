@@ -34,7 +34,10 @@
 #include "llstringtable.h"
 #include "llerror.h"			// llassert_always
 #include <boost/utility.hpp>
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 #include <boost/bind.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/indirect_iterator.hpp>

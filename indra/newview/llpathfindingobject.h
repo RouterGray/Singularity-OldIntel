@@ -30,7 +30,10 @@
 #include <string>
 
 #include <boost/shared_ptr.hpp>
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 #include <boost/signals2.hpp>
 
 #include "llavatarname.h"

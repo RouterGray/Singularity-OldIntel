@@ -65,7 +65,10 @@
 #include "llwearablelist.h"
 #include "llinventoryicon.h"
 
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 
 // subparts of the UI for focus, camera position, etc.
 enum ESubpart

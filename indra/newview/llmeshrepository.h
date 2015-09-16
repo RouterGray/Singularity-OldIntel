@@ -39,7 +39,10 @@
 #include "lluploadfloaterobservers.h"
 #include "aistatemachinethread.h"
 
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 
 class LLVOVolume;
 class LLMeshResponder;

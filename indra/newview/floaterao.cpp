@@ -192,13 +192,13 @@ LLFloaterAO::LLFloaterAO()
 {
 //	init();
 	llassert_always(sInstance == NULL);
-    LLUICtrlFactory::getInstance()->buildFloater(this, "floater_ao.xml");
+	LLUICtrlFactory::getInstance()->buildFloater(this, "floater_ao.xml");
 	sInstance = this;
 }
 
 LLFloaterAO::~LLFloaterAO()
 {
-    sInstance=NULL;
+	sInstance=NULL;
 	mcomboBox_stands = 0;
 	mcomboBox_walks = 0;
 	mcomboBox_runs = 0;
@@ -221,7 +221,7 @@ LLFloaterAO::~LLFloaterAO()
 
 void LLFloaterAO::show(void*)
 {
-    if (!sInstance)
+	if (!sInstance)
 	{
 		sInstance = new LLFloaterAO();
 		updateLayout(sInstance);

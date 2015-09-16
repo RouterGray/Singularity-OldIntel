@@ -33,7 +33,6 @@
 #include "llcoord.h"
 #include "v2math.h"
 #include "llinitparam.h"
-#include "llregistry.h"
 #include "llrender2dutils.h"
 #include "llpointer.h"
 #include "lluicolor.h"
@@ -206,7 +205,7 @@ public:
 	{
 	}
 
- 	virtual ~LLUIFactory() 
+	virtual ~LLUIFactory() 
 	{ 
 	}
 

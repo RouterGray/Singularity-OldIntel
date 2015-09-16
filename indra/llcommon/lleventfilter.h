@@ -32,7 +32,10 @@
 #include "llevents.h"
 #include "stdtypes.h"
 #include "lltimer.h"
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 
 /**
  * Generic base class
