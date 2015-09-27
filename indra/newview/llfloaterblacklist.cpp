@@ -208,11 +208,12 @@ void LLFloaterBlacklist::onClickRemove(void* user_data)
 	if(list->getFirstSelected())
 	{
 		uuid_vec_t selectedIDs = list->getSelectedIDs();
-		for(typename uuid_vec_t::iterator iterator = selectedIDs.begin();
-		        iterator != selectedIDs.end();
-		        ++iterator) {
+		typename uuid_vec_t::const_iterator iterator;
+		for(iterator  = selectedIDs.begin();
+		    iterator != selectedIDs.end();
+		    ++iterator)
+		{
 			LLUUID selectedID = *iterator;
-			if(selectedID.isNull()) continue;
 			blacklist_entries.erase(selectedID);
 		}
 		list->deleteSelectedItems();
