@@ -3951,7 +3951,7 @@ void LLRiggedVolume::update(const LLMeshSkinInfo* skin, LLVOAvatar* avatar, cons
 
 					LLMatrix4a src;
 					// clamp k to kMaxJoints to avoid reading garbage off stack in release
-					src.setMul(mp[(idx[k] < count) ? idx[k] : 0], w);
+					src.setMul(mp[(idx[k] < (S32)count) ? idx[k] : 0], w);
 
 					final_mat.add(src);
 				}

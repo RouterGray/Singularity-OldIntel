@@ -208,7 +208,7 @@ void LLFloaterBlacklist::onClickRemove(void* user_data)
 	if(list->getFirstSelected())
 	{
 		uuid_vec_t selectedIDs = list->getSelectedIDs();
-		typename uuid_vec_t::const_iterator iterator;
+		uuid_vec_t::const_iterator iterator;
 		for(iterator  = selectedIDs.begin();
 		    iterator != selectedIDs.end();
 		    ++iterator)

@@ -2197,7 +2197,7 @@ int get_folder_levels(LLInventoryCategory* inv_cat)
 
 	int max_child_levels = 0;
 
-	for (S32 i=0; i < cats->size(); ++i)
+	for (size_t i=0; i < cats->size(); ++i)
 	{
 		LLInventoryCategory* category = cats->at(i);
 		max_child_levels = llmax(max_child_levels, get_folder_levels(category));
@@ -2447,7 +2447,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 				
 				if (is_movable == TRUE)
 				{
-					for (S32 i=0; i < descendent_items.size(); ++i)
+					for (size_t i=0; i < descendent_items.size(); ++i)
 					{
 						LLInventoryItem* item = descendent_items[i];
 						if (!can_move_to_outbox(item))
