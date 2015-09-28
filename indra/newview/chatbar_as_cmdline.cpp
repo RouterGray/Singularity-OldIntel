@@ -328,7 +328,8 @@ bool cmd_line_chat(std::string data, EChatType type)
 			volume_params.setTaperY(0.f);
 			LLVolumeMessage::packVolumeParams(&volume_params, msg);
 
-			msg->addVector3Fast(_PREHASH_Scale, LLVector3(size, size, 0.25f));
+			size /= 3;
+			msg->addVector3Fast(_PREHASH_Scale, LLVector3(0.01f, size, size));
 			msg->addQuatFast(_PREHASH_Rotation, LLQuaternion(90.f * DEG_TO_RAD, LLVector3::y_axis));
 			msg->addVector3Fast(_PREHASH_RayStart, rez_pos);
 			msg->addVector3Fast(_PREHASH_RayEnd, rez_pos);
