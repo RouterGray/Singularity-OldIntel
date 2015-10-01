@@ -55,9 +55,10 @@ class LLAccordionCtrlTab::LLAccordionCtrlTabHeader : public LLUICtrl
 public:
 	friend class LLUICtrlFactory;
 
-	struct Params : public LLInitParam::Block<Params, LLAccordionCtrlTab::Params>
+	struct Params : public LLAccordionCtrlTab::Params //LLInitParam::Block<Params, LLAccordionCtrlTab::Params>
 	{
 		Params();
+		Params(const LLAccordionCtrlTab::Params& p) : LLAccordionCtrlTab::Params(p) {}
 	};
 
 	LLAccordionCtrlTabHeader(const LLAccordionCtrlTabHeader::Params& p);
@@ -357,7 +358,7 @@ LLAccordionCtrlTab::LLAccordionCtrlTab(const LLAccordionCtrlTab::Params&p)
 	mWasStateStored = false;
 	
 	mDropdownBGColor = LLColor4::white;
-	LLAccordionCtrlTabHeader::Params headerParams;
+	LLAccordionCtrlTabHeader::Params headerParams(p);
 	headerParams.name(DD_HEADER_NAME);
 	headerParams.title(p.title);
 	mHeader = LLUICtrlFactory::create<LLAccordionCtrlTabHeader>(headerParams);
@@ -1051,150 +1052,226 @@ BOOL LLAccordionCtrlTab::handleScrollWheel		( S32 x, S32 y, S32 clicks )
 LLView* LLAccordionCtrlTab::fromXML(LLXMLNodePtr node, LLView* parent, LLUICtrlFactory* factory)
 {
 	Params p;
+	// Singu TODO: Widgets folder for defaults instead of shoving into params here where noted
 	if (node->hasAttribute("title"))
 	{
 		std::string title;
 		node->getAttributeString("title", title);
 		p.title(title);
 	}
+
 	if (node->hasAttribute("expanded"))
 	{
 		bool display_children;
 		node->getAttribute_bool("expanded", display_children);
 		p.display_children(display_children);
 	}
+
 	if (node->hasAttribute("header_height"))
 	{
 		S32 header_height;
 		node->getAttributeS32("header_height", header_height);
 		p.header_height(header_height);
 	}
+
 	if (node->hasAttribute("min_width"))
 	{
 		S32 min_width;
 		node->getAttributeS32("min_width", min_width);
 		p.min_width(min_width);
 	}
+
 	if (node->hasAttribute("min_width"))
 	{
 		S32 min_height;
 		node->getAttributeS32("min_height", min_height);
 		p.min_height(min_height);
 	}
+
 	if (node->hasAttribute("collapsible"))
 	{
 		bool collapsible;
 		node->getAttribute_bool("collapsible", collapsible);
 		p.collapsible(collapsible);
 	}
+
 	if (node->hasAttribute("header_bg_color"))
 	{
 		LLColor4 color;
 		node->getAttributeColor("header_bg_color", color);
 		p.header_bg_color(color);
 	}
+	else // widget
+	{
+		p.header_bg_color(LLUI::sColorsGroup->getColor("ButtonUnselectedBgColor")); // was DkGray2
+	}
+
 	if (node->hasAttribute("dropdown_bg_color"))
 	{
 		LLColor4 color;
 		node->getAttributeColor("dropdown_bg_color", color);
 		p.dropdown_bg_color(color);
 	}
+
 	if (node->hasAttribute("header_visible"))
 	{
 		bool header_visible;
 		node->getAttribute_bool("header_visible", header_visible);
 		p.header_visible(header_visible);
 	}
+
 	if (node->hasAttribute("padding_left"))
 	{
 		S32 padding_left;
 		node->getAttributeS32("padding_left", padding_left);
 		p.padding_left(padding_left);
 	}
+
 	if (node->hasAttribute("padding_right"))
 	{
 		S32 padding_right;
 		node->getAttributeS32("padding_right", padding_right);
 		p.padding_right(padding_right);
 	}
+
 	if (node->hasAttribute("padding_top"))
 	{
 		S32 padding_top;
 		node->getAttributeS32("padding_top", padding_top);
 		p.padding_top(padding_top);
 	}
+
 	if (node->hasAttribute("padding_bottom"))
 	{
 		S32 padding_bottom;
 		node->getAttributeS32("padding_bottom", padding_bottom);
 		p.padding_bottom(padding_bottom);
 	}
+
 	if (node->hasAttribute("header_expand_img"))
 	{
 		std::string image;
 		node->getAttributeString("header_expand_img", image);
-		p.header_expand_img(LLUI::getUIImage(image));
+		p.header_expand_img.name(image);
 	}
+	else // widget
+	{
+		p.header_expand_img.name("Accordion_ArrowOpened_Off");
+	}
+
 	if (node->hasAttribute("header_expand_img_pressed"))
 	{
 		std::string image;
 		node->getAttributeString("header_expand_img_pressed", image);
-		p.header_expand_img_pressed(LLUI::getUIImage(image));
+		p.header_expand_img_pressed.name(image);
 	}
+	else // widget
+	{
+		p.header_expand_img_pressed.name("Accordion_ArrowOpened_Press");
+	}
+
 	if (node->hasAttribute("header_collapse_img"))
 	{
 		std::string image;
 		node->getAttributeString("header_collapse_img", image);
-		p.header_collapse_img(LLUI::getUIImage(image));
+		p.header_collapse_img.name(image);
 	}
+	else // widget
+	{
+		p.header_collapse_img.name("Accordion_ArrowClosed_Off");
+	}
+
 	if (node->hasAttribute("header_collapse_img_pressed"))
 	{
 		std::string image;
 		node->getAttributeString("header_collapse_img_pressed", image);
-		p.header_collapse_img_pressed(LLUI::getUIImage(image));
+		p.header_collapse_img_pressed.name(image);
 	}
+	else // widget
+	{
+		p.header_collapse_img_pressed.name("Accordion_ArrowClosed_Press");
+	}
+
 	if (node->hasAttribute("header_image"))
 	{
 		std::string image;
 		node->getAttributeString("header_image", image);
-		p.header_image(LLUI::getUIImage(image));
+		p.header_image.name(image);
 	}
+	else // widget
+	{
+		p.header_image.name("Accordion_Off");
+	}
+
 	if (node->hasAttribute("header_image_over"))
 	{
 		std::string image;
 		node->getAttributeString("header_image_over", image);
-		p.header_image_over(LLUI::getUIImage(image));
+		p.header_image_over.name(image);
 	}
+	else // widget
+	{
+		p.header_image_over.name("Accordion_Over");
+	}
+
 	if (node->hasAttribute("header_image_pressed"))
 	{
 		std::string image;
 		node->getAttributeString("header_image_pressed", image);
-		p.header_image_pressed(LLUI::getUIImage(image));
+		p.header_image_pressed.name(image);
 	}
+	else // widget
+	{
+		p.header_image_pressed.name("Accordion_Press");
+	}
+
 	if (node->hasAttribute("header_image_focused"))
 	{
 		std::string image;
 		node->getAttributeString("header_image_focused", image);
-		p.header_image_focused(LLUI::getUIImage(image));
+		p.header_image_focused.name(image);
 	}
+	else // widget
+	{
+		p.header_image_focused.name("Accordion_Selected");
+	}
+
 	if (node->hasAttribute("header_text_color"))
 	{
 		LLColor4 color;
 		node->getAttributeColor("header_text_color", color);
 		p.header_text_color(color);
 	}
+	else // widget
+	{
+		p.header_text_color(LLUI::sColorsGroup->getColor("ButtonLabelColor")); // AccordionHeaderTextColor
+	}
+
 	if (node->hasAttribute("fit_panel"))
 	{
 		bool fit_panel;
 		node->getAttribute_bool("fit_panel", fit_panel);
 		p.fit_panel(fit_panel);
 	}
+
 	if (node->hasAttribute("selection_enabled"))
 	{
 		bool selection_enabled;
 		node->getAttribute_bool("selection_enabled", selection_enabled);
 		p.selection_enabled(selection_enabled);
 	}
+
+	if (node->hasAttribute("font"))
+	{
+		std::string font;
+		node->getAttributeString("font", font);
+		p.font.name(font);
+	}
+	else // widget
+	{
+		p.font.name("SansSerif");
+	}
+
 	LLAccordionCtrlTab* ctrl = new LLAccordionCtrlTab(p);
 	ctrl->initFromXML(node, parent);
 	return ctrl;

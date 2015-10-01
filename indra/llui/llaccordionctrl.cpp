@@ -899,7 +899,11 @@ S32 LLAccordionCtrl::calcExpandedTabHeight(S32 tab_index /* = 0 */, S32 availabl
 LLView* LLAccordionCtrl::fromXML(LLXMLNodePtr node, LLView* parent, LLUICtrlFactory* factory)
 {
 	LLAccordionCtrl* ctrl = new LLAccordionCtrl();
-	ctrl->initFromXML(node, parent);
+	ctrl->mCommitCallbackRegistrar.pushScope();
+	ctrl->mEnableCallbackRegistrar.pushScope();
+	ctrl->initPanelXML(node, parent, factory);
+	ctrl->mCommitCallbackRegistrar.popScope();
+	ctrl->mEnableCallbackRegistrar.popScope();
 	return ctrl;
 }
 

@@ -152,3 +152,48 @@ void LLUIImage::onImageLoaded()
 	}
 }
 
+
+namespace LLInitParam
+{
+	void ParamValue<LLUIImage*>::updateValueFromBlock()
+	{
+		// The keyword "none" is specifically requesting a null image
+		// do not default to current value. Used to overwrite template images. 
+		if (name() == "none")
+		{
+			updateValue(NULL);
+			return;
+		}
+
+		LLUIImage* imagep =  LLRender2D::getUIImage(name());
+		if (imagep)
+		{
+			updateValue(imagep);
+		}
+	}
+	
+	void ParamValue<LLUIImage*>::updateBlockFromValue(bool make_block_authoritative)
+	{
+		if (getValue() == NULL)
+		{
+			name.set("none", make_block_authoritative);
+		}
+		else
+		{
+			name.set(getValue()->getName(), make_block_authoritative);
+		}
+	}
+
+	
+	bool ParamCompare<LLUIImage*, false>::equals(
+		LLUIImage* const &a,
+		LLUIImage* const &b)
+	{
+		// force all LLUIImages for XML UI export to be "non-default"
+		if (!a && !b)
+			return false;
+		else
+			return (a == b);
+	}
+}
+

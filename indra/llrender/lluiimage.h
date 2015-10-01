@@ -34,6 +34,7 @@
 #include "llrect.h"
 #include <boost/function.hpp>
 #include <boost/signals2.hpp>
+#include "llinitparam.h"
 #include "lltexture.h"
 
 extern const LLColor4 UI_VERTEX_COLOR;
@@ -88,6 +89,36 @@ protected:
 	BOOL				mNoClip;
 };
 
+namespace LLInitParam
+{
+	template<>
+	class ParamValue<LLUIImage*> 
+	:	public CustomParamValue<LLUIImage*>
+	{
+		typedef boost::add_reference<boost::add_const<LLUIImage*>::type>::type	T_const_ref;
+		typedef CustomParamValue<LLUIImage*> super_t;
+	public:
+		Optional<std::string> name;
+
+		ParamValue(LLUIImage* const& image = NULL)
+		:	super_t(image)
+		{
+			updateBlockFromValue(false);
+			addSynonym(name, "name");
+		}
+
+		void updateValueFromBlock();
+		void updateBlockFromValue(bool make_block_authoritative);
+	};
+
+	// Need custom comparison function for our test app, which only loads
+	// LLUIImage* as NULL.
+	template<>
+	struct ParamCompare<LLUIImage*, false>
+	{
+		static bool equals(LLUIImage* const &a, LLUIImage* const &b);
+	};
+}
 
 typedef LLPointer<LLUIImage> LLUIImagePtr;
 #endif
