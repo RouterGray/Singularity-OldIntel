@@ -1,11 +1,11 @@
-/** 
+/**
  * @file llpreviewscript.cpp
  * @brief LLPreviewScript class implementation
  *
  * $LicenseInfo:firstyear=2002&license=viewergpl$
- * 
+ *
  * Copyright (c) 2002-2009, Linden Research, Inc.
- * 
+ *
  * Second Life Viewer Source Code
  * The source code in this file ("Source Code") is provided by Linden Lab
  * to you under the terms of the GNU General Public License, version 2.0
@@ -13,17 +13,17 @@
  * ("Other License"), formally executed by you and Linden Lab.  Terms of
  * the GPL can be found in doc/GPL-license.txt in this distribution, or
  * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
- * 
+ *
  * There are special exceptions to the terms and conditions of the GPL as
  * it is applied to this Source Code. View the full text of the exception
  * in the file doc/FLOSS-exception.txt in this software distribution, or
  * online at
  * http://secondlifegrid.net/programs/open_source/licensing/flossexception
- * 
+ *
  * By copying, modifying or distributing this software, you acknowledge
  * that you have read and understood your obligations described above,
  * and agree to abide by those obligations.
- * 
+ *
  * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
  * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
  * COMPLETENESS OR PERFORMANCE.
@@ -116,13 +116,13 @@ const S32 LINE_COLUMN_HEIGHT = 14;
 
 const S32 SCRIPT_EDITOR_MIN_HEIGHT = 2 * SCROLLBAR_SIZE + 2 * LLPANEL_BORDER_WIDTH + 128;
 
-const S32 SCRIPT_MIN_WIDTH = 
-	2 * SCRIPT_BORDER + 
-	2 * SCRIPT_BUTTON_WIDTH + 
+const S32 SCRIPT_MIN_WIDTH =
+	2 * SCRIPT_BORDER +
+	2 * SCRIPT_BUTTON_WIDTH +
 	SCRIPT_PAD + RESIZE_HANDLE_WIDTH +
 	SCRIPT_PAD;
 
-const S32 SCRIPT_MIN_HEIGHT = 
+const S32 SCRIPT_MIN_HEIGHT =
 	2 * SCRIPT_BORDER +
 	3*(SCRIPT_BUTTON_HEIGHT + SCRIPT_PAD) +
 	LINE_COLUMN_HEIGHT +
@@ -209,7 +209,7 @@ void LLScriptEdCore::parseFunctions(const std::string& filename)
 		{
 			LLSDSerialize::fromXMLDocument(function_list, importer);
 			importer.close();
-			
+
 			for (LLSD::map_const_iterator it = function_list.beginMap(); it != function_list.endMap(); ++it)
 			{
 				LSLFunctionProps fn;
@@ -267,7 +267,7 @@ BOOL LLScriptEdCore::postBuild()
 	mErrorList = getChild<LLScrollListCtrl>("lsl errors");
 
 	mFunctions = getChild<LLComboBox>( "Insert...");
-	
+
 	childSetCommitCallback("Insert...", &LLScriptEdCore::onBtnInsertFunction, this);
 
 	mEditor = getChild<LLViewerTextEditor>("Script Editor");
@@ -290,25 +290,25 @@ BOOL LLScriptEdCore::postBuild()
 		{
 			std::string name = i->mName;
 			funcs.push_back(name);
-			
+
 			std::string desc_name = "LSLTipText_";
 			desc_name += name;
 			std::string desc = LLTrans::getString(desc_name);
-			
+
 			F32 sleep_time = i->mSleepTime;
 			if( sleep_time )
 			{
 				desc += "\n";
-				
+
 				LLStringUtil::format_map_t args;
 				args["[SLEEP_TIME]"] = llformat("%.1f", sleep_time );
 				desc += LLTrans::getString("LSLTipSleepTime", args);
 			}
-			
+
 			// A \n linefeed is not part of xml. Let's add one to keep all
 			// the tips one-per-line in strings.xml
 			LLStringUtil::replaceString( desc, "\\n", "\n" );
-			
+
 			tooltips.push_back(desc);
 		}
 	}
@@ -366,7 +366,7 @@ void LLScriptEdCore::initMenu()
 	menuItem = getChild<LLMenuItemCallGL>("Save");
 	menuItem->setMenuCallback(onBtnSave, this);
 	menuItem->setEnabledCallback(hasChanged);
-	
+
 	menuItem = getChild<LLMenuItemCallGL>("Revert All Changes");
 	menuItem->setMenuCallback(onBtnUndoChanges, this);
 	menuItem->setEnabledCallback(hasChanged);
@@ -594,7 +594,7 @@ void LLScriptEdCore::setHelpPage(const std::string& help_string)
 {
 	LLFloater* help_floater = mLiveHelpHandle.get();
 	if (!help_floater) return;
-	
+
 	LLMediaCtrl* web_browser = help_floater->getChild<LLMediaCtrl>("lsl_guide_html");
 	if (!web_browser) return;
 
@@ -699,7 +699,7 @@ bool LLScriptEdCore::handleSaveChangesDialog(const LLSD& notification, const LLS
 	return false;
 }
 
-// static 
+// static
 bool LLScriptEdCore::onHelpWebDialog(const LLSD& notification, const LLSD& response)
 {
 	S32 option = LLNotificationsUtil::getSelectedOption(notification, response);
@@ -715,7 +715,7 @@ bool LLScriptEdCore::onHelpWebDialog(const LLSD& notification, const LLSD& respo
 	return false;
 }
 
-// static 
+// static
 void LLScriptEdCore::onBtnHelp(void* userdata)
 {
 	LLSD payload;
@@ -723,7 +723,7 @@ void LLScriptEdCore::onBtnHelp(void* userdata)
 	LLNotificationsUtil::add("WebLaunchLSLGuide", LLSD(), payload, onHelpWebDialog);
 }
 
-// static 
+// static
 void LLScriptEdCore::onBtnDynamicHelp(void* userdata)
 {
 	LLScriptEdCore* corep = (LLScriptEdCore*)userdata;
@@ -752,8 +752,8 @@ void LLScriptEdCore::onBtnDynamicHelp(void* userdata)
 	LLComboBox* help_combo = live_help_floater->getChild<LLComboBox>("history_combo");
 	LLKeywordToken *token;
 	LLKeywords::keyword_iterator_t token_it;
-	for (token_it = corep->mEditor->keywordsBegin(); 
-		token_it != corep->mEditor->keywordsEnd(); 
+	for (token_it = corep->mEditor->keywordsBegin();
+		token_it != corep->mEditor->keywordsEnd();
 		++token_it)
 	{
 		token = token_it->second;
@@ -768,7 +768,7 @@ void LLScriptEdCore::onBtnDynamicHelp(void* userdata)
 	corep->updateDynamicHelp(TRUE);
 }
 
-//static 
+//static
 void LLScriptEdCore::onClickBack(void* userdata)
 {
 	LLScriptEdCore* corep = (LLScriptEdCore*)userdata;
@@ -783,7 +783,7 @@ void LLScriptEdCore::onClickBack(void* userdata)
 	}
 }
 
-//static 
+//static
 void LLScriptEdCore::onClickForward(void* userdata)
 {
 	LLScriptEdCore* corep = (LLScriptEdCore*)userdata;
@@ -809,7 +809,7 @@ void LLScriptEdCore::onCheckLock(LLUICtrl* ctrl, void* userdata)
 	corep->mLastHelpToken = NULL;
 }
 
-// static 
+// static
 void LLScriptEdCore::onBtnInsertSample(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*) userdata;
@@ -820,7 +820,7 @@ void LLScriptEdCore::onBtnInsertSample(void* userdata)
 	self->mEditor->insertText(self->mSampleText);
 }
 
-// static 
+// static
 void LLScriptEdCore::onHelpComboCommit(LLUICtrl* ctrl, void* userdata)
 {
 	LLScriptEdCore* corep = (LLScriptEdCore*)userdata;
@@ -839,7 +839,7 @@ void LLScriptEdCore::onHelpComboCommit(LLUICtrl* ctrl, void* userdata)
 	}
 }
 
-// static 
+// static
 void LLScriptEdCore::onBtnInsertFunction(LLUICtrl *ui, void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*) userdata;
@@ -943,7 +943,7 @@ void LLScriptEdCore::onSearchMenu(void* userdata)
 	}
 }
 
-// static 
+// static
 void LLScriptEdCore::onUndoMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -951,7 +951,7 @@ void LLScriptEdCore::onUndoMenu(void* userdata)
 	self->mEditor->undo();
 }
 
-// static 
+// static
 void LLScriptEdCore::onRedoMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -959,7 +959,7 @@ void LLScriptEdCore::onRedoMenu(void* userdata)
 	self->mEditor->redo();
 }
 
-// static 
+// static
 void LLScriptEdCore::onCutMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -967,7 +967,7 @@ void LLScriptEdCore::onCutMenu(void* userdata)
 	self->mEditor->cut();
 }
 
-// static 
+// static
 void LLScriptEdCore::onCopyMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -975,7 +975,7 @@ void LLScriptEdCore::onCopyMenu(void* userdata)
 	self->mEditor->copy();
 }
 
-// static 
+// static
 void LLScriptEdCore::onPasteMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -983,7 +983,7 @@ void LLScriptEdCore::onPasteMenu(void* userdata)
 	self->mEditor->paste();
 }
 
-// static 
+// static
 void LLScriptEdCore::onSelectAllMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -991,7 +991,7 @@ void LLScriptEdCore::onSelectAllMenu(void* userdata)
 	self->mEditor->selectAll();
 }
 
-// static 
+// static
 void LLScriptEdCore::onDeselectMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -999,7 +999,7 @@ void LLScriptEdCore::onDeselectMenu(void* userdata)
 	self->mEditor->deselect();
 }
 
-// static 
+// static
 BOOL LLScriptEdCore::enableUndoMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -1007,7 +1007,7 @@ BOOL LLScriptEdCore::enableUndoMenu(void* userdata)
 	return self->mEditor->canUndo();
 }
 
-// static 
+// static
 BOOL LLScriptEdCore::enableRedoMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -1015,7 +1015,7 @@ BOOL LLScriptEdCore::enableRedoMenu(void* userdata)
 	return self->mEditor->canRedo();
 }
 
-// static 
+// static
 BOOL LLScriptEdCore::enableCutMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -1023,7 +1023,7 @@ BOOL LLScriptEdCore::enableCutMenu(void* userdata)
 	return self->mEditor->canCut();
 }
 
-// static 
+// static
 BOOL LLScriptEdCore::enableCopyMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -1031,7 +1031,7 @@ BOOL LLScriptEdCore::enableCopyMenu(void* userdata)
 	return self->mEditor->canCopy();
 }
 
-// static 
+// static
 BOOL LLScriptEdCore::enablePasteMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -1039,7 +1039,7 @@ BOOL LLScriptEdCore::enablePasteMenu(void* userdata)
 	return self->mEditor->canPaste();
 }
 
-// static 
+// static
 BOOL LLScriptEdCore::enableSelectAllMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -1047,7 +1047,7 @@ BOOL LLScriptEdCore::enableSelectAllMenu(void* userdata)
 	return self->mEditor->canSelectAll();
 }
 
-// static 
+// static
 BOOL LLScriptEdCore::enableDeselectMenu(void* userdata)
 {
 	LLScriptEdCore* self = (LLScriptEdCore*)userdata;
@@ -1074,7 +1074,6 @@ void LLScriptEdCore::onErrorList(LLUICtrl*, void* user_data)
 		//LL_INFOS() << "LLScriptEdCore::onErrorList() - " << row << ", "
 		//<< column << LL_ENDL;
 		self->mEditor->setCursor(row, column);
-		self->mEditor->setFocus(TRUE);
 	}
 }
 
@@ -1246,7 +1245,7 @@ struct LLScriptSaveInfo
 //static
 void* LLPreviewLSL::createScriptEdPanel(void* userdata)
 {
-	
+
 	LLPreviewLSL *self = (LLPreviewLSL*)userdata;
 
 	self->mScriptEd =  new LLScriptEdCore(
@@ -1274,7 +1273,7 @@ LLPreviewLSL::LLPreviewLSL(const std::string& name, const LLRect& rect, const st
 // virtual
 BOOL LLPreviewLSL::postBuild()
 {
-	const LLInventoryItem* item = getItem();	
+	const LLInventoryItem* item = getItem();
 
 	llassert(item);
 	if (item)
@@ -1332,7 +1331,7 @@ void LLPreviewLSL::loadAsset()
 	}
 	if(item)
 	{
-		BOOL is_copyable = gAgent.allowOperation(PERM_COPY, 
+		BOOL is_copyable = gAgent.allowOperation(PERM_COPY,
 								item->getPermissions(), GP_OBJECT_MANIPULATE);
 		BOOL is_modifiable = gAgent.allowOperation(PERM_MODIFY,
 								item->getPermissions(), GP_OBJECT_MANIPULATE);
@@ -1390,7 +1389,7 @@ void LLPreviewLSL::closeIfNeeded()
 void LLPreviewLSL::onSearchReplace(void* userdata)
 {
 	LLPreviewLSL* self = (LLPreviewLSL*)userdata;
-	LLScriptEdCore* sec = self->mScriptEd; 
+	LLScriptEdCore* sec = self->mScriptEd;
 	if (sec && sec->mEditor)
 	{
 		LLFloaterSearchReplace::show(sec->mEditor);
@@ -1524,7 +1523,7 @@ void LLPreviewLSL::uploadAssetLegacy(const std::string& filename,
 		{
 			char buffer[MAX_STRING];		/*Flawfinder: ignore*/
 			std::string line;
-			while(!feof(fp)) 
+			while(!feof(fp))
 			{
 				if (fgets(buffer, MAX_STRING, fp) == NULL)
 				{
@@ -1689,7 +1688,7 @@ void LLPreviewLSL::onLoadComplete( LLVFS *vfs, const LLUUID& asset_uuid, LLAsset
 			   && gAgent.allowOperation(PERM_MODIFY, item->getPermissions(),
 				   					GP_OBJECT_MANIPULATE))
 			{
-				is_modifiable = TRUE;		
+				is_modifiable = TRUE;
 			}
 			preview->mScriptEd->setEnableEditing(is_modifiable);
 			preview->mAssetStatus = PREVIEW_ASSET_LOADED;
@@ -1725,10 +1724,10 @@ void LLPreviewLSL::onLoadComplete( LLVFS *vfs, const LLUUID& asset_uuid, LLAsset
 /// ---------------------------------------------------------------------------
 
 
-//static 
+//static
 void* LLLiveLSLEditor::createScriptEdPanel(void* userdata)
 {
-	
+
 	LLLiveLSLEditor *self = (LLLiveLSLEditor*)userdata;
 
 	self->mScriptEd =  new LLScriptEdCore(
@@ -1816,7 +1815,7 @@ void LLLiveLSLEditor::loadAsset()
 		if(object)
 		{
 			LLViewerInventoryItem* item = dynamic_cast<LLViewerInventoryItem*>(object->getInventoryObject(mItemUUID));
-			if(item 
+			if(item
 				&& (gAgent.allowOperation(PERM_COPY, item->getPermissions(), GP_OBJECT_MANIPULATE)
 				   || gAgent.isGodlike()))
 			{
@@ -1866,7 +1865,7 @@ void LLLiveLSLEditor::loadAsset()
 				mAssetStatus = PREVIEW_ASSET_LOADED;
 			}
 
-			mIsModifiable = item && gAgent.allowOperation(PERM_MODIFY, 
+			mIsModifiable = item && gAgent.allowOperation(PERM_MODIFY,
 										item->getPermissions(),
 				   						GP_OBJECT_MANIPULATE);
 			refreshFromItem(item);
@@ -2032,7 +2031,7 @@ void LLLiveLSLEditor::onReset(void *userdata)
 	}
 	else
 	{
-		LLNotificationsUtil::add("CouldNotStartStopScript"); 
+		LLNotificationsUtil::add("CouldNotStartStopScript");
 	}
 }
 
@@ -2097,7 +2096,7 @@ void LLLiveLSLEditor::onSearchReplace(void* userdata)
 {
 	LLLiveLSLEditor* self = (LLLiveLSLEditor*)userdata;
 
-	LLScriptEdCore* sec = self->mScriptEd; 
+	LLScriptEdCore* sec = self->mScriptEd;
 	if (sec && sec->mEditor)
 	{
 		LLFloaterSearchReplace::show(sec->mEditor);
@@ -2188,7 +2187,7 @@ void LLLiveLSLEditor::saveIfNeeded(bool sync /*= true*/)
 	{
 		mScriptEd->sync();
 	}
-	
+
 	// save it out to asset server
 	std::string url = object->getRegion()->getCapability("UpdateScriptTask");
 	getWindow()->incBusyCount();
@@ -2262,9 +2261,9 @@ void LLLiveLSLEditor::uploadAssetLegacy(const std::string& filename,
 		{
 			char buffer[MAX_STRING];		/*Flawfinder: ignore*/
 			std::string line;
-			while(!feof(fp)) 
+			while(!feof(fp))
 			{
-				
+
 				if (fgets(buffer, MAX_STRING, fp) == NULL)
 				{
 					buffer[0] = '\0';
@@ -2277,7 +2276,7 @@ void LLLiveLSLEditor::uploadAssetLegacy(const std::string& filename,
 				{
 					line.assign(buffer);
 					LLStringUtil::stripNonprintable(line);
-				
+
 					LLSD row;
 					row["columns"][0]["value"] = line;
 					row["columns"][0]["font"] = "OCRA";

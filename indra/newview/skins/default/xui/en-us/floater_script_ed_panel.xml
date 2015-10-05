@@ -17,7 +17,7 @@
 	<scroll_list background_visible="true" bottom="-457" column_padding="5" draw_border="true"
 	     draw_heading="false" draw_stripes="true" enabled="true"
 	     follows="left|right|bottom" height="60" left="4" mouse_opaque="true"
-	     multi_select="false" name="lsl errors" width="492" />
+	     multi_select="true" name="lsl errors" width="492" />
 	<combo_box allow_text_entry="false" bottom="-499" enabled="true" follows="left|bottom"
 	     height="20" label="Insert..." left="12" max_chars="20" mouse_opaque="true"
 	     name="Insert..." width="128" />
