@@ -2149,6 +2149,10 @@ Gültige Formate: .wav, .tga, .bmp, .jpg, .jpeg oder .bvh</string>
 	<string name="accel-win-alt">Alt-</string>
 	<string name="accel-win-shift">Umschalt-</string>
 
+        <!-- Tab Containers -->
+        <string name="tab_tooltip_prev">[ALT]Linke Pfeiltaste zum vorherigen Tab.</string>
+        <string name="tab_tooltip_next">[ALT]Rechte Pfeiltaste zum nächsten Tab.</string>
+
 	<!-- Previews -->
 	<string name="FileSaved">Datei wurde gespeichert</string>
 	<string name="Receiving">Daten werden empfangen</string>
