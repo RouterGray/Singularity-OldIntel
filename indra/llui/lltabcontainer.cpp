@@ -40,6 +40,7 @@
 #include "llresmgr.h"
 #include "llresizehandle.h"
 #include "lltextbox.h"
+#include "lltrans.h"
 #include "llcriticaldamp.h"
 #include "lluictrlfactory.h"
 #include "llrender.h"
@@ -873,9 +874,16 @@ void LLTabContainer::addTabPanel(LLPanel* child,
 			}
 		}
 		std::string tooltip = trimmed_label;
-		// FIXME: Tooltip can not be translated when hardcoded.
-		tooltip += "\nAlt-Left arrow for previous tab";
-		tooltip += "\nAlt-Right arrow for next tab";
+		LLStringUtil::format_map_t args;
+		args["[ALT]"] = LLTrans::getString(
+#ifdef LL_DARWIN
+		"accel-mac-option"
+#else
+		"accel-win-alt"
+#endif
+		);
+		tooltip += '\n' + LLTrans::getString("tab_tooltip_prev", args);
+		tooltip += '\n' + LLTrans::getString("tab_tooltip_next", args);
 		btn->setToolTip( tooltip );
 	}
 

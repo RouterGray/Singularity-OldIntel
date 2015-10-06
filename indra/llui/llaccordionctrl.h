@@ -64,7 +64,7 @@ public:
 		virtual bool compare(const LLAccordionCtrlTab* tab1, const LLAccordionCtrlTab* tab2) const = 0;
 	};
 
-	/* Singu TODO: LLPanel::Params, LLTextBox::Params
+	#if 0 // Singu TODO: LLPanel::Params, LLTextBox::Params
 	struct Params 
 		: public LLInitParam::Block<Params, LLPanel::Params>
 	{
@@ -73,7 +73,7 @@ public:
 								accordion tabs are responsible for scrolling their content.
 								*NOTE fit_parent works best when combined with single_expansion.
 								Accordion view should implement getRequiredRect() and provide valid height*/
-		/*Optional<LLTextBox::Params>	no_matched_tabs_text;
+		Optional<LLTextBox::Params>	no_matched_tabs_text;
 		Optional<LLTextBox::Params>	no_visible_tabs_text;
 
 		Params()
@@ -84,7 +84,8 @@ public:
 		{};
 	};
 
-	LLAccordionCtrl(const Params& params);*/
+	LLAccordionCtrl(const Params& params);
+	#endif
 
     LLAccordionCtrl();
     virtual ~LLAccordionCtrl();
