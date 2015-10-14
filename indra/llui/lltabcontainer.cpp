@@ -1460,10 +1460,18 @@ void LLTabContainer::setPanelTitle(S32 index, const std::string& title)
 	{
 		LLTabTuple* tuple = getTab(index);
 		LLButton* tab_button = tuple->mButton;
-		const LLFontGL* fontp = LLFontGL::getFontSansSerifSmall();
-		mTotalTabWidth -= tab_button->getRect().getWidth();
-		tab_button->reshape(llclamp(fontp->getWidth(title) + TAB_PADDING + tuple->mPadding, mMinTabWidth, mMaxTabWidth), tab_button->getRect().getHeight());
-		mTotalTabWidth += tab_button->getRect().getWidth();
+		if (!mIsVertical)
+		{
+			const LLFontGL* fontp = LLFontGL::getFontSansSerifSmall();
+			mTotalTabWidth -= tab_button->getRect().getWidth();
+			tab_button->reshape(llclamp(fontp->getWidth(title)
+			                                + TAB_PADDING
+			                                + tuple->mPadding,
+			                            mMinTabWidth,
+			                            mMaxTabWidth),
+			                    tab_button->getRect().getHeight());
+			mTotalTabWidth += tab_button->getRect().getWidth();
+		}
 		tab_button->setLabelSelected(title);
 		tab_button->setLabelUnselected(title);
 	}
