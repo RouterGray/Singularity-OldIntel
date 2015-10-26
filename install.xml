@@ -464,9 +464,9 @@
           <key>darwin</key>
           <map>
             <key>md5sum</key>
-            <string>b624302b29ef94a282db8d2fbb707591</string>
+            <string>a51da309dd81293ae2940181d345bb77</string>
             <key>url</key>
-            <uri>https://bitbucket.org/alchemyviewer/publiclibs-darwin/downloads/fmodstudio-1.06.09-darwin-201509090342.tar.bz2</uri>
+            <uri>https://bitbucket.org/alchemyviewer/publiclibs-darwin/downloads/fmodstudio-1.07.00-darwin-201510062322.tar.bz2</uri>
           </map>
           <key>linux</key>
           <map>
@@ -478,23 +478,23 @@
           <key>linux64</key>
           <map>
             <key>md5sum</key>
-            <string>d3e83c5c73ee961616896cf6d06e1c1a</string>
+            <string>adc55fd330f41a66dc64a6c3f7084e79</string>
             <key>url</key>
-            <uri>http://depot.alchemyviewer.org/pub/linux64/lib/fmodstudio-1.06.09-linux64-201509072357.tar.bz2</uri>
+            <uri>http://depot.alchemyviewer.org/pub/linux64/lib/fmodstudio-1.07.00-linux64-201510070033.tar.bz2</uri>
           </map>
           <key>windows</key>
           <map>
             <key>md5sum</key>
-            <string>88e846f4ecd3a7ddb39b4a8c07737123</string>
+            <string>301419a80b2e1eb6d6389dcf7bf4c06a</string>
             <key>url</key>
-            <uri>http://depot.alchemyviewer.org/pub/windows/lib/fmodstudio-1.06.09-windows-201509072358.tar.bz2</uri>
+            <uri>http://depot.alchemyviewer.org/pub/windows/lib/fmodstudio-1.07.00-windows-201510070018.tar.bz2</uri>
           </map>
           <key>windows64</key>
           <map>
             <key>md5sum</key>
-            <string>8f9b6438888b6c533a4f8bf685ef115e</string>
+            <string>980b4d60a41b88c23b738ed477beed70</string>
             <key>url</key>
-            <uri>http://depot.alchemyviewer.org/pub/windows64/lib/fmodstudio-1.06.09-windows64-201509072356.tar.bz2</uri>
+            <uri>http://depot.alchemyviewer.org/pub/windows64/lib/fmodstudio-1.07.00-windows64-201510061544.tar.bz2</uri>
           </map>
         </map>
       </map>
