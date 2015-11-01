@@ -4686,20 +4686,14 @@ void LLAgent::sendAgentSetAppearance()
 	}
 
 
-	static bool send_physics_params = false;
-	send_physics_params |= !!gAgentWearables.selfHasWearable(LLWearableType::WT_PHYSICS);
 	S32 transmitted_params = 0;
 	for (LLViewerVisualParam* param = (LLViewerVisualParam*)gAgentAvatarp->getFirstVisualParam();
 		 param;
 		 param = (LLViewerVisualParam*)gAgentAvatarp->getNextVisualParam())
 	{
-		if (param->getGroup() == VISUAL_PARAM_GROUP_TWEAKABLE) // do not transmit params of group VISUAL_PARAM_GROUP_TWEAKABLE_NO_TRANSMIT
+		if (param->getGroup() == VISUAL_PARAM_GROUP_TWEAKABLE ||
+			param->getGroup() == VISUAL_PARAM_GROUP_TRANSMIT_NOT_TWEAKABLE) // do not transmit params of group VISUAL_PARAM_GROUP_TWEAKABLE_NO_TRANSMIT
 		{
-			//A hack to prevent ruthing on older viewers when phys wearables aren't being worn.
-			if(!send_physics_params && param->getID() >= 10000)
-			{
-				break;
-			}
 			msg->nextBlockFast(_PREHASH_VisualParam );
 
 			// We don't send the param ids.  Instead, we assume that the receiver has the same params in the same sequence.
