@@ -7468,7 +7468,15 @@ void LLPipeline::renderBloom(BOOL for_snapshot, F32 zoom_factor, int subfield, b
 
 		gGL.getTexUnit(0)->bind(&mPhysicsDisplay);
 
-		drawFullScreenRect(LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_TEXCOORD0);
+		gGL.begin(LLRender::TRIANGLES);
+		gGL.texCoord2f(0.f, 0.f);
+		gGL.vertex2f(-1.f, -1.f);
+		gGL.texCoord2f(0.f, mScreen.getHeight() * 2.f);
+		gGL.vertex2f(-1.f,  3.f);
+		gGL.texCoord2f(mScreen.getWidth() * 2.f, 0.f);
+		gGL.vertex2f( 3.f, -1.f);
+		gGL.end();
+		gGL.flush();
 
 		if (LLGLSLShader::sNoFixedFunction)
 		{
