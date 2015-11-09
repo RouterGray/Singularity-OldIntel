@@ -86,7 +86,7 @@
 			<button bottom="-160" enabled="true" follows="left|top" font="SansSerifSmall"
 			     halign="center" height="16" label="Set..." label_selected="Set..."
 			     left="350" mouse_opaque="true" name="Set..." scale_image="true" width="50" />
-			<button bottom="-120" enabled="true" follows="left|top" font="SansSerifSmall"
+			<button bottom="-160" enabled="true" follows="left|top" font="SansSerifSmall"
 			     halign="center" height="16" label="Info"
 			     left="400" mouse_opaque="true" name="group_profile" scale_image="true" width="50" />
 			<check_box bottom="-180" enabled="false" follows="left|top" font="SansSerifSmall"
