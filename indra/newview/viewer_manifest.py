@@ -197,6 +197,9 @@ class ViewerManifest(LLManifest):
 
     def add_extra_libraries(self):
         found_libs = []
+        config_arg = self.args['configuration'].lower()
+        if(config_arg == '.'):
+            config_arg = self.buildtype().lower()
         if 'extra_libraries' in self.args and self.args['extra_libraries'] != '':
             try:
                 path_list = self.args['extra_libraries'].strip('"').split('|')
@@ -210,11 +213,11 @@ class ViewerManifest(LLManifest):
                 except:
                     config, file = (None, None)
                 if(config == 'optimized'):
-                    if(self.args['configuration'].lower() != 'release' and self.args['configuration'].lower() != 'relwithdebinfo' and self.args['configuration'].lower() != 'universal'):
+                    if(config_arg != 'release' and config_arg != 'relwithdebinfo' and config_arg != 'universal'):
                         continue
                     cur_path = file
                 if(config == 'debug'):
-                    if(self.args['configuration'].lower() != 'debug'):
+                    if(config_arg != 'debug'):
                         continue
                     cur_path = file
                 if(cur_path != ''):
