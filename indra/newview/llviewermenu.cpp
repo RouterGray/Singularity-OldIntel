@@ -711,6 +711,7 @@ void init_menus()
 	menu->addChild(new LLMenuItemCallGL("Debug Settings...", handle_singleton_toggle<LLFloaterSettingsDebug>, NULL, NULL));
 	// Debugging view for unified notifications: CTRL-SHIFT-5
 	menu->addChild(new LLMenuItemCallGL("Notifications Console...", handle_show_notifications_console, NULL, NULL, '5', MASK_CONTROL|MASK_SHIFT));
+	menu->addChild(new LLMenuItemCallGL("Load from XML...", handle_load_from_xml));
 	gLoginMenuBarView->addChild(menu);
 	menu->updateParent(LLMenuGL::sMenuContainer);
 
