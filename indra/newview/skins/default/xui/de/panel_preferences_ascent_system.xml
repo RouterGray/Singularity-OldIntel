@@ -3,8 +3,9 @@
   <tab_container label="System" name="Ascent System">
 
     <panel label="Generell" name="User Interface">
-      <check_box label="Teleport mit Doppelklick erlauben" tool_tip="Doppelklick auf eine Person oder Ort teleportiert dich dorthin" name="double_click_teleport_check"/>
-	<check_box label="Kamera nach Teleport zurücksetzen" tool_tip="Platziert die Kamera nach einem Teleport in der Standardposition" name="center_after_teleport_check"/>
+      <text name="double_click_text" value="Doppelklick"/>
+      <check_box label="Teleport" tool_tip="Doppelklick auf eine Person oder Ort teleportiert dich dorthin" name="double_click_teleport_check"/>
+      <check_box label="Kamera nach Teleport zurücksetzen" tool_tip="Platziert die Kamera nach einem Teleport in der Standardposition" name="center_after_teleport_check"/>
       <check_box label="TP Ziel um halbe Avatargrösse erhöhen" tool_tip="Versucht den TP so zu platzieren dass der Avatar genau am Zielpunkt ankommt" name="offset_teleport_check"/>
       <check_box name="clear_beacon_after_tp" label="Lösche roten Ankunftsmarker nach Teleport"/>
       <check_box name="fly_after_tp" label="Nach Teleport immer fliegen" tool_tip="Vermeide Fallen aus großer Höhe durch automatisches Fliegen nach Teleport"/>

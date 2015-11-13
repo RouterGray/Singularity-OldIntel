@@ -7306,16 +7306,7 @@ void menu_toggle_double_click_control(void* user_data)
 {
 	std::string setting(static_cast<char*>(user_data));
 	LLControlVariable* control(gSavedSettings.getControl(setting));
-	bool checked = control->get();
-	// Doubleclick actions - there can be only one
-	if (!checked)
-	{
-		if (setting == "DoubleClickAutoPilot")
-			gSavedSettings.setBOOL("DoubleClickTeleport", false);
-		else if (setting == "DoubleClickTeleport")
-			gSavedSettings.setBOOL("DoubleClickAutoPilot", false);
-	}
-	control->set(!checked);
+	control->set(!control->get());
 }
 
 

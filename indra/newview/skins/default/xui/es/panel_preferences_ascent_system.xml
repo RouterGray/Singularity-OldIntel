@@ -3,7 +3,7 @@
 	<tab_container label="Sistema" name="Ascent System">
 		<!-- =========================== -->
 		<panel label="General" name="User Interface">
-			<check_box label="Habilitar Teleporte con doble click" tool_tip="Haciendo doble click en un objeto o persona te transportará hacia su ubicación." name="double_click_teleport_check"/>
+			<check_box tool_tip="Haciendo doble click en un objeto o persona te transportará hacia su ubicación." name="double_click_teleport_check"/>
 			<check_box label="Reiniciar la Cámara luego de Teleportar" tool_tip="Centra la cámara detrás tuyo luego de un teleport." name="center_after_teleport_check"/>
 			<check_box label="Desplazar destino TP a mitad de la altura del agente" tool_tip="Intenta apuntar el TP de modo que tus pies se apoyen en la tierra del punto al que estás apuntando." name="offset_teleport_check"/>
 			<check_box name="clear_beacon_after_tp" label="Borrar baliza roja de destino despues de teleportarte"/>			
