@@ -1855,7 +1855,12 @@ bool LLAppearanceMgr::getCanRemoveFromCOF(const LLUUID& outfit_cat_id)
 	}
 
 	LLFindWearablesEx is_worn(/*is_worn=*/ true, /*include_body_parts=*/ false);
-	return gInventory.hasMatchingDirectDescendent(outfit_cat_id, is_worn, true);
+	// Singu Note: Diverge from LL here in order to dive into subfolder.
+	//return gInventory.hasMatchingDirectDescendent(outfit_cat_id, is_worn, true);
+	LLInventoryModel::item_array_t items;
+	LLInventoryModel::cat_array_t cats;
+	gInventory.collectDescendentsIf(outfit_cat_id, cats, items, LLInventoryModel::EXCLUDE_TRASH, is_worn, /*follow_folder_links=*/ true);
+	return items.size();
 }
 
 // static
