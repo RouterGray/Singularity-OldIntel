@@ -39,9 +39,9 @@
           <key>darwin</key>
           <map>
             <key>md5sum</key>
-            <string>ae21b0ea01ebf778bd08dcc0d4f94039</string>
+            <string>9b810919658a9705f0fe8a3d85ebb2d9</string>
             <key>url</key>
-            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/glod-1.0pre4-darwin-20110610.tar.bz2</uri>
+            <uri>https://bitbucket.org/SingularityViewer/libraries/downloads/glod-1.0pre4-darwin-20110610-repack.tar.bz2</uri>
           </map>
           <key>linux</key>
           <map>
