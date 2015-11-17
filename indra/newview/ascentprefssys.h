@@ -54,6 +54,7 @@ protected:
 private:
 	//General -----------------------------------------------------------------------------
 	bool mDoubleClickTeleport;
+	bool mDoubleClickAutoPilot;
 	bool mResetCameraAfterTP;
 	bool mOffsetTPByUserHeight;
 	bool mClearBeaconAfterTeleport;
