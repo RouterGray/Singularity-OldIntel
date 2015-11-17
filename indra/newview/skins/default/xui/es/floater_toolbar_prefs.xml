@@ -88,7 +88,6 @@
   <check_box label="Prueba Flotantes" name="floater_test_btn"/>
   <check_box label="Editar UI" name="edit_ui_btn"/>
   <check_box label="Prueba Fuentes" name="font_test_btn"/>
-  <check_box label="Medidor de Lag" name="lag_meter_btn"/>
   <check_box label="Denunciar Abuso" name="abuse_btn"/>
   <!-- Singu TODO: Re-implement f1 help.
   <check_box label="Ayuda" name="help_btn"/>

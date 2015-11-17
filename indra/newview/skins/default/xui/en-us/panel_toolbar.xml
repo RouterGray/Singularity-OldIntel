@@ -449,13 +449,8 @@
         <button.commit_callback function="ShowFloater" parameter="font test"/>
       </button>
     </layout_panel>
-    <layout_panel name="panellagmeter" height="24" width="50" user_resize="false" visibility_control="ToolbarVisibleLagMeter">
-      <button bottom="0" height="24" label="Lag Meter" image_overlay="icn_toolbar_lag_meter.tga" image_overlay_alignment="left" image_selected="toolbar_btn_selected.tga" image_unselected="toolbar_btn_enabled.tga" image_disabled="toolbar_btn_disabled.tga" scale_image="true" name="lag_meter_btn" width="50" follows="left|right">
-        <button.commit_callback function="ShowFloater" parameter="lag meter"/>
-      </button>
-    </layout_panel>
     <layout_panel name="panelreportabuse" height="24" width="50" user_resize="false" visibility_control="ToolbarVisibleComplaintReporter">
-      <button bottom="0" height="24" label="Report Abuse" image_overlay="icn_toolbar_report_abuse.tga" image_overlay_alignment="left" image_selected="toolbar_btn_selected.tga" image_unselected="toolbar_btn_enabled.tga" image_disabled="toolbar_btn_disabled.tga" scale_image="true" name="lag_meter_btn" width="50" follows="left|right">
+      <button bottom="0" height="24" label="Report Abuse" image_overlay="icn_toolbar_report_abuse.tga" image_overlay_alignment="left" image_selected="toolbar_btn_selected.tga" image_unselected="toolbar_btn_enabled.tga" image_disabled="toolbar_btn_disabled.tga" scale_image="true" name="abuse_btn" width="50" follows="left|right">
         <button.commit_callback function="ShowFloater" parameter="complaint reporter"/>
       </button>
     </layout_panel>

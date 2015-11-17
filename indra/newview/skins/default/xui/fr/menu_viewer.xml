@@ -223,7 +223,6 @@
 		<menu_item_separator label="-----------" name="separator3"/>
 		<menu_item_call label="Signaler une infraction" name="Report Abuse..."/>
 		<menu_item_call label="Collisions, coups et bousculades" name="Bumps, Pushes &amp;amp; Hits..."/>
-		<menu_item_call label="Mesure du lag" name="Lag Meter"/>
 		<menu_item_separator label="-----------" name="separator7"/>
 		<menu label="Signaler des bugs" name="Bug Reporting">
 			<menu_item_call label="Ouvrir un JIRA" name="Public Issue Tracker..."/>

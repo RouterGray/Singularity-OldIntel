@@ -272,11 +272,8 @@
 		<layout_panel name="panelfonttest">
 			<button label="Prueba Fuentes" name="font_test_btn"/>
 		</layout_panel>
-		<layout_panel name="panellagmeter">
-			<button label="Medidor de Lag" name="lag_meter_btn"/>
-		</layout_panel>
 		<layout_panel name="panelreportabuse">
-			<button label="Denunciar Abuso" name="lag_meter_btn"/>
+			<button label="Denunciar Abuso" name="abuse_btn"/>
 		</layout_panel>
 		<!-- Singu TODO: Re-implement f1 help.
 		<layout_panel name="panelhelp">

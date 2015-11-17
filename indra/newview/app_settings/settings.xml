@@ -7514,22 +7514,6 @@ This should be as low as possible, but too low may break functionality</string>
         <integer>0</integer>
       </array>
     </map>
-    <key>FloaterLagMeter</key>
-    <map>
-      <key>Comment</key>
-      <string>Rectangle for lag meter</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>Rect</string>
-      <key>Value</key>
-      <array>
-        <integer>0</integer>
-        <integer>142</integer>
-        <integer>350</integer>
-        <integer>0</integer>
-      </array>
-    </map>
     <key>ShowRadar</key>
     <map>
       <key>Comment</key>
@@ -9613,17 +9597,6 @@ This should be as low as possible, but too low may break functionality</string>
       <string>String</string>
       <key>Value</key>
       <string>http://wiki.secondlife.com/wiki/[LSL_STRING]</string>
-    </map>
-    <key>LagMeterShrunk</key>
-    <map>
-      <key>Comment</key>
-      <string>Last large/small state for lag meter</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>Boolean</string>
-      <key>Value</key>
-      <integer>0</integer>
     </map>
     <key>Language</key>
     <map>

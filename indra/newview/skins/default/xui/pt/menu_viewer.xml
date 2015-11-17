@@ -155,7 +155,6 @@
 		<menu_item_call label="Portal de Scripts..." name="Scripting Portal..."/>
 		<menu_item_call label="Reportar Abuso..." name="Report Abuse..."/>
 		<menu_item_call label="Colisões, impulsos e batidas..." name="Bumps, Pushes &amp;amp; Hits..."/>
-		<menu_item_call label="Medidor de Lag" name="Lag Meter"/>
 		<menu label="Reportando Bug" name="Bug Reporting">
 			<menu_item_call label="Rastreador público de problemas..." name="Public Issue Tracker..."/>
 			<menu_item_call label="Ajuda do rastreador público de problemas..." name="Publc Issue Tracker Help..."/>

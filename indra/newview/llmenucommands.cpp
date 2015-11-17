@@ -73,7 +73,6 @@
 #include "llfloaterinspect.h"
 #include "llfloaterinventory.h"
 #include "llfloaterjoystick.h"
-#include "llfloaterlagmeter.h"
 #include "llfloaterland.h"
 #include "llfloaterlandholdings.h"
 #include "llfloatermap.h"
@@ -229,7 +228,6 @@ struct MenuFloaterDict : public LLSingleton<MenuFloaterDict>
 		registerFloater<CommWrapper>					("im");
 		registerFloater<LLFloaterInspect>				("inspect");
 		registerFloater<LLFloaterJoystick>				("joystick");
-		registerFloater<LLFloaterLagMeter>				("lag meter");
 		registerFloater<LLFloaterMediaFilter>			("media filter");
 		registerFloater<LLFloaterMap>					("mini map");
 		registerFloater<LLFloaterMove>					("movement controls");

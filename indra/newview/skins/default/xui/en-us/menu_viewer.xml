@@ -988,9 +988,6 @@
 		     width="166">
 			<on_click function="ShowFloater" userdata="mean events" />
 		</menu_item_call>
-		<menu_item_call label="Lag Meter" name="Lag Meter">
-			<on_click function="ShowFloater" userdata="lag meter" />
-		</menu_item_call>
 		<menu_item_separator name="separator7"/>
 		<menu bottom="-554" create_jump_keys="true" drop_shadow="true" enabled="true"
 		     height="109" label="Bug Reporting" left="0" mouse_opaque="false"
