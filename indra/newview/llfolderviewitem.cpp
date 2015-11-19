@@ -768,7 +768,7 @@ BOOL LLFolderViewItem::handleHover( S32 x, S32 y, MASK mask )
 					// item.
 					gFocusMgr.setKeyboardFocus(NULL);
 
-					return LLToolDragAndDrop::getInstance()->handleHover( x, y, mask );
+					return LLToolDragAndDrop::getInstance()->handleHover( screen_x, screen_y, mask );
 				}
 			}
 		}
