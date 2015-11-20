@@ -157,6 +157,7 @@
 
 #if LL_WINDOWS
 #include "lltimer.h"
+#include <intrin.h>
 #elif LL_LINUX || LL_SOLARIS
 #include <sys/time.h>
 #include <sched.h>
@@ -184,7 +185,7 @@ LLMutex* LLFastTimer::sLogLock = NULL;
 std::queue<LLSD> LLFastTimer::sLogQueue;
 const int LLFastTimer::NamedTimer::HISTORY_NUM = 300;
 
-#if defined(LL_WINDOWS) && !defined(_WIN64)
+#if defined(LL_WINDOWS)
 #define USE_RDTSC 1
 #endif
 
@@ -952,34 +953,15 @@ LLFastTimer::LLFastTimer(LLFastTimer::FrameState* state)
 #if USE_RDTSC
 U32 LLFastTimer::getCPUClockCount32()
 {
-	U32 ret_val;
-	__asm
-	{
-        _emit   0x0f
-        _emit   0x31
-		shr eax,8
-		shl edx,24
-		or eax, edx
-		mov dword ptr [ret_val], eax
-	}
-    return ret_val;
+	return (U32)(__rdtsc()>>8);
 }
 
 // return full timer value, *not* shifted by 8 bits
 U64 LLFastTimer::getCPUClockCount64()
 {
-	U64 ret_val;
-	__asm
-	{
-        _emit   0x0f
-        _emit   0x31
-		mov eax,eax
-		mov edx,edx
-		mov dword ptr [ret_val+4], edx
-		mov dword ptr [ret_val], eax
-	}
-    return ret_val;
+	return (U64)__rdtsc();
 }
+
 #else
 //LL_COMMON_API U64 get_clock_count(); // in lltimer.cpp
 // These use QueryPerformanceCounter, which is arguably fine and also works on AMD architectures.

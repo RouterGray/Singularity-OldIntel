@@ -46,7 +46,10 @@
 #include "llinventorymodel.h"
 #include "v3dmath.h"
 
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 #include <boost/shared_ptr.hpp>
 #include <boost/signals2.hpp>
 

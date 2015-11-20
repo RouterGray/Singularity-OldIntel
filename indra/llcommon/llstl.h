@@ -35,11 +35,8 @@
 
 #include <functional>
 #include <algorithm>
-#include <map>
+#include <utility>
 #include <vector>
-#include <list>
-#include <set>
-#include <deque>
 #include <typeinfo>
 
 // Use to compare the first element only of a pair
@@ -410,7 +407,7 @@ OutputIter ll_transform_n(
 template <class _Pair>
 struct _LLSelect1st : public std::unary_function<_Pair, typename _Pair::first_type> {
   const typename _Pair::first_type& operator()(const _Pair& __x) const {
-    return __x.first;
+	return __x.first;
   }
 };
 
@@ -418,7 +415,7 @@ template <class _Pair>
 struct _LLSelect2nd : public std::unary_function<_Pair, typename _Pair::second_type>
 {
   const typename _Pair::second_type& operator()(const _Pair& __x) const {
-    return __x.second;
+	return __x.second;
   }
 };
 
@@ -438,10 +435,10 @@ protected:
   _Operation2 __op2;
 public:
   ll_unary_compose(const _Operation1& __x, const _Operation2& __y)
-    : __op1(__x), __op2(__y) {}
+	: __op1(__x), __op2(__y) {}
   typename _Operation1::result_type
   operator()(const typename _Operation2::argument_type& __x) const {
-    return __op1(__op2(__x));
+	return __op1(__op2(__x));
   }
 };
 
@@ -463,20 +460,20 @@ protected:
 public:
   ll_binary_compose(const _Operation1& __x, const _Operation2& __y,
 					const _Operation3& __z)
-    : _M_op1(__x), _M_op2(__y), _M_op3(__z) { }
+	: _M_op1(__x), _M_op2(__y), _M_op3(__z) { }
   typename _Operation1::result_type
   operator()(const typename _Operation2::argument_type& __x) const {
-    return _M_op1(_M_op2(__x), _M_op3(__x));
+	return _M_op1(_M_op2(__x), _M_op3(__x));
   }
 };
 
 template <class _Operation1, class _Operation2, class _Operation3>
 inline ll_binary_compose<_Operation1, _Operation2, _Operation3>
 llcompose2(const _Operation1& __op1, const _Operation2& __op2,
-         const _Operation3& __op3)
+		 const _Operation3& __op3)
 {
   return ll_binary_compose<_Operation1,_Operation2,_Operation3>
-    (__op1, __op2, __op3);
+	(__op1, __op2, __op3);
 }
 
 // helpers to deal with the fact that MSDev does not package
@@ -491,7 +488,7 @@ protected:
 public:
   llbinder1st(const _Operation& __x,
 			  const typename _Operation::first_argument_type& __y)
-      : op(__x), value(__y) {}
+	  : op(__x), value(__y) {}
 	typename _Operation::result_type
 	operator()(const typename _Operation::second_argument_type& __x) const {
 		return op(value, __x);
@@ -539,16 +536,16 @@ inline
 bool before(const std::type_info* lhs, const std::type_info* rhs)
 {
 #if LL_LINUX && defined(__GNUC__) && ((__GNUC__ < 4) || (__GNUC__ == 4 && __GNUC_MINOR__ < 4))
-    // If we're building on Linux with gcc, and it's either gcc 3.x or
-    // 4.{0,1,2,3}, then we have to use a workaround. Note that we use gcc on
-    // Mac too, and some people build with gcc on Windows (cygwin or mingw).
-    // On Linux, different load modules may produce different type_info*
-    // pointers for the same type. Have to compare name strings to get good
-    // results.
-    return strcmp(lhs->name(), rhs->name()) < 0;
+	// If we're building on Linux with gcc, and it's either gcc 3.x or
+	// 4.{0,1,2,3}, then we have to use a workaround. Note that we use gcc on
+	// Mac too, and some people build with gcc on Windows (cygwin or mingw).
+	// On Linux, different load modules may produce different type_info*
+	// pointers for the same type. Have to compare name strings to get good
+	// results.
+	return strcmp(lhs->name(), rhs->name()) < 0;
 #else  // not Linux, or gcc 4.4+
-    // Just use before(), as we normally would
-    return lhs->before(*rhs);
+	// Just use before(), as we normally would
+	return lhs->before(*rhs);
 #endif
 }
 
@@ -592,10 +589,10 @@ namespace std
 template <typename T, typename U>
 struct ll_template_cast_impl
 {
-    T operator()(U)
-    {
-        return 0;
-    }
+	T operator()(U)
+	{
+		return 0;
+	}
 };
 
 /**
@@ -637,7 +634,7 @@ struct ll_template_cast_impl
 template <typename T, typename U>
 T ll_template_cast(U value)
 {
-    return ll_template_cast_impl<T, U>()(value);
+	return ll_template_cast_impl<T, U>()(value);
 }
 
 /**
@@ -648,10 +645,10 @@ T ll_template_cast(U value)
 template <typename T>
 struct ll_template_cast_impl<T, T>
 {
-    T operator()(T value)
-    {
-        return value;
-    }
+	T operator()(T value)
+	{
+		return value;
+	}
 };
 
 /**
@@ -721,10 +718,10 @@ struct ll_template_cast_impl<T, T>
 template <>                                     \
 struct ll_template_cast_impl<DEST, SOURCE>      \
 {                                               \
-    DEST operator()(SOURCE wrapper)             \
-    {                                           \
-        return wrapper;                         \
-    }                                           \
+	DEST operator()(SOURCE wrapper)             \
+	{                                           \
+		return wrapper;                         \
+	}                                           \
 }
 
 

@@ -56,7 +56,10 @@
 #include <boost/visit_each.hpp>
 #include <boost/ref.hpp>            // reference_wrapper
 #include <boost/type_traits/is_pointer.hpp>
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 #include <boost/static_assert.hpp>
 #include "llsd.h"
 #include "llsingleton.h"

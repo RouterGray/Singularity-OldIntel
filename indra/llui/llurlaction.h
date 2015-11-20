@@ -29,7 +29,10 @@
 #define LL_LLURLACTION_H
 
 #include <string>
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 
 ///
 /// The LLUrlAction class provides a number of static functions that

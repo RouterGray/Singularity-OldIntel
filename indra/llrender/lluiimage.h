@@ -32,7 +32,10 @@
 #include "llrefcount.h"
 #include "llrefcount.h"
 #include "llrect.h"
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 #include <boost/signals2.hpp>
 #include "llinitparam.h"
 #include "lltexture.h"

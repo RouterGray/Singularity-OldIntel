@@ -81,10 +81,10 @@ void ms_sleep(U32 ms)
 
 U32 micro_sleep(U64 us, U32 max_yields)
 {
-    // max_yields is unused; just fiddle with it to avoid warnings.
-    max_yields = 0;
-    ms_sleep(us / 1000);
-    return 0;
+	// max_yields is unused; just fiddle with it to avoid warnings.
+	max_yields = 0;
+	ms_sleep(us / 1000);
+	return 0;
 }
 #elif LL_LINUX || LL_SOLARIS || LL_DARWIN
 static void _sleep_loop(struct timespec& thiswait)
@@ -103,8 +103,8 @@ static void _sleep_loop(struct timespec& thiswait)
 		if (sleep_more)
 		{
 			if ( nextwait.tv_sec > thiswait.tv_sec ||
-			     (nextwait.tv_sec == thiswait.tv_sec &&
-			      nextwait.tv_nsec >= thiswait.tv_nsec) )
+				 (nextwait.tv_sec == thiswait.tv_sec &&
+				  nextwait.tv_nsec >= thiswait.tv_nsec) )
 			{
 				// if the remaining time isn't actually going
 				// down then we're being shafted by low clock
@@ -130,31 +130,31 @@ static void _sleep_loop(struct timespec& thiswait)
 
 U32 micro_sleep(U64 us, U32 max_yields)
 {
-    U64 start = get_clock_count();
-    // This is kernel dependent.  Currently, our kernel generates software clock
-    // interrupts at 250 Hz (every 4,000 microseconds).
-    const U64 KERNEL_SLEEP_INTERVAL_US = 4000;
+	U64 start = get_clock_count();
+	// This is kernel dependent.  Currently, our kernel generates software clock
+	// interrupts at 250 Hz (every 4,000 microseconds).
+	const U64 KERNEL_SLEEP_INTERVAL_US = 4000;
 
-    S32 num_sleep_intervals = (us - (KERNEL_SLEEP_INTERVAL_US >> 1)) / KERNEL_SLEEP_INTERVAL_US;
-    if (num_sleep_intervals > 0)
-    {
-        U64 sleep_time = (num_sleep_intervals * KERNEL_SLEEP_INTERVAL_US) - (KERNEL_SLEEP_INTERVAL_US >> 1);
-        struct timespec thiswait;
-        thiswait.tv_sec = sleep_time / 1000000;
-        thiswait.tv_nsec = (sleep_time % 1000000) * 1000l;
-        _sleep_loop(thiswait);
-    }
+	S32 num_sleep_intervals = (us - (KERNEL_SLEEP_INTERVAL_US >> 1)) / KERNEL_SLEEP_INTERVAL_US;
+	if (num_sleep_intervals > 0)
+	{
+		U64 sleep_time = (num_sleep_intervals * KERNEL_SLEEP_INTERVAL_US) - (KERNEL_SLEEP_INTERVAL_US >> 1);
+		struct timespec thiswait;
+		thiswait.tv_sec = sleep_time / 1000000;
+		thiswait.tv_nsec = (sleep_time % 1000000) * 1000l;
+		_sleep_loop(thiswait);
+	}
 
-    U64 current_clock = get_clock_count();
-    U32 yields = 0;
-    while (    (yields < max_yields)
-            && (current_clock - start < us) )
-    {
-        sched_yield();
-        ++yields;
-        current_clock = get_clock_count();
-    }
-    return yields;
+	U64 current_clock = get_clock_count();
+	U32 yields = 0;
+	while (    (yields < max_yields)
+			&& (current_clock - start < us) )
+	{
+		sched_yield();
+		++yields;
+		current_clock = get_clock_count();
+	}
+	return yields;
 }
 
 void ms_sleep(U32 ms)
@@ -163,7 +163,7 @@ void ms_sleep(U32 ms)
 	struct timespec thiswait;
 	thiswait.tv_sec = ms / 1000;
 	thiswait.tv_nsec = (mslong % 1000) * 1000000l;
-    _sleep_loop(thiswait);
+	_sleep_loop(thiswait);
 }
 #else
 # error "architecture not supported"
@@ -411,15 +411,15 @@ BOOL LLTimer::knownBadTimer()
 
 #if LL_WINDOWS
 	WCHAR bad_pci_list[][10] = {L"1039:0530",
-						        L"1039:0620",
-							    L"10B9:0533",
-							    L"10B9:1533",
-							    L"1106:0596",
-							    L"1106:0686",
-							    L"1166:004F",
-							    L"1166:0050",
- 							    L"8086:7110",
-							    L"\0"
+								L"1039:0620",
+								L"10B9:0533",
+								L"10B9:1533",
+								L"1106:0596",
+								L"1106:0686",
+								L"1166:004F",
+								L"1166:0050",
+								L"8086:7110",
+								L"\0"
 	};
 
 	HKEY hKey = NULL;
