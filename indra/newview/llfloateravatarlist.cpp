@@ -509,6 +509,11 @@ void updateParticleActivity(LLDrawable *drawablep)
 	}
 }
 
+const F32& radar_range_radius()
+{
+	static const LLCachedControl<F32> radius("RadarRangeRadius", 0);
+	return radius;
+}
 void LLFloaterAvatarList::updateAvatarList(const LLViewerRegion* region)
 {
 	// Check whether updates are enabled
@@ -523,8 +528,7 @@ void LLFloaterAvatarList::updateAvatarList(const LLViewerRegion* region)
 		const std::vector<LLUUID>& map_avids(region->mMapAvatarIDs);
 		const LLVector3d& mypos(gAgent.getPositionGlobal());
 		const LLVector3d& origin(region->getOriginGlobal());
-		static const LLCachedControl<F32> radar_range_radius("RadarRangeRadius", 0);
-		const F32 max_range(radar_range_radius * radar_range_radius);
+		const F32 max_range(radar_range_radius() * radar_range_radius());
 
 		static LLCachedControl<bool> announce(gSavedSettings, "RadarChatKeys");
 		std::queue<LLUUID> announce_keys;
@@ -594,14 +598,20 @@ void LLFloaterAvatarList::updateAvatarList(const LLViewerRegion* region)
 
 void LLFloaterAvatarList::expireAvatarList(const std::list<LLUUID>& ids)
 {
-	BOOST_FOREACH(const LLUUID& id, ids)
+	if (!ids.empty())
 	{
-		av_list_t::iterator it(std::find_if(mAvatars.begin(), mAvatars.end(), LLAvatarListEntry::uuidMatch(id)));
-		if (it != mAvatars.end())
+		std::vector<LLUUID> existing_avs;
+		LLWorld::instance().getAvatars(&existing_avs, NULL, gAgent.getPositionGlobal(), radar_range_radius());
+		BOOST_FOREACH(const LLUUID& id, ids)
 		{
-			LLAvatarListEntry* entry = it->get();
-			entry->setPosition(entry->getPosition(), F32_MIN, false); // Dead and gone
-			mAvatars.erase(it);
+			if (std::find(existing_avs.begin(), existing_avs.end(), id) != existing_avs.end()) continue; // Now in another region we know.
+			av_list_t::iterator it(std::find_if(mAvatars.begin(), mAvatars.end(), id));
+			if (it != mAvatars.end())
+			{
+				LLAvatarListEntry* entry = it->get();
+				entry->setPosition(entry->getPosition(), F32_MIN, false); // Dead and gone
+				mAvatars.erase(it);
+			}
 		}
 	}
 
