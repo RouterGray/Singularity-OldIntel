@@ -615,17 +615,6 @@ void LLFloaterAvatarList::expireAvatarList(const std::list<LLUUID>& ids)
 		}
 	}
 
-	if (mAvatars.empty())
-		setTitle(getString("Title"));
-	else if (mAvatars.size() == 1)
-		setTitle(getString("TitleOneAvatar"));
-	else
-	{
-		LLStringUtil::format_map_t args;
-		args["[COUNT]"] = boost::lexical_cast<std::string>(mAvatars.size());
-		setTitle(getString("TitleWithCount", args));
-	}
-
 	refreshAvatarList();
 	refreshTracker();
 }
@@ -658,8 +647,19 @@ bool getCustomColorRLV(const LLUUID& id, LLColor4& color, LLViewerRegion* parent
  */
 void LLFloaterAvatarList::refreshAvatarList() 
 {
-	// Don't update list when interface is hidden
+	// Don't update when interface is hidden
 	if (!getVisible()) return;
+
+	if (mAvatars.empty())
+		setTitle(getString("Title"));
+	else if (mAvatars.size() == 1)
+		setTitle(getString("TitleOneAvatar"));
+	else
+	{
+		LLStringUtil::format_map_t args;
+		args["[COUNT]"] = boost::lexical_cast<std::string>(mAvatars.size());
+		setTitle(getString("TitleWithCount", args));
+	}
 
 	// We rebuild the list fully each time it's refreshed
 	// The assumption is that it's faster to refill it and sort than
