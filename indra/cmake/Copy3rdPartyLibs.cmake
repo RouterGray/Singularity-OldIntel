@@ -54,10 +54,10 @@ if(WINDOWS)
         libhunspell.dll
         )
 
-    if(USE_TCMALLOC)
+    if(NOT DISABLE_TCMALLOC)
       set(debug_files ${debug_files} libtcmalloc_minimal-debug.dll)
       set(release_files ${release_files} libtcmalloc_minimal.dll)
-    endif(USE_TCMALLOC)
+    endif(NOT DISABLE_TCMALLOC)
 
     if (FMODSTUDIO)
       if(WORD_SIZE STREQUAL 64)

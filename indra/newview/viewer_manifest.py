@@ -43,7 +43,7 @@ viewer_dir = os.path.dirname(__file__)
 # Put it FIRST because some of our build hosts have an ancient install of
 # indra.util.llmanifest under their system Python!
 sys.path.insert(0, os.path.join(viewer_dir, os.pardir, "lib", "python"))
-from indra.util.llmanifest import LLManifest, main, path_ancestors, CHANNEL_VENDOR_BASE, RELEASE_CHANNEL, ManifestError
+from indra.util.llmanifest import LLManifest, main, proper_windows_path, path_ancestors, CHANNEL_VENDOR_BASE, RELEASE_CHANNEL, ManifestError
 try:
     from llbase import llsd
 except ImportError:
@@ -404,8 +404,28 @@ class WindowsManifest(ViewerManifest):
                 prev = d
 
         return result
+	
+    def sign_command(self, *argv):
+        return [
+            "signtool.exe", "sign", "/v",
+            "/n", self.args['signature'],
+            "/p", os.environ['VIEWER_SIGNING_PWD'],
+            "/d","%s" % self.channel(),
+            "/t","http://timestamp.comodoca.com/authenticode"
+        ] + list(argv)
+	
+    def sign(self, *argv):
+        subprocess.check_call(self.sign_command(*argv))
 
     def package_finish(self):
+        if 'signature' in self.args and 'VIEWER_SIGNING_PWD' in os.environ:
+            try:
+                self.sign(self.args['configuration']+"\\"+self.final_exe())
+                self.sign(self.args['configuration']+"\\SLPlugin.exe")
+                self.sign(self.args['configuration']+"\\SLVoice.exe")
+            except:
+                print "Couldn't sign binaries. Tried to sign %s" % self.args['configuration'] + "\\" + self.final_exe()
+		
         # a standard map of strings for replacing in the templates
         substitution_strings = {
             'version' : '.'.join(self.args['version']),
@@ -433,14 +453,19 @@ class WindowsManifest(ViewerManifest):
             substitution_strings['caption'] = self.app_name() + ' ${VERSION}'
 
         inst_vars_template = """
-            OutFile "%(installer_file)s"
-            !define INSTNAME   "%(app_name_oneword)s"
-            !define SHORTCUT   "%(app_name)s"
+            !define INSTOUTFILE "%(installer_file)s"
+            !define INSTEXE  "%(final_exe)s"
+            !define APPNAME   "%(app_name)s"
+            !define APPNAMEONEWORD   "%(app_name_oneword)s"
+            !define VERSION "%(version_short)s"
+            !define VERSION_LONG "%(version)s"
+            !define VERSION_DASHES "%(version_dashes)s"
             !define URLNAME   "secondlife"
-            Caption "%(caption)s"
+            !define CAPTIONSTR "%(caption)s"
+            !define VENDORSTR "Singularity Viewer Project"
             """
 
-        tempfile = "secondlife_setup_tmp.nsi"
+        tempfile = "singularity_setup_tmp.nsi"
         # the following replaces strings in the nsi template
         # it also does python-style % substitution
         self.replace_in("installers/windows/installer_template.nsi", tempfile, {
@@ -448,7 +473,9 @@ class WindowsManifest(ViewerManifest):
                 "%%SOURCE%%":self.get_src_prefix(),
                 "%%INST_VARS%%":inst_vars_template % substitution_strings,
                 "%%INSTALL_FILES%%":self.nsi_file_commands(True),
-                "%%DELETE_FILES%%":self.nsi_file_commands(False)})
+                "%%DELETE_FILES%%":self.nsi_file_commands(False),
+                "%%WIN64_BIN_BUILD%%":"!define WIN64_BIN_BUILD 1" if self.is_win64() else "",
+                })
 
         # We use the Unicode version of NSIS, available from
         # http://www.scratchpaper.com/
@@ -466,19 +493,12 @@ class WindowsManifest(ViewerManifest):
 
 
         # self.remove(self.dst_path_of(tempfile))
-        # If we're on a build machine, sign the code using our Authenticode certificate. JC
-        sign_py = os.path.expandvars("${SIGN}")
-        if not sign_py or sign_py == "${SIGN}":
-            sign_py = 'C:\\buildscripts\\code-signing\\sign.py'
-        else:
-            sign_py = sign_py.replace('\\', '\\\\\\\\')
-        python = os.path.expandvars("${PYTHON}")
-        if not python or python == "${PYTHON}":
-            python = 'python'
-        if os.path.exists(sign_py):
-            self.run_command("%s %s %s" % (python, sign_py, self.dst_path_of(installer_file).replace('\\', '\\\\\\\\')))
-        else:
-            print "Skipping code signing,", sign_py, "does not exist"
+        if 'signature' in self.args and 'VIEWER_SIGNING_PWD' in os.environ:
+            try:
+                self.sign(self.args['configuration'] + "\\" + substitution_strings['installer_file'])
+            except: 
+                print "Couldn't sign windows installer. Tried to sign %s" % self.args['configuration'] + "\\" + substitution_strings['installer_file']
+
         self.created_path(self.dst_path_of(installer_file))
         self.package_file = installer_file
 
