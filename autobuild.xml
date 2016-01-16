@@ -2558,11 +2558,12 @@
           <map>
             <key>RelWithDebInfo</key>
             <map>
-              <key>build</key>
-              <map>
-              </map>
               <key>configure</key>
               <map>
+                <key>arguments</key>
+                <array>
+                  <string>../indra</string>
+                </array>
                 <key>command</key>
                 <string>cmake</string>
                 <key>options</key>
@@ -2570,13 +2571,13 @@
                   <string>-DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo</string>
                   <string>-DWORD_SIZE:STRING=32</string>
                   <string>-DROOT_PROJECT_NAME:STRING=SecondLife</string>
-                  <string>-DINSTALL_PROPRIETARY=TRUE</string>
+                  <string>-DINSTALL_PROPRIETARY=FALSE</string>
                 </array>
               </map>
               <key>name</key>
               <string>RelWithDebInfo</string>
             </map>
-            <key>RelWithDebInfoOS</key>
+            <key>Release</key>
             <map>
               <key>configure</key>
               <map>
@@ -2588,55 +2589,14 @@
                 <string>cmake</string>
                 <key>options</key>
                 <array>
-                  <string>-DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo</string>
-                  <string>-DWORD_SIZE:STRING=32</string>
-                  <string>-DROOT_PROJECT_NAME:STRING=SecondLife</string>
-                  <string>-DINSTALL_PROPRIETARY=FALSE</string>
-                </array>
-              </map>
-              <key>name</key>
-              <string>RelWithDebInfoOS</string>
-            </map>
-            <key>Release</key>
-            <map>
-              <key>build</key>
-              <map>
-              </map>
-              <key>configure</key>
-              <map>
-                <key>command</key>
-                <string>cmake</string>
-                <key>options</key>
-                <array>
                   <string>-DCMAKE_BUILD_TYPE:STRING=Release</string>
                   <string>-DWORD_SIZE:STRING=32</string>
                   <string>-DROOT_PROJECT_NAME:STRING=SecondLife</string>
-                  <string>-DINSTALL_PROPRIETARY=TRUE</string>
+                  <string>-DINSTALL_PROPRIETARY=FALSE</string>
                 </array>
               </map>
               <key>name</key>
               <string>Release</string>
-            </map>
-            <key>ReleaseOS</key>
-            <map>
-              <key>configure</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>../indra</string>
-                </array>
-                <key>command</key>
-                <string>cmake</string>
-                <key>options</key>
-                <array>
-                  <string>-DCMAKE_BUILD_TYPE:STRING=Release</string>
-                  <string>-DWORD_SIZE:STRING=32</string>
-                  <string>-DROOT_PROJECT_NAME:STRING=SecondLife</string>
-                  <string>-DINSTALL_PROPRIETARY=FALSE</string>
-                </array>
-              </map>
-              <key>name</key>
-              <string>ReleaseOS</string>
             </map>
           </map>
           <key>name</key>
@@ -2654,10 +2614,6 @@
               <map>
                 <key>command</key>
                 <string>xcodebuild</string>
-                <key>filters</key>
-                <array>
-                  <string>setenv</string>
-                </array>
                 <key>options</key>
                 <array>
                   <string>-configuration RelWithDebInfo</string>
@@ -2666,43 +2622,14 @@
               </map>
               <key>configure</key>
               <map>
-                <key>arguments</key>
-                <array>
-                  <string>../indra</string>
-                </array>
                 <key>options</key>
                 <array>
                   <string>-G</string>
                   <string>'Xcode'</string>
                 </array>
               </map>
-              <key>default</key>
-              <string>True</string>
               <key>name</key>
               <string>RelWithDebInfo</string>
-            </map>
-            <key>RelWithDebInfoOS</key>
-            <map>
-              <key>build</key>
-              <map>
-                <key>command</key>
-                <string>xcodebuild</string>
-                <key>options</key>
-                <array>
-                  <string>-configuration RelWithDebInfo</string>
-                  <string>-project SecondLife.xcodeproj</string>
-                </array>
-              </map>
-              <key>configure</key>
-              <map>
-                <key>options</key>
-                <array>
-                  <string>-G</string>
-                  <string>'Xcode'</string>
-                </array>
-              </map>
-              <key>name</key>
-              <string>RelWithDebInfoOS</string>
             </map>
             <key>Release</key>
             <map>
@@ -2710,10 +2637,6 @@
               <map>
                 <key>command</key>
                 <string>xcodebuild</string>
-                <key>filters</key>
-                <array>
-                  <string>setenv</string>
-                </array>
                 <key>options</key>
                 <array>
                   <string>-configuration Release</string>
@@ -2724,10 +2647,6 @@
               </map>
               <key>configure</key>
               <map>
-                <key>arguments</key>
-                <array>
-                  <string>../indra</string>
-                </array>
                 <key>options</key>
                 <array>
                   <string>-G</string>
@@ -2736,31 +2655,6 @@
               </map>
               <key>name</key>
               <string>Release</string>
-            </map>
-            <key>ReleaseOS</key>
-            <map>
-              <key>build</key>
-              <map>
-                <key>command</key>
-                <string>xcodebuild</string>
-                <key>options</key>
-                <array>
-                  <string>-configuration Release</string>
-                  <string>-project SecondLife.xcodeproj</string>
-                  <string>-DENABLE_SIGNING:BOOL=YES</string>
-                  <string>-DSIGNING_IDENTITY:STRING="Developer ID Application: Linden Research, Inc."</string>
-                </array>
-              </map>
-              <key>configure</key>
-              <map>
-                <key>options</key>
-                <array>
-                  <string>-G</string>
-                  <string>'Xcode'</string>
-                </array>
-              </map>
-              <key>name</key>
-              <string>ReleaseOS</string>
             </map>
           </map>
           <key>name</key>
@@ -2780,34 +2674,6 @@
                 <string>make</string>
                 <key>options</key>
                 <array>
-                  <string>-j 12</string>
-                </array>
-              </map>
-              <key>configure</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>../indra</string>
-                </array>
-                <key>options</key>
-                <array>
-                  <string>-G</string>
-                  <string>'Unix Makefiles'</string>
-                </array>
-              </map>
-              <key>default</key>
-              <string>True</string>
-              <key>name</key>
-              <string>RelWithDebInfo</string>
-            </map>
-            <key>RelWithDebInfoOS</key>
-            <map>
-              <key>build</key>
-              <map>
-                <key>command</key>
-                <string>make</string>
-                <key>options</key>
-                <array>
                   <string>-j 7</string>
                 </array>
               </map>
@@ -2820,7 +2686,7 @@
                 </array>
               </map>
               <key>name</key>
-              <string>RelWithDebInfoOS</string>
+              <string>RelWithDebInfo</string>
             </map>
             <key>Release</key>
             <map>
@@ -2830,32 +2696,6 @@
                 <string>make</string>
                 <key>options</key>
                 <array>
-                  <string>-j 12</string>
-                </array>
-              </map>
-              <key>configure</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>../indra</string>
-                </array>
-                <key>options</key>
-                <array>
-                  <string>-G</string>
-                  <string>'Unix Makefiles'</string>
-                </array>
-              </map>
-              <key>name</key>
-              <string>Release</string>
-            </map>
-            <key>ReleaseOS</key>
-            <map>
-              <key>build</key>
-              <map>
-                <key>command</key>
-                <string>make</string>
-                <key>options</key>
-                <array>
                   <string>-j 7</string>
                 </array>
               </map>
@@ -2868,7 +2708,7 @@
                 </array>
               </map>
               <key>name</key>
-              <string>ReleaseOS</string>
+              <string>Release</string>
             </map>
             <key>default</key>
             <map>
@@ -2897,48 +2737,6 @@
                   <string>SecondLife.sln</string>
                 </array>
                 <key>command</key>
-                <string>devenv</string>
-                <key>options</key>
-                <array>
-                  <string>/build</string>
-                  <string>"RelWithDebInfo|Win32"</string>
-                </array>
-              </map>
-              <key>configure</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>..\indra</string>
-                  <string>&amp;&amp;</string>
-                  <string>..\indra\tools\vstool\VSTool.exe</string>
-                  <string>--solution</string>
-                  <string>SecondLife.sln</string>
-                  <string>--config</string>
-                  <string>RelWithDebInfo</string>
-                  <string>--startup</string>
-                  <string>secondlife-bin</string>
-                </array>
-                <key>options</key>
-                <array>
-                  <string>-G</string>
-                  <string>"Visual Studio 14"</string>
-                  <string>-DCMAKE_SYSTEM_VERSION="10.0.10586.0"</string>
-                </array>
-              </map>
-              <key>default</key>
-              <string>True</string>
-              <key>name</key>
-              <string>RelWithDebInfo</string>
-            </map>
-            <key>RelWithDebInfoOS</key>
-            <map>
-              <key>build</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>SecondLife.sln</string>
-                </array>
-                <key>command</key>
                 <string>msbuild.exe</string>
                 <key>options</key>
                 <array>
@@ -2947,7 +2745,7 @@
                   <string>/t:Build</string>
                   <string>/p:useenv=true</string>
                   <string>/verbosity:normal</string>
-                  <string>/p:"VCBuildAdditionalOptions= /incremental"</string>
+                  <string>/m</string>
                 </array>
               </map>
               <key>configure</key>
@@ -2970,53 +2768,12 @@
                   <string>"Visual Studio 14"</string>
                   <string>-DCMAKE_SYSTEM_VERSION="10.0.10586.0"</string>
                   <string>-DINSTALL_PROPRIETARY=FALSE</string>
-                  <string>-DUSE_KDU=FALSE</string>
                 </array>
               </map>
               <key>name</key>
-              <string>RelWithDebInfoOS</string>
+              <string>RelWithDebInfo</string>
             </map>
             <key>Release</key>
-            <map>
-              <key>build</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>SecondLife.sln</string>
-                </array>
-                <key>command</key>
-                <string>devenv</string>
-                <key>options</key>
-                <array>
-                  <string>/build</string>
-                  <string>"Release|Win32"</string>
-                </array>
-              </map>
-              <key>configure</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>..\indra</string>
-                  <string>&amp;&amp;</string>
-                  <string>..\indra\tools\vstool\VSTool.exe</string>
-                  <string>--solution</string>
-                  <string>SecondLife.sln</string>
-                  <string>--config</string>
-                  <string>Release</string>
-                  <string>--startup</string>
-                  <string>secondlife-bin</string>
-                </array>
-                <key>options</key>
-                <array>
-                  <string>-G</string>
-                  <string>"Visual Studio 14"</string>
-                  <string>-DCMAKE_SYSTEM_VERSION="10.0.10586.0"</string>
-                </array>
-              </map>
-              <key>name</key>
-              <string>Release</string>
-            </map>
-            <key>ReleaseOS</key>
             <map>
               <key>build</key>
               <map>
@@ -3033,7 +2790,7 @@
                   <string>/t:Build</string>
                   <string>/p:useenv=true</string>
                   <string>/verbosity:normal</string>
-                  <string>/p:"VCBuildAdditionalOptions= /incremental"</string>
+                  <string>/m</string>
                 </array>
               </map>
               <key>configure</key>
@@ -3056,11 +2813,10 @@
                   <string>"Visual Studio 14"</string>
                   <string>-DCMAKE_SYSTEM_VERSION="10.0.10586.0"</string>
                   <string>-DINSTALL_PROPRIETARY=FALSE</string>
-                  <string>-DUSE_KDU=FALSE</string>
                 </array>
               </map>
               <key>name</key>
-              <string>ReleaseOS</string>
+              <string>Release</string>
             </map>
           </map>
           <key>name</key>
@@ -3081,49 +2837,6 @@
                   <string>SecondLife.sln</string>
                 </array>
                 <key>command</key>
-                <string>devenv</string>
-                <key>options</key>
-                <array>
-                  <string>/build</string>
-                  <string>"RelWithDebInfo|x64"</string>
-                </array>
-              </map>
-              <key>configure</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>..\indra</string>
-                  <string>&amp;&amp;</string>
-                  <string>..\indra\tools\vstool\VSTool.exe</string>
-                  <string>--solution</string>
-                  <string>SecondLife.sln</string>
-                  <string>--config</string>
-                  <string>RelWithDebInfo</string>
-                  <string>--startup</string>
-                  <string>secondlife-bin</string>
-                </array>
-                <key>options</key>
-                <array>
-                  <string>-G</string>
-                  <string>"Visual Studio 14 Win64"</string>
-                  <string>-DCMAKE_SYSTEM_VERSION="10.0.10586.0"</string>
-                  <string>-DWORD_SIZE:STRING=64</string>
-                </array>
-              </map>
-              <key>default</key>
-              <string>True</string>
-              <key>name</key>
-              <string>RelWithDebInfo</string>
-            </map>
-            <key>RelWithDebInfoOS</key>
-            <map>
-              <key>build</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>SecondLife.sln</string>
-                </array>
-                <key>command</key>
                 <string>msbuild.exe</string>
                 <key>options</key>
                 <array>
@@ -3132,7 +2845,7 @@
                   <string>/t:Build</string>
                   <string>/p:useenv=true</string>
                   <string>/verbosity:normal</string>
-                  <string>/p:"VCBuildAdditionalOptions= /incremental"</string>
+                  <string>/m</string>
                 </array>
               </map>
               <key>configure</key>
@@ -3156,54 +2869,12 @@
                   <string>-DCMAKE_SYSTEM_VERSION="10.0.10586.0"</string>
                   <string>-DWORD_SIZE:STRING=64</string>
                   <string>-DINSTALL_PROPRIETARY=FALSE</string>
-                  <string>-DUSE_KDU=FALSE</string>
                 </array>
               </map>
               <key>name</key>
-              <string>RelWithDebInfoOS</string>
+              <string>RelWithDebInfo</string>
             </map>
             <key>Release</key>
-            <map>
-              <key>build</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>SecondLife.sln</string>
-                </array>
-                <key>command</key>
-                <string>devenv</string>
-                <key>options</key>
-                <array>
-                  <string>/build</string>
-                  <string>"Release|x64"</string>
-                </array>
-              </map>
-              <key>configure</key>
-              <map>
-                <key>arguments</key>
-                <array>
-                  <string>..\indra</string>
-                  <string>&amp;&amp;</string>
-                  <string>..\indra\tools\vstool\VSTool.exe</string>
-                  <string>--solution</string>
-                  <string>SecondLife.sln</string>
-                  <string>--config</string>
-                  <string>Release</string>
-                  <string>--startup</string>
-                  <string>secondlife-bin</string>
-                </array>
-                <key>options</key>
-                <array>
-                  <string>-G</string>
-                  <string>"Visual Studio 14 Win64"</string>
-                  <string>-DCMAKE_SYSTEM_VERSION="10.0.10586.0"</string>
-                  <string>-DWORD_SIZE:STRING=64</string>
-                </array>
-              </map>
-              <key>name</key>
-              <string>Release</string>
-            </map>
-            <key>ReleaseOS</key>
             <map>
               <key>build</key>
               <map>
@@ -3244,11 +2915,10 @@
                   <string>-DCMAKE_SYSTEM_VERSION="10.0.10586.0"</string>
                   <string>-DWORD_SIZE:STRING=64</string>
                   <string>-DINSTALL_PROPRIETARY=FALSE</string>
-                  <string>-DUSE_KDU=FALSE</string>
                 </array>
               </map>
               <key>name</key>
-              <string>ReleaseOS</string>
+              <string>Release</string>
             </map>
           </map>
           <key>name</key>
