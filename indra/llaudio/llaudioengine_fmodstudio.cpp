@@ -281,8 +281,8 @@ void F_STDCALL decode_dealloc(void *ptr, FMOD_MEMORY_TYPE type, const char *sour
 
 bool LLAudioEngine_FMODSTUDIO::init(const S32 num_channels, void* userdata)
 {
-
-#if LL_WINDOWS
+	LL_WARNS("AudioImpl") << "BARKBARKBARK" << LL_ENDL;
+#if 0 //LL_WINDOWS
 	if(!attemptDelayLoad())
 		return false;
 #endif

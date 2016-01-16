@@ -1417,6 +1417,10 @@ if (WINDOWS)
   list(APPEND viewer_SOURCE_FILES ${viewer_INSTALLER_FILES})
 endif (WINDOWS)
 
+if (FMODSTUDIO)
+  set(FMOD_LIBRARY ${FMOD_LINK_LIBRARY_RELEASE})
+endif (FMODSTUDIO)
+
 set_source_files_properties(llstartup.cpp PROPERTIES COMPILE_FLAGS "${LLSTARTUP_COMPILE_FLAGS}")
 
 list(APPEND viewer_SOURCE_FILES ${viewer_HEADER_FILES})
@@ -1646,6 +1650,7 @@ target_link_libraries(${VIEWER_BINARY_NAME}
     ${Boost_DATE_TIME_LIBRARY}
     ${DBUSGLIB_LIBRARIES}
     ${OPENGL_LIBRARIES}
+    ${FMOD_LIBRARY} # must come after LLAudio
     ${GLOD_LIBRARIES}
     ${APRUTIL_LIBRARIES}
     ${OPENGL_LIBRARIES}

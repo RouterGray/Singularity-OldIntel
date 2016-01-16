@@ -226,7 +226,7 @@ std::string utf16input_to_utf8(char* input, U32 len, utf_endian_type_t type)
 			}
 		}
 	}
-	llutf16string out_16((U16*)input, len / 2);
+	llutf16string out_16((utf16strtype*)input, len / 2);
 	if (len % 2)
 	{
 		out_16.push_back((input)[len - 1] << 8);
