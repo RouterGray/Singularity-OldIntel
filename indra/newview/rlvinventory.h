@@ -21,8 +21,11 @@
 #include "llinventoryobserver.h"
 #include "llsingleton.h"
 
+#include "rlvdefines.h"
 #include "rlvhelper.h"
 #include "rlvlocks.h"
+
+#include <boost/format.hpp>
 
 // ============================================================================
 // RlvInventory class declaration
@@ -305,7 +308,7 @@ inline bool RlvInventory::isFoldedFolder(const LLInventoryCategory* pFolder, boo
 		// .(<attachpt>) type folder
 		(0 != RlvAttachPtLookup::getAttachPointIndex(pFolder))
 		// .(nostrip) folder
-		|| ( (pFolder) && (".("RLV_FOLDER_FLAG_NOSTRIP")" == pFolder->getName()) )
+		  || ((pFolder) && ((boost::format("%1%%2%%3%") % ".(" % RLV_FOLDER_FLAG_NOSTRIP % ")").str() == pFolder->getName()))
 		// Composite folder (if composite folders are enabled and we're asked to look for them)
 		#ifdef RLV_EXPERIMENTAL_COMPOSITEFOLDERS
 		|| ( (fCheckComposite) && (RlvSettings::getEnableComposites()) &&

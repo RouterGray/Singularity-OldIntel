@@ -18,8 +18,5 @@ else (STANDALONE)
       list(APPEND CURL_LIBRARIES idn)
     endif(LINUX AND WORD_SIZE EQUAL 64)
   endif (WINDOWS)
-  set(CURL_INCLUDE_DIRS
-    ${LIBS_PREBUILT_DIR}/include
-    ${LIBS_PREBUILT_LEGACY_DIR}/include
-    )
+  set(CURL_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/include)
 endif (STANDALONE)

@@ -40,22 +40,6 @@ set(CMAKE_CONFIGURATION_TYPES "RelWithDebInfo;Release;Debug" CACHE STRING
 # Platform-specific compilation flags.
 
 if (WINDOWS)
-  # Various libs are compiler specific, generate some variables here we can just use
-  # when we require them instead of reimplementing the test each time.
-  if (MSVC10)
-    set(MSVC_DIR 10.0)
-    set(MSVC_SUFFIX 100)
-  elseif (MSVC12)
-    set(MSVC_DIR 12.0)
-    set(MSVC_SUFFIX 120)
-  endif (MSVC10)
-
-  # Remove default /Zm1000 flag that cmake inserts
-  string (REPLACE "/Zm1000" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-
-  # Always use /Zm140
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm140")
-
   # Don't build DLLs.
   set(BUILD_SHARED_LIBS OFF)
 
@@ -70,51 +54,42 @@ if (WINDOWS)
   set(CMAKE_C_FLAGS_RELEASE
       "${CMAKE_C_FLAGS_RELEASE} ${LL_C_FLAGS} /O2 /Zi /MD /MP /fp:fast"
       CACHE STRING "C compiler release options" FORCE)
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
+
+  if (WORD_SIZE EQUAL 32)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
+  endif (WORD_SIZE EQUAL 32)
 
   set(CMAKE_CXX_STANDARD_LIBRARIES "")
   set(CMAKE_C_STANDARD_LIBRARIES "")
 
   add_definitions(
       /DLL_WINDOWS=1
+      /DNOMINMAX
       /DUNICODE
-      /D_UNICODE 
+      /D_UNICODE
       /GS
       /TP
       /W3
       /c
       /Zc:forScope
-      /Zc:wchar_t-
+      /Zc:rvalueCast
+      /Zc:wchar_t
       /nologo
       /Oy-
+      /Zm140
       )
-  
-  # SSE2 is implied on win64
-  if(WORD_SIZE EQUAL 32)
-    add_definitions(/arch:SSE2 /D_ATL_XP_TARGETING)
-  else(WORD_SIZE EQUAL 32)
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /wd4267 /wd4250 /wd4244")
-  endif(WORD_SIZE EQUAL 32)
 
   if (WORD_SIZE EQUAL 32)
-    # configure win32 API for windows XP+ compatibility
-    set(WINVER "0x0501" CACHE STRING "Win32 API Target version (see http://msdn.microsoft.com/en-us/library/aa383745%28v=VS.85%29.aspx)")
-    add_definitions("/DWINVER=${WINVER}" "/D_WIN32_WINNT=${WINVER}")
-  else (WORD_SIZE EQUAL 32)
-    # configure win32 API for windows vista+ compatibility
-    set(WINVER "0x0600" CACHE STRING "Win32 API Target version (see http://msdn.microsoft.com/en-us/library/aa383745%28v=VS.85%29.aspx)")
-    add_definitions("/DWINVER=${WINVER}" "/D_WIN32_WINNT=${WINVER}")
+    add_compile_options(/arch:SSE2)
   endif (WORD_SIZE EQUAL 32)
 
-  # Use special XP-compatible toolchain on 32-bit builds
-  if (MSVC12 AND (WORD_SIZE EQUAL 32))
-    set(CMAKE_GENERATOR_TOOLSET "v120xp")
-  endif (MSVC12 AND (WORD_SIZE EQUAL 32))
-
-  # Are we using the crummy Visual Studio KDU build workaround?
   if (NOT DISABLE_FATAL_WARNINGS)
     add_definitions(/WX)
   endif (NOT DISABLE_FATAL_WARNINGS)
+
+  # configure win32 API for windows Vista+ compatibility
+  set(WINVER "0x0600" CACHE STRING "Win32 API Target version (see http://msdn.microsoft.com/en-us/library/aa383745%28v=VS.85%29.aspx)")
+  add_definitions("/DWINVER=${WINVER}" "/D_WIN32_WINNT=${WINVER}")
 
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")

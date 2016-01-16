@@ -2,7 +2,7 @@
 include(Prebuilt)
 
 if (NOT STANDALONE)
-  use_prebuilt_binary(vivox)
+  use_prebuilt_binary(slvoice)
   if(LINUX)
 	use_prebuilt_binary(libuuid)
     if (${ARCH} STREQUAL "x86_64")

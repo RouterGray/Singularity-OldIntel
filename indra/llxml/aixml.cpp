@@ -263,7 +263,7 @@ void AIXMLElement::close_child(void)
   mIndentation -= 2;
 }
 
-AIXMLElement::~AIXMLElement()
+AIXMLElement::~AIXMLElement() noexcept(false)
 {
   if (mHasChildren)
   {

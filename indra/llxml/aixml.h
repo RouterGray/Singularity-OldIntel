@@ -64,7 +64,7 @@ class AIXMLElement
 
   public:
 	AIXMLElement(std::ostream& os, char const* name, int indentation);
-	~AIXMLElement();
+	~AIXMLElement() noexcept(false);
 
 	template<typename T>
 	  void attribute(char const* name, T const& attribute);

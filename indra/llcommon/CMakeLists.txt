@@ -7,7 +7,11 @@ include(00-Common)
 include(LLCommon)
 include(APR)
 include(Linking)
+include(Boost)
+include(LLSharedLibs)
 include(GoogleBreakpad)
+include(Copy3rdPartyLibs)
+include(ZLIB)
 
 include_directories(
     ${EXPAT_INCLUDE_DIRS}
@@ -251,11 +255,22 @@ set_source_files_properties(${llcommon_HEADER_FILES}
 list(APPEND llcommon_SOURCE_FILES ${cwdebug_SOURCE_FILES})
 list(APPEND llcommon_SOURCE_FILES ${llcommon_HEADER_FILES})
 
-add_library (llcommon SHARED ${llcommon_SOURCE_FILES})
-if(WINDOWS)
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
-endif(WINDOWS)
-add_dependencies(llcommon prepare)
+if(LLCOMMON_LINK_SHARED)
+  add_library (llcommon SHARED ${llcommon_SOURCE_FILES})
+  if(NOT WORD_SIZE EQUAL 32)
+    if(NOT WINDOWS)
+      add_definitions(-fPIC)
+    endif(NOT WINDOWS)
+  endif(NOT WORD_SIZE EQUAL 32)
+  if(WINDOWS)
+    # always generate llcommon.pdb, even for "Release" builds
+    set_target_properties(llcommon PROPERTIES LINK_FLAGS "/DEBUG")
+  endif(WINDOWS)
+  ll_stage_sharedlib(llcommon)
+else(LLCOMMON_LINK_SHARED)
+    add_library (llcommon ${llcommon_SOURCE_FILES})
+endif(LLCOMMON_LINK_SHARED)
+
 target_link_libraries(
     llcommon
     ${BREAKPAD_EXCEPTION_HANDLER_LIBRARIES}
@@ -280,3 +295,5 @@ if (DARWIN)
         INSTALL_NAME_DIR "@executable_path/../Resources"
       )
 endif (DARWIN)
+
+add_dependencies(llcommon stage_third_party_libs)

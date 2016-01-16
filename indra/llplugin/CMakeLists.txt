@@ -62,8 +62,6 @@ if(LINUX AND STANDALONE)
     target_link_libraries (llplugin rt dl)
 endif(LINUX AND STANDALONE)
 
-add_dependencies(llplugin prepare)
-
 add_subdirectory(slplugin)
 
 # # Add tests

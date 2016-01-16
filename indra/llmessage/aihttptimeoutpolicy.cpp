@@ -30,7 +30,6 @@
 
 #include "sys.h"
 #include "aihttptimeoutpolicy.h"
-#define NOMINMAX
 #include "llerror.h"
 #include "lldefs.h"
 #include "v3math.h"

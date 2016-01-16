@@ -36,5 +36,3 @@ set(basic_plugin_base_HEADER_FILES
 add_library(basic_plugin_base
     ${basic_plugin_base_SOURCE_FILES}
 )
-
-add_dependencies(basic_plugin_base prepare)

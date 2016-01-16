@@ -738,7 +738,7 @@ BOOL LLPanelEditWearable::postBuild()
 		{
 			LL_WARNS() << "could not get wearable dictionary entry for wearable of type: " << mType << LL_ENDL;
 		}
-		U8 num_subparts = wearable_entry->mSubparts.size();
+		U8 num_subparts = (U8) wearable_entry->mSubparts.size();
 
 		for (U8 index = 0; index < num_subparts; ++index)
 		{
@@ -859,7 +859,7 @@ void LLPanelEditWearable::draw()
 	const LLEditWearableDictionary::WearableEntry *wearable_entry = LLEditWearableDictionary::getInstance()->getWearable(mType);
 	if (wearable_entry)
 	{
-		U8 num_subparts = wearable_entry->mSubparts.size();
+		U8 num_subparts = (U8) wearable_entry->mSubparts.size();
 
 		for (U8 index = 0; index < num_subparts; ++index)
 		{

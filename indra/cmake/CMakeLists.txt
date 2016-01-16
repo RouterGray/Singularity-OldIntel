@@ -20,18 +20,17 @@ set(cmake_SOURCE_FILES
     CURL.cmake
     Colladadom.cmake
     ConfigurePkgConfig.cmake
-    CopyBackToSource.cmake
-    CopyWinLibs.cmake
+    Copy3rdPartyLibs.cmake
     Cwdebug.cmake
     DBusGlib.cmake
-    DirectX.cmake
-    DownloadPrebuilt.cmake.in
+    DeploySharedLibs.cmake
     ELFIO.cmake
     EXPAT.cmake
     ExamplePlugin.cmake
     FMODEX.cmake
     FMODSTUDIO.cmake
     FindAPR.cmake
+    FindAutobuild.cmake
     FindBerkeleyDB.cmake
     FindCARes.cmake
     FindColladadom.cmake
@@ -73,6 +72,7 @@ set(cmake_SOURCE_FILES
     LLSharedLibs.cmake
     LLQtWebkit.cmake
     LLRender.cmake
+    LLSharedLibs.cmake
     LLUI.cmake
     LLVFS.cmake
     LLWindow.cmake
@@ -110,7 +110,6 @@ source_group("Shared Rules" FILES ${cmake_SOURCE_FILES})
 
 set(master_SOURCE_FILES
     ../CMakeLists.txt
-    ../develop.py
     )
 
 source_group("Master Rules" FILES ${master_SOURCE_FILES})

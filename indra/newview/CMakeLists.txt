@@ -4,8 +4,9 @@ project(viewer)
 
 include(00-Common)
 include(Boost)
+include(BuildPackagesInfo)
+include(CMakeCopyIfDifferent)
 include(DBusGlib)
-include(DirectX)
 include(ELFIO)
 if(FMODSTUDIO)
   include(FMODSTUDIO)
@@ -13,11 +14,12 @@ endif(FMODSTUDIO)
 if(FMODEX)
   include(FMODEX)
 endif(FMODEX)
-include(OPENAL)
+include(GLOD)
 include(FindOpenGL)
 include(Hunspell)
 include(JsonCpp)
 include(LLAddBuildTest)
+include(LLAppearance)
 include(LLAudio)
 include(LLCharacter)
 include(LLCommon)
@@ -38,12 +40,12 @@ include(LLXML)
 include(Linking)
 include(NDOF)
 include(NVAPI)
+include(OPENAL)
 include(StateMachine)
 include(TemplateCheck)
 include(UI)
 include(ViewerMiscLibs)
-include(GLOD)
-include(LLAppearance)
+
 
 if (WINDOWS)
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP)
@@ -74,8 +76,6 @@ include_directories(
     ${LLWINDOW_INCLUDE_DIRS}
     ${LLXML_INCLUDE_DIRS}
     ${LLAPPEARANCE_INCLUDE_DIRS}
-#    ${LSCRIPT_INCLUDE_DIRS}
-#    ${LSCRIPT_INCLUDE_DIRS}/lscript_compile
     )
 
 set(viewer_SOURCE_FILES
@@ -1212,15 +1212,8 @@ if (WINDOWS)
         PROPERTIES
         COMPILE_FLAGS "/Ycllviewerprecompiledheaders.h"
         )
-    foreach( src_file ${viewer_SOURCE_FILES} )
-        set_source_files_properties(
-            ${src_file}
-            PROPERTIES
-            COMPILE_FLAGS "/Yullviewerprecompiledheaders.h"
-            )        
-    endforeach( src_file ${viewer_SOURCE_FILES} )
     list(APPEND viewer_SOURCE_FILES llviewerprecompiledheaders.cpp)
-    
+
     # Add resource files to the project.
     # viewerRes.rc is the only buildable file, but
     # the rest are all dependencies of it.
@@ -1274,20 +1267,13 @@ if (WINDOWS)
 
     list(APPEND viewer_SOURCE_FILES ${viewer_RESOURCE_FILES})
 
-    find_library(DINPUT_LIBRARY dinput8 ${DIRECTX_LIBRARY_DIR})
-    find_library(DXGUID_LIBRARY dxguid ${DIRECTX_LIBRARY_DIR})
-    mark_as_advanced(
-        DINPUT_LIBRARY
-        DXGUID_LIBRARY
-        )
-
 # see EXP-1765 - theory is opengl32.lib needs to be included before gdi32.lib (windows libs)
     set(viewer_LIBRARIES
         opengl32
         advapi32
         comdlg32
-        ${DINPUT_LIBRARY}
-        ${DXGUID_LIBRARY}
+        dinput8
+        dxguid
         gdi32
         kernel32
         odbc32
@@ -1300,27 +1286,6 @@ if (WINDOWS)
         Wbemuuid
         winspool
         )
-
-	find_library(DEBUG_INTEL_MEMOPS_LIBRARY ll_intel_memops
-	  PATHS
-      ${LIBS_PREBUILT_DIR}/lib/debug
-	  ${LIBS_PREBUILT_LEGACY_DIR}/lib/debug
-	  "${QUICKTIME_SDK_DIR}\\libraries"
-	  )
-
-	find_library(RELEASE_INTEL_MEMOPS_LIBRARY ll_intel_memops
-	  PATHS
-      ${LIBS_PREBUILT_DIR}/lib/release
-	  ${LIBS_PREBUILT_LEGACY_DIR}/lib/release
-	  "${QUICKTIME_SDK_DIR}\\libraries"
-	  )
-
-    if (DEBUG_INTEL_MEMOPS_LIBRARY AND RELEASE_INTEL_MEMOPS_LIBRARY)
-      list(APPEND viewer_LIBRARIES optimized ${RELEASE_INTEL_MEMOPS_LIBRARY})
-      list(APPEND viewer_LIBRARIES debug ${DEBUG_INTEL_MEMOPS_LIBRARY})
-      mark_as_advanced(RELEASE_INTEL_MEMOPS_LIBRARY)
-	  mark_as_advanced(DEBUG_INTEL_MEMOPS_LIBRARY)
-    endif (DEBUG_INTEL_MEMOPS_LIBRARY AND RELEASE_INTEL_MEMOPS_LIBRARY)
 endif (WINDOWS)
 
 # Add the xui files. This is handy for searching for xui elements
@@ -1418,42 +1383,8 @@ add_executable(${VIEWER_BINARY_NAME}
     ${viewer_SOURCE_FILES}
     )
 
-if (!DISABLE_TEMPLATE_CHECK)
-	check_message_template(${VIEWER_BINARY_NAME})
-endif (!DISABLE_TEMPLATE_CHECK)
-
 set(PACKAGE OFF CACHE BOOL
-    "Add a package_viewer target that builds an installer package.")
-
-if(FMOD_LIBRARY_RELEASE)
-  get_filename_component(fmod_lib_rel_name ${FMOD_LIBRARY_RELEASE} NAME)
-  get_filename_component(fmod_lib_deb_name ${FMOD_LIBRARY_DEBUG} NAME)
-  add_custom_command(OUTPUT fmod_lib.marker
-                     COMMENT "Copying fmod library to executable directory"
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<$<NOT:$<CONFIG:debug>>:${FMOD_LIBRARY_RELEASE}>$<$<CONFIG:debug>:${FMOD_LIBRARY_DEBUG}>" "${CMAKE_CFG_INTDIR}/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${fmod_lib_deb_name}>" 				
-                     DEPENDS "${FMOD_LIBRARY_RELEASE}")
-  add_custom_target(fmod_lib_copy DEPENDS fmod_lib.marker prepare)
-  if(DARWIN AND FMOD_EXTERNAL_LIB)
-    add_custom_command(OUTPUT fmod_lib_install.marker
-	  	               COMMAND install_name_tool -id "@executable_path/../Resources/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${FMOD_LIBRARY_DEBUG}>" "${CMAKE_CFG_INTDIR}/$<$<NOT:$<CONFIG:debug>>:${fmod_lib_rel_name}>$<$<CONFIG:debug>:${fmod_lib_deb_name}>"
-                       DEPENDS fmod_lib.marker)
-    add_dependencies(fmod_lib_copy fmod_lib_install.marker)
-  endif(DARWIN AND FMOD_EXTERNAL_LIB)
-  add_dependencies(${VIEWER_BINARY_NAME} fmod_lib_copy)
-
-  #viewer_manifest.py needs these libraries (for now its all dylib)
-  if(MANIFEST_LIBRARIES)
-    set(MANIFEST_LIBRARIES ${MANIFEST_LIBRARIES}|optimized ${fmod_lib_rel_name}|debug ${fmod_lib_deb_name})
-  else(MANIFEST_LIBRARIES)
-    set(MANIFEST_LIBRARIES optimized ${fmod_lib_rel_name}|debug ${fmod_lib_deb_name})
-  endif(MANIFEST_LIBRARIES)
-
-  if(WINDOWS) #If windows, fmod_lib_<config> points to a dll. The correct .lib needs to be linked (but copying is not necessary)
-    set(EXTRA_LINKER_FLAGS_RELEASE "/DELAYLOAD:${fmod_lib_rel_name}")
-	set(EXTRA_LINKER_FLAGS_DEBUG "/DELAYLOAD:${fmod_lib_deb_name}")
-  endif(WINDOWS)
-  list(APPEND viewer_LIBRARIES optimized "${FMOD_LINK_LIBRARY_RELEASE}" debug "${FMOD_LINK_LIBRARY_DEBUG}" )
-endif(FMOD_LIBRARY_RELEASE)
+    "Add a package target that builds an installer package.")
 
 if (WINDOWS)
     set(release_flags "/MAP")
@@ -1466,6 +1397,119 @@ if (WINDOWS)
 		LINK_FLAGS_RELWITHDEBINFO "${release_flags} ${EXTRA_LINKER_FLAGS_RELEASE}"
         )
 
+    if(USE_PRECOMPILED_HEADERS)
+        set_target_properties(
+            ${VIEWER_BINARY_NAME}
+            PROPERTIES
+            COMPILE_FLAGS "/Yullviewerprecompiledheaders.h"
+            )
+    endif(USE_PRECOMPILED_HEADERS)
+
+    # If adding a file to viewer_manifest.py in the WindowsManifest.construct() method, be sure to add the dependency
+    # here.
+    # *NOTE:Mani - This is a crappy hack to have important dependencies for the viewer_manifest copy action
+    # be met. I'm looking forward to a source-code split-up project next year that will address this kind of thing.
+    # In the meantime, if you have any ideas on how to easily maintain one list, either here or in viewer_manifest.py
+    # and have the build deps get tracked *please* tell me about it.
+
+    if(USE_TCMALLOC)
+      # Configure a var for tcmalloc location, if used.
+      # Note the need to specify multiple names explicitly.
+      set(GOOGLE_PERF_TOOLS_SOURCE
+        ${SHARED_LIB_STAGING_DIR}/Release/libtcmalloc_minimal.dll
+        ${SHARED_LIB_STAGING_DIR}/RelWithDebInfo/libtcmalloc_minimal.dll
+        ${SHARED_LIB_STAGING_DIR}/Debug/libtcmalloc_minimal-debug.dll
+        )
+    endif(USE_TCMALLOC)
+
+    set(COPY_INPUT_DEPENDENCIES
+      # The following commented dependencies are determined at variably at build time. Can't do this here.
+      #${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/libtcmalloc_minimal.dll => None ... Skipping libtcmalloc_minimal.dll
+      ${CMAKE_SOURCE_DIR}/../etc/message.xml
+      ${CMAKE_SOURCE_DIR}/../scripts/messages/message_template.msg
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/llcommon.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/libapr-1.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/libaprutil-1.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/libapriconv-1.dll
+      ${SHARED_LIB_STAGING_DIR}/Release/glod.dll
+      ${SHARED_LIB_STAGING_DIR}/RelWithDebInfo/glod.dll
+      ${SHARED_LIB_STAGING_DIR}/Debug/glod.dll
+      ${SHARED_LIB_STAGING_DIR}/Release/openjpeg.dll
+      ${SHARED_LIB_STAGING_DIR}/RelWithDebInfo/openjpeg.dll
+      ${SHARED_LIB_STAGING_DIR}/Debug/openjpegd.dll
+      ${SHARED_LIB_STAGING_DIR}/Release/libhunspell.dll
+      ${SHARED_LIB_STAGING_DIR}/RelWithDebInfo/libhunspell.dll
+      ${SHARED_LIB_STAGING_DIR}/Debug/libhunspell.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/SLVoice.exe
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/vivoxsdk.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/ortp.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/libsndfile-1.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/zlib1.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/vivoxplatform.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/vivoxoal.dll
+      ${SHARED_LIB_STAGING_DIR}/${CMAKE_CFG_INTDIR}/ca-bundle.crt
+      ${GOOGLE_PERF_TOOLS_SOURCE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/licenses-win32.txt
+      ${CMAKE_CURRENT_SOURCE_DIR}/featuretable.txt
+      ${CMAKE_CURRENT_SOURCE_DIR}/featuretable_xp.txt
+      ${ARCH_PREBUILT_DIRS_RELEASE}/libeay32.dll
+      ${ARCH_PREBUILT_DIRS_RELEASE}/ssleay32.dll
+      ${ARCH_PREBUILT_DIRS_DEBUG}/libeay32.dll
+      ${ARCH_PREBUILT_DIRS_DEBUG}/ssleay32.dll
+      SLPlugin
+      media_plugin_quicktime
+      media_plugin_cef
+      windows-crash-logger
+      )
+
+    if (FMODSTUDIO)
+      if (WORD_SIZE EQUAL 64)
+        list(APPEND COPY_INPUT_DEPENDENCIES
+             ${SHARED_LIB_STAGING_DIR}/Release/fmod64.dll
+             ${SHARED_LIB_STAGING_DIR}/RelWithDebInfo/fmod64.dll
+             ${SHARED_LIB_STAGING_DIR}/Debug/fmodL64.dll
+            )
+      else (WORD_SIZE EQUAL 64)
+        list(APPEND COPY_INPUT_DEPENDENCIES
+             ${SHARED_LIB_STAGING_DIR}/Release/fmod.dll
+             ${SHARED_LIB_STAGING_DIR}/RelWithDebInfo/fmod.dll
+             ${SHARED_LIB_STAGING_DIR}/Debug/fmodL.dll
+            )
+      endif (WORD_SIZE EQUAL 64)
+    endif (FMODSTUDIO)
+
+    add_custom_command(
+      OUTPUT  ${CMAKE_CFG_INTDIR}/copy_touched.bat
+      COMMAND ${PYTHON_EXECUTABLE}
+      ARGS
+        ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+        --actions=copy
+        --arch=${ARCH}
+        --artwork=${ARTWORK_DIR}
+        --branding_id=${VIEWER_BRANDING_ID}
+        --build=${CMAKE_CURRENT_BINARY_DIR}
+        --channel=${VIEWER_CHANNEL}
+        --configuration=${CMAKE_CFG_INTDIR}
+        --dest=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
+        --grid=${GRID}
+        --login_channel=${VIEWER_LOGIN_CHANNEL}
+        --source=${CMAKE_CURRENT_SOURCE_DIR}
+        --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/copy_touched.bat
+        --extra_libraries="${MANIFEST_LIBRARIES}"
+      DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+        stage_third_party_libs
+        ${COPY_INPUT_DEPENDENCIES}
+      COMMENT "Performing viewer_manifest copy"
+      )
+
+    add_custom_target(copy_w_viewer_manifest ALL DEPENDS ${CMAKE_CFG_INTDIR}/copy_touched.bat)
+
+    add_dependencies(${VIEWER_BINARY_NAME} stage_third_party_libs llcommon copy_w_viewer_manifest)
+
+    if (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
+      add_dependencies(${VIEWER_BINARY_NAME} copy_win_scripts)
+    endif (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
     # sets the 'working directory' for debugging from visual studio.
     if (NOT UNATTENDED)
         add_custom_command(
@@ -1480,32 +1524,6 @@ if (WINDOWS)
             COMMENT "Setting the ${VIEWER_BINARY_NAME} working directory for debugging."
             )
     endif (NOT UNATTENDED)
-
-    add_custom_command(
-        TARGET ${VIEWER_BINARY_NAME} PRE_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        ARGS
-          -E
-          copy_if_different
-          ${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/messages/message_template.msg
-          ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/app_settings/message_template.msg
-        COMMENT "Copying message_template.msg to the runtime folder."
-        )
-
-    add_custom_command(
-        TARGET ${VIEWER_BINARY_NAME} PRE_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        ARGS
-          -E
-          copy_if_different
-          ${CMAKE_CURRENT_SOURCE_DIR}/../../etc/message.xml
-          ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/app_settings/message.xml
-        COMMENT "Copying message.xml to the runtime folder."
-        )
-
-    if (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
-      add_dependencies(${VIEWER_BINARY_NAME} copy_win_scripts)
-    endif (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
 
       add_custom_command(
         OUTPUT ${CMAKE_CFG_INTDIR}/touched.bat
@@ -1527,40 +1545,14 @@ if (WINDOWS)
         DEPENDS
             ${VIEWER_BINARY_NAME}
             ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+            ${COPY_INPUT_DEPENDENCIES}
         )
-
-      add_custom_command(
-        OUTPUT ${CMAKE_CFG_INTDIR}/copy_touched.bat
-        COMMAND ${PYTHON_EXECUTABLE}
-        ARGS
-          ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
-          --arch=${ARCH}
-          --artwork=${ARTWORK_DIR}
-          --actions=copy
-          --branding_id=${VIEWER_BRANDING_ID}
-          --build=${CMAKE_CURRENT_BINARY_DIR}
-          --channel=${VIEWER_CHANNEL}
-          --configuration=${CMAKE_CFG_INTDIR}
-          --dest=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
-          --grid=${GRID}
-          --login_channel=${VIEWER_LOGIN_CHANNEL}
-          --source=${CMAKE_CURRENT_SOURCE_DIR}
-          --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/copy_touched.bat
-          --extra_libraries="${MANIFEST_LIBRARIES}"
-        DEPENDS
-            ${VIEWER_BINARY_NAME}
-            ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
-        COMMENT "Performing viewer_manifest copy"
-        )
-
-    add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_quicktime media_plugin_webkit basic_plugin_filepicker)
-
-	if(WORD_SIZE EQUAL 32)
-	    add_dependencies(${VIEWER_BINARY_NAME} winmm_shim)
-	endif(WORD_SIZE EQUAL 32)
 
     if (PACKAGE)
-      add_custom_target(package_viewer ALL DEPENDS ${CMAKE_CFG_INTDIR}/touched.bat)
+      add_custom_target(llpackage ALL DEPENDS
+        ${CMAKE_CFG_INTDIR}/touched.bat
+        windows-setup-build-all
+        )
     endif (PACKAGE)
 endif (WINDOWS)
 
@@ -1679,8 +1671,8 @@ if (LINUX)
   add_custom_target(copy_l_viewer_manifest ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.copy_touched)
 
   if (PACKAGE)
-    add_custom_target(package_viewer ALL DEPENDS ${product}.tar.bz2)
-    add_dependencies(package_viewer copy_l_viewer_manifest)
+    add_custom_target(llpackage ALL DEPENDS ${product}.tar.bz2)
+    add_dependencies(llpackage copy_l_viewer_manifest)
   endif (PACKAGE)
 endif (LINUX)
 
@@ -1723,10 +1715,10 @@ if (DARWIN)
   add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_quicktime media_plugin_webkit basic_plugin_filepicker)
 
   if (PACKAGE)
-      add_custom_target(package_viewer ALL DEPENDS ${VIEWER_BINARY_NAME})
+      add_custom_target(llpackage ALL DEPENDS ${VIEWER_BINARY_NAME})
 
       add_custom_command(
-        TARGET package_viewer POST_BUILD
+        TARGET llpackage POST_BUILD
         COMMAND ${PYTHON_EXECUTABLE}
         ARGS
           ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1764,7 +1756,7 @@ if (PACKAGE)
     # set(VIEWER_EXE_GLOBS "${VIEWER_BINARY_NAME}${CMAKE_EXECUTABLE_SUFFIX} slplugin.exe")
     set(VIEWER_EXE_GLOBS "${VIEWER_BINARY_NAME}${CMAKE_EXECUTABLE_SUFFIX}")
     set(VIEWER_LIB_GLOB "*${CMAKE_SHARED_MODULE_SUFFIX}")
-	set(VIEWER_DUMP_SYMS dump_syms.exe)
+    set(VIEWER_COPY_MANIFEST copy_w_viewer_manifest)
   endif (WINDOWS)
   if (DARWIN)
     list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}")
@@ -1773,18 +1765,16 @@ if (PACKAGE)
     list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/plugins/gstreamer010/${CMAKE_CFG_INTDIR}")
     list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/plugins/quicktime/${CMAKE_CFG_INTDIR}")
     list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_BINARY_DIR}/plugins/webkit/${CMAKE_CFG_INTDIR}")
-	set(VIEWER_SYMBOL_FILE "${SYMBOL_NAME}-darwin.tar.bz2")
+    set(VIEWER_SYMBOL_FILE "${SYMBOL_NAME}-darwin.tar.bz2")
     set(VIEWER_EXE_GLOBS "'${VIEWER_BRANDING_NAME}' SLPlugin")
     set(VIEWER_LIB_GLOB "*.dylib")
-	set(VIEWER_DUMP_SYMS dump_syms)
   endif (DARWIN)
   if (LINUX)
     list(APPEND SYMBOL_SEARCH_DIRS "${CMAKE_CURRENT_BINARY_DIR}/packaged")
-	set(VIEWER_SYMBOL_FILE "${SYMBOL_NAME}-linux-${ARCH}.tar.bz2")
+    set(VIEWER_SYMBOL_FILE "${SYMBOL_NAME}-linux-${ARCH}.tar.bz2")
     set(VIEWER_EXE_GLOBS "${VIEWER_BRANDING_ID}-do-not-run-directly SLPlugin")
     set(VIEWER_LIB_GLOB "*${CMAKE_SHARED_MODULE_SUFFIX}*")
     set(VIEWER_COPY_MANIFEST copy_l_viewer_manifest)
-	set(VIEWER_DUMP_SYMS dump_syms)
   endif (LINUX)
 
   if(RELEASE_CRASH_REPORTING OR NON_RELEASE_CRASH_REPORTING)
@@ -1803,7 +1793,7 @@ if (PACKAGE)
       "${SYMBOL_SEARCH_DIRS}"
       "${VIEWER_EXE_GLOBS}"
       "${VIEWER_LIB_GLOB}"
-      "${LIBS_PREBUILT_DIR}/bin/${VIEWER_DUMP_SYMS}|${LIBS_PREBUILT_LEGACY_DIR}/bin/${VIEWER_DUMP_SYMS}"
+      "${AUTOBUILD_INSTALL_DIR}/bin/dump_syms"
       "${VIEWER_SYMBOL_FILE}"
     DEPENDS generate_breakpad_symbols.py
         VERBATIM)
@@ -1813,143 +1803,13 @@ if (PACKAGE)
 if(VIEWER_COPY_MANIFEST)
   add_dependencies(generate_breakpad_symbols ${VIEWER_COPY_MANIFEST})
 endif(VIEWER_COPY_MANIFEST)
-  add_dependencies(package_viewer generate_breakpad_symbols)
+  add_dependencies(llpackage generate_breakpad_symbols)
   endif(RELEASE_CRASH_REPORTING OR NON_RELEASE_CRASH_REPORTING)
 endif (PACKAGE)
 
 # Add tests
 if (LL_TESTS)
-	ADD_VIEWER_BUILD_TEST(llagentaccess viewer)
-	#ADD_VIEWER_BUILD_TEST(llworldmap viewer)
-	#ADD_VIEWER_BUILD_TEST(llworldmipmap viewer)
-	ADD_VIEWER_BUILD_TEST(lltextureinfo viewer)
-	ADD_VIEWER_BUILD_TEST(lltextureinfodetails viewer)
-	ADD_VIEWER_BUILD_TEST(lltexturestatsuploader viewer)
-	#ADD_VIEWER_COMM_BUILD_TEST(lltranslate viewer "")
 endif (LL_TESTS)
 
-# Don't do these for DARWIN or LINUX here -- they're taken care of by viewer_manifest.py
-if (WINDOWS)
+check_message_template(${VIEWER_BINARY_NAME})
 
-  IF(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
-    FOREACH(RUNTIME_LIB ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})
-      add_custom_command(
-	  TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-	  COMMAND ${CMAKE_COMMAND}
-	  ARGS
-	  -E
-	  copy_if_different
-	  ${RUNTIME_LIB}
-	  ${CMAKE_CURRENT_BINARY_DIR}
-	  COMMENT "Copying ${RUNTIME_LIB} to the runtime folder."
-	  )
-    ENDFOREACH(RUNTIME_LIB ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})
-  ENDIF(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
-
-  SET(BUILT_LLCOMMON $<TARGET_FILE:llcommon>)
-
-    set_target_properties(llcommon
-        PROPERTIES
-        LINK_FLAGS "/debug /NODEFAULTLIB:LIBCMT"
-        LINK_FLAGS_DEBUG "/NODEFAULTLIB:\"LIBCMT;LIBCMTD;MSVCRT\""
-		LINK_FLAGS_RELEASE "${release_flags} /LTCG"
-		LINK_FLAGS_RELWITHDEBINFO "${release_flags}"
-        )
-
-  add_custom_command(
-      TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND}
-      ARGS
-      -E
-      copy_if_different
-      ${BUILT_LLCOMMON}
-      ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
-      COMMENT "Copying llcommon.dll to the runtime folder."
-      )
-
-  SET(BUILT_SLPLUGIN $<TARGET_FILE:SLPlugin>)
-  add_custom_command(
-      TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND}
-      ARGS
-        -E
-        copy_if_different
-        ${BUILT_SLPLUGIN}
-        ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
-      COMMENT "Copying SLPlugin executable to the runtime folder."
-      )
-
-  SET(BUILT_WEBKIT_PLUGIN $<TARGET_FILE:media_plugin_webkit>)
-    add_custom_command(
-        TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        ARGS
-          -E
-          copy_if_different
-          ${BUILT_WEBKIT_PLUGIN}
-          ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/llplugin
-        COMMENT "Copying WebKit Plugin to the runtime folder."
-        )
-
-  SET(BUILT_QUICKTIME_PLUGIN $<TARGET_FILE:media_plugin_quicktime>)
-    add_custom_command(
-        TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        ARGS
-          -E
-          copy_if_different
-          ${BUILT_QUICKTIME_PLUGIN}
-          ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/llplugin
-        COMMENT "Copying Quicktime Plugin to the runtime folder."
-        )
-
-  SET(BUILT_FILEPICKER_PLUGIN $<TARGET_FILE:basic_plugin_filepicker>)
-    add_custom_command(
-        TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        ARGS
-          -E
-          copy_if_different
-          ${BUILT_FILEPICKER_PLUGIN}
-          ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/llplugin
-        COMMENT "Copying filepicker Plugin to the runtime folder."
-        )
-
-# winmm doesn't build on windows 64
-  if(WORD_SIZE EQUAL 32)
-  SET(BUILT_WINMM_SHIM_PLUGIN $<TARGET_FILE:winmm_shim>)
-    add_custom_command(
-        TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        ARGS
-          -E
-          copy_if_different
-          ${BUILT_WINMM_SHIM_PLUGIN}
-          ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
-        COMMENT "Copying winmm.dll to the runtime folder."
-        )
-  endif(WORD_SIZE EQUAL 32)
-
-  # Copying the mime_types.xml file to app_settings
-  set(mime_types_source "${CMAKE_SOURCE_DIR}/newview/skins/default/xui/en-us")
-  set(mime_types_dest "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/app_settings")
-  add_custom_command(
-      TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND}
-      ARGS 
-	 -E
-	 copy_if_different
-	 ${mime_types_source}/mime_types_windows.xml 
-	 ${mime_types_dest}/mime_types.xml
-      COMMENT "Copying mime_types_windows.xml to mime_types.xml."
-      )
-  
-endif (WINDOWS)
-
-if (DARWIN)
-# Don't do this here -- it's taken care of by viewer_manifest.py
-#  add_custom_command(TARGET ${VIEWER_BINARY_NAME} POST_BUILD
-#    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/../libraries/universal-darwin/lib/release/libllqtwebkit.dylib ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/llplugin/
-#    DEPENDS ${CMAKE_SOURCE_DIR}/../libraries/universal-darwin/lib/release/libllqtwebkit.dylib
-#  )
-endif (DARWIN)
