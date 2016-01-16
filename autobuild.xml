@@ -298,11 +298,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>fb9685ac71b44f4c3df11d605c7dd060</string>
+              <string>46e48bcb7643c4819bf6f35f518a0db7</string>
               <key>hash_algorithm</key>
               <string>md5</string>
               <key>url</key>
-              <string>http://depot.alchemyviewer.org/pub/windows64/lib-vc14/colladadom-2.3-windows64-201512122146.tar.bz2</string>
+              <string>http://depot.alchemyviewer.org/pub/windows64/lib-vc14/colladadom-2.3-windows64-201601160353.tar.bz2</string>
             </map>
             <key>name</key>
             <string>windows64</string>
