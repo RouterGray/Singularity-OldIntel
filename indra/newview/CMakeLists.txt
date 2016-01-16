@@ -40,6 +40,7 @@ include(StateMachine)
 include(TemplateCheck)
 include(UI)
 include(ViewerMiscLibs)
+include(WinManifest)
 
 
 if (WINDOWS)
@@ -1558,6 +1559,9 @@ if (WINDOWS)
     add_dependencies(${VIEWER_BINARY_NAME}
       SLPlugin
       )
+
+    EMBED_MANIFEST(${VIEWER_BINARY_NAME} 1)
+
     # sets the 'working directory' for debugging from visual studio.
     if (NOT UNATTENDED)
         add_custom_command(

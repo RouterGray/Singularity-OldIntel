@@ -98,6 +98,7 @@ set(cmake_SOURCE_FILES
     UnixInstall.cmake
     Variables.cmake
     ViewerMiscLibs.cmake
+    WinManifest.cmake
     XmlRpcEpi.cmake
     ZLIB.cmake
     )
