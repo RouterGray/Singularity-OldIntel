@@ -77,6 +77,8 @@ if (WINDOWS)
       /nologo
       /Oy-
       /Zm140
+      /wd4267
+	  /wd4244
       )
 
   if (WORD_SIZE EQUAL 32)

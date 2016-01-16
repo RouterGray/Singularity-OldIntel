@@ -195,10 +195,10 @@ ssl_dyn_create_function_type  old_ssl_dyn_create_function;
 ssl_dyn_destroy_function_type old_ssl_dyn_destroy_function;
 ssl_dyn_lock_function_type    old_ssl_dyn_lock_function;
 
-#if LL_WINDOWS
+#if LL_WINDOWS && !HAVE_CRYPTO_THREADID
 static unsigned long __cdecl apr_os_thread_current_wrapper()
 {
-	return (unsigned long)apr_os_thread_current();
+	return (unsigned long)(HANDLE)apr_os_thread_current();
 }
 #endif
 
