@@ -1377,6 +1377,7 @@ set(viewer_APPSETTINGS_FILES
     app_settings/viewerart.xml
     ${CMAKE_SOURCE_DIR}/../etc/message.xml
     ${CMAKE_SOURCE_DIR}/../scripts/messages/message_template.msg
+    packages-info.txt
     )
 
 source_group("App Settings" FILES ${viewer_APPSETTINGS_FILES})

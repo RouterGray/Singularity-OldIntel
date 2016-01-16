@@ -81,6 +81,10 @@ class ViewerManifest(LLManifest):
                 # ... and the hunspell dictionaries
                 self.path("dictionaries")
 
+                # include the extracted packages information (see BuildPackagesInfo.cmake)
+                self.path(src=os.path.join(self.args['build'],"packages-info.txt"), dst="packages-info.txt")
+
+
                 self.end_prefix("app_settings")
 
             if self.prefix(src="character"):

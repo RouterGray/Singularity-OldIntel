@@ -111,6 +111,9 @@ LLFloaterAbout::LLFloaterAbout()
 
 	LLViewerTextEditor *credits_widget = 
 		getChild<LLViewerTextEditor>("credits_editor", true);
+
+	LLViewerTextEditor *licenses_widget =
+		getChild<LLViewerTextEditor>("licenses_editor", true);
 	
 	childSetAction("copy_btn", onAboutClickCopyToClipboard, this);
 
@@ -327,6 +330,30 @@ LLFloaterAbout::LLFloaterAbout()
 	credits_widget->setEnabled(FALSE);
 	credits_widget->setTakesFocus(TRUE);
 	credits_widget->setHandleEditKeysDirectly(TRUE);
+
+	// Get the Versions and Copyrights, created at build time
+	std::string licenses_path = gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, "packages-info.txt");
+	llifstream licenses_file;
+	licenses_file.open(licenses_path);		/* Flawfinder: ignore */
+	if (licenses_file.is_open())
+	{
+		std::string license_line;
+		licenses_widget->clear();
+		while (std::getline(licenses_file, license_line))
+		{
+			licenses_widget->appendColoredText(license_line + "\n", FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
+		}
+		licenses_file.close();
+	}
+	else
+	{
+		// this case will use the (out of date) hard coded value from the XUI
+		LL_INFOS("AboutInit") << "Could not read licenses file at " << licenses_path << LL_ENDL;
+	}
+	licenses_widget->setCursorPos(0);
+	licenses_widget->setEnabled(FALSE);
+	licenses_widget->setTakesFocus(TRUE);
+	licenses_widget->setHandleEditKeysDirectly(TRUE);
 
 	center();
 
