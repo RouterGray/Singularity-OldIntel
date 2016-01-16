@@ -222,10 +222,6 @@ void LLUserAuth::authenticate(
 	// * We append "64" to channel name on 64-bit for systems for the LL stats system to be able to produce independent
 	//   crash statistics depending on the architecture
 	std::string chan(LLVersionInfo::getChannel());
-	if (chan == "Singularity")
-	{
-		chan += " Release";
-	}
 #if defined(_WIN64) || defined(__x86_64__)
 	chan += " 64";
 #endif

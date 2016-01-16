@@ -10,6 +10,8 @@
 /indra/viewer-*
 /indra/newview/vivox-runtime/
 /indra/newview/dbghelp.dll
+indra/newview/res/viewer_icon.*
+indra/newview/res-sdl/viewer_icon.*
 /libraries/
 /lib/
 *.pyc

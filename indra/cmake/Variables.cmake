@@ -24,9 +24,10 @@ set(LIBS_OPEN_PREFIX)
 set(SCRIPTS_PREFIX ../scripts)
 set(VIEWER_PREFIX)
 set(INTEGRATION_TESTS_PREFIX)
-
-set(DISABLE_TCMALLOC OFF CACHE BOOL "Disable linkage of TCMalloc. (64bit builds automatically disable TCMalloc)")
 set(LL_TESTS OFF CACHE BOOL "Build and run unit and integration tests (disable for build timing runs to reduce variation)")
+
+# Compiler and toolchain options
+set(DISABLE_TCMALLOC OFF CACHE BOOL "Disable linkage of TCMalloc. (64bit builds automatically disable TCMalloc)")
 set(DISABLE_FATAL_WARNINGS TRUE CACHE BOOL "Set this to FALSE to enable fatal warnings.")
 
 if(LIBS_CLOSED_DIR)
@@ -168,15 +169,10 @@ endif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 # Default deploy grid
 set(GRID agni CACHE STRING "Target Grid")
 
-set(VIEWER_CHANNEL "Singularity" CACHE STRING "Viewer Channel Name")
+set(VIEWER_CHANNEL "Singularity Test" CACHE STRING "Viewer Channel Name")
 
-set(VIEWER_LOGIN_CHANNEL "${VIEWER_CHANNEL}" CACHE STRING "Fake login channel for A/B Testing")
-set(VIEWER_BRANDING_ID "singularity" CACHE STRING "Viewer branding id (currently secondlife|snowglobe)")
-
-# *TODO: break out proper Branding-secondlife.cmake, Branding-snowglobe.cmake, etc
-string(REGEX REPLACE " +" "" VIEWER_CHANNEL_ONE_WORD "${VIEWER_CHANNEL}")
-set(VIEWER_BRANDING_NAME "${VIEWER_CHANNEL_ONE_WORD}")
-set(VIEWER_BRANDING_NAME_CAMELCASE "${VIEWER_CHANNEL_ONE_WORD}")
+set(ENABLE_SIGNING OFF CACHE BOOL "Enable signing the viewer")
+set(SIGNING_IDENTITY "" CACHE STRING "Specifies the signing identity to use, if necessary.")
 
 set(VERSION_BUILD "0" CACHE STRING "Revision number passed in from the outside")
 set(STANDALONE OFF CACHE BOOL "Do not use Linden-supplied prebuilt libraries.")

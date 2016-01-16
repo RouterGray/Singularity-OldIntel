@@ -1178,7 +1178,6 @@ if (DARWIN)
 
   # Add resource files to the project.
   set(viewer_RESOURCE_FILES
-    ${VIEWER_BRANDING_ID}_icon.icns
     macview.r
     gpu_table.txt
     SecondLife.nib/
@@ -1233,6 +1232,27 @@ if (WINDOWS)
         list(APPEND viewer_SOURCE_FILES llviewerprecompiledheaders.cpp)
     endif(USE_PRECOMPILED_HEADERS)
 
+    # Replace the icons with the appropriate ones for the channel
+    # ('test' is the default)
+    set(ICON_PATH "default")
+    set(VIEWER_MACOSX_PHASE "d")
+    message("Copying icons for ${ICON_PATH}")
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/icons/${ICON_PATH}/viewer.ico"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/viewer_icon.ico"
+      )
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/icons/${ICON_PATH}/viewer_256.BMP"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res/viewer_icon.BMP"
+      )
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/icons/${ICON_PATH}/viewer_256.BMP"
+        "${CMAKE_CURRENT_SOURCE_DIR}/res-sdl/viewer_icon.BMP"
+      )
+
     # Add resource files to the project.
     # viewerRes.rc is the only buildable file, but
     # the rest are all dependencies of it.
@@ -1261,7 +1281,9 @@ if (WINDOWS)
         res/lltooltranslate.cur
         res/lltoolzoomin.cur
         res/lltoolzoomout.cur
-        res/${VIEWER_BRANDING_ID}_icon.ico
+        res-sdl/viewer_icon.BMP
+        res/viewer_icon.BMP
+        res/viewer_icon.ico
         res/resource.h
         res/toolpickobject.cur
         res/toolpickobject2.cur
@@ -1513,16 +1535,15 @@ if (WINDOWS)
         --actions=copy
         --arch=${ARCH}
         --artwork=${ARTWORK_DIR}
-        --branding_id=${VIEWER_BRANDING_ID}
         --build=${CMAKE_CURRENT_BINARY_DIR}
-        --channel=${VIEWER_CHANNEL}
+        --buildtype=${CMAKE_BUILD_TYPE}
         --configuration=${CMAKE_CFG_INTDIR}
         --dest=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
         --grid=${GRID}
-        --login_channel=${VIEWER_LOGIN_CHANNEL}
+        --channel=${VIEWER_CHANNEL}
+        --versionfile=${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt
         --source=${CMAKE_CURRENT_SOURCE_DIR}
         --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/copy_touched.bat
-        --extra_libraries="${MANIFEST_LIBRARIES}"
       DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
         stage_third_party_libs
@@ -1537,6 +1558,10 @@ if (WINDOWS)
     if (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
       add_dependencies(${VIEWER_BINARY_NAME} copy_win_scripts)
     endif (EXISTS ${CMAKE_SOURCE_DIR}/copy_win_scripts)
+
+    add_dependencies(${VIEWER_BINARY_NAME}
+      SLPlugin
+      )
     # sets the 'working directory' for debugging from visual studio.
     if (NOT UNATTENDED)
         add_custom_command(
@@ -1551,6 +1576,7 @@ if (WINDOWS)
             COMMENT "Setting the ${VIEWER_BINARY_NAME} working directory for debugging."
             )
     endif (NOT UNATTENDED)
+    if (PACKAGE)
 
       add_custom_command(
         OUTPUT ${CMAKE_CFG_INTDIR}/touched.bat
@@ -1559,16 +1585,15 @@ if (WINDOWS)
           ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
           --arch=${ARCH}
           --artwork=${ARTWORK_DIR}
-          --branding_id=${VIEWER_BRANDING_ID}
           --build=${CMAKE_CURRENT_BINARY_DIR}
+          --buildtype=${CMAKE_BUILD_TYPE}
           --channel=${VIEWER_CHANNEL}
+          --versionfile=${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt
           --configuration=${CMAKE_CFG_INTDIR}
           --dest=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
           --grid=${GRID}
-          --login_channel=${VIEWER_LOGIN_CHANNEL}
           --source=${CMAKE_CURRENT_SOURCE_DIR}
           --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/touched.bat
-          --extra_libraries="${MANIFEST_LIBRARIES}"
         DEPENDS
             ${VIEWER_BINARY_NAME}
             ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1576,7 +1601,6 @@ if (WINDOWS)
             ${COPY_INPUT_DEPENDENCIES}
         )
 
-    if (PACKAGE)
       add_custom_target(llpackage ALL DEPENDS
         ${CMAKE_CFG_INTDIR}/touched.bat
         windows-setup-build-all
@@ -1709,7 +1733,7 @@ endif (LINUX)
 if (DARWIN)
   set(product ${VIEWER_BRANDING_NAME})
   set(MACOSX_BUNDLE_INFO_STRING "A stable third-party Second Life viewer.")
-  set(MACOSX_BUNDLE_ICON_FILE "${VIEWER_BRANDING_ID}_icon.icns")
+  set(MACOSX_BUNDLE_ICON_FILE "viewer.icns")
   set(MACOSX_BUNDLE_GUI_IDENTIFIER "${VIEWER_BRANDING_NAME}")
   set(MACOSX_BUNDLE_LONG_VERSION_STRING "${VIEWER_CHANNEL} ${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION}")
   set(MACOSX_BUNDLE_BUNDLE_NAME "${VIEWER_BRANDING_NAME}")
