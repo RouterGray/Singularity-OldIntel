@@ -233,7 +233,6 @@ set(llcommon_HEADER_FILES
     lltypeinfolookup.h
     lluri.h
     lluuid.h
-    llversionviewer.h.in
     llworkerthread.h
     metaclass.h
     metaclasst.h

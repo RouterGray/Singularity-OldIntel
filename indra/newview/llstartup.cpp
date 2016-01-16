@@ -90,7 +90,7 @@
 #include "lltexteditor.h"
 #include "llurlentry.h"
 #include "lluserrelations.h"
-#include "sgversion.h"
+#include "llversioninfo.h"
 #include "llviewercontrol.h"
 #include "llvfs.h"
 #include "llxorcipher.h"	// saved password, MAC address
@@ -693,9 +693,9 @@ bool idle_startup()
 			if(!start_messaging_system(
 				   message_template_path,
 				   port,
-				   gVersionMajor,
-				   gVersionMinor,
-				   gVersionPatch,
+				   LLVersionInfo::getMajor(),
+				   LLVersionInfo::getMinor(),
+				   LLVersionInfo::getPatch(),
 				   FALSE,
 				   std::string(),
 				   responder,

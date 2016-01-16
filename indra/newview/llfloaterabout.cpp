@@ -49,7 +49,7 @@
 #include "llagent.h"
 #include "llviewerstats.h"
 #include "llviewerregion.h"
-#include "sgversion.h"
+#include "llversioninfo.h"
 #include "lluictrlfactory.h"
 #include "lluri.h"
 #include "llweb.h"
@@ -135,9 +135,9 @@ LLFloaterAbout::LLFloaterAbout()
 		+ " (64 bit)"
 #endif
 		+ llformat(" %d.%d.%d (%d) %s %s (%s)\n",
-		gVersionMajor, gVersionMinor, gVersionPatch, gVersionBuild,
+		LLVersionInfo::getMajor(), LLVersionInfo::getMinor(), LLVersionInfo::getPatch(), LLVersionInfo::getBuild(),
 		__DATE__, __TIME__,
-		gVersionChannel));
+		LLVersionInfo::getChannel().c_str()));
 	support_widget->appendColoredText(version, FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
 	support_widget->appendStyledText(LLTrans::getString("ReleaseNotes"), false, false, viewer_link_style);
 

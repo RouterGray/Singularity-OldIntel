@@ -178,7 +178,10 @@ string(REGEX REPLACE " +" "" VIEWER_CHANNEL_ONE_WORD "${VIEWER_CHANNEL}")
 set(VIEWER_BRANDING_NAME "${VIEWER_CHANNEL_ONE_WORD}")
 set(VIEWER_BRANDING_NAME_CAMELCASE "${VIEWER_CHANNEL_ONE_WORD}")
 
+set(VERSION_BUILD "0" CACHE STRING "Revision number passed in from the outside")
 set(STANDALONE OFF CACHE BOOL "Do not use Linden-supplied prebuilt libraries.")
+
+set(USE_PRECOMPILED_HEADERS ON CACHE BOOL "Enable use of precompiled header directives where supported.")
 
 source_group("CMake Rules" FILES CMakeLists.txt)
 

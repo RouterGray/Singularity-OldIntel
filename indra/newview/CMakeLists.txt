@@ -5,6 +5,7 @@ project(viewer)
 include(00-Common)
 include(Boost)
 include(BuildPackagesInfo)
+include(BuildVersion)
 include(CMakeCopyIfDifferent)
 include(DBusGlib)
 include(ELFIO)
@@ -36,7 +37,6 @@ include(LLUI)
 include(LLVFS)
 include(LLWindow)
 include(LLXML)
-#include(LScript)
 include(Linking)
 include(NDOF)
 include(NVAPI)
@@ -76,6 +76,7 @@ include_directories(
     ${LLWINDOW_INCLUDE_DIRS}
     ${LLXML_INCLUDE_DIRS}
     ${LLAPPEARANCE_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
 set(viewer_SOURCE_FILES
@@ -492,6 +493,7 @@ set(viewer_SOURCE_FILES
     llurlwhitelist.cpp
     lluserauth.cpp
     llvectorperfoptions.cpp
+    llversioninfo.cpp
     llvelocitybar.cpp
     llviewchildren.cpp
     llviewerassetstats.cpp
@@ -596,7 +598,6 @@ set(viewer_SOURCE_FILES
     rlvui.cpp
     scriptcounter.cpp
     sgmemstat.cpp
-    sgversion.cpp
     shcommandhandler.cpp
     shfloatermediaticker.cpp
     wlfPanel_AdvSettings.cpp
@@ -1030,6 +1031,7 @@ set(viewer_HEADER_FILES
     lluserauth.h
     llvectorperfoptions.h
     llvelocitybar.h
+    llversioninfo.h
     llviewchildren.h
     llviewerassetstats.h
     llviewerassetstorage.h
@@ -1137,13 +1139,28 @@ set(viewer_HEADER_FILES
     roles_constants.h
     scriptcounter.h
     sgmemstat.h
-    sgversion.h
     shcommandhandler.h
     shfloatermediaticker.h
     wlfPanel_AdvSettings.h
     )
 
 source_group("CMake Rules" FILES ViewerInstall.cmake)
+
+# the viewer_version.txt file created here is for passing to viewer_manifest and autobuild
+# the summary.json file is created for the benefit of the TeamCity builds, where
+#   it is used to provide descriptive information to the build results page
+add_custom_target(generate_viewer_version ALL
+                  COMMAND cmake -E echo ${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION} > ${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt
+                  COMMAND cmake -E echo {"Type":"viewer","Version":"${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION}"} > ${CMAKE_BINARY_DIR}/summary.json
+                  COMMENT "Generating viewer_version.txt for manifest processing"
+                  )
+
+set_source_files_properties(
+   llversioninfo.cpp
+   PROPERTIES
+   DEPENDS generate_viewer_version  # dummy dependency to force recompile every time
+   COMPILE_DEFINITIONS "${VIEWER_CHANNEL_VERSION_DEFINES}" # see BuildVersion.cmake
+   )
 
 if (DARWIN)
   LIST(APPEND viewer_SOURCE_FILES llappviewermacosx.cpp)
@@ -1208,11 +1225,13 @@ if (WINDOWS)
     # the .pch file.
     # All sources added to viewer_SOURCE_FILES
     # at this point use it.
-    set_source_files_properties(llviewerprecompiledheaders.cpp
-        PROPERTIES
-        COMPILE_FLAGS "/Ycllviewerprecompiledheaders.h"
-        )
-    list(APPEND viewer_SOURCE_FILES llviewerprecompiledheaders.cpp)
+    if(USE_PRECOMPILED_HEADERS)
+        set_source_files_properties(llviewerprecompiledheaders.cpp
+            PROPERTIES
+            COMPILE_FLAGS "/Ycllviewerprecompiledheaders.h"
+            )
+        list(APPEND viewer_SOURCE_FILES llviewerprecompiledheaders.cpp)
+    endif(USE_PRECOMPILED_HEADERS)
 
     # Add resource files to the project.
     # viewerRes.rc is the only buildable file, but
@@ -1257,11 +1276,17 @@ if (WINDOWS)
     set_source_files_properties(${viewer_RESOURCE_FILES}
                                 PROPERTIES HEADER_FILE_ONLY TRUE)
 
+    configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/res/viewerRes.rc
+                    ${CMAKE_CURRENT_BINARY_DIR}/viewerRes.rc
+                    )
     set(viewer_RESOURCE_FILES
-       res/resource.h
-        res/viewerRes.rc
+        ${CMAKE_CURRENT_BINARY_DIR}/viewerRes.rc
         ${viewer_RESOURCE_FILES}
         )
+
+    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/viewerRes.rc
+      PROPERTIES COMPILE_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/res"
+      )
 
     SOURCE_GROUP("Resource Files" FILES ${viewer_RESOURCE_FILES})
 
@@ -1396,6 +1421,8 @@ if (WINDOWS)
         LINK_FLAGS_RELEASE "${release_flags} ${EXTRA_LINKER_FLAGS_RELEASE}"
 		LINK_FLAGS_RELWITHDEBINFO "${release_flags} ${EXTRA_LINKER_FLAGS_RELEASE}"
         )
+
+    add_dependencies(${VIEWER_BINARY_NAME} generate_viewer_version)
 
     if(USE_PRECOMPILED_HEADERS)
         set_target_properties(
@@ -1545,6 +1572,7 @@ if (WINDOWS)
         DEPENDS
             ${VIEWER_BINARY_NAME}
             ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+            ${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt
             ${COPY_INPUT_DEPENDENCIES}
         )
 
@@ -1556,7 +1584,7 @@ if (WINDOWS)
     endif (PACKAGE)
 endif (WINDOWS)
 
-# *NOTE - this list is very sensitive to ordering, test carefully on all
+# *NOTE: - this list is very sensitive to ordering, test carefully on all
 # platforms if you change the releative order of the entries here.
 # In particular, cmake 2.6.4 (when buidling with linux/makefile generators)
 # appears to sometimes de-duplicate redundantly listed dependencies improperly.
@@ -1616,6 +1644,8 @@ if (LINUX)
       ARGS --strip-debug -o secondlife-stripped ${VIEWER_BINARY_NAME}
       DEPENDS ${VIEWER_BINARY_NAME}
       )
+
+  add_dependencies(${VIEWER_BINARY_NAME} generate_viewer_version)
 
   set(product ${VIEWER_BRANDING_NAME_CAMELCASE}-${ARCH}-${${ROOT_PROJECT_NAME}_VERSION})
 
@@ -1678,19 +1708,29 @@ endif (LINUX)
 
 if (DARWIN)
   set(product ${VIEWER_BRANDING_NAME})
+  set(MACOSX_BUNDLE_INFO_STRING "A stable third-party Second Life viewer.")
+  set(MACOSX_BUNDLE_ICON_FILE "${VIEWER_BRANDING_ID}_icon.icns")
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER "${VIEWER_BRANDING_NAME}")
+  set(MACOSX_BUNDLE_LONG_VERSION_STRING "${VIEWER_CHANNEL} ${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION}")
+  set(MACOSX_BUNDLE_BUNDLE_NAME "${VIEWER_BRANDING_NAME}")
+  set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VIEWER_SHORT_VERSION}")
+  set(MACOSX_BUNDLE_BUNDLE_VERSION "${${ROOT_PROJECT_NAME}_VERSION}")
+  set(MACOSX_BUNDLE_COPYRIGHT "Copyright 2013 Siana Gearz")
+
   set_target_properties(
     ${VIEWER_BINARY_NAME}
     PROPERTIES
     OUTPUT_NAME "${product}"
-    MACOSX_BUNDLE_INFO_STRING "A stable third-party Second Life viewer."
-    MACOSX_BUNDLE_ICON_FILE "${VIEWER_BRANDING_ID}_icon.icns"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "${VIEWER_BRANDING_NAME}"
-    MACOSX_BUNDLE_LONG_VERSION_STRING "${${ROOT_PROJECT_NAME}_VERSION}"
-    MACOSX_BUNDLE_BUNDLE_NAME "${VIEWER_BRANDING_NAME}"
-    MACOSX_BUNDLE_SHORT_VERSION_STRING "${${ROOT_PROJECT_NAME}_VERSION}"
-    MACOSX_BUNDLE_BUNDLE_VERSION "${${ROOT_PROJECT_NAME}_VERSION}"
-    MACOSX_BUNDLE_COPYRIGHT "Copyright 2013 Siana Gearz"
+    MACOSX_BUNDLE_INFO_PLIST
+    "${CMAKE_CURRENT_SOURCE_DIR}/Info-SecondLife.plist"
     )
+
+  configure_file(
+     "${CMAKE_CURRENT_SOURCE_DIR}/Info-SecondLife.plist"
+     "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${product}.app/Contents/Info.plist"
+    )
+
+  add_dependencies(${VIEWER_BINARY_NAME} generate_viewer_version)
 
   add_custom_command(
     TARGET ${VIEWER_BINARY_NAME} POST_BUILD
@@ -1708,14 +1748,15 @@ if (DARWIN)
       --source=${CMAKE_CURRENT_SOURCE_DIR}
       --extra_libraries="${MANIFEST_LIBRARIES}"
     DEPENDS
-	  ${VIEWER_BINARY_NAME}
-	  ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+      ${VIEWER_BINARY_NAME}
+      ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
     )
 
   add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_quicktime media_plugin_webkit basic_plugin_filepicker)
 
   if (PACKAGE)
       add_custom_target(llpackage ALL DEPENDS ${VIEWER_BINARY_NAME})
+      add_dependencies(llpackage generate_viewer_version)
 
       add_custom_command(
         TARGET llpackage POST_BUILD

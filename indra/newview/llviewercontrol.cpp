@@ -70,7 +70,6 @@
 #include "llnotify.h"
 #include "llkeyboard.h"
 #include "llerrorcontrol.h"
-#include "sgversion.h"
 #include "llappviewer.h"
 #include "llvosurfacepatch.h"
 #include "llvowlsky.h"
@@ -98,7 +97,6 @@ LLControlGroup gColors("Colors");	// saved at end of session
 LLControlGroup gCrashSettings("CrashSettings");	// saved at end of session
 
 std::string gLastRunVersion;
-std::string gCurrentVersion;
 
 extern BOOL gResizeScreenTexture;
 extern BOOL gDebugGL;
