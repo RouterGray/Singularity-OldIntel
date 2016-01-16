@@ -4490,19 +4490,7 @@ void LLAppViewer::shutdownAudio()
 	if (gAudiop)
 	{
 		// shut down the audio subsystem
-
-		bool want_longname = false;
-		if (gAudiop->getDriverName(want_longname) == "FMOD")
-		{
-			// This hack exists because fmod likes to occasionally
-			// crash or hang forever when shutting down, for no
-			// apparent reason.
-			LL_WARNS() << "Hack, skipping FMOD audio engine cleanup" << LL_ENDL;
-		}
-		else
-		{
-			gAudiop->shutdown();
-		}
+		gAudiop->shutdown();
 
 		delete gAudiop;
 		gAudiop = NULL;

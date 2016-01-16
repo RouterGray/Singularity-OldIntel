@@ -477,7 +477,7 @@ std::string LLAudioEngine_FMODSTUDIO::getDriverName(bool verbose)
 			return llformat("FMOD Studio %1x.%02x.%02x", version >> 16, version >> 8 & 0x000000FF, version & 0x000000FF);
 		}
 	}
-	return "FMODEx";
+	return "FMOD Studio";
 }
 
 

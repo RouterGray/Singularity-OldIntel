@@ -27,7 +27,6 @@ set(cmake_SOURCE_FILES
     ELFIO.cmake
     EXPAT.cmake
     ExamplePlugin.cmake
-    FMODEX.cmake
     FMODSTUDIO.cmake
     FindAPR.cmake
     FindAutobuild.cmake

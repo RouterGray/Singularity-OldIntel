@@ -2,10 +2,6 @@
 
 include(Linking)
 
-if (FMODEX AND FMODSTUDIO)
-  message( FATAL_ERROR "You can not enable two FMOD variants at the same time." )
-endif (FMODEX AND FMODSTUDIO)
-
 unset(FMOD_LIBRARY_RELEASE CACHE)
 unset(FMOD_LIBRARY_DEBUG CACHE)
 unset(FMOD_INCLUDE_DIR CACHE)
@@ -86,10 +82,17 @@ if (NOT FMOD_LIBRARY_RELEASE OR NOT FMOD_INCLUDE_DIR)
   endif(WINDOWS)
   set(FMOD_LINK_LIBRARY_RELEASE ${FMOD_LIBRARY_RELEASE})
   set(FMOD_LINK_LIBRARY_DEBUG ${FMOD_LIBRARY_DEBUG})
+
   if(WINDOWS)
     string(REPLACE ".dll" "_vc.lib" FMOD_LINK_LIBRARY_RELEASE ${FMOD_LIBRARY_RELEASE})
     string(REPLACE ".dll" "_vc.lib" FMOD_LINK_LIBRARY_DEBUG ${FMOD_LIBRARY_DEBUG})
   endif(WINDOWS)
+
+  set (FMOD_LIBRARY
+    debug ${FMOD_LINK_LIBRARY_DEBUG}
+    optimized ${FMOD_LINK_LIBRARY_RELEASE}
+    )
+  
   use_prebuilt_binary(fmodstudio)
   set(FMOD_INCLUDE_DIR
       ${LIBS_PREBUILT_DIR}/include/fmodstudio)
