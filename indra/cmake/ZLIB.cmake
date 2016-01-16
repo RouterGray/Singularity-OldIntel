@@ -17,9 +17,6 @@ else (STANDALONE)
     set(ZLIB_LIBRARIES z)
   endif (WINDOWS)
   if (WINDOWS OR LINUX)
-    set(ZLIB_INCLUDE_DIRS
-      ${LIBS_PREBUILT_DIR}/include/zlib
-      ${LIBS_PREBUILT_LEGACY_DIR}/include/zlib
-      )
+    set(ZLIB_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/include/zlib)
   endif (WINDOWS OR LINUX)
 endif (STANDALONE)
