@@ -322,11 +322,6 @@ class WindowsManifest(ViewerManifest):
             self.path("media_plugin_webkit.dll")
             self.end_prefix()
 
-        # Plugin volume control
-        if not self.is_win64() and self.prefix(src='../plugins/winmmshim/%s' % self.args['configuration'], dst=""):
-            self.path("winmm.dll")
-            self.end_prefix()
-
         # For WebKit/Qt plugin runtimes
         if self.prefix(src=self.args['configuration']+"/llplugin", dst="llplugin"):
             self.path("libeay32.dll")
