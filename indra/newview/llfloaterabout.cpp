@@ -70,6 +70,8 @@
 #include "lldxhardware.h"
 #endif
 
+#include "cef/llceflib.h"
+
 extern LLMemoryInfo gSysMemory;
 extern U32 gPacketsIn;
 
@@ -271,17 +273,6 @@ LLFloaterAbout::LLFloaterAbout()
 // [/RLVa:KB]
 	support.append("\n\n");
 
-	support.append("Viewer SSE Version: ");
-#if _M_IX86_FP > 0 //Windows
-	support.append(llformat("SSE%i\n", _M_IX86_FP ));
-#elif defined(__SSE2__) //GCC
-	support.append("SSE2\n");	
-#elif defined(__SSE__) //GCC
-	support.append("SSE\n");
-#else
-	support.append("None\n");
-#endif
-
 	support.append("libcurl Version: ");
 	support.append( LLCurl::getVersionString() );
 	support.append("\n");
@@ -296,16 +287,8 @@ LLFloaterAbout::LLFloaterAbout()
 	support.append("\n");
 
 	// TODO: Implement media plugin version query
-
-	support.append("Qt Webkit Version: ");
-	support.append(
-#if LL_LINUX && defined(__x86_64__)
-	"4.8.6"
-#else
-	"4.7.1"
-#endif
-	);
-	support.append(" (version number hard-coded)");
+	support.append("LLCEFLib/CEF Version: ");
+	support.append(LLCEFLIB_VERSION);
 	support.append("\n");
 
 	if (gPacketsIn > 0)

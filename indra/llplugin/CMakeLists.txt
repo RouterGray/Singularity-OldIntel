@@ -13,7 +13,6 @@ include_directories(
     ${LLMATH_INCLUDE_DIRS}
     ${LLMESSAGE_INCLUDE_DIRS}
     ${LLRENDER_INCLUDE_DIRS}
-    ${LLQTWEBKIT_INCLUDE_DIR}
     )
 
 set(llplugin_SOURCE_FILES

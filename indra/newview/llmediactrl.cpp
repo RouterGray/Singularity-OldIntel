@@ -414,6 +414,23 @@ BOOL LLMediaCtrl::handleKeyHere( KEY key, MASK mask )
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+BOOL LLMediaCtrl::handleKeyUpHere(KEY key, MASK mask)
+{
+	BOOL result = FALSE;
+
+	if (mMediaSource)
+	{
+		result = mMediaSource->handleKeyUpHere(key, mask);
+	}
+
+	if (!result)
+		result = LLPanel::handleKeyUpHere(key, mask);
+
+	return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
 void LLMediaCtrl::handleVisibilityChange ( BOOL new_visibility )
 {
 	LL_INFOS() << "visibility changed to " << (new_visibility?"true":"false") << LL_ENDL;
@@ -940,7 +957,7 @@ void LLMediaCtrl::handleMediaEvent(LLPluginClassMedia* self, EMediaEvent event)
 			LL_DEBUGS("Media") <<  "Media event:  MEDIA_EVENT_CURSOR_CHANGED, new cursor is " << self->getCursorName() << LL_ENDL;
 		}
 		break;
-		
+			
 		case MEDIA_EVENT_NAVIGATE_BEGIN:
 		{
 			LL_DEBUGS("Media") <<  "Media event:  MEDIA_EVENT_NAVIGATE_BEGIN, url is " << self->getNavigateURI() << LL_ENDL;
@@ -995,21 +1012,23 @@ void LLMediaCtrl::handleMediaEvent(LLPluginClassMedia* self, EMediaEvent event)
 			std::string target = self->getClickTarget();
 			std::string uuid = self->getClickUUID();
 
-			LLNotification::Params notify_params("PopupAttempt");
-			notify_params.payload = LLSD().with("target", target).with("url", url).with("uuid", uuid).with("media_id", mMediaTextureID);
-			notify_params.functor(boost::bind(&LLMediaCtrl::onPopup, this, _1, _2));
+			LLWeb::loadURL(url, target, std::string());
 
-			if (mTrusted)
-			{
-				LLNotifications::instance().forceResponse(notify_params, 0);
-			}
-			else
-			{
-				LLNotifications::instance().add(notify_params);
-			}
+			//LLNotification::Params notify_params("PopupAttempt");
+			//notify_params.payload = LLSD().with("target", target).with("url", url).with("uuid", uuid).with("media_id", mMediaTextureID);
+			//notify_params.functor(boost::bind(&LLMediaCtrl::onPopup, this, _1, _2));
+
+			//if (mTrusted)
+			//{
+			//	LLNotifications::instance().forceResponse(notify_params, 0);
+			//}
+			//else
+			//{
+			//	LLNotifications::instance().add(notify_params);
+			//}
 			break;
 		};
-		
+
 		case MEDIA_EVENT_CLICK_LINK_NOFOLLOW:
 		{
 			LL_DEBUGS("Media") <<  "Media event:  MEDIA_EVENT_CLICK_LINK_NOFOLLOW, uri is " << self->getClickURL() << LL_ENDL;
@@ -1073,6 +1092,13 @@ void LLMediaCtrl::handleMediaEvent(LLPluginClassMedia* self, EMediaEvent event)
 		{
 			LL_DEBUGS("Media") <<  "Media event:  MEDIA_EVENT_LINK_HOVERED, hover text is: " << self->getHoverText() << LL_ENDL;
 			mHoverTextChanged = true;
+		};
+		break;
+
+		case MEDIA_EVENT_FILE_DOWNLOAD:
+		{
+			//llinfos << "Media event - file download requested - filename is " << self->getFileDownloadFilename() << llendl;
+			//LLNotificationsUtil::add("MediaFileDownloadUnsupported");
 		};
 		break;
 
@@ -1140,6 +1166,16 @@ void LLMediaCtrl::setTrustedContent(bool trusted)
 	{
 		mMediaSource->setTrustedBrowser(trusted);
 	}
+}
+
+bool LLMediaCtrl::wantsKeyUpKeyDown() const
+{
+    return true;
+}
+
+bool LLMediaCtrl::wantsReturnKey() const
+{
+    return true;
 }
 
 // virtual

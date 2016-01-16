@@ -6,7 +6,7 @@
  * $LicenseInfo:firstyear=2010&license=viewerlgpl$
  * Second Life Viewer Source Code
  * Copyright (C) 2010, Linden Research, Inc.
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation;
@@ -35,9 +35,13 @@
 
 #include "volume_catcher.h"
 
-#include <Carbon/Carbon.h>
 #include <QuickTime/QuickTime.h>
 #include <AudioUnit/AudioUnit.h>
+#include <list>
+
+#if LL_DARWIN
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 struct VolumeCatcherStorage;
 
@@ -266,3 +270,6 @@ void VolumeCatcher::pump()
 	// No periodic tasks are necessary for this implementation.
 }
 
+#if LL_DARWIN
+#pragma GCC diagnostic warning "-Wdeprecated-declarations"
+#endif

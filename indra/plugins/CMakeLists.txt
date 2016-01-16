@@ -3,7 +3,7 @@
 add_subdirectory(base_basic)
 add_subdirectory(base_media)
 add_subdirectory(filepicker)
-add_subdirectory(webkit)
+add_subdirectory(cef)
 
 if (LINUX)
     add_subdirectory(gstreamer010)

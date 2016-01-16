@@ -16,6 +16,7 @@ set(cmake_SOURCE_FILES
     Boost.cmake
     BuildVersion.cmake
     CARes.cmake
+    CEFPlugin.cmake
     CMakeCopyIfDifferent.cmake
     CURL.cmake
     Colladadom.cmake
@@ -39,7 +40,6 @@ set(cmake_SOURCE_FILES
     FindGooglePerfTools.cmake
     FindHunSpell.cmake
     FindJsonCpp.cmake
-    FindLLQtWebkit.cmake
     FindNDOF.cmake
     FindOpenJPEG.cmake
     FindTut.cmake
@@ -69,7 +69,6 @@ set(cmake_SOURCE_FILES
     LLPrimitive.cmake
     LLPhysicsExtensions.cmake
     LLSharedLibs.cmake
-    LLQtWebkit.cmake
     LLRender.cmake
     LLSharedLibs.cmake
     LLUI.cmake
@@ -90,7 +89,6 @@ set(cmake_SOURCE_FILES
     Prebuilt.cmake
     PulseAudio.cmake
     Python.cmake
-    Qt4.cmake
     QuickTimePlugin.cmake
     RunBuildTest.cmake
     StateMachine.cmake
@@ -100,7 +98,6 @@ set(cmake_SOURCE_FILES
     UnixInstall.cmake
     Variables.cmake
     ViewerMiscLibs.cmake
-    WebKitLibPlugin.cmake
     XmlRpcEpi.cmake
     ZLIB.cmake
     )
