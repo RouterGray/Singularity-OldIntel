@@ -29,6 +29,8 @@ set(LL_TESTS OFF CACHE BOOL "Build and run unit and integration tests (disable f
 # Compiler and toolchain options
 set(DISABLE_TCMALLOC OFF CACHE BOOL "Disable linkage of TCMalloc. (64bit builds automatically disable TCMalloc)")
 set(DISABLE_FATAL_WARNINGS TRUE CACHE BOOL "Set this to FALSE to enable fatal warnings.")
+option(INCREMENTAL_LINK "Use incremental linking or incremental LTCG for LTO on win32 builds (enable for faster links on some machines)" OFF)
+option(USE_LTO "Enable Whole Program Optimization and related folding and binary reduction routines" OFF)
 
 if(LIBS_CLOSED_DIR)
   file(TO_CMAKE_PATH "${LIBS_CLOSED_DIR}" LIBS_CLOSED_DIR)
