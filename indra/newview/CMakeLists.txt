@@ -8,7 +8,6 @@ include(BuildPackagesInfo)
 include(BuildVersion)
 include(CMakeCopyIfDifferent)
 include(DBusGlib)
-include(ELFIO)
 include(FMODSTUDIO)
 include(GLOD)
 include(FindOpenGL)
@@ -53,7 +52,6 @@ include_directories(
     ${STATEMACHINE_INCLUDE_DIRS}
     ${DBUSGLIB_INCLUDE_DIRS}
     ${HUNSPELL_INCLUDE_DIR}
-    ${ELFIO_INCLUDE_DIR}
     ${JSONCPP_INCLUDE_DIR}
     ${GLOD_INCLUDE_DIRS}
     ${LLAUDIO_INCLUDE_DIRS}
@@ -1656,7 +1654,6 @@ target_link_libraries(${VIEWER_BINARY_NAME}
     ${UI_LIBRARIES}
     ${WINDOWS_LIBRARIES}
     ${XMLRPCEPI_LIBRARIES}
-    ${ELFIO_LIBRARIES}
     ${HUNSPELL_LIBRARY}
     ${LLPHYSICSEXTENSIONS_LIBRARIES}
     ${LLAPPEARANCE_LIBRARIES}
