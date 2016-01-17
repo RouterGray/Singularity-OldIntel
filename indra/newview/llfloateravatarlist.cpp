@@ -145,6 +145,7 @@ LLAvatarListEntry::LLAvatarListEntry(const LLUUID& id, const std::string& name, 
 
 LLAvatarListEntry::~LLAvatarListEntry()
 {
+	setPosition(mPosition, F32_MIN, false); // Dead and gone
 	LLAvatarPropertiesProcessor::instance().removeObserver(mID, this);
 }
 
@@ -268,7 +269,7 @@ void LLFloaterAvatarList::draw()
 
 void LLFloaterAvatarList::onOpen()
 {
-	if (mAvatars.size()) refreshAvatarList();
+	refreshAvatarList();
 }
 
 void LLFloaterAvatarList::onClose(bool app_quitting)
@@ -514,6 +515,7 @@ const F32& radar_range_radius()
 	static const LLCachedControl<F32> radius("RadarRangeRadius", 0);
 	return radius;
 }
+
 void LLFloaterAvatarList::updateAvatarList(const LLViewerRegion* region)
 {
 	// Check whether updates are enabled
@@ -601,17 +603,16 @@ void LLFloaterAvatarList::expireAvatarList(const std::list<LLUUID>& ids)
 	if (!ids.empty())
 	{
 		std::vector<LLUUID> existing_avs;
-		LLWorld::instance().getAvatars(&existing_avs, NULL, gAgent.getPositionGlobal(), radar_range_radius());
+		std::vector<LLViewerRegion*> neighbors;
+		gAgent.getRegion()->getNeighboringRegions(neighbors);
+		BOOST_FOREACH(const LLViewerRegion* region, neighbors)
+			existing_avs.insert(existing_avs.end(), region->mMapAvatarIDs.begin(), region->mMapAvatarIDs.end());
 		BOOST_FOREACH(const LLUUID& id, ids)
 		{
 			if (std::find(existing_avs.begin(), existing_avs.end(), id) != existing_avs.end()) continue; // Now in another region we know.
-			av_list_t::iterator it(std::find_if(mAvatars.begin(), mAvatars.end(), id));
+			av_list_t::iterator it(std::find_if(mAvatars.begin(), mAvatars.end(), LLAvatarListEntry::uuidMatch(id)));
 			if (it != mAvatars.end())
-			{
-				LLAvatarListEntry* entry = it->get();
-				entry->setPosition(entry->getPosition(), F32_MIN, false); // Dead and gone
 				mAvatars.erase(it);
-			}
 		}
 	}
 
@@ -650,17 +651,6 @@ void LLFloaterAvatarList::refreshAvatarList()
 	// Don't update when interface is hidden
 	if (!getVisible()) return;
 
-	if (mAvatars.empty())
-		setTitle(getString("Title"));
-	else if (mAvatars.size() == 1)
-		setTitle(getString("TitleOneAvatar"));
-	else
-	{
-		LLStringUtil::format_map_t args;
-		args["[COUNT]"] = boost::lexical_cast<std::string>(mAvatars.size());
-		setTitle(getString("TitleWithCount", args));
-	}
-
 	// We rebuild the list fully each time it's refreshed
 	// The assumption is that it's faster to refill it and sort than
 	// to rebuild the whole list.
@@ -679,6 +669,7 @@ void LLFloaterAvatarList::refreshAvatarList()
 	localRectToScreen(getLocalRect(), &screen_rect);
 	speakermgr.update(!(screen_rect.pointInRect(gViewerWindow->getCurrentMouseX(), gViewerWindow->getCurrentMouseY()) && gMouseIdleTimer.getElapsedTimeF32() < 5.f));
 
+	av_list_t dead_entries;
 	bool name_restricted(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
 	BOOST_FOREACH(av_list_t::value_type& entry, mAvatars)
 	{
@@ -694,7 +685,11 @@ void LLFloaterAvatarList::refreshAvatarList()
 
 		//jcool410 -- this fucks up seeing dueds thru minimap data > 1024m away, so, lets just say > 2048m to the side is bad
 		//aka 8 sims
-		if (delta.magVec() > 2048.0) continue;
+		if (delta.magVec() > 2048.0)
+		{
+			dead_entries.push_back(entry);
+			continue;
+		}
 
 		entry->setInList();
 		const LLUUID& av_id = entry->getID();
@@ -977,6 +972,20 @@ void LLFloaterAvatarList::refreshAvatarList()
 
 		// Add to list
 		mAvatarList->addRow(element);
+	}
+
+	BOOST_FOREACH(av_list_t::value_type& dead, dead_entries)
+		mAvatars.erase(std::remove(mAvatars.begin(), mAvatars.end(), dead), mAvatars.end());
+
+	if (mAvatars.empty())
+		setTitle(getString("Title"));
+	else if (mAvatars.size() == 1)
+		setTitle(getString("TitleOneAvatar"));
+	else
+	{
+		LLStringUtil::format_map_t args;
+		args["[COUNT]"] = boost::lexical_cast<std::string>(mAvatars.size());
+		setTitle(getString("TitleWithCount", args));
 	}
 
 	// finish
