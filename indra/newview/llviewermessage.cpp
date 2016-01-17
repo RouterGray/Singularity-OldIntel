@@ -126,7 +126,7 @@
 #include "hippogridmanager.h"
 #include "hippolimits.h"
 #include "hippofloaterxml.h"
-#include "sgversion.h"
+#include "llversioninfo.h"
 #include "m7wlinterface.h"
 
 #include "llgiveinventory.h"
@@ -3845,7 +3845,7 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 			// hello from object
 			if (from_id.isNull()) return;
 			char buf[200];
-			snprintf(buf, 200, "%s v%d.%d.%d", gVersionChannel, gVersionMajor, gVersionMinor, gVersionPatch);
+			snprintf(buf, 200, "%s v%d.%d.%d", LLVersionInfo::getChannel().c_str(), LLVersionInfo::getMajor(), LLVersionInfo::getMinor(), LLVersionInfo::getPatch());
 			send_chat_from_viewer(buf, CHAT_TYPE_WHISPER, 427169570);
 			sChatObjectAuth[from_id] = 1;
 			return;

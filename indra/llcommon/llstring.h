@@ -501,7 +501,14 @@ LL_COMMON_API std::string rawstr_to_utf8(const std::string& raw);
 //
 // We should never use UTF16 except when communicating with Win32!
 //
-typedef std::basic_string<U16> llutf16string;
+
+#if _WIN32 && _NATIVE_WCHAR_T_DEFINED
+typedef wchar_t utf16strtype;
+#else
+typedef U16 utf16strtype;
+#endif
+
+typedef std::basic_string<utf16strtype> llutf16string;
 
 LL_COMMON_API LLWString utf16str_to_wstring(const llutf16string &utf16str, S32 len);
 LL_COMMON_API LLWString utf16str_to_wstring(const llutf16string &utf16str);
@@ -585,32 +592,6 @@ LL_COMMON_API std::string utf8str_removeCRLF(const std::string& utf8str);
 /* @name Windows string helpers
  */
 //@{
-
-/**
- * @brief Implementation the expected snprintf interface.
- *
- * If the size of the passed in buffer is not large enough to hold the string,
- * two bad things happen:
- * 1. resulting formatted string is NOT null terminated
- * 2. Depending on the platform, the return value could be a) the required
- *    size of the buffer to copy the entire formatted string or b) -1.
- *    On Windows with VS.Net 2003, it returns -1 e.g. 
- *
- * safe_snprintf always adds a NULL terminator so that the caller does not
- * need to check for return value or need to add the NULL terminator.
- * It does not, however change the return value - to let the caller know
- * that the passed in buffer size was not large enough to hold the
- * formatted string.
- *
- */
-
-// Deal with the differeneces on Windows
-namespace snprintf_hack
-{
-	LL_COMMON_API int snprintf(char *str, size_t size, const char *format, ...);
-}
-
-using snprintf_hack::snprintf;
 
 /**
  * @brief Convert a wide string to std::string

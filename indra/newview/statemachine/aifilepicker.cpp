@@ -400,7 +400,7 @@ void AIFilePicker::multiplex_impl(state_type run_state)
 #if LL_WINDOWS || (LL_GTK && LL_X11)
 			std::ostringstream window_id_str;
 #if LL_WINDOWS
-			unsigned long window_id = (unsigned long)gViewerWindow->getPlatformWindow();
+			unsigned long window_id = (unsigned long)(intptr_t)gViewerWindow->getPlatformWindow();
 #else
 			unsigned long window_id = LLWindowSDL::get_SDL_XWindowID();
 #endif

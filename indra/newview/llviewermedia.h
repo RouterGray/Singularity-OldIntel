@@ -234,6 +234,7 @@ public:
 	void mouseDown(const LLVector2& texture_coords, MASK mask, S32 button = 0);
 	void mouseUp(const LLVector2& texture_coords, MASK mask, S32 button = 0);
 	void mouseMove(const LLVector2& texture_coords, MASK mask);
+    void mouseDoubleClick(const LLVector2& texture_coords, MASK mask);
 	void mouseDoubleClick(S32 x,S32 y, MASK mask, S32 button = 0);
 	void scrollWheel(S32 x, S32 y, MASK mask);
 	void mouseCapture();
@@ -247,6 +248,7 @@ public:
 	void navigateInternal();
 	void navigateStop();
 	bool handleKeyHere(KEY key, MASK mask);
+	bool handleKeyUpHere(KEY key, MASK mask);
 	bool handleUnicodeCharHere(llwchar uni_char);
 	bool canNavigateForward();
 	bool canNavigateBack();
@@ -257,6 +259,7 @@ public:
 	void setHomeURL(const std::string& home_url, const std::string& mime_type = LLStringUtil::null) { mHomeURL = home_url; mHomeMimeType = mime_type;};
 	void clearCache();
 	void setPageZoomFactor( double factor );
+	double getPageZoomFactor() {return mZoomFactor;}
 	std::string getMimeType() { return mMimeType; }
 	void scaleMouse(S32 *mouse_x, S32 *mouse_y);
 	void scaleTextureCoords(const LLVector2& texture_coords, S32 *x, S32 *y);

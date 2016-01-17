@@ -49,10 +49,6 @@
 # include "llaudioengine_fmodstudio.h"
 #endif
 
-#if LL_FMODEX
-# include "llaudioengine_fmodex.h"
-#endif
-
 #ifdef LL_OPENAL
 #include "llaudioengine_openal.h"
 #endif
@@ -90,7 +86,7 @@
 #include "lltexteditor.h"
 #include "llurlentry.h"
 #include "lluserrelations.h"
-#include "sgversion.h"
+#include "llversioninfo.h"
 #include "llviewercontrol.h"
 #include "llvfs.h"
 #include "llxorcipher.h"	// saved password, MAC address
@@ -434,17 +430,6 @@ void init_audio()
 		}
 #endif
 
-#ifdef LL_FMODEX		
-		if (!gAudiop
-#if !LL_WINDOWS
-		    && NULL == getenv("LL_BAD_FMODEX_DRIVER")
-#endif // !LL_WINDOWS
-		)
-		{
-			gAudiop = (LLAudioEngine *) new LLAudioEngine_FMODEX(gSavedSettings.getBOOL("SHEnableFMODExProfiler"),gSavedSettings.getBOOL("SHEnableFMODEXVerboseDebugging"));
-		}
-#endif
-
 #ifdef LL_OPENAL
 		if (!gAudiop
 #if !LL_WINDOWS
@@ -693,9 +678,9 @@ bool idle_startup()
 			if(!start_messaging_system(
 				   message_template_path,
 				   port,
-				   gVersionMajor,
-				   gVersionMinor,
-				   gVersionPatch,
+				   LLVersionInfo::getMajor(),
+				   LLVersionInfo::getMinor(),
+				   LLVersionInfo::getPatch(),
 				   FALSE,
 				   std::string(),
 				   responder,

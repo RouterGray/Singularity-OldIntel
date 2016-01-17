@@ -281,8 +281,8 @@ void F_STDCALL decode_dealloc(void *ptr, FMOD_MEMORY_TYPE type, const char *sour
 
 bool LLAudioEngine_FMODSTUDIO::init(const S32 num_channels, void* userdata)
 {
-
-#if LL_WINDOWS
+	LL_WARNS("AudioImpl") << "BARKBARKBARK" << LL_ENDL;
+#if 0 //LL_WINDOWS
 	if(!attemptDelayLoad())
 		return false;
 #endif
@@ -477,7 +477,7 @@ std::string LLAudioEngine_FMODSTUDIO::getDriverName(bool verbose)
 			return llformat("FMOD Studio %1x.%02x.%02x", version >> 16, version >> 8 & 0x000000FF, version & 0x000000FF);
 		}
 	}
-	return "FMODEx";
+	return "FMOD Studio";
 }
 
 

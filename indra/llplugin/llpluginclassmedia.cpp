@@ -1,4 +1,4 @@
-/** 
+/**
  * @file llpluginclassmedia.cpp
  * @brief LLPluginClassMedia handles a plugin which knows about the "media" message class.
  *
@@ -6,21 +6,21 @@
  * $LicenseInfo:firstyear=2008&license=viewerlgpl$
  * Second Life Viewer Source Code
  * Copyright (C) 2010, Linden Research, Inc.
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation;
  * version 2.1 of the License only.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- * 
+ *
  * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  * @endcond
@@ -41,7 +41,7 @@ static int nextPowerOf2( int value )
 	{
 		next_power_of_2 <<= 1;
 	}
-	
+
 	return next_power_of_2;
 }
 
@@ -104,7 +104,7 @@ void LLPluginClassMedia::reset_impl(void)
 	mMediaName.clear();
 	mMediaDescription.clear();
 	mBackgroundColor = LLColor4(1.0f, 1.0f, 1.0f, 1.0f);
-	
+
 	// media_browser class
 	mNavigateURI.clear();
 	mNavigateResultCode = -1;
@@ -112,13 +112,13 @@ void LLPluginClassMedia::reset_impl(void)
 	mHistoryBackAvailable = false;
 	mHistoryForwardAvailable = false;
 	mStatusText.clear();
-	mProgressPercent = 0;	
+	mProgressPercent = 0;
 	mClickURL.clear();
 	mClickNavType.clear();
 	mClickTarget.clear();
 	mClickUUID.clear();
 	mStatusCode = 0;
-	
+
 	// media_time class
 	mCurrentTime = 0.0f;
 	mDuration = 0.0f;
@@ -144,7 +144,7 @@ void LLPluginClassMedia::idle_impl(void)
 		else
 		{
 			mRequestedTextureWidth = mRequestedMediaWidth;
-			
+
 			if(mPadding > 1)
 			{
 				// Pad up to a multiple of the specified number of bytes per row
@@ -154,7 +154,7 @@ void LLPluginClassMedia::idle_impl(void)
 				{
 					rowbytes += mPadding - pad;
 				}
-				
+
 				if(rowbytes % mRequestedTextureDepth == 0)
 				{
 					mRequestedTextureWidth = rowbytes / mRequestedTextureDepth;
@@ -166,7 +166,7 @@ void LLPluginClassMedia::idle_impl(void)
 			}
 		}
 
-		
+
 		// Size change has been requested but not initiated yet.
 		size_t newsize = mRequestedTextureWidth * mRequestedTextureHeight * mRequestedTextureDepth;
 
@@ -181,22 +181,22 @@ void LLPluginClassMedia::idle_impl(void)
 				mPlugin->removeSharedMemory(mTextureSharedMemoryName);
 				mTextureSharedMemoryName.clear();
 			}
-			
+
 			mTextureSharedMemorySize = newsize;
 			mTextureSharedMemoryName = mPlugin->addSharedMemory(mTextureSharedMemorySize);
 			if(!mTextureSharedMemoryName.empty())
 			{
 				void *addr = mPlugin->getSharedMemoryAddress(mTextureSharedMemoryName);
-				
+
 				// clear texture memory to avoid random screen visual fuzz from uninitialized texture data
 				memset( addr, 0x00, newsize );
-				
+
 				// We could do this to force an update, but textureValid() will still be returning false until the first roundtrip to the plugin,
 				// so it may not be worthwhile.
 				// mDirtyRect.setOriginAndSize(0, 0, mRequestedMediaWidth, mRequestedMediaHeight);
 			}
 		}
-		
+
 		// This is our local indicator that a change is in progress.
 		mTextureWidth = -1;
 		mTextureHeight = -1;
@@ -205,7 +205,7 @@ void LLPluginClassMedia::idle_impl(void)
 
 		// This invalidates any existing dirty rect.
 		resetDirty();
-		
+
 		// Send a size change message to the plugin
 		{
 			LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "size_change");
@@ -219,7 +219,7 @@ void LLPluginClassMedia::idle_impl(void)
 			message.setValueReal("background_b", mBackgroundColor.mV[VZ]);
 			message.setValueReal("background_a", mBackgroundColor.mV[VW]);
 			mPlugin->sendMessage(message);	// DO NOT just use sendMessage() here -- we want this to jump ahead of the queue.
-			
+
 			LL_DEBUGS("Plugin") << "Sending size_change" << LL_ENDL;
 		}
 	}
@@ -278,11 +278,11 @@ void LLPluginClassMedia::setSizeInternal(void)
 		mRequestedMediaWidth = mDefaultMediaWidth;
 		mRequestedMediaHeight = mDefaultMediaHeight;
 	}
-	
+
 	// Save these for size/interest calculations
 	mFullMediaWidth = mRequestedMediaWidth;
 	mFullMediaHeight = mRequestedMediaHeight;
-	
+
 	if(mAllowDownsample)
 	{
 		switch(mPriority)
@@ -296,19 +296,19 @@ void LLPluginClassMedia::setSizeInternal(void)
 					mRequestedMediaHeight /= 2;
 				}
 			break;
-			
+
 			default:
 				// Don't adjust texture size
 			break;
 		}
 	}
-	
+
 	if(mAutoScaleMedia)
 	{
 		mRequestedMediaWidth = nextPowerOf2(mRequestedMediaWidth);
 		mRequestedMediaHeight = nextPowerOf2(mRequestedMediaHeight);
 	}
-	
+
 	if(mRequestedMediaWidth > 2048)
 		mRequestedMediaWidth = 2048;
 
@@ -336,9 +336,9 @@ bool LLPluginClassMedia::textureValid(void)
 		mRequestedMediaWidth != mMediaWidth ||
 		mRequestedMediaHeight != mMediaHeight ||
 		getBitsData() == NULL
-	)	
+	)
 		return false;
-	
+
 	return true;
 }
 
@@ -362,8 +362,8 @@ void LLPluginClassMedia::resetDirty(void)
 std::string LLPluginClassMedia::translateModifiers(MASK modifiers)
 {
 	std::string result;
-	
-	
+
+
 	if(modifiers & MASK_CONTROL)
 	{
 		result += "control|";
@@ -386,7 +386,7 @@ std::string LLPluginClassMedia::translateModifiers(MASK modifiers)
 	{
 		result += "meta|";
 	}
-*/	
+*/
 	return result;
 }
 
@@ -494,11 +494,11 @@ void LLPluginClassMedia::mouseEvent(EMouseEventType type, int button, int x, int
 			// Don't spam unnecessary mouse move events.
 			return;
 		}
-		
+
 		mLastMouseX = x;
 		mLastMouseY = y;
 	}
-	
+
 	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "mouse_event");
 	std::string temp;
 	switch(type)
@@ -513,7 +513,7 @@ void LLPluginClassMedia::mouseEvent(EMouseEventType type, int button, int x, int
 	message.setValueS32("button", button);
 
 	message.setValueS32("x", x);
-	
+
 	// Incoming coordinates are OpenGL-style ((0,0) = lower left), so flip them here if the plugin has requested it.
 	if(!mRequestedTextureCoordsOpenGL)
 	{
@@ -523,42 +523,42 @@ void LLPluginClassMedia::mouseEvent(EMouseEventType type, int button, int x, int
 	message.setValueS32("y", y);
 
 	message.setValue("modifiers", translateModifiers(modifiers));
-	
+
 	sendMessage(message);
 }
 
 bool LLPluginClassMedia::keyEvent(EKeyEventType type, int key_code, MASK modifiers, LLSD native_key_data)
 {
 	bool result = true;
-	
+
 	// FIXME:
 	// HACK: we don't have an easy way to tell if the plugin is going to handle a particular keycode.
 	// For now, return false for the ones the webkit plugin won't handle properly.
-	
+
 	switch(key_code)
 	{
-		case KEY_BACKSPACE:		
-		case KEY_TAB:			
-		case KEY_RETURN:		
-		case KEY_PAD_RETURN:	
-		case KEY_SHIFT:			
-		case KEY_CONTROL:		
-		case KEY_ALT:			
-		case KEY_CAPSLOCK:		
-		case KEY_ESCAPE:		
-		case KEY_PAGE_UP:		
-		case KEY_PAGE_DOWN:		
-		case KEY_END:			
-		case KEY_HOME:			
-		case KEY_LEFT:			
-		case KEY_UP:			
-		case KEY_RIGHT:			
-		case KEY_DOWN:			
-		case KEY_INSERT:		
+		case KEY_BACKSPACE:
+		case KEY_TAB:
+		case KEY_RETURN:
+		case KEY_PAD_RETURN:
+		case KEY_SHIFT:
+		case KEY_CONTROL:
+		case KEY_ALT:
+		case KEY_CAPSLOCK:
+		case KEY_ESCAPE:
+		case KEY_PAGE_UP:
+		case KEY_PAGE_DOWN:
+		case KEY_END:
+		case KEY_HOME:
+		case KEY_LEFT:
+		case KEY_UP:
+		case KEY_RIGHT:
+		case KEY_DOWN:
+		case KEY_INSERT:
 		case KEY_DELETE:
-			// These will be handled		
+			// These will be handled
 		break;
-		
+
 		default:
 			// regular ASCII characters will also be handled
 			if(key_code >= KEY_SPECIAL)
@@ -569,7 +569,7 @@ bool LLPluginClassMedia::keyEvent(EKeyEventType type, int key_code, MASK modifie
 		break;
 	}
 
-#if LL_DARWIN	
+#if LL_DARWIN
 	if(modifiers & MASK_ALT)
 	{
 		// Option-key modified characters should be handled by the unicode input path instead of this one.
@@ -588,15 +588,15 @@ bool LLPluginClassMedia::keyEvent(EKeyEventType type, int key_code, MASK modifie
 			case KEY_EVENT_REPEAT:			temp = "repeat";		break;
 		}
 		message.setValue("event", temp);
-		
+
 		message.setValueS32("key", key_code);
 
 		message.setValue("modifiers", translateModifiers(modifiers));
 		message.setValueLLSD("native_key_data", native_key_data);
-		
+
 		sendMessage(message);
 	}
-		
+
 	return result;
 }
 
@@ -607,10 +607,10 @@ void LLPluginClassMedia::scrollEvent(int x, int y, MASK modifiers)
 	message.setValueS32("x", x);
 	message.setValueS32("y", y);
 	message.setValue("modifiers", translateModifiers(modifiers));
-	
+
 	sendMessage(message);
 }
-	
+
 bool LLPluginClassMedia::textInput(const std::string &text, MASK modifiers, LLSD native_key_data)
 {
 	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "text_event");
@@ -618,10 +618,25 @@ bool LLPluginClassMedia::textInput(const std::string &text, MASK modifiers, LLSD
 	message.setValue("text", text);
 	message.setValue("modifiers", translateModifiers(modifiers));
 	message.setValueLLSD("native_key_data", native_key_data);
-	
+
 	sendMessage(message);
-	
+
 	return true;
+}
+
+void LLPluginClassMedia::setCookie(std::string uri, std::string name, std::string value, std::string domain, std::string path, bool httponly, bool secure)
+{
+	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "set_cookie");
+
+	message.setValue("uri", uri);
+	message.setValue("name", name);
+	message.setValue("value", value);
+	message.setValue("domain", domain);
+	message.setValue("path", path);
+	message.setValueBoolean("httponly", httponly);
+	message.setValueBoolean("secure", secure);
+
+	sendMessage(message);
 }
 
 void LLPluginClassMedia::loadURI(const std::string &uri)
@@ -629,7 +644,7 @@ void LLPluginClassMedia::loadURI(const std::string &uri)
 	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "load_uri");
 
 	message.setValue("uri", uri);
-	
+
 	sendMessage(message);
 }
 
@@ -645,6 +660,7 @@ void LLPluginClassMedia::setLowPrioritySizeLimit(int size)
 	if(mLowPrioritySizeLimit != power)
 	{
 		mLowPrioritySizeLimit = power;
+
 		// This may affect the calculated size, so recalculate it here.
 		setSizeInternal();
 	}
@@ -653,12 +669,12 @@ void LLPluginClassMedia::setLowPrioritySizeLimit(int size)
 F64 LLPluginClassMedia::getCPUUsage()
 {
 	F64 result = 0.0f;
-	
+
 	if(mPlugin)
 	{
 		result = mPlugin->getCPUUsage();
 	}
-	
+
 	return result;
 }
 
@@ -706,10 +722,12 @@ void LLPluginClassMedia::paste()
 	sendMessage(message);
 }
 
-void LLPluginClassMedia::setUserDataPath(const std::string &user_data_path)
+void LLPluginClassMedia::setUserDataPath(const std::string &user_data_path_cache, const std::string &user_data_path_cookies, const std::string &user_data_path_logs)
 {
 	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "set_user_data_path");
-	message.setValue("path", user_data_path);
+	message.setValue("cache_path", user_data_path_cache);
+	message.setValue("cookies_path", user_data_path_cookies);
+	message.setValue("logs_path", user_data_path_logs);
 	sendMessage(message);
 }
 
@@ -722,14 +740,14 @@ void LLPluginClassMedia::setLanguageCode(const std::string &language_code)
 
 void LLPluginClassMedia::setPluginsEnabled(const bool enabled)
 {
-	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "plugins_enabled");
+	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA_BROWSER, "plugins_enabled");
 	message.setValueBoolean("enable", enabled);
 	sendMessage(message);
 }
 
 void LLPluginClassMedia::setJavascriptEnabled(const bool enabled)
 {
-	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA, "javascript_enabled");
+	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA_BROWSER, "javascript_enabled");
 	message.setValueBoolean("enable", enabled);
 	sendMessage(message);
 }
@@ -746,7 +764,8 @@ void LLPluginClassMedia::setTarget(const std::string &target)
 {
 	mTarget = target;
 }
-/* virtual */ 
+
+/* virtual */
 void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 {
 	std::string message_class = message.getClass();
@@ -765,21 +784,21 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 			mRequestedTextureFormat = message.getValueU32("format");
 			mRequestedTextureType = message.getValueU32("type");
 			mRequestedTextureSwapBytes = message.getValueBoolean("swap_bytes");
-			mRequestedTextureCoordsOpenGL = message.getValueBoolean("coords_opengl");			
-			
+			mRequestedTextureCoordsOpenGL = message.getValueBoolean("coords_opengl");
+
 			// These two are optional, and will default to 0 if they're not specified.
 			mDefaultMediaWidth = message.getValueS32("default_width");
 			mDefaultMediaHeight = message.getValueS32("default_height");
-			
+
 			mAllowDownsample = message.getValueBoolean("allow_downsample");
 			mPadding = message.getValueS32("padding");
 
 			setSizeInternal();
-			
+
 			mTextureParamsReceived = true;
 		}
 		else if(message_name == "updated")
-		{			
+		{
 			if(message.hasValue("left"))
 			{
 				LLRect newDirtyRect;
@@ -787,7 +806,7 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 				newDirtyRect.mTop = message.getValueS32("top");
 				newDirtyRect.mRight = message.getValueS32("right");
 				newDirtyRect.mBottom = message.getValueS32("bottom");
-							
+
 				// The plugin is likely to have top and bottom switched, due to vertical flip and OpenGL coordinate confusion.
 				// If they're backwards, swap them.
 				if(newDirtyRect.mTop < newDirtyRect.mBottom)
@@ -796,7 +815,7 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 					newDirtyRect.mTop = newDirtyRect.mBottom;
 					newDirtyRect.mBottom = temp;
 				}
-				
+
 				if(mDirtyRect.isEmpty())
 				{
 					mDirtyRect = newDirtyRect;
@@ -816,10 +835,10 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 					<< mDirtyRect.mRight << ", "
 					<< mDirtyRect.mBottom << ")"
 					<< LL_ENDL;
-				
+
 				mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_CONTENT_UPDATED);
-			}			
-			
+			}
+
 
 			bool time_duration_updated = false;
 			int previous_percent = mProgressPercent;
@@ -839,7 +858,7 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 			{
 				mCurrentRate = message.getValueReal("current_rate");
 			}
-			
+
 			if(message.hasValue("loaded_duration"))
 			{
 				mLoadedDuration = message.getValueReal("loaded_duration");
@@ -850,7 +869,7 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 				// If the message doesn't contain a loaded_duration param, assume it's equal to duration
 				mLoadedDuration = mDuration;
 			}
-			
+
 			// Calculate a percentage based on the loaded duration and total duration.
 			if(mDuration != 0.0f)	// Don't divide by zero.
 			{
@@ -861,7 +880,7 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 			{
 				mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_TIME_DURATION_UPDATED);
 			}
-			
+
 			if(previous_percent != mProgressPercent)
 			{
 				mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_PROGRESS_UPDATED);
@@ -870,9 +889,9 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 		else if(message_name == "media_status")
 		{
 			std::string status = message.getValue("status");
-			
+
 			LL_DEBUGS("Plugin") << "Status changed to: " << status << LL_ENDL;
-			
+
 			if(status == "loading")
 			{
 				mStatus = LLPluginClassMediaOwner::MEDIA_LOADING;
@@ -912,24 +931,24 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 			// TODO: check that name matches?
 			mNaturalMediaWidth = width;
 			mNaturalMediaHeight = height;
-			
+
 			setSizeInternal();
 		}
 		else if(message_name == "size_change_response")
 		{
 			std::string name = message.getValue("name");
-			
+
 			// TODO: check that name matches?
-			
+
 			mTextureWidth = message.getValueS32("texture_width");
 			mTextureHeight = message.getValueS32("texture_height");
 			mMediaWidth = message.getValueS32("width");
 			mMediaHeight = message.getValueS32("height");
-			
+
 			// This invalidates any existing dirty rect.
 			resetDirty();
-			
-			// TODO: should we verify that the plugin sent back the right values?  
+
+			// TODO: should we verify that the plugin sent back the right values?
 			// Two size changes in a row may cause them to not match, due to queueing, etc.
 
 			mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_SIZE_CHANGED);
@@ -969,7 +988,12 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 			mAuthURL = message.getValue("url");
 			mAuthRealm = message.getValue("realm");
 			mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_AUTH_REQUEST);
-		}		
+		}
+		else if (message_name == "file_download")
+		{
+			mFileDownloadFilename = message.getValue("filename");
+			mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_FILE_DOWNLOAD);
+		}
 		else if(message_name == "debug_message")
 		{
 			mDebugMessageText = message.getValue("message_text");
@@ -996,7 +1020,7 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 			mNavigateResultString = message.getValue("result_string");
 			mHistoryBackAvailable = message.getValueBoolean("history_back_available");
 			mHistoryForwardAvailable = message.getValueBoolean("history_forward_available");
-			
+
 			mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_NAVIGATE_COMPLETE);
 		}
 		else if(message_name == "progress")
@@ -1051,7 +1075,7 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 			mGeometryY = message.getValueS32("y");
 			mGeometryWidth = message.getValueS32("width");
 			mGeometryHeight = message.getValueS32("height");
-				
+
 			mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_GEOMETRY_CHANGE);
 		}
 		else if(message_name == "link_hovered")
@@ -1060,7 +1084,7 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 			mHoverLink = message.getValue("link");
 			mHoverText = message.getValue("title");
 			// message.getValue("text");
-				
+
 			mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_LINK_HOVERED);
 		}
 		else
@@ -1076,20 +1100,21 @@ void LLPluginClassMedia::receivePluginMessage(const LLPluginMessage &message)
 //		if(message_name == "message_name")
 //		{
 //		}
-//		else 
+//		else
 		{
 			LL_WARNS("Plugin") << "Unknown " << message_class << " class message: " << message_name << LL_ENDL;
 		}
 	}
+
 }
 
-/* virtual */ 
+/* virtual */
 void LLPluginClassMedia::pluginLaunchFailed()
 {
 	mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_PLUGIN_FAILED_LAUNCH);
 }
 
-/* virtual */ 
+/* virtual */
 void LLPluginClassMedia::pluginDied()
 {
 	mediaEvent(LLPluginClassMediaOwner::MEDIA_EVENT_PLUGIN_FAILED);
@@ -1116,7 +1141,7 @@ void LLPluginClassMedia::focus(bool focused)
 	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA_BROWSER, "focus");
 
 	message.setValueBoolean("focused", focused);
-	
+
 	sendMessage(message);
 }
 
@@ -1143,7 +1168,7 @@ void LLPluginClassMedia::clear_cookies()
 void LLPluginClassMedia::set_cookies(const std::string &cookies)
 {
 	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA_BROWSER, "set_cookies");
-	message.setValue("cookies", cookies);	
+	message.setValue("cookies", cookies);
 	sendMessage(message);
 }
 
@@ -1176,7 +1201,7 @@ void LLPluginClassMedia::browse_reload(bool ignore_cache)
 	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA_BROWSER, "browse_reload");
 
 	message.setValueBoolean("ignore_cache", ignore_cache);
-	
+
 	sendMessage(message);
 }
 
@@ -1300,7 +1325,7 @@ void LLPluginClassMedia::seek(float time)
 	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA_TIME, "seek");
 
 	message.setValueReal("time", time);
-	
+
 	sendMessage(message);
 }
 
@@ -1318,11 +1343,11 @@ void LLPluginClassMedia::setVolume(float volume)
 	if(volume != mRequestedVolume)
 	{
 		mRequestedVolume = volume;
-		
+
 		LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA_TIME, "set_volume");
 
 		message.setValueReal("volume", volume);
-		
+
 		sendMessage(message);
 	}
 }
@@ -1341,4 +1366,3 @@ void LLPluginClassMedia::initializeUrlHistory(const LLSD& url_history)
 
 	LL_DEBUGS("Plugin") << "Sending history" << LL_ENDL;
 }
-

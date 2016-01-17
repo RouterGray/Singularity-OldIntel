@@ -6,6 +6,7 @@ include(LLPlugin)
 include(Linking)
 include(PluginAPI)
 include(LLMessage)
+include(WinManifest)
 
 include_directories(
     ${LLPLUGIN_INCLUDE_DIRS}
@@ -58,6 +59,7 @@ if (WINDOWS)
     PROPERTIES
     LINK_FLAGS "/OPT:NOREF"
   )
+  EMBED_MANIFEST(SLPlugin 1)
 endif()
 
 target_link_libraries(SLPlugin

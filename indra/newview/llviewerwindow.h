@@ -292,6 +292,7 @@ public:
 	void				updateKeyboardFocus();		
 
 	BOOL			handleKey(KEY key, MASK mask);
+	BOOL			handleKeyUp(KEY key, MASK mask);
 	void			handleScrollWheel	(S32 clicks);
 
 	// Hide normal UI when a logon fails, re-show everything when logon is attempted again

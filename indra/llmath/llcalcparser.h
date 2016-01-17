@@ -33,10 +33,21 @@
 #endif
 
 // Add this in if we want boost math constants.
+#include <boost/bind.hpp>
+
+#if defined(LL_WINDOWS)
+#pragma warning(push)
+// warning C4348: 'boost::spirit::terminal<...>::result_helper': redefinition of default parameter: parameter 3, 4
+#pragma warning(disable: 4348)
+#endif
+
 //#include <boost/math/constants/constants.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/spirit/include/qi.hpp>
 
+#if defined(LL_WINDOWS)
+#pragma warning(pop)
+#endif
 namespace expression {
 
 
@@ -54,37 +65,43 @@ T max_glue(T a, T b)
 {
 	return std::max(a, b);
 }
+
+struct lazy_pow_
+{
+	template <typename X, typename Y>
+	struct result { typedef X type; };
  
-template<typename RT>
+	template <typename X, typename Y>
+	X operator()(X x, Y y) const
+	{
+		return std::pow(x, y);
+	}
+};
+ 
 struct lazy_ufunc_
 {
-	typedef RT result_type;
-
 	template <typename F, typename A1>
-	struct result { typedef RT type; };
+	struct result { typedef A1 type; };
  
 	template <typename F, typename A1>
-	RT operator()(F f, A1 a1) const
+	A1 operator()(F f, A1 a1) const
 	{
 		return f(a1);
 	}
 };
-
-template<typename RT>
+ 
 struct lazy_bfunc_
 {
-	typedef RT result_type;
-
 	template <typename F, typename A1, typename A2>
-	struct result { typedef RT type; };
+	struct result { typedef A1 type; };
  
 	template <typename F, typename A1, typename A2>
-	RT operator()(F f, A1 a1, A2 a2) const
+	A1 operator()(F f, A1 a1, A2 a2) const
 	{
 		return f(a1, a2);
 	}
 };
-
+ 
 //} // end namespace anonymous
  
 template <typename FPT, typename Iterator>
@@ -172,9 +189,10 @@ struct grammar
 		using boost::spirit::qi::no_case;
 		using boost::spirit::qi::_val;
  
-		boost::phoenix::function< lazy_ufunc_<FPT> > lazy_ufunc;
-		boost::phoenix::function< lazy_bfunc_<FPT> > lazy_bfunc;
-
+		boost::phoenix::function<lazy_pow_>   lazy_pow;
+		boost::phoenix::function<lazy_ufunc_> lazy_ufunc;
+		boost::phoenix::function<lazy_bfunc_> lazy_bfunc;
+ 
 		expression =
 			term                   [_val =  _1]
 			>> *(  ('+' >> term    [_val += _1])
@@ -191,7 +209,7 @@ struct grammar
  
 		factor =
 			primary                [_val =  _1]
-			>> *(  ("**" >> factor [_val = boost::phoenix::bind(static_cast<FPT (*)(FPT,FPT)>(&std::pow),_val,_1)])
+			>> *(  ("**" >> factor [_val = lazy_pow(_val, _1)])
 				)
 			;
  

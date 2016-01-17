@@ -36,7 +36,7 @@
 #include "hippogridmanager.h"
 #include "hippolimits.h"
 
-#include "sgversion.h"
+#include "llversioninfo.h"
 #include "llfeaturemanager.h"
 #include "lluictrlfactory.h"
 #include "lltexteditor.h"
@@ -755,16 +755,9 @@ bool LLAppViewer::init()
 	// Setup notifications after LLUI::initClass() has been called.
 	LLNotifications::instance().createDefaultChannels();
 	LL_INFOS("InitInfo") << "Notifications initialized." << LL_ENDL ;
-	
+
 	writeSystemInfo();
 
-	// Build a string representing the current version number.
-	gCurrentVersion = llformat("%s %d.%d.%d.%d",
-		gVersionChannel,
-		gVersionMajor,
-		gVersionMinor,
-		gVersionPatch,
-		gVersionBuild );
 
 	//////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
@@ -1006,7 +999,8 @@ bool LLAppViewer::init()
 	gDebugInfo["GraphicsCard"] = LLFeatureManager::getInstance()->getGPUString();
 
 	// Save the current version to the prefs file
-	gSavedSettings.setString("LastRunVersion", gCurrentVersion);
+	gSavedSettings.setString("LastRunVersion",
+							 LLVersionInfo::getChannelAndVersion());
 
 	gSimLastTime = gRenderStartTime.getElapsedTimeF32();
 	gSimFrames = (F32)gFrameCount;
@@ -2161,7 +2155,7 @@ bool LLAppViewer::initConfiguration()
 	gSavedSettings.setString("ClientSettingsFile", 
 		gDirUtilp->getExpandedFilename(LL_PATH_USER_SETTINGS, getSettingsFilename("Default", "Global")));
 
-	gSavedSettings.setString("VersionChannelName", gVersionChannel);
+	gSavedSettings.setString("VersionChannelName", LLVersionInfo::getChannel());
 
 #if 0 //#ifndef	LL_RELEASE_FOR_DOWNLOAD
 	// provide developer build only overrides for these control variables that are not
@@ -2647,17 +2641,18 @@ void LLAppViewer::removeCacheFiles(const std::string& file_mask)
 
 void LLAppViewer::writeSystemInfo()
 {
-	
+
 	if (! gDebugInfo.has("Dynamic") )
 		gDebugInfo["Dynamic"] = LLSD::emptyMap();
 	
 	gDebugInfo["SLLog"] = LLError::logFileName();
 
-	gDebugInfo["ClientInfo"]["Name"] = gVersionChannel;
-	gDebugInfo["ClientInfo"]["MajorVersion"] = gVersionMajor;
-	gDebugInfo["ClientInfo"]["MinorVersion"] = gVersionMinor;
-	gDebugInfo["ClientInfo"]["PatchVersion"] = gVersionPatch;
-	gDebugInfo["ClientInfo"]["BuildVersion"] = gVersionBuild;
+	gDebugInfo["ClientInfo"]["Name"] = LLVersionInfo::getChannel();
+	gDebugInfo["ClientInfo"]["MajorVersion"] = LLVersionInfo::getMajor();
+	gDebugInfo["ClientInfo"]["MinorVersion"] = LLVersionInfo::getMinor();
+	gDebugInfo["ClientInfo"]["PatchVersion"] = LLVersionInfo::getPatch();
+	gDebugInfo["ClientInfo"]["BuildVersion"] = LLVersionInfo::getBuild();
+
 #if defined(_WIN64) || defined(__x86_64__)
 	gDebugInfo["ClientInfo"]["Architecture"] = "x86_64";
 #else
@@ -2703,9 +2698,8 @@ void LLAppViewer::writeSystemInfo()
 	}
 	
 	// Dump some debugging info
-	LL_INFOS("SystemInfo") << LLTrans::getString("APP_NAME")
-			<< " version " << gVersionMajor << "." << gVersionMinor << "." << gVersionPatch
-			<< LL_ENDL;
+	LL_INFOS("SystemInfo") << "Application: " << LLTrans::getString("APP_NAME") << LL_ENDL;
+	LL_INFOS("SystemInfo") << "Version: " << LLVersionInfo::getChannelAndVersion() << LL_ENDL;
 
 	// Dump the local time and time zone
 	time_t now;
@@ -2763,15 +2757,6 @@ void LLAppViewer::handleViewerCrash()
 		gDebugInfo["Dynamic"]["CrashHostUrl"] = crashHostUrl;
 	}
 	
-	//We already do this in writeSystemInfo(), but we do it again here to make /sure/ we have a version
-	//to check against no matter what
-	gDebugInfo["ClientInfo"]["Name"] = gVersionChannel;
-
-	gDebugInfo["ClientInfo"]["MajorVersion"] = gVersionMajor;
-	gDebugInfo["ClientInfo"]["MinorVersion"] = gVersionMinor;
-	gDebugInfo["ClientInfo"]["PatchVersion"] = gVersionPatch;
-	gDebugInfo["ClientInfo"]["BuildVersion"] = gVersionBuild;
-
 	LLParcel* parcel = LLViewerParcelMgr::getInstance()->getAgentParcel();
 	if ( parcel && parcel->getMusicURL()[0])
 	{
@@ -4505,19 +4490,7 @@ void LLAppViewer::shutdownAudio()
 	if (gAudiop)
 	{
 		// shut down the audio subsystem
-
-		bool want_longname = false;
-		if (gAudiop->getDriverName(want_longname) == "FMOD")
-		{
-			// This hack exists because fmod likes to occasionally
-			// crash or hang forever when shutting down, for no
-			// apparent reason.
-			LL_WARNS() << "Hack, skipping FMOD audio engine cleanup" << LL_ENDL;
-		}
-		else
-		{
-			gAudiop->shutdown();
-		}
+		gAudiop->shutdown();
 
 		delete gAudiop;
 		gAudiop = NULL;
@@ -4736,12 +4709,12 @@ void LLAppViewer::handleLoginComplete()
 	initMainloopTimeout("Mainloop Init");
 
 	// Store some data to DebugInfo in case of a freeze.
-	gDebugInfo["ClientInfo"]["Name"] = gVersionChannel;
+	gDebugInfo["ClientInfo"]["Name"] = LLVersionInfo::getChannel();
 
-	gDebugInfo["ClientInfo"]["MajorVersion"] = gVersionMajor;
-	gDebugInfo["ClientInfo"]["MinorVersion"] = gVersionMinor;
-	gDebugInfo["ClientInfo"]["PatchVersion"] = gVersionPatch;
-	gDebugInfo["ClientInfo"]["BuildVersion"] = gVersionBuild;
+	gDebugInfo["ClientInfo"]["MajorVersion"] = LLVersionInfo::getMajor();
+	gDebugInfo["ClientInfo"]["MinorVersion"] = LLVersionInfo::getMinor();
+	gDebugInfo["ClientInfo"]["PatchVersion"] = LLVersionInfo::getPatch();
+	gDebugInfo["ClientInfo"]["BuildVersion"] = LLVersionInfo::getBuild();
 
 	LLParcel* parcel = LLViewerParcelMgr::getInstance()->getAgentParcel();
 	if ( parcel && parcel->getMusicURL()[0])

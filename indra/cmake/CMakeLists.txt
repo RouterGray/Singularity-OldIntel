@@ -16,22 +16,21 @@ set(cmake_SOURCE_FILES
     Boost.cmake
     BuildVersion.cmake
     CARes.cmake
+    CEFPlugin.cmake
     CMakeCopyIfDifferent.cmake
     CURL.cmake
     Colladadom.cmake
     ConfigurePkgConfig.cmake
-    CopyBackToSource.cmake
-    CopyWinLibs.cmake
+    Copy3rdPartyLibs.cmake
     Cwdebug.cmake
     DBusGlib.cmake
-    DirectX.cmake
-    DownloadPrebuilt.cmake.in
+    DeploySharedLibs.cmake
     ELFIO.cmake
     EXPAT.cmake
     ExamplePlugin.cmake
-    FMODEX.cmake
     FMODSTUDIO.cmake
     FindAPR.cmake
+    FindAutobuild.cmake
     FindBerkeleyDB.cmake
     FindCARes.cmake
     FindColladadom.cmake
@@ -41,7 +40,6 @@ set(cmake_SOURCE_FILES
     FindGooglePerfTools.cmake
     FindHunSpell.cmake
     FindJsonCpp.cmake
-    FindLLQtWebkit.cmake
     FindNDOF.cmake
     FindOpenJPEG.cmake
     FindTut.cmake
@@ -71,8 +69,8 @@ set(cmake_SOURCE_FILES
     LLPrimitive.cmake
     LLPhysicsExtensions.cmake
     LLSharedLibs.cmake
-    LLQtWebkit.cmake
     LLRender.cmake
+    LLSharedLibs.cmake
     LLUI.cmake
     LLVFS.cmake
     LLWindow.cmake
@@ -91,7 +89,6 @@ set(cmake_SOURCE_FILES
     Prebuilt.cmake
     PulseAudio.cmake
     Python.cmake
-    Qt4.cmake
     QuickTimePlugin.cmake
     RunBuildTest.cmake
     StateMachine.cmake
@@ -101,7 +98,7 @@ set(cmake_SOURCE_FILES
     UnixInstall.cmake
     Variables.cmake
     ViewerMiscLibs.cmake
-    WebKitLibPlugin.cmake
+    WinManifest.cmake
     XmlRpcEpi.cmake
     ZLIB.cmake
     )
@@ -110,7 +107,6 @@ source_group("Shared Rules" FILES ${cmake_SOURCE_FILES})
 
 set(master_SOURCE_FILES
     ../CMakeLists.txt
-    ../develop.py
     )
 
 source_group("Master Rules" FILES ${master_SOURCE_FILES})

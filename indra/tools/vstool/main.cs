@@ -5,11 +5,10 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using Microsoft.CSharp;
 
 namespace VSTool
 {
@@ -20,41 +19,22 @@ namespace VSTool
     public class MessageFilter : IOleMessageFilter
     {
         //
-        // Class containing the IOleMessageFilter
-        // thread error-handling functions.
-
-        // Start the filter.
-        public static void Register()
-        {
-            IOleMessageFilter newFilter = new MessageFilter(); 
-            IOleMessageFilter oldFilter = null; 
-            CoRegisterMessageFilter(newFilter, out oldFilter);
-        }
-
-        // Done with the filter, close it.
-        public static void Revoke()
-        {
-            IOleMessageFilter oldFilter = null; 
-            CoRegisterMessageFilter(null, out oldFilter);
-        }
-
-        //
         // IOleMessageFilter functions.
         // Handle incoming thread requests.
-        int IOleMessageFilter.HandleInComingCall(int dwCallType, 
-          System.IntPtr hTaskCaller, int dwTickCount, System.IntPtr 
-          lpInterfaceInfo) 
+        int IOleMessageFilter.HandleInComingCall(int dwCallType,
+            IntPtr hTaskCaller, int dwTickCount, IntPtr
+                lpInterfaceInfo)
         {
             //Return the flag SERVERCALL_ISHANDLED.
             return 0;
         }
 
         // Thread call was rejected, so try again.
-        int IOleMessageFilter.RetryRejectedCall(System.IntPtr 
-          hTaskCallee, int dwTickCount, int dwRejectType)
+        int IOleMessageFilter.RetryRejectedCall(IntPtr
+            hTaskCallee, int dwTickCount, int dwRejectType)
         {
             if (dwRejectType == 2)
-            // flag = SERVERCALL_RETRYLATER.
+                // flag = SERVERCALL_RETRYLATER.
             {
                 // Retry the thread call immediately if return >=0 & 
                 // <100.
@@ -64,51 +44,70 @@ namespace VSTool
             return -1;
         }
 
-        int IOleMessageFilter.MessagePending(System.IntPtr hTaskCallee, 
-          int dwTickCount, int dwPendingType)
+        int IOleMessageFilter.MessagePending(IntPtr hTaskCallee,
+            int dwTickCount, int dwPendingType)
         {
             //Return the flag PENDINGMSG_WAITDEFPROCESS.
-            return 2; 
+            return 2;
+        }
+
+        //
+        // Class containing the IOleMessageFilter
+        // thread error-handling functions.
+
+        // Start the filter.
+        public static void Register()
+        {
+            IOleMessageFilter newFilter = new MessageFilter();
+            IOleMessageFilter oldFilter = null;
+            CoRegisterMessageFilter(newFilter, out oldFilter);
+        }
+
+        // Done with the filter, close it.
+        public static void Revoke()
+        {
+            IOleMessageFilter oldFilter = null;
+            CoRegisterMessageFilter(null, out oldFilter);
         }
 
         // Implement the IOleMessageFilter interface.
         [DllImport("Ole32.dll")]
-        private static extern int 
-          CoRegisterMessageFilter(IOleMessageFilter newFilter, out 
-          IOleMessageFilter oldFilter);
+        private static extern int
+            CoRegisterMessageFilter(IOleMessageFilter newFilter, out
+                IOleMessageFilter oldFilter);
     }
 
-    [ComImport(), Guid("00000016-0000-0000-C000-000000000046"), 
-    InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
-    interface IOleMessageFilter 
+    [ComImport, Guid("00000016-0000-0000-C000-000000000046"),
+     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IOleMessageFilter
     {
         [PreserveSig]
-        int HandleInComingCall( 
-            int dwCallType, 
-            IntPtr hTaskCaller, 
-            int dwTickCount, 
+        int HandleInComingCall(
+            int dwCallType,
+            IntPtr hTaskCaller,
+            int dwTickCount,
             IntPtr lpInterfaceInfo);
 
         [PreserveSig]
-        int RetryRejectedCall( 
-            IntPtr hTaskCallee, 
+        int RetryRejectedCall(
+            IntPtr hTaskCallee,
             int dwTickCount,
             int dwRejectType);
 
         [PreserveSig]
-        int MessagePending( 
-            IntPtr hTaskCallee, 
+        int MessagePending(
+            IntPtr hTaskCallee,
             int dwTickCount,
             int dwPendingType);
     }
 
-    class ViaCOM
+    internal class ViaCOM
     {
         public static object GetProperty(object from_obj, string prop_name)
         {
             try
             {
-                Type objType = from_obj.GetType();
+                var objType = from_obj.GetType();
                 return objType.InvokeMember(
                     prop_name,
                     BindingFlags.GetProperty, null,
@@ -127,8 +126,8 @@ namespace VSTool
         {
             try
             {
-                object[] args = { new_value };
-                Type objType = from_obj.GetType();
+                object[] args = {new_value};
+                var objType = from_obj.GetType();
                 return objType.InvokeMember(
                     prop_name,
                     BindingFlags.DeclaredOnly |
@@ -152,7 +151,7 @@ namespace VSTool
         {
             try
             {
-                Type objType = from_obj.GetType();
+                var objType = from_obj.GetType();
                 return objType.InvokeMember(
                     method_name,
                     BindingFlags.DeclaredOnly |
@@ -171,40 +170,32 @@ namespace VSTool
                 throw e;
             }
         }
-    };
+    }
 
     /// <summary>
-	/// The main entry point class for VSTool.
-	/// </summary>
-    class VSToolMain
+    ///     The main entry point class for VSTool.
+    /// </summary>
+    internal class VSToolMain
     {
-        #region Interop imports
-        [DllImport("ole32.dll")]  
-        public static extern int GetRunningObjectTable(int reserved, out IRunningObjectTable prot); 
- 
-        [DllImport("ole32.dll")]  
-        public static extern int  CreateBindCtx(int reserved, out IBindCtx ppbc);
-        #endregion 
+        private static readonly bool ignore_case = true;
 
-        static System.Boolean ignore_case = true;
+        private static string solution_name;
+        private static bool use_new_vs;
+        private static readonly Hashtable projectDict = new Hashtable();
+        private static string startup_project;
+        private static string config;
 
-        static string solution_name = null;
-        static bool use_new_vs = false;
-        static Hashtable projectDict = new Hashtable();
-        static string startup_project = null;
-        static string config = null;
-
-        static object dte = null;
-        static object solution = null;
+        private static object dte;
+        private static object solution;
 
         /// <summary>
-		/// The main entry point for the application.
-		/// </summary>
-		[STAThread]
-		static int Main(string[] args)
-		{
-            int retVal = 0;
-            bool need_save = false;
+        ///     The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        private static int Main(string[] args)
+        {
+            var retVal = 0;
+            var need_save = false;
 
             try
             {
@@ -212,7 +203,7 @@ namespace VSTool
 
                 Console.WriteLine("Editing solution: {0}", solution_name);
 
-                bool found_open_solution = GetDTEAndSolution();
+                var found_open_solution = GetDTEAndSolution();
 
                 if (dte == null || solution == null)
                 {
@@ -226,8 +217,8 @@ namespace VSTool
                     // and list the type of each project.
                     foreach (DictionaryEntry p in projectDict)
                     {
-                        string project_name = (string)p.Key;
-                        string working_dir = (string)p.Value;
+                        var project_name = (string) p.Key;
+                        var working_dir = (string) p.Value;
                         if (SetProjectWorkingDir(solution, project_name, working_dir))
                         {
                             need_save = true;
@@ -279,7 +270,7 @@ namespace VSTool
 
         public static bool parse_command_line(string[] args)
         {
-            string options_desc = 
+            var options_desc =
                 "--solution <solution_name>   : MSVC solution name. (required)\n" +
                 "--use_new_vs                 : Ignore running versions of visual studio.\n" +
                 "--workingdir <project> <dir> : Set working dir of a VC project.\n" +
@@ -289,7 +280,7 @@ namespace VSTool
             try
             {
                 // Command line param parsing loop.
-                int i = 0;
+                var i = 0;
                 for (; i < args.Length; ++i)
                 {
                     if ("--solution" == args[i])
@@ -307,8 +298,8 @@ namespace VSTool
 
                     else if ("--workingdir" == args[i])
                     {
-                        string project_name = args[++i];
-                        string working_dir = args[++i];
+                        var project_name = args[++i];
+                        var working_dir = args[++i];
                         projectDict.Add(project_name, working_dir);
                     }
                     else if ("--config" == args[i])
@@ -338,12 +329,11 @@ namespace VSTool
                     throw new ApplicationException("The --solution option is required.");
                 }
             }
-            catch(ApplicationException e)
+            catch (ApplicationException e)
             {
-
                 Console.WriteLine("Oops! " + e.Message);
                 Console.Write("Command line:");
-                foreach (string arg in args)
+                foreach (var arg in args)
                 {
                     Console.Write(" " + arg);
                 }
@@ -357,13 +347,13 @@ namespace VSTool
 
         public static bool GetDTEAndSolution()
         {
-            bool found_open_solution = true;
+            var found_open_solution = true;
 
             Console.WriteLine("Looking for existing VisualStudio instance...");
 
             // Get an instance of the currently running Visual Studio .NET IDE.
             // dte = (EnvDTE.DTE)System.Runtime.InteropServices.Marshal.GetActiveObject("VisualStudio.DTE.7.1");
-            string full_solution_name = System.IO.Path.GetFullPath(solution_name);
+            var full_solution_name = Path.GetFullPath(solution_name);
             if (false == use_new_vs)
             {
                 dte = GetIDEInstance(full_solution_name);
@@ -375,17 +365,17 @@ namespace VSTool
                 {
                     Console.WriteLine("  Didn't find open solution, starting new background VisualStudio instance...");
                     Console.WriteLine("  Reading .sln file version...");
-                    string version = GetSolutionVersion(full_solution_name);
+                    var version = GetSolutionVersion(full_solution_name);
 
                     Console.WriteLine("  Using version: {0}...", version);
-                    string progid = GetVSProgID(version);
+                    var progid = GetVSProgID(version);
 
-                    Type objType = Type.GetTypeFromProgID(progid);
-                    dte = System.Activator.CreateInstance(objType);
+                    var objType = Type.GetTypeFromProgID(progid);
+                    dte = Activator.CreateInstance(objType);
                     Console.WriteLine("  Reading solution: \"{0}\"", full_solution_name);
 
                     solution = ViaCOM.GetProperty(dte, "Solution");
-                    object[] openArgs = { full_solution_name };
+                    object[] openArgs = {full_solution_name};
                     ViaCOM.CallMethod(solution, "Open", openArgs);
                 }
                 catch (Exception e)
@@ -408,54 +398,57 @@ namespace VSTool
         }
 
         /// <summary>
-        /// Get the DTE object for the instance of Visual Studio IDE that has 
-        /// the specified solution open.
+        ///     Get the DTE object for the instance of Visual Studio IDE that has
+        ///     the specified solution open.
         /// </summary>
         /// <param name="solutionFile">The absolute filename of the solution</param>
         /// <returns>Corresponding DTE object or null if no such IDE is running</returns>
-        public static object GetIDEInstance( string solutionFile )
+        public static object GetIDEInstance(string solutionFile)
         {
-            Hashtable runningInstances = GetIDEInstances( true );
-            IDictionaryEnumerator enumerator = runningInstances.GetEnumerator();
+            var runningInstances = GetIDEInstances(true);
+            var enumerator = runningInstances.GetEnumerator();
 
-            while ( enumerator.MoveNext() )
+            while (enumerator.MoveNext())
             {
                 try
                 {
-                    object ide = enumerator.Value;
+                    var ide = enumerator.Value;
                     if (ide != null)
                     {
-                        object sol = ViaCOM.GetProperty(ide, "Solution");
-                        if (0 == string.Compare((string)ViaCOM.GetProperty(sol, "FullName"), solutionFile, ignore_case))
+                        var sol = ViaCOM.GetProperty(ide, "Solution");
+                        if (0 == string.Compare((string) ViaCOM.GetProperty(sol, "FullName"), solutionFile, ignore_case))
                         {
                             return ide;
                         }
                     }
-                } 
-                catch{}
+                }
+                catch
+                {
+                    // ignored
+                }
             }
 
             return null;
         }
 
         /// <summary>
-        /// Get a table of the currently running instances of the Visual Studio .NET IDE.
+        ///     Get a table of the currently running instances of the Visual Studio .NET IDE.
         /// </summary>
         /// <param name="openSolutionsOnly">Only return instances that have opened a solution</param>
         /// <returns>A hashtable mapping the name of the IDE in the running object table to the corresponding DTE object</returns>
-        public static Hashtable GetIDEInstances( bool openSolutionsOnly )
+        public static Hashtable GetIDEInstances(bool openSolutionsOnly)
         {
-            Hashtable runningIDEInstances = new Hashtable();
-            Hashtable runningObjects = GetRunningObjectTable();
+            var runningIDEInstances = new Hashtable();
+            var runningObjects = GetRunningObjectTable();
 
-            IDictionaryEnumerator rotEnumerator = runningObjects.GetEnumerator();
-            while ( rotEnumerator.MoveNext() )
+            var rotEnumerator = runningObjects.GetEnumerator();
+            while (rotEnumerator.MoveNext())
             {
-                string candidateName = (string) rotEnumerator.Key;
+                var candidateName = (string) rotEnumerator.Key;
                 if (!candidateName.StartsWith("!VisualStudio.DTE"))
                     continue;
 
-                object ide = rotEnumerator.Value;
+                var ide = rotEnumerator.Value;
                 if (ide == null)
                     continue;
 
@@ -463,77 +456,78 @@ namespace VSTool
                 {
                     try
                     {
-                        object sol = ViaCOM.GetProperty(ide, "Solution");
-                        string solutionFile = (string)ViaCOM.GetProperty(sol, "FullName");
-                        if (solutionFile != String.Empty)
+                        var sol = ViaCOM.GetProperty(ide, "Solution");
+                        var solutionFile = (string) ViaCOM.GetProperty(sol, "FullName");
+                        if (solutionFile != string.Empty)
                         {
-                            runningIDEInstances[ candidateName ] = ide;
+                            runningIDEInstances[candidateName] = ide;
                         }
-                    } 
-                    catch {}
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
                 }
                 else
                 {
-                    runningIDEInstances[ candidateName ] = ide;
-                }                       
+                    runningIDEInstances[candidateName] = ide;
+                }
             }
             return runningIDEInstances;
         }
 
         /// <summary>
-        /// Get a snapshot of the running object table (ROT).
+        ///     Get a snapshot of the running object table (ROT).
         /// </summary>
         /// <returns>A hashtable mapping the name of the object in the ROT to the corresponding object</returns>
         [STAThread]
         public static Hashtable GetRunningObjectTable()
         {
-            Hashtable result = new Hashtable();
+            var result = new Hashtable();
 
-            int numFetched = 0;
-            IRunningObjectTable runningObjectTable;   
+            var numFetched = 0;
+            IRunningObjectTable runningObjectTable;
             IEnumMoniker monikerEnumerator;
-            IMoniker[] monikers = new IMoniker[1];
+            var monikers = new IMoniker[1];
 
-            GetRunningObjectTable(0, out runningObjectTable);    
+            GetRunningObjectTable(0, out runningObjectTable);
             runningObjectTable.EnumRunning(out monikerEnumerator);
-            monikerEnumerator.Reset();          
-            
+            monikerEnumerator.Reset();
+
             while (monikerEnumerator.Next(1, monikers, new IntPtr(numFetched)) == 0)
-            {     
+            {
                 IBindCtx ctx;
-                CreateBindCtx(0, out ctx);     
-                    
+                CreateBindCtx(0, out ctx);
+
                 string runningObjectName;
                 monikers[0].GetDisplayName(ctx, null, out runningObjectName);
 
-                object runningObjectVal;  
-                runningObjectTable.GetObject( monikers[0], out runningObjectVal); 
+                object runningObjectVal;
+                runningObjectTable.GetObject(monikers[0], out runningObjectVal);
 
-                result[ runningObjectName ] = runningObjectVal;
-            } 
+                result[runningObjectName] = runningObjectVal;
+            }
 
             return result;
         }
 
-        public static string GetSolutionVersion(string solutionFullFileName) 
+        public static string GetSolutionVersion(string solutionFullFileName)
         {
             string version;
-            System.IO.StreamReader solutionStreamReader = null;
-            string firstLine;
-            string format;
-            
+            StreamReader solutionStreamReader = null;
+
             try
             {
-                solutionStreamReader = new System.IO.StreamReader(solutionFullFileName);
+                solutionStreamReader = new StreamReader(solutionFullFileName);
+                string firstLine;
                 do
                 {
                     firstLine = solutionStreamReader.ReadLine();
-                }
-                while (firstLine == "");
-                
-                format = firstLine.Substring(firstLine.LastIndexOf(" ")).Trim();
-        
-                switch(format)
+                } while (firstLine == "");
+
+                var format = firstLine.Substring(firstLine.LastIndexOf(" ")).Trim();
+
+                switch (format)
                 {
                     case "7.00":
                         version = "VC70";
@@ -546,7 +540,7 @@ namespace VSTool
                     case "9.00":
                         version = "VC80";
                         break;
-                
+
                     case "10.00":
                         version = "VC90";
                         break;
@@ -556,27 +550,25 @@ namespace VSTool
                         break;
 
                     case "12.00":
-                        version = "VC120";
+                        version = "VC140";
                         break;
+
                     default:
                         throw new ApplicationException("Unknown .sln version: " + format);
                 }
             }
             finally
             {
-                if(solutionStreamReader != null) 
-                {
-                    solutionStreamReader.Close();
-                }
+                solutionStreamReader?.Close();
             }
-            
+
             return version;
         }
 
         public static string GetVSProgID(string version)
         {
             string progid = null;
-            switch(version)
+            switch (version)
             {
                 case "VC70":
                     progid = "VisualStudio.DTE.7";
@@ -589,7 +581,7 @@ namespace VSTool
                 case "VC80":
                     progid = "VisualStudio.DTE.8.0";
                     break;
-                
+
                 case "VC90":
                     progid = "VisualStudio.DTE.9.0";
                     break;
@@ -598,12 +590,8 @@ namespace VSTool
                     progid = "VisualStudio.DTE.10.0";
                     break;
 
-                case "VC110":
-                    progid = "VisualStudio.DTE.11.0";
-                    break;
-
-                case "VC120":
-                    progid = "VisualStudio.DTE.12.0";
+                case "VC140":
+                    progid = "VisualStudio.DTE.14.0";
                     break;
 
                 default:
@@ -615,23 +603,23 @@ namespace VSTool
 
         public static bool SetProjectWorkingDir(object sol, string project_name, string working_dir)
         {
-            bool made_change = false;
+            var made_change = false;
             Console.WriteLine("Looking for project {0}...", project_name);
             try
             {
-                object prjs = ViaCOM.GetProperty(sol, "Projects");
-                object count = ViaCOM.GetProperty(prjs, "Count");
-                for(int i = 1; i <= (int)count; ++i)
+                var prjs = ViaCOM.GetProperty(sol, "Projects");
+                var count = ViaCOM.GetProperty(prjs, "Count");
+                for (var i = 1; i <= (int) count; ++i)
                 {
-                    object[] prjItemArgs = { (object)i };
-                    object prj = ViaCOM.CallMethod(prjs, "Item", prjItemArgs);
-                    string name = (string)ViaCOM.GetProperty(prj, "Name");
+                    object[] prjItemArgs = {i};
+                    var prj = ViaCOM.CallMethod(prjs, "Item", prjItemArgs);
+                    var name = (string) ViaCOM.GetProperty(prj, "Name");
                     if (0 == string.Compare(name, project_name, ignore_case))
                     {
                         Console.WriteLine("Found project: {0}", project_name);
                         Console.WriteLine("Setting working directory");
 
-                        string full_project_name = (string)ViaCOM.GetProperty(prj, "FullName");
+                        var full_project_name = (string) ViaCOM.GetProperty(prj, "FullName");
                         Console.WriteLine(full_project_name);
 
                         // *NOTE:Mani Thanks to incompatibilities between different versions of the 
@@ -642,17 +630,17 @@ namespace VSTool
                         // without the type casting. Its tedious code, but it seems to work.
 
                         // oCfgs should be assigned to a 'Project.Configurations' collection.
-                        object oCfgs = ViaCOM.GetProperty(ViaCOM.GetProperty(prj, "Object"), "Configurations");
+                        var oCfgs = ViaCOM.GetProperty(ViaCOM.GetProperty(prj, "Object"), "Configurations");
 
                         // oCount will be assigned to the number of configs present in oCfgs.
-                        object oCount = ViaCOM.GetProperty(oCfgs, "Count");
+                        var oCount = ViaCOM.GetProperty(oCfgs, "Count");
 
-                        for (int cfgIndex = 1; cfgIndex <= (int)oCount; ++cfgIndex)
+                        for (var cfgIndex = 1; cfgIndex <= (int) oCount; ++cfgIndex)
                         {
-                            object[] itemArgs = {(object)cfgIndex};
-                            object oCfg = ViaCOM.CallMethod(oCfgs, "Item", itemArgs);
-                            object oDebugSettings = ViaCOM.GetProperty(oCfg, "DebugSettings");
-                            ViaCOM.SetProperty(oDebugSettings, "WorkingDirectory", (object)working_dir);
+                            object[] itemArgs = {cfgIndex};
+                            var oCfg = ViaCOM.CallMethod(oCfgs, "Item", itemArgs);
+                            var oDebugSettings = ViaCOM.GetProperty(oCfg, "DebugSettings");
+                            ViaCOM.SetProperty(oDebugSettings, "WorkingDirectory", working_dir);
                         }
 
                         break;
@@ -660,7 +648,7 @@ namespace VSTool
                 }
                 made_change = true;
             }
-            catch( Exception e )
+            catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 Console.WriteLine("Failed to set working dir for project, {0}.", project_name);
@@ -671,22 +659,22 @@ namespace VSTool
 
         public static bool SetStartupProject(string startup_project)
         {
-            bool result = false;
+            var result = false;
             try
             {
                 // You need the 'unique name of the project to set StartupProjects.
                 // find the project by generic name.
                 Console.WriteLine("Trying to set \"{0}\" to the startup project", startup_project);
-                object prjs = ViaCOM.GetProperty(solution, "Projects");
-                object count = ViaCOM.GetProperty(prjs, "Count");
-                for (int i = 1; i <= (int)count; ++i)
+                var prjs = ViaCOM.GetProperty(solution, "Projects");
+                var count = ViaCOM.GetProperty(prjs, "Count");
+                for (var i = 1; i <= (int) count; ++i)
                 {
-                    object[] itemArgs = { (object)i };
-                    object prj = ViaCOM.CallMethod(prjs, "Item", itemArgs);
-                    object prjName = ViaCOM.GetProperty(prj, "Name");
-                    if (0 == string.Compare((string)prjName, startup_project, ignore_case))
+                    object[] itemArgs = {i};
+                    var prj = ViaCOM.CallMethod(prjs, "Item", itemArgs);
+                    var prjName = ViaCOM.GetProperty(prj, "Name");
+                    if (0 == string.Compare((string) prjName, startup_project, ignore_case))
                     {
-                        object solBuild = ViaCOM.GetProperty(solution, "SolutionBuild");
+                        var solBuild = ViaCOM.GetProperty(solution, "SolutionBuild");
                         ViaCOM.SetProperty(solBuild, "StartupProjects", ViaCOM.GetProperty(prj, "UniqueName"));
                         Console.WriteLine("  Success!");
                         result = true;
@@ -709,14 +697,14 @@ namespace VSTool
 
         public static bool SetActiveConfig(string config)
         {
-            bool result = false;
+            var result = false;
             try
             {
                 Console.WriteLine("Trying to set active config to \"{0}\"", config);
-                object solBuild = ViaCOM.GetProperty(solution, "SolutionBuild");
-                object solCfgs = ViaCOM.GetProperty(solBuild, "SolutionConfigurations");
-                object[] itemArgs = { (object)config };
-                object solCfg = ViaCOM.CallMethod(solCfgs, "Item", itemArgs);
+                var solBuild = ViaCOM.GetProperty(solution, "SolutionBuild");
+                var solCfgs = ViaCOM.GetProperty(solBuild, "SolutionConfigurations");
+                object[] itemArgs = {config};
+                var solCfg = ViaCOM.CallMethod(solCfgs, "Item", itemArgs);
                 ViaCOM.CallMethod(solCfg, "Activate", null);
                 Console.WriteLine("  Success!");
                 result = true;
@@ -728,5 +716,15 @@ namespace VSTool
             }
             return result;
         }
+
+        #region Interop imports
+
+        [DllImport("ole32.dll")]
+        public static extern int GetRunningObjectTable(int reserved, out IRunningObjectTable prot);
+
+        [DllImport("ole32.dll")]
+        public static extern int CreateBindCtx(int reserved, out IBindCtx ppbc);
+
+        #endregion
     }
 }

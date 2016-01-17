@@ -63,10 +63,7 @@ else (STANDALONE)
       ${LIBS_PREBUILT_LEGACY_DIR}/include/pixman-1
       )
   foreach(include ${${LL_ARCH}_INCLUDES})
-      include_directories(
-        ${LIBS_PREBUILT_DIR}/include/${include}
-        ${LIBS_PREBUILT_LEGACY_DIR}/include/${include}
-        )
+      include_directories(${LIBS_PREBUILT_DIR}/include/${include})
   endforeach(include)
 endif (STANDALONE)
 

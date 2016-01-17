@@ -1832,7 +1832,7 @@ LLPluginClassMedia* LLViewerMediaImpl::newSourceFromMediaType(std::string media_
 	
 	// HACK: we always try to keep a spare running webkit plugin around to improve launch times.
 	// If a spare was already created before PluginAttachDebuggerToPlugins was set, don't use it.
-	if((plugin_basename == "media_plugin_webkit") &&
+	if ((plugin_basename == "media_plugin_cef") &&
 		!gSavedSettings.getBOOL("PluginAttachDebuggerToPlugins"))
 	{
 		media_source = LLViewerMedia::getSpareBrowserMediaSource();
@@ -1853,20 +1853,26 @@ LLPluginClassMedia* LLViewerMediaImpl::newSourceFromMediaType(std::string media_
 	{
 		std::string launcher_name = gDirUtilp->getLLPluginLauncher();
 		std::string plugin_name = gDirUtilp->getLLPluginFilename(plugin_basename);
-		std::string user_data_path = gDirUtilp->getOSUserAppDir();
-		user_data_path += gDirUtilp->getDirDelimiter();
+
+		std::string user_data_path_cache = gDirUtilp->getCacheDir(false);
+		user_data_path_cache += gDirUtilp->getDirDelimiter();
+
+		std::string user_data_path_cookies = gDirUtilp->getOSUserAppDir();
+		user_data_path_cookies += gDirUtilp->getDirDelimiter();
+
+		std::string user_data_path_logs = gDirUtilp->getExpandedFilename(LL_PATH_LOGS, "");
 
 		// Fix for EXT-5960 - make browser profile specific to user (cache, cookies etc.)
 		// If the linden username returned is blank, that can only mean we are
 		// at the login page displaying login Web page or Web browser test via Develop menu.
 		// In this case we just use whatever gDirUtilp->getOSUserAppDir() gives us (this
 		// is what we always used before this change)
-		std::string linden_user_dir = gDirUtilp->getLindenUserDir(true);
+		std::string linden_user_dir = gDirUtilp->getLindenUserDir();
 		if ( ! linden_user_dir.empty() )
 		{
 			// gDirUtilp->getLindenUserDir() is whole path, not just Linden name
-			user_data_path = linden_user_dir;
-			user_data_path += gDirUtilp->getDirDelimiter();
+			user_data_path_cookies = linden_user_dir;
+			user_data_path_cookies += gDirUtilp->getDirDelimiter();
 		};
 
 		// See if the plugin executable exists
@@ -1883,7 +1889,7 @@ LLPluginClassMedia* LLViewerMediaImpl::newSourceFromMediaType(std::string media_
 		{
 			media_source = new LLPluginClassMedia(owner);
 			media_source->setSize(default_width, default_height);
-			media_source->setUserDataPath(user_data_path);
+			media_source->setUserDataPath(user_data_path_cache, user_data_path_cookies, user_data_path_logs);
 			media_source->setLanguageCode(LLUI::getLanguage());
 
 			// collect 'cookies enabled' setting from prefs and send to embedded browser
@@ -1900,6 +1906,9 @@ LLPluginClassMedia* LLViewerMediaImpl::newSourceFromMediaType(std::string media_
 
 			bool media_plugin_debugging_enabled = gSavedSettings.getBOOL("MediaPluginDebugging");
 			media_source->enableMediaPluginDebugging( media_plugin_debugging_enabled );
+
+			// need to set agent string here before instance created
+			media_source->setBrowserUserAgent(LLViewerMedia::getCurrentUserAgent());
 
 			media_source->setTarget(target);
 			
@@ -2426,6 +2435,18 @@ void LLViewerMediaImpl::mouseMove(const LLVector2& texture_coords, MASK mask)
 	}
 }
 
+void LLViewerMediaImpl::mouseDoubleClick(const LLVector2& texture_coords, MASK mask)
+{
+	LLPluginClassMedia* mMediaSource = getMediaPlugin();
+    if (mMediaSource)
+    {
+        S32 x, y;
+        scaleTextureCoords(texture_coords, &x, &y);
+
+        mouseDoubleClick(x, y, mask);
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 void LLViewerMediaImpl::mouseDoubleClick(S32 x, S32 y, MASK mask, S32 button)
 {
@@ -2779,7 +2800,7 @@ bool LLViewerMediaImpl::handleKeyHere(KEY key, MASK mask)
 	{
 		// FIXME: THIS IS SO WRONG.
 		// Menu keys should be handled by the menu system and not passed to UI elements, but this is how LLTextEditor and LLLineEditor do it...
-		if( MASK_CONTROL & mask && key != KEY_LEFT && key != KEY_RIGHT && key != KEY_HOME && key != KEY_END)
+		if (MASK_CONTROL & mask && key != KEY_LEFT && key != KEY_RIGHT && key != KEY_HOME && key != KEY_END)
 		{
 			result = true;
 		}
@@ -2810,18 +2831,38 @@ bool LLViewerMediaImpl::handleKeyHere(KEY key, MASK mask)
 
 		if(!result)
 		{
-			
 			LLSD native_key_data = gViewerWindow->getWindow()->getNativeKeyData();
-			
-			result = mMediaSource->keyEvent(LLPluginClassMedia::KEY_EVENT_DOWN ,key, mask, native_key_data);
-			// Since the viewer internal event dispatching doesn't give us key-up events, simulate one here.
-			(void)mMediaSource->keyEvent(LLPluginClassMedia::KEY_EVENT_UP ,key, mask, native_key_data);
+			result = mMediaSource->keyEvent(LLPluginClassMedia::KEY_EVENT_DOWN, key, mask, native_key_data);
 		}
 	}
 	
 	return result;
 }
+//////////////////////////////////////////////////////////////////////////////////////////
+bool LLViewerMediaImpl::handleKeyUpHere(KEY key, MASK mask)
+{
+	bool result = false;
 
+	LLPluginClassMedia* mMediaSource = getMediaPlugin();
+
+	if (mMediaSource)
+	{
+		// FIXME: THIS IS SO WRONG.
+		// Menu keys should be handled by the menu system and not passed to UI elements, but this is how LLTextEditor and LLLineEditor do it...
+		if (MASK_CONTROL & mask && key != KEY_LEFT && key != KEY_RIGHT && key != KEY_HOME && key != KEY_END)
+		{
+			result = true;
+		}
+
+		if (!result)
+		{
+			LLSD native_key_data = gViewerWindow->getWindow()->getNativeKeyData();
+			result = mMediaSource->keyEvent(LLPluginClassMedia::KEY_EVENT_UP, key, mask, native_key_data);
+		}
+	}
+
+	return result;
+}
 //////////////////////////////////////////////////////////////////////////////////////////
 bool LLViewerMediaImpl::handleUnicodeCharHere(llwchar uni_char)
 {
@@ -3221,13 +3262,13 @@ bool LLViewerMediaImpl::isForcedUnloaded() const
 	{
 		return true;
 	}
-	
+
 	// If this media's class is not supposed to be shown, unload
 	if (!shouldShowBasedOnClass())
 	{
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -3240,19 +3281,19 @@ bool LLViewerMediaImpl::isPlayable() const
 		// All of the forced-unloaded criteria also imply not playable.
 		return false;
 	}
-	
+
 	if(hasMedia())
 	{
 		// Anything that's already playing is, by definition, playable.
 		return true;
 	}
-	
+
 	if(!mMediaURL.empty())
 	{
 		// If something has navigated the instance, it's ready to be played.
 		return true;
 	}
-	
+
 	return false;
 }
 

@@ -42,7 +42,6 @@
 #include "llfontgl.h"
 #include "llmd5.h"
 #include "llsecondlifeurls.h"
-#include "sgversion.h"
 #include "v4color.h"
 
 #include "llappviewer.h"
@@ -62,6 +61,7 @@
 #include "llui.h"
 #include "lluiconstants.h"
 #include "llurlhistory.h" // OGPX : regionuri text box has a history of region uris (if FN/LN are loaded at startup)
+#include "llversioninfo.h"
 #include "llviewertexturelist.h"
 #include "llviewermenu.h"			// for handle_preferences()
 #include "llviewernetwork.h"
@@ -243,13 +243,12 @@ LLPanelLogin::LLPanelLogin(const LLRect& rect)
 
 	getChild<LLUICtrl>("grids_btn")->setCommitCallback(boost::bind(LLPanelLogin::onClickGrids));
 
-	std::string channel = gVersionChannel;
+	std::string channel = LLVersionInfo::getChannel();
 
-	std::string version = llformat("%d.%d.%d (%d)",
-		gVersionMajor,
-		gVersionMinor,
-		gVersionPatch,
-		gVersionBuild );
+	std::string version = llformat("%s (%d)",
+								   LLVersionInfo::getShortVersion().c_str(),
+								   LLVersionInfo::getBuild());
+
 	LLTextBox* channel_text = getChild<LLTextBox>("channel_text");
 	channel_text->setTextArg("[CHANNEL]", channel); // though not displayed
 	channel_text->setTextArg("[VERSION]", version);
@@ -722,25 +721,27 @@ void LLPanelLogin::loadLoginPage()
 		sInstance->setSiteIsAlive(false);
 		return;
 	}
-  
+
 	// Use the right delimeter depending on how LLURI parses the URL
 	LLURI login_page = LLURI(login_page_str);
 	LLSD params(login_page.queryMap());
  
 	LL_DEBUGS("AppInit") << "login_page: " << login_page << LL_ENDL;
 
- 	// Language
+	// Language
 	params["lang"] = LLUI::getLanguage();
- 
- 	// First Login?
- 	if (gSavedSettings.getBOOL("FirstLoginThisInstall"))
+
+	// First Login?
+	if (gSavedSettings.getBOOL("FirstLoginThisInstall"))
 	{
 		params["firstlogin"] = "TRUE"; // not bool: server expects string TRUE
- 	}
- 
-	params["version"]= llformat("%d.%d.%d (%d)",
-				gVersionMajor, gVersionMinor, gVersionPatch, gVersionBuild);
-	params["channel"] = gVersionChannel;
+	}
+
+	// Channel and Version
+	params["version"] = llformat("%s (%d)",
+								 LLVersionInfo::getShortVersion().c_str(),
+								 LLVersionInfo::getBuild());
+	params["channel"] = LLVersionInfo::getChannel();
 
 	// Grid
 
