@@ -624,7 +624,7 @@ LLSD LLFloaterReporter::gatherReport()
 
 	std::ostringstream details;
 
-	details << "V" << LLVersionInfo::getVersion() << std::endl << std::endl;	// client version moved to body of email for abuse reports
+	details << "V" << LLVersionInfo::getVersion() << std::endl;	// client version moved to body of email for abuse reports
 
 	std::string object_name = getChild<LLUICtrl>("object_name")->getValue().asString();
 	if (!object_name.empty() && !mOwnerName.empty())
