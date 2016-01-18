@@ -28,7 +28,7 @@ else (LINUX)
     set(LLCOMMON_LIBRARIES llcommon)
 endif (LINUX)
 
-set(LLCOMMON_LINK_SHARED ON CACHE BOOL "Build the llcommon target as a shared library.")
+set(LLCOMMON_LINK_SHARED OFF CACHE BOOL "Build the llcommon target as a shared library.")
 if(LLCOMMON_LINK_SHARED)
   add_definitions(-DLL_COMMON_LINK_SHARED=1)
 endif(LLCOMMON_LINK_SHARED)
