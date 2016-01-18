@@ -1464,7 +1464,7 @@ void LLAgentWearables::setWearableOutfit(const LLInventoryItem::item_array_t& it
 		}
 #endif
 		// If we got here, everything matches.
-		matched++;
+		//matched++; // TODO: Find out why this was here, this became unreachable at some point.
 	}
 	LL_DEBUGS("Avatar") << "matched " << matched << " mismatched " << mismatched << LL_ENDL;
 	for (S32 j=0; j<LLWearableType::WT_COUNT; j++)
