@@ -57,7 +57,7 @@ set_target_properties(SLPlugin
 if (WINDOWS)
   set_target_properties(SLPlugin
     PROPERTIES
-    LINK_FLAGS "/OPT:NOREF"
+    LINK_FLAGS_DEBUG "/NODEFAULTLIB:\"LIBCMTD\""
   )
   EMBED_MANIFEST(SLPlugin 1)
 endif()

@@ -1002,7 +1002,6 @@ class Linux_i686_Manifest(LinuxManifest):
 
             self.path("libcollada14dom.so.2.2", "libcollada14dom.so")
             self.path("libcrypto.so*")
-            self.path("libELFIO.so")
             self.path("libssl.so*")
             self.path("libtcmalloc_minimal.so.0")
             self.path("libtcmalloc_minimal.so.0.2.2")
@@ -1058,7 +1057,6 @@ class Linux_x86_64_Manifest(LinuxManifest):
 
             self.path("libcollada14dom.so.2.2", "libcollada14dom.so")
             self.path("libcrypto.so.*")
-            self.path("libELFIO.so")
             self.path("libjpeg.so*")
             self.path("libpng*.so*")
             self.path("libz.so*")

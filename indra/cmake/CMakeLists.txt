@@ -25,7 +25,6 @@ set(cmake_SOURCE_FILES
     Cwdebug.cmake
     DBusGlib.cmake
     DeploySharedLibs.cmake
-    ELFIO.cmake
     EXPAT.cmake
     ExamplePlugin.cmake
     FMODSTUDIO.cmake
@@ -34,7 +33,6 @@ set(cmake_SOURCE_FILES
     FindBerkeleyDB.cmake
     FindCARes.cmake
     FindColladadom.cmake
-    FindELFIO.cmake
     FindGLOD.cmake
     FindGoogleBreakpad.cmake
     FindGooglePerfTools.cmake
