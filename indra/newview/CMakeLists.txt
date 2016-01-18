@@ -76,7 +76,7 @@ include_directories(
 set(viewer_SOURCE_FILES
     NACLantispam.cpp
     aihttpview.cpp
-    aixmllindengenepool.cpp
+    #aixmllindengenepool.cpp
     alfloaterregiontracker.cpp
     aoremotectrl.cpp
     ascentfloatercontactgroups.cpp
@@ -607,7 +607,7 @@ set(viewer_HEADER_FILES
 
     NACLantispam.h
     aihttpview.h
-    aixmllindengenepool.h
+    #aixmllindengenepool.h
     alfloaterregiontracker.h
     aoremotectrl.h
     ascentfloatercontactgroups.h
@@ -1660,16 +1660,18 @@ target_link_libraries(${VIEWER_BINARY_NAME}
     )
 
 if (LINUX)
-  add_custom_command(
-      OUTPUT secondlife-stripped
-      COMMAND strip
-      ARGS --strip-debug -o secondlife-stripped ${VIEWER_BINARY_NAME}
-      DEPENDS ${VIEWER_BINARY_NAME}
-      )
+  set(product Singularity-${ARCH}-${VIEWER_SHORT_VERSION}.${VIEWER_VERSION_REVISION})
+
+  # These are the generated targets that are copied to package/
+  set(COPY_INPUT_DEPENDENCIES
+    ${VIEWER_BINARY_NAME}
+    linux-crash-logger
+    AlchemyPlugin
+    media_plugin_gstreamer010
+    llcommon
+    )
 
   add_dependencies(${VIEWER_BINARY_NAME} generate_viewer_version)
-
-  set(product ${VIEWER_BRANDING_NAME_CAMELCASE}-${ARCH}-${${ROOT_PROJECT_NAME}_VERSION})
 
   add_custom_command(
       OUTPUT ${product}.tar.bz2
@@ -1678,21 +1680,20 @@ if (LINUX)
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
         --arch=${ARCH}
         --artwork=${ARTWORK_DIR}
-        --branding_id=${VIEWER_BRANDING_ID}
         --build=${CMAKE_CURRENT_BINARY_DIR}
         --buildtype=${CMAKE_BUILD_TYPE}
         --channel=${VIEWER_CHANNEL}
+        --versionfile=${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt
+        --configuration=${CMAKE_CFG_INTDIR}
         --dest=${CMAKE_CURRENT_BINARY_DIR}/packaged
         --grid=${GRID}
-        --installer_name=${product}
-        --login_channel=${VIEWER_LOGIN_CHANNEL}
         --source=${CMAKE_CURRENT_SOURCE_DIR}
         --standalone=${STANDALONE}
         --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.touched
-        --extra_libraries="${MANIFEST_LIBRARIES}"
       DEPENDS
         secondlife-stripped
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+        ${COPY_INPUT_DEPENDENCIES}
       )
 
   add_custom_command(
@@ -1703,28 +1704,27 @@ if (LINUX)
         --arch=${ARCH}
         --actions=copy
         --artwork=${ARTWORK_DIR}
-        --branding_id=${VIEWER_BRANDING_ID}
         --build=${CMAKE_CURRENT_BINARY_DIR}
         --buildtype=${CMAKE_BUILD_TYPE}
-        --channel=${VIEWER_CHANNEL}
+        --configuration=${CMAKE_CFG_INTDIR}
         --dest=${CMAKE_CURRENT_BINARY_DIR}/packaged
         --grid=${GRID}
-        --installer_name=${product}
-        --login_channel=${VIEWER_LOGIN_CHANNEL}
+        --channel=${VIEWER_CHANNEL}
+        --versionfile=${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt
         --source=${CMAKE_CURRENT_SOURCE_DIR}
-        --standalone=${STANDALONE}
-        --extra_libraries="${MANIFEST_LIBRARIES}"
       DEPENDS
-        secondlife-stripped
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+      ${COPY_INPUT_DEPENDENCIES}
+    COMMENT "Performing viewer_manifest copy"
       )
 
-  add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_gstreamer010 media_plugin_webkit basic_plugin_filepicker)
+  add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_gstreamer010 basic_plugin_filepicker)
   add_custom_target(copy_l_viewer_manifest ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.copy_touched)
 
   if (PACKAGE)
     add_custom_target(llpackage ALL DEPENDS ${product}.tar.bz2)
     add_dependencies(llpackage copy_l_viewer_manifest)
+    check_message_template(llpackage)
   endif (PACKAGE)
 endif (LINUX)
 
@@ -1785,17 +1785,17 @@ if (DARWIN)
         COMMAND ${PYTHON_EXECUTABLE}
         ARGS
           ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
+          --arch=${ARCH}
           --artwork=${ARTWORK_DIR}
-          --branding_id=${VIEWER_BRANDING_ID}
           --build=${CMAKE_CURRENT_BINARY_DIR}
           --buildtype=${CMAKE_BUILD_TYPE}
           --channel=${VIEWER_CHANNEL}
           --configuration=${CMAKE_CFG_INTDIR}
           --dest=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${product}.app
           --grid=${GRID}
-          --login_channel=${VIEWER_LOGIN_CHANNEL}
+          --channel=${VIEWER_CHANNEL}
+          --versionfile=${CMAKE_CURRENT_BINARY_DIR}/viewer_version.txt
           --source=${CMAKE_CURRENT_SOURCE_DIR}
-          --extra_libraries="${MANIFEST_LIBRARIES}"
           --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.touched
         DEPENDS
 		  ${VIEWER_BINARY_NAME}
