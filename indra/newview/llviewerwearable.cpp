@@ -42,7 +42,6 @@
 #include "llinventoryfunctions.h"
 #include "lllocaltextureobject.h"
 #include "llpaneleditwearable.h"
-#include "aixmllindengenepool.h"
 
 using namespace LLAvatarAppearanceDefines;
 
@@ -136,7 +135,7 @@ LLWearable::EImportResult LLViewerWearable::importStream( std::istream& input_st
 
 	return result;
 }
-
+#if 0
 AIArchetype LLViewerWearable::getArchetype(void) const
 {
 	AIArchetype archetype(this);
@@ -150,7 +149,7 @@ AIArchetype LLViewerWearable::getArchetype(void) const
 	}
 	return archetype;
 }
-
+#endif 
 // Avatar parameter and texture definitions can change over time.
 // This function returns true if parameters or textures have been added or removed
 // since this wearable was created.
@@ -600,18 +599,7 @@ void LLViewerWearable::saveNewAsset() const
 	//LL_INFOS() << *this << LL_ENDL;
 
 	const std::string filename = asset_id_to_filename(mAssetID);
-	LLFILE* fp = LLFile::fopen(filename, "wb");		/* Flawfinder: ignore */
-	BOOL successful_save = FALSE;
-	if(fp && exportFile(fp))
-	{
-		successful_save = TRUE;
-	}
-	if(fp)
-	{
-		fclose(fp);
-		fp = NULL;
-	}
-	if(!successful_save)
+	if(! exportFile(filename))
 	{
 		std::string buffer = llformat("Unable to save '%s' to wearable file.", mName.c_str());
 		LL_WARNS() << buffer << LL_ENDL;
