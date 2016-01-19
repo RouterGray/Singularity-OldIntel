@@ -2840,14 +2840,6 @@
               <key>name</key>
               <string>Release</string>
             </map>
-            <key>default</key>
-            <map>
-              <key>build</key>
-              <map>
-              </map>
-              <key>name</key>
-              <string>default</string>
-            </map>
           </map>
           <key>name</key>
           <string>linux</string>
@@ -2855,7 +2847,7 @@
         <key>linux64</key>
         <map>
           <key>build_directory</key>
-          <string>build-linux-i686</string>
+          <string>build-linux-x86_64</string>
           <key>configurations</key>
           <map>
             <key>RelWithDebInfo</key>
@@ -2903,14 +2895,6 @@
               </map>
               <key>name</key>
               <string>Release</string>
-            </map>
-            <key>default</key>
-            <map>
-              <key>build</key>
-              <map>
-              </map>
-              <key>name</key>
-              <string>default</string>
             </map>
           </map>
           <key>name</key>
