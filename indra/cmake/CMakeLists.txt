@@ -12,7 +12,6 @@ set(cmake_SOURCE_FILES
     APR.cmake
     Audio.cmake
     BasicPluginBase.cmake
-    BerkeleyDB.cmake
     Boost.cmake
     BuildVersion.cmake
     CARes.cmake
@@ -30,7 +29,6 @@ set(cmake_SOURCE_FILES
     FMODSTUDIO.cmake
     FindAPR.cmake
     FindAutobuild.cmake
-    FindBerkeleyDB.cmake
     FindCARes.cmake
     FindColladadom.cmake
     FindGLOD.cmake
