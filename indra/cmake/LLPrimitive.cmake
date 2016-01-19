@@ -21,9 +21,12 @@ if (WINDOWS)
         ${BOOST_SYSTEM_LIBRARIES}
         )
 else (WINDOWS)
-  set(LLPRIMITIVE_LIBRARIES 
-	  llprimitive
-	  ${COLLADADOM_LIBRARIES}
-	  )
+    set(LLPRIMITIVE_LIBRARIES 
+        llprimitive
+        ${COLLADADOM_LIBRARIES}
+        ${BOOST_SYSTEM_LIBRARIES}
+        minizip
+        xml2
+        )
 endif (WINDOWS)
 

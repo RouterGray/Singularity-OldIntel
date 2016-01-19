@@ -18,7 +18,6 @@ indra/newview/res-sdl/viewer_icon.*
 *.orig
 *.rej
 *.bak
-*~
 *.DS_Store
 /LICENSES/
 /edited-files.txt

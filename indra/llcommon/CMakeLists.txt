@@ -2,7 +2,6 @@
 
 project(llcommon)
 
-include(Cwdebug)
 include(00-Common)
 include(LLCommon)
 include(APR)
@@ -251,16 +250,16 @@ set(llcommon_HEADER_FILES
 set_source_files_properties(${llcommon_HEADER_FILES}
                             PROPERTIES HEADER_FILE_ONLY TRUE)
 
-list(APPEND llcommon_SOURCE_FILES ${cwdebug_SOURCE_FILES})
 list(APPEND llcommon_SOURCE_FILES ${llcommon_HEADER_FILES})
+
+if(NOT WORD_SIZE EQUAL 32)
+  if(NOT WINDOWS)
+    add_definitions(-fPIC)
+  endif(NOT WINDOWS)
+endif(NOT WORD_SIZE EQUAL 32)
 
 if(LLCOMMON_LINK_SHARED)
   add_library (llcommon SHARED ${llcommon_SOURCE_FILES})
-  if(NOT WORD_SIZE EQUAL 32)
-    if(NOT WINDOWS)
-      add_definitions(-fPIC)
-    endif(NOT WINDOWS)
-  endif(NOT WORD_SIZE EQUAL 32)
   if(WINDOWS)
     # always generate llcommon.pdb, even for "Release" builds
     set_target_properties(llcommon PROPERTIES LINK_FLAGS "/DEBUG")

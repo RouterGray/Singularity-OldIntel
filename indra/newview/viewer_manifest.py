@@ -865,17 +865,19 @@ class LinuxManifest(ViewerManifest):
     def construct(self):
         import shutil
         shutil.rmtree("./packaged/app_settings/shaders", ignore_errors=True);
-
         super(LinuxManifest, self).construct()
 
         self.path("licenses-linux.txt","licenses.txt")
 
-        self.path("res/"+self.icon_name(),self.icon_name())
+        pkgdir = os.path.join(self.args['build'], os.pardir, 'packages')
+        relpkgdir = os.path.join(pkgdir, "lib", "release")
+        debpkgdir = os.path.join(pkgdir, "lib", "debug")
+
         if self.prefix("linux_tools", dst=""):
             self.path("client-readme.txt","README-linux.txt")
             self.path("client-readme-voice.txt","README-linux-voice.txt")
             self.path("client-readme-joystick.txt","README-linux-joystick.txt")
-            self.path("wrapper.sh",self.wrapper_name())
+            self.path("wrapper.sh","singularity")
             if self.prefix(src="", dst="etc"):
                 self.path("handle_secondlifeprotocol.sh")
                 self.path("register_secondlifeprotocol.sh")
@@ -886,16 +888,10 @@ class LinuxManifest(ViewerManifest):
             self.end_prefix("linux_tools")
 
         # Create an appropriate gridargs.dat for this package, denoting required grid.
-        self.put_in_file(self.flags_list(), 'gridargs.dat')
-
-        ## Singu note: we'll go strip crazy later on
-        #if self.buildtype().lower()=='release':
-        #    self.path("secondlife-stripped","bin/"+self.binary_name())
-        #else:
-        #    self.path("secondlife-bin","bin/"+self.binary_name())
-        self.path("secondlife-bin","bin/"+self.binary_name())
+        # self.put_in_file(self.flags_list(), 'gridargs.dat')
 
         if self.prefix(src="", dst="bin"):
+            self.path("secondlife-bin","do-not-directly-run-singularity-bin")
             self.path2basename("../llplugin/slplugin", "SLPlugin")
             self.end_prefix("bin")
 
@@ -903,6 +899,16 @@ class LinuxManifest(ViewerManifest):
             self.path("*")
             # recurse
             self.end_prefix("res-sdl")
+
+        # Get the icons based on the channel type
+        icon_path = self.icon_path()
+        print "DEBUG: icon_path '%s'" % icon_path
+        if self.prefix(src=icon_path, dst="") :
+            self.path("viewer_256.png","viewer_icon.png")
+            if self.prefix(src="",dst="res-sdl") :
+                self.path("viewer_256.BMP","viewer_icon.BMP")
+                self.end_prefix("res-sdl")
+            self.end_prefix(icon_path)
 
         # plugins
         if self.prefix(src="", dst="bin/llplugin"):
@@ -913,122 +919,91 @@ class LinuxManifest(ViewerManifest):
 
         self.path("featuretable_linux.txt")
 
-    def wrapper_name(self):
-        return self.viewer_branding_id()
 
-    def binary_name(self):
-        return self.viewer_branding_id() + '-do-not-run-directly'
-
-    def icon_name(self):
-        return self.viewer_branding_id() + "_icon.png"
 
     def package_finish(self):
-        if 'installer_name' in self.args:
-            installer_name = self.args['installer_name']
-        else:
-            installer_name_components = [self.installer_prefix(), self.args.get('arch')]
-            installer_name_components.extend(self.args['version'])
-            installer_name = "_".join(installer_name_components)
-            if self.default_channel():
-                if not self.default_grid():
-                    installer_name += '_' + self.args['grid'].upper()
-            else:
-                installer_name += '_' + self.channel_oneword().upper()
+        installer_name = self.installer_base_name()
 
         self.strip_binaries()
 
         # Fix access permissions
         self.run_command("""
-                find '%(dst)s' -type d -print0 | xargs -0 --no-run-if-empty chmod 755;
-                find '%(dst)s' -type f -perm 0700 -print0 | xargs -0 --no-run-if-empty chmod 0755;
-                find '%(dst)s' -type f -perm 0500 -print0 | xargs -0 --no-run-if-empty chmod 0755;
-                find '%(dst)s' -type f -perm 0600 -print0 | xargs -0 --no-run-if-empty chmod 0644;
-                find '%(dst)s' -type f -perm 0400 -print0 | xargs -0 --no-run-if-empty chmod 0644;
+                find %(dst)s -type d | xargs --no-run-if-empty chmod 755;
+                find %(dst)s -type f -perm 0700 | xargs --no-run-if-empty chmod 0755;
+                find %(dst)s -type f -perm 0500 | xargs --no-run-if-empty chmod 0555;
+                find %(dst)s -type f -perm 0600 | xargs --no-run-if-empty chmod 0644;
+                find %(dst)s -type f -perm 0400 | xargs --no-run-if-empty chmod 0444;
                 true""" %  {'dst':self.get_dst_prefix() })
-        self.package_file = installer_name + '.tar.bz2'
+        self.package_file = installer_name + '.tar.xz'
 
         # temporarily move directory tree so that it has the right
         # name in the tarfile
-        self.run_command("mv '%(dst)s' '%(inst)s'" % {
+        self.run_command("mv %(dst)s %(inst)s" % {
             'dst': self.get_dst_prefix(),
             'inst': self.build_path_of(installer_name)})
         try:
-            # --numeric-owner hides the username of the builder for
-            # security etc.
-            self.run_command("tar -C '%(dir)s' --numeric-owner -cjf "
-                             "'%(inst_path)s.tar.bz2' %(inst_name)s" % {
-                'dir': self.get_build_prefix(),
-                'inst_name': installer_name,
-                'inst_path':self.build_path_of(installer_name)})
-            print ''
+            # only create tarball if it's a release build.
+            if self.args['buildtype'].lower() == 'release':
+                # --numeric-owner hides the username of the builder for
+                # security etc.
+                self.run_command('tar -C %(dir)s --numeric-owner -cJf '
+                                 '%(inst_path)s.tar.xz %(inst_name)s' % {
+                        'dir': self.get_build_prefix(),
+                        'inst_name': installer_name,
+                        'inst_path':self.build_path_of(installer_name)})
+            else:
+                print "Skipping %s.tar.xz for non-Release build (%s)" % \
+                      (installer_name, self.args['buildtype'])
         finally:
-            self.run_command("mv '%(inst)s' '%(dst)s'" % {
+            self.run_command("mv %(inst)s %(dst)s" % {
                 'dst': self.get_dst_prefix(),
                 'inst': self.build_path_of(installer_name)})
 
     def strip_binaries(self):
-        if self.args['buildtype'].lower() in ['release', 'releasesse2']:
+        if self.args['buildtype'].lower() == 'release' and self.is_packaging_viewer():
             print "* Going strip-crazy on the packaged binaries, since this is a RELEASE build"
-            # makes some small assumptions about our packaged dir structure
-            self.run_command("find %(d)r/bin %(d)r/lib* -type f | xargs -d '\n' --no-run-if-empty strip --strip-unneeded" % {'d': self.get_dst_prefix()} )
-            self.run_command("find %(d)r/bin %(d)r/lib* -type f -not -name \\*.so | xargs -d '\n' --no-run-if-empty strip -s" % {'d': self.get_dst_prefix()} )
+            self.run_command(r"find %(d)r/bin %(d)r/lib %(d)r/lib32 %(d)r/lib64 -type f \! -name update_install | xargs --no-run-if-empty strip -S" % {'d': self.get_dst_prefix()} ) # makes some small assumptions about our packaged dir structure
+
 
 class Linux_i686_Manifest(LinuxManifest):
     def construct(self):
         super(Linux_i686_Manifest, self).construct()
 
+        pkgdir = os.path.join(self.args['build'], os.pardir, 'packages')
+        relpkgdir = os.path.join(pkgdir, "lib", "release")
+        debpkgdir = os.path.join(pkgdir, "lib", "debug")
+
         # llcommon
         if not self.path("../llcommon/libllcommon.so", "lib/libllcommon.so"):
             print "Skipping llcommon.so (assuming llcommon was linked statically)"
 
-        if (not self.standalone()) and self.prefix(src="../packages/lib/release", alt_build="../packages/libraries/i686-linux/lib/release", dst="lib"):
+        if (not self.standalone()) and self.prefix(src=relpkgdir, dst="lib"):
             self.path("libapr-1.so*")
             self.path("libaprutil-1.so*")
 
-            self.path("libdb*.so")
             self.path("libexpat.so*")
-            self.path("libglod.so")
-            self.path("libuuid.so*")
+            self.path("libGLOD.so")
             self.path("libSDL-1.2.so*")
-            self.path("libdirectfb-1.*.so*")
-            self.path("libfusion-1.*.so*")
-            self.path("libdirect-1.*.so*")
-
-            self.path("libminizip.so.1.2.3", "libminizip.so");
-            self.path("libhunspell-*.so.*")
             # OpenAL
             self.path("libalut.so")
             self.path("libopenal.so.1")
 
-            self.path("libcollada14dom.so.2.2", "libcollada14dom.so")
-            self.path("libcrypto.so*")
-            self.path("libssl.so*")
             self.path("libtcmalloc_minimal.so.0")
             self.path("libtcmalloc_minimal.so.0.2.2")
-
-            # Boost
-            self.path("libboost_context-mt.so.*")
-            self.path("libboost_filesystem-mt.so.*")
-            self.path("libboost_program_options-mt.so.*")
-            self.path("libboost_regex-mt.so.*")
-            self.path("libboost_signals-mt.so.*")
-            self.path("libboost_system-mt.so.*")
-            self.path("libboost_thread-mt.so.*")
-
             self.end_prefix("lib")
 
-        if (not self.standalone()) and self.prefix(src='', alt_build="../packages/lib/release", dst="lib"):
-            self.add_extra_libraries()
-            self.end_prefix()
-            
         # Vivox runtimes
-        if self.prefix(src="../packages/lib/release", dst="bin"):
+        if self.prefix(src=relpkgdir, dst="bin"):
             self.path("SLVoice")
             self.end_prefix("bin")
-        if self.prefix(src="../packages/lib/release", dst="lib"):
+        if self.prefix(src=relpkgdir, dst="lib"):
             self.path("libortp.so")
+            self.path("libsndfile.so.1")
+            self.path("libvivoxoal.so.1")
             self.path("libvivoxsdk.so")
+            self.path("libvivoxplatform.so")
             self.end_prefix("lib")
+
 
 class Linux_x86_64_Manifest(LinuxManifest):
     def construct(self):
@@ -1038,64 +1013,49 @@ class Linux_x86_64_Manifest(LinuxManifest):
         if not self.path("../llcommon/libllcommon.so", "lib64/libllcommon.so"):
             print "Skipping llcommon.so (assuming llcommon was linked statically)"
 
-        if (not self.standalone()) and self.prefix(src="../packages/lib/release", alt_build="../packages/libraries/x86_64-linux/lib/release", dst="lib64"):
+        pkgdir = os.path.join(self.args['build'], os.pardir, 'packages')
+        relpkgdir = os.path.join(pkgdir, "lib", "release")
+        debpkgdir = os.path.join(pkgdir, "lib", "debug")
+
+        if (not self.standalone()) and self.prefix(relpkgdir, dst="lib64"):
             self.path("libapr-1.so*")
             self.path("libaprutil-1.so*")
-
-            self.path("libdb-*.so*")
-
             self.path("libexpat.so*")
-            self.path("libglod.so")
-            self.path("libssl.so*")
-            self.path("libuuid.so*")
+            self.path("libGLOD.so")
             self.path("libSDL-1.2.so*")
-            self.path("libminizip.so.1.2.3", "libminizip.so");
             self.path("libhunspell-1.3.so*")
-            # OpenAL
             self.path("libalut.so*")
             self.path("libopenal.so*")
+            self.path("libfreetype.so*")
 
-            self.path("libcollada14dom.so.2.2", "libcollada14dom.so")
-            self.path("libcrypto.so.*")
-            self.path("libjpeg.so*")
-            self.path("libpng*.so*")
-            self.path("libz.so*")
+            try:
+                self.path("libtcmalloc.so*") #formerly called google perf tools
+                pass
+            except:
+                print "tcmalloc files not found, skipping"
+                pass
 
-            # Boost
-            self.path("libboost_context-mt.so.*")
-            self.path("libboost_filesystem-mt.so.*")
-            self.path("libboost_program_options-mt.so.*")
-            self.path("libboost_regex-mt.so.*")
-            self.path("libboost_signals-mt.so.*")
-            self.path("libboost_system-mt.so.*")
-            self.path("libboost_thread-mt.so.*")
-
+            try:
+                self.path("libfmod.so*")
+                pass
+            except:
+                print "Skipping libfmod.so - not found"
+                pass
             self.end_prefix("lib64")
 
-        if (not self.standalone()) and self.prefix(src='', alt_build="../packages/lib/release", dst="lib64"):
-            self.add_extra_libraries()
-            self.end_prefix()
-
         # Vivox runtimes
-        if self.prefix(src="../packages/lib/release", dst="bin"):
+        if self.prefix(src=relpkgdir, dst="bin"):
             self.path("SLVoice")
             self.end_prefix("bin")
 
-        if self.prefix(src="../packages/lib/release", dst="lib32"):
-            #self.path("libalut.so")
+        if self.prefix(src=relpkgdir, dst="lib32"):
             self.path("libortp.so")
+            self.path("libsndfile.so.1")
+            self.path("libvivoxoal.so.1")
             self.path("libvivoxsdk.so")
+            self.path("libvivoxplatform.so")
             self.end_prefix("lib32")
 
-        # 32bit libs needed for voice
-        if self.prefix(src="../packages/lib/release/32bit-compat", alt_build="../packages/libraries/x86_64-linux/lib/release/32bit-compat", dst="lib32"):
-            # Vivox libs
-            self.path("libalut.so")
-            self.path("libidn.so.11")
-            self.path("libopenal.so.1")
-            # self.path("libortp.so")
-            self.path("libuuid.so.1")
-            self.end_prefix("lib32")
 
 ################################################################
 
@@ -1121,3 +1081,4 @@ def symlinkf(src, dst):
 
 if __name__ == "__main__":
     main()
+

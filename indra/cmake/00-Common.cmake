@@ -141,7 +141,10 @@ if (LINUX)
       -pthread
       )
 
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 ")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
 
   # Don't catch SIGCHLD in our base application class for the viewer
   # some of our 3rd party libs may need their *own* SIGCHLD handler to work.  Sigh!
@@ -196,16 +199,14 @@ if (LINUX)
 
     # End of hacks.
 
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
-
     if (NOT STANDALONE)
       # this stops us requiring a really recent glibc at runtime
       add_definitions(-fno-stack-protector)
     endif (NOT STANDALONE)
     if (${ARCH} STREQUAL "x86_64")
-      add_definitions(-DLINUX64=1 -pipe)
-      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fomit-frame-pointer -ffast-math -funroll-loops")
-      set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fomit-frame-pointer -ffast-math -funroll-loops")
+      add_definitions(-pipe)
+      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ffast-math")
+      set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -ffast-math")
       set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -ffast-math")
       set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -ffast-math")
     else (${ARCH} STREQUAL "x86_64")
@@ -220,11 +221,6 @@ if (LINUX)
       set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}${MARCH_FLAG} -mfpmath=sse,387 -msse2 ${GCC_EXTRA_OPTIMIZATIONS}")
     endif (${ARCH} STREQUAL "x86_64")
   elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    if (NOT STANDALONE)
-      # this stops us requiring a really recent glibc at runtime
-      add_definitions(-fno-stack-protector)
-    endif (NOT STANDALONE)
-
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}${MARCH_FLAG} -fno-inline -msse2")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}${MARCH_FLAG} -fno-inline -msse2")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}${MARCH_FLAG} -msse2")
@@ -232,12 +228,6 @@ if (LINUX)
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}${MARCH_FLAG} -msse2")
     set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}${MARCH_FLAG} -msse2")
   elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-
-    if (NOT STANDALONE)
-      # this stops us requiring a really recent glibc at runtime
-      add_definitions(-fno-stack-protector)
-    endif (NOT STANDALONE)
-
     if (NOT STANDALONE)
       set(MARCH_FLAG " -axsse4.1 -msse2")
     endif (NOT STANDALONE)
@@ -319,9 +309,9 @@ else (STANDALONE)
   set(${ARCH}_linux_INCLUDES
       atk-1.0
       glib-2.0
+      gdk-pixbuf-2.0
       gstreamer-0.10
       gtk-2.0
-      freetype2
       pango-1.0
       )
 endif (STANDALONE)

@@ -40,28 +40,22 @@ include(TemplateCheck)
 include(UI)
 include(ViewerMiscLibs)
 include(WinManifest)
-
-
-if (WINDOWS)
-    set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP)
-    include(InstallRequiredSystemLibraries)
-endif (WINDOWS)
+include(ZLIB)
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/newview
     ${STATEMACHINE_INCLUDE_DIRS}
     ${DBUSGLIB_INCLUDE_DIRS}
-    ${HUNSPELL_INCLUDE_DIR}
+    ${ZLIB_INCLUDE_DIRS}
     ${JSONCPP_INCLUDE_DIR}
-    ${GLOD_INCLUDE_DIRS}
+    ${GLOD_INCLUDE_DIR}
     ${LLAUDIO_INCLUDE_DIRS}
     ${LLCHARACTER_INCLUDE_DIRS}
     ${LLCOMMON_INCLUDE_DIRS}
+    ${LLPHYSICSEXTENSIONS_INCLUDE_DIRS}
     ${LLIMAGE_INCLUDE_DIRS}
     ${LLINVENTORY_INCLUDE_DIRS}
     ${LLMATH_INCLUDE_DIRS}
     ${LLMESSAGE_INCLUDE_DIRS}
-    ${LLPHYSICSEXTENSIONS_INCLUDE_DIRS}
     ${LLPLUGIN_INCLUDE_DIRS}
     ${LLPRIMITIVE_INCLUDE_DIRS}
     ${LLRENDER_INCLUDE_DIRS}
@@ -69,6 +63,8 @@ include_directories(
     ${LLVFS_INCLUDE_DIRS}
     ${LLWINDOW_INCLUDE_DIRS}
     ${LLXML_INCLUDE_DIRS}
+    ${HUNSPELL_INCLUDE_DIR}
+
     ${LLAPPEARANCE_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
@@ -1613,6 +1609,8 @@ endif (WINDOWS)
 # To work around this, higher level modules should be listed before the modules
 # that they depend upon. -brad
 target_link_libraries(${VIEWER_BINARY_NAME}
+    ${PNG_PRELOAD_ARCHIVES}
+    ${ZLIB_PRELOAD_ARCHIVES}
     ${GOOGLE_PERFTOOLS_LIBRARIES}
     ${LLAUDIO_LIBRARIES}
     ${LLAUDIO_VORBIS_LIBRARIES}
@@ -1665,8 +1663,7 @@ if (LINUX)
   # These are the generated targets that are copied to package/
   set(COPY_INPUT_DEPENDENCIES
     ${VIEWER_BINARY_NAME}
-    linux-crash-logger
-    AlchemyPlugin
+    SLPlugin
     media_plugin_gstreamer010
     llcommon
     )
@@ -1691,7 +1688,6 @@ if (LINUX)
         --standalone=${STANDALONE}
         --touch=${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.touched
       DEPENDS
-        secondlife-stripped
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
         ${COPY_INPUT_DEPENDENCIES}
       )

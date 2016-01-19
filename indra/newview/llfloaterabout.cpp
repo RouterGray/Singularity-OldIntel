@@ -70,7 +70,9 @@
 #include "lldxhardware.h"
 #endif
 
+#if !LL_LINUX
 #include "cef/llceflib.h"
+#endif
 
 extern LLMemoryInfo gSysMemory;
 extern U32 gPacketsIn;
@@ -286,10 +288,12 @@ LLFloaterAbout::LLFloaterAbout()
 	support.append( gAudiop ? gAudiop->getDriverName(want_fullname) : "(none)" );
 	support.append("\n");
 
+#if !LL_LINUX
 	// TODO: Implement media plugin version query
 	support.append("LLCEFLib/CEF Version: ");
 	support.append(LLCEFLIB_VERSION);
 	support.append("\n");
+#endif
 
 	if (gPacketsIn > 0)
 	{

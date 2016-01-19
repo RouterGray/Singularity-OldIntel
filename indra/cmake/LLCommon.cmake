@@ -12,7 +12,6 @@ endif (DARWIN)
 
 
 set(LLCOMMON_INCLUDE_DIRS
-    ${LIBS_OPEN_DIR}/cwdebug
     ${LIBS_OPEN_DIR}/llcommon
     ${APRUTIL_INCLUDE_DIR}
     ${APR_INCLUDE_DIR}
