@@ -10,7 +10,7 @@ else (STANDALONE)
   if (WINDOWS OR DARWIN)
     use_prebuilt_binary(libndofdev)
   elseif (LINUX)
-    use_prebuilt_binary(open-libndofdev)
+    use_prebuilt_binary(libndofdev-open)
   endif (WINDOWS OR DARWIN)
 
   if (WINDOWS)
