@@ -295,7 +295,8 @@ void LLVOClouds::updateDrawable(BOOL force_damped)
 	clearChanged(SHIFTED);
 }
 
-LLCloudPartition::LLCloudPartition()
+LLCloudPartition::LLCloudPartition(LLViewerRegion* region)
+	: LLParticlePartition(region)
 {
 	mDrawableType = LLPipeline::RENDER_TYPE_CLASSIC_CLOUDS;
 	mPartitionType = LLViewerRegion::PARTITION_CLOUD;

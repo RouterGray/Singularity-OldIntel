@@ -474,20 +474,20 @@ void LLViewerRegion::initPartitions()
 {
 	//create object partitions
 	//MUST MATCH declaration of eObjectPartitions
-	mImpl->mObjectPartition.push_back(new LLHUDPartition());		//PARTITION_HUD
-	mImpl->mObjectPartition.push_back(new LLTerrainPartition());	//PARTITION_TERRAIN
-	mImpl->mObjectPartition.push_back(new LLVoidWaterPartition());	//PARTITION_VOIDWATER
-	mImpl->mObjectPartition.push_back(new LLWaterPartition());		//PARTITION_WATER
-	mImpl->mObjectPartition.push_back(new LLTreePartition());		//PARTITION_TREE
-	mImpl->mObjectPartition.push_back(new LLParticlePartition());	//PARTITION_PARTICLE
+	mImpl->mObjectPartition.push_back(new LLHUDPartition(this));		//PARTITION_HUD
+	mImpl->mObjectPartition.push_back(new LLTerrainPartition(this));	//PARTITION_TERRAIN
+	mImpl->mObjectPartition.push_back(new LLVoidWaterPartition(this));	//PARTITION_VOIDWATER
+	mImpl->mObjectPartition.push_back(new LLWaterPartition(this));		//PARTITION_WATER
+	mImpl->mObjectPartition.push_back(new LLTreePartition(this));		//PARTITION_TREE
+	mImpl->mObjectPartition.push_back(new LLParticlePartition(this));	//PARTITION_PARTICLE
 #if ENABLE_CLASSIC_CLOUDS
-	mImpl->mObjectPartition.push_back(new LLCloudPartition());		//PARTITION_CLOUD
+	mImpl->mObjectPartition.push_back(new LLCloudPartition(this));		//PARTITION_CLOUD
 #endif
-	mImpl->mObjectPartition.push_back(new LLGrassPartition());		//PARTITION_GRASS
-	mImpl->mObjectPartition.push_back(new LLVolumePartition());	//PARTITION_VOLUME
-	mImpl->mObjectPartition.push_back(new LLBridgePartition());	//PARTITION_BRIDGE
-	mImpl->mObjectPartition.push_back(new LLAttachmentPartition());	//PARTITION_ATTACHMENT
-	mImpl->mObjectPartition.push_back(new LLHUDParticlePartition());//PARTITION_HUD_PARTICLE
+	mImpl->mObjectPartition.push_back(new LLGrassPartition(this));		//PARTITION_GRASS
+	mImpl->mObjectPartition.push_back(new LLVolumePartition(this));	//PARTITION_VOLUME
+	mImpl->mObjectPartition.push_back(new LLBridgePartition(this));	//PARTITION_BRIDGE
+	mImpl->mObjectPartition.push_back(new LLAttachmentPartition(this));	//PARTITION_ATTACHMENT
+	mImpl->mObjectPartition.push_back(new LLHUDParticlePartition(this));//PARTITION_HUD_PARTICLE
 	mImpl->mObjectPartition.push_back(NULL);						//PARTITION_NONE
 }
 

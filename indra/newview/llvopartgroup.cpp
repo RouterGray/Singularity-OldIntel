@@ -739,8 +739,8 @@ U32 LLVOPartGroup::getPartitionType() const
 	return LLViewerRegion::PARTITION_PARTICLE; 
 }
 
-LLParticlePartition::LLParticlePartition()
-: LLSpatialPartition(LLDrawPoolAlpha::VERTEX_DATA_MASK | LLVertexBuffer::MAP_TEXTURE_INDEX, TRUE, GL_STREAM_DRAW_ARB)
+LLParticlePartition::LLParticlePartition(LLViewerRegion* regionp)
+: LLSpatialPartition(LLDrawPoolAlpha::VERTEX_DATA_MASK | LLVertexBuffer::MAP_TEXTURE_INDEX, TRUE, GL_STREAM_DRAW_ARB, regionp)
 {
 	mRenderPass = LLRenderPass::PASS_ALPHA;
 	mDrawableType = LLPipeline::RENDER_TYPE_PARTICLES;
@@ -749,8 +749,8 @@ LLParticlePartition::LLParticlePartition()
 	mLODPeriod = 1;
 }
 
-LLHUDParticlePartition::LLHUDParticlePartition() :
-	LLParticlePartition()
+LLHUDParticlePartition::LLHUDParticlePartition(LLViewerRegion* regionp) :
+	LLParticlePartition(regionp)
 {
 	mDrawableType = LLPipeline::RENDER_TYPE_HUD_PARTICLES;
 	mPartitionType = LLViewerRegion::PARTITION_HUD_PARTICLE;

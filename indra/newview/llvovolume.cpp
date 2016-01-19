@@ -4008,8 +4008,8 @@ U32 LLVOVolume::getPartitionType() const
 	return LLViewerRegion::PARTITION_VOLUME;
 }
 
-LLVolumePartition::LLVolumePartition()
-: LLSpatialPartition(LLVOVolume::VERTEX_DATA_MASK, TRUE, GL_DYNAMIC_DRAW_ARB)
+LLVolumePartition::LLVolumePartition(LLViewerRegion* regionp)
+: LLSpatialPartition(LLVOVolume::VERTEX_DATA_MASK, TRUE, GL_DYNAMIC_DRAW_ARB, regionp)
 {
 	mLODPeriod = 32;
 	mDepthMask = FALSE;
@@ -4019,8 +4019,8 @@ LLVolumePartition::LLVolumePartition()
 	mBufferUsage = GL_DYNAMIC_DRAW_ARB;
 }
 
-LLVolumeBridge::LLVolumeBridge(LLDrawable* drawablep)
-: LLSpatialBridge(drawablep, TRUE, LLVOVolume::VERTEX_DATA_MASK)
+LLVolumeBridge::LLVolumeBridge(LLDrawable* drawablep, LLViewerRegion* regionp)
+: LLSpatialBridge(drawablep, TRUE, LLVOVolume::VERTEX_DATA_MASK, regionp)
 {
 	mDepthMask = FALSE;
 	mLODPeriod = 32;
@@ -4032,8 +4032,8 @@ LLVolumeBridge::LLVolumeBridge(LLDrawable* drawablep)
 	mSlopRatio = 0.25f;
 }
 
-LLAttachmentBridge::LLAttachmentBridge(LLDrawable* drawablep)
-	: LLVolumeBridge(drawablep)
+LLAttachmentBridge::LLAttachmentBridge(LLDrawable* drawablep, LLViewerRegion* regionp)
+	: LLVolumeBridge(drawablep, regionp)
 {
 	mPartitionType = LLViewerRegion::PARTITION_ATTACHMENT;
 }
@@ -6385,7 +6385,8 @@ void LLGeometryManager::addGeometryCount(LLSpatialGroup* group, U32 &vertex_coun
 	group->mBufferUsage = usage;
 }
 
-LLHUDPartition::LLHUDPartition()
+LLHUDPartition::LLHUDPartition(LLViewerRegion* regionp)
+	: LLBridgePartition(regionp)
 {
 	mPartitionType = LLViewerRegion::PARTITION_HUD;
 	mDrawableType = LLPipeline::RENDER_TYPE_HUD;

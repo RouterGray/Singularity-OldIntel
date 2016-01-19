@@ -77,6 +77,7 @@ public:
 	typedef enum
 	{
 		LLDRAWABLE = 0,
+		LLVOCACHEENTRY,
 		NUM_DATA_TYPE
 	}eEntryDataType_t;
 
@@ -92,6 +93,9 @@ public:
 
 	LLViewerOctreeEntryData* getDrawable() const {return mData[LLDRAWABLE];}
 	bool                     hasDrawable() const {return mData[LLDRAWABLE] != NULL;}
+	LLViewerOctreeEntryData* getVOCacheEntry() const {return mData[LLVOCACHEENTRY];}
+	bool                     hasVOCacheEntry() const {return mData[LLVOCACHEENTRY] != NULL;}
+
 	const LLVector4a* getSpatialExtents() const {return mExtents;} 
 	const LLVector4a& getPositionGroup() const  {return mPositionGroup;}	
 	LLViewerOctreeGroup* getGroup()const        {return mGroup;}
@@ -208,6 +212,7 @@ public:
 	BOOL isVisible() const;
 	virtual BOOL isRecentlyVisible() const;
 	S32  getVisible(LLViewerCamera::eCameraID id) const {return mVisible[id];}
+	S32  getAnyVisible() const {return mAnyVisible;}
 	bool isEmpty() const { return mOctreeNode->isEmpty(); }
 
 	U32  getState()				   {return mState; }
@@ -233,7 +238,7 @@ public:
 	const LLVector4a* getObjectExtents() const {return mObjectExtents;}
 
 	//octree wrappers to make code more readable
-	//element_list& getData() { return mOctreeNode->getData(); }	//unused
+	//element_list& getData() { return mOctreeNode->getData(); }
 	element_iter getDataBegin() { return mOctreeNode->getDataBegin(); }
 	element_iter getDataEnd() { return mOctreeNode->getDataEnd(); }
 	U32 getElementCount() const { return mOctreeNode->getElementCount(); }
@@ -253,6 +258,7 @@ protected:
 	LL_ALIGN_16(LLVector4a mExtents[2]); // extents (min, max) of this node and all its children
 	LL_ALIGN_16(LLVector4a mObjectExtents[2]); // extents (min, max) of objects in this node
 
+	S32 mAnyVisible; //latest visible to any camera
 	S32 mVisible[LLViewerCamera::NUM_CAMERAS];
 
 };
@@ -307,6 +313,7 @@ public:
 	//virtual
 	BOOL isRecentlyVisible() const;
 	LLViewerOctreePartition* getSpatialPartition()const {return mSpatialPartition;}
+	BOOL isAnyRecentlyVisible() const;
 
 	static U32 getNewOcclusionQueryObjectName();
 	static void releaseOcclusionQueryObjectName(U32 name);
@@ -342,11 +349,12 @@ public:
 
 public:	
 	U32              mPartitionType;
-	U32 mDrawableType;
-	OctreeNode* mOctree;
-	BOOL mOcclusionEnabled; // if TRUE, occlusion culling is performed
-	U32 mLODSeed;
-	U32 mLODPeriod;	//number of frames between LOD updates for a given spatial group (staggered by mLODSeed)
+	U32              mDrawableType;
+	OctreeNode*      mOctree;
+	LLViewerRegion*  mRegionp; // the region this partition belongs to.
+	BOOL             mOcclusionEnabled; // if TRUE, occlusion culling is performed
+	U32              mLODSeed;
+	U32              mLODPeriod;	//number of frames between LOD updates for a given spatial group (staggered by mLODSeed)
 };
 
 class LLViewerOctreeCull : public OctreeTraveler
