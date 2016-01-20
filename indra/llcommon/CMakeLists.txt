@@ -2,6 +2,7 @@
 
 project(llcommon)
 
+include(Cwdebug)
 include(00-Common)
 include(LLCommon)
 include(APR)
@@ -249,6 +250,8 @@ set(llcommon_HEADER_FILES
 
 set_source_files_properties(${llcommon_HEADER_FILES}
                             PROPERTIES HEADER_FILE_ONLY TRUE)
+
+list(APPEND llcommon_SOURCE_FILES ${cwdebug_SOURCE_FILES})
 
 list(APPEND llcommon_SOURCE_FILES ${llcommon_HEADER_FILES})
 

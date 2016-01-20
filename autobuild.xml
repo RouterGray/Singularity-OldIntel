@@ -2867,6 +2867,7 @@
                 <array>
                   <string>-G</string>
                   <string>'Unix Makefiles'</string>
+                  <string>-DWORD_SIZE:STRING=64</string>
                 </array>
               </map>
               <key>default</key>
@@ -2891,6 +2892,7 @@
                 <array>
                   <string>-G</string>
                   <string>'Unix Makefiles'</string>
+                  <string>-DWORD_SIZE:STRING=64</string>
                 </array>
               </map>
               <key>name</key>
