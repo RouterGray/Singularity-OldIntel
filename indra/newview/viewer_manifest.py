@@ -165,6 +165,8 @@ class ViewerManifest(LLManifest):
             channel_type='release'
         elif channel_qualifier.startswith('beta'):
             channel_type='beta'
+        elif channel_qualifier.startswith('alpha'):
+            channel_type='alpha'
         elif channel_qualifier.startswith('project'):
             channel_type='project'
         else:
@@ -200,7 +202,7 @@ class ViewerManifest(LLManifest):
         global CHANNEL_VENDOR_BASE
         channel_type=self.channel_type()
         if channel_type == 'release':
-            app_suffix='Viewer'
+            app_suffix=''
         else:
             app_suffix=self.channel_variant()
         return CHANNEL_VENDOR_BASE + ' ' + app_suffix
@@ -239,7 +241,7 @@ class WindowsManifest(ViewerManifest):
         return self.args.get('arch') == "x86_64"
 
     def final_exe(self):
-        return self.app_name_oneword()+".exe"
+        return self.app_name_oneword()+"Viewer.exe"
 
 
     def construct(self):

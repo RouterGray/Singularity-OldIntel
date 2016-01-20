@@ -139,6 +139,7 @@
   !define MUI_STARTMENUPAGE_REGISTRY_KEY "SOFTWARE\${VENDORSTR}\${APPNAMEONEWORD}" 
   !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
   !define MUI_PAGE_CUSTOMFUNCTION_PRE check_skip
+  !define MUI_STARTMENUPAGE_DEFAULTFOLDER "${APPNAME} (64 bit) Viewer"
   !insertmacro MUI_PAGE_STARTMENU Application $STARTMENUFOLDER
 
   ;Install Progress Page
@@ -439,8 +440,8 @@ Section "Viewer"
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
     CreateDirectory "$SMPROGRAMS\$STARTMENUFOLDER"
 !ifdef WIN64_BIN_BUILD
-    CreateShortCut	"$SMPROGRAMS\$STARTMENUFOLDER\$INSTSHORTCUT x64.lnk" "$\"$INSTDIR\$INSTEXE$\"" "$SHORTCUT_LANG_PARAM"
-    CreateShortCut	"$SMPROGRAMS\$STARTMENUFOLDER\Uninstall $INSTSHORTCUT x64.lnk" "$\"$INSTDIR\uninst.exe$\"" ""
+    CreateShortCut	"$SMPROGRAMS\$STARTMENUFOLDER\$INSTSHORTCUT (64 bit) Viewer.lnk" "$\"$INSTDIR\$INSTEXE$\"" "$SHORTCUT_LANG_PARAM"
+    CreateShortCut	"$SMPROGRAMS\$STARTMENUFOLDER\Uninstall $INSTSHORTCUT (64 bit) Viewer.lnk" "$\"$INSTDIR\uninst.exe$\"" ""
 !else
     CreateShortCut	"$SMPROGRAMS\$STARTMENUFOLDER\$INSTSHORTCUT.lnk" "$\"$INSTDIR\$INSTEXE$\"" "$SHORTCUT_LANG_PARAM"
     CreateShortCut	"$SMPROGRAMS\$STARTMENUFOLDER\Uninstall $INSTSHORTCUT.lnk" "$\"$INSTDIR\uninst.exe$\"" ""
@@ -453,9 +454,17 @@ Section "Viewer"
 
   ;Other shortcuts
   SetOutPath "$INSTDIR"
+!ifdef WIN64_BIN_BUILD
   ;CreateShortCut "$DESKTOP\$INSTSHORTCUT.lnk" "$INSTDIR\$INSTEXE" "$SHORTCUT_LANG_PARAM"
-  CreateShortCut "$INSTDIR\$INSTSHORTCUT.lnk" "$INSTDIR\$INSTEXE" "$SHORTCUT_LANG_PARAM"
-  CreateShortCut "$INSTDIR\Uninstall $INSTSHORTCUT.lnk" "$INSTDIR\uninst.exe" ""
+  CreateShortCut "$INSTDIR\$INSTSHORTCUT (64 bit) Viewer.lnk" "$INSTDIR\$INSTEXE" "$SHORTCUT_LANG_PARAM"
+  CreateShortCut "$INSTDIR\$INSTSHORTCUT (64 bit) Viewer Portable.lnk" "$INSTDIR\$INSTEXE" "$SHORTCUT_LANG_PARAM --portable"
+  CreateShortCut "$INSTDIR\Uninstall $INSTSHORTCUT (64 bit) Viewer.lnk" "$INSTDIR\uninst.exe" ""
+!else
+  ;CreateShortCut "$DESKTOP\$INSTSHORTCUT.lnk" "$INSTDIR\$INSTEXE" "$SHORTCUT_LANG_PARAM"
+  CreateShortCut "$INSTDIR\$INSTSHORTCUT Viewer.lnk" "$INSTDIR\$INSTEXE" "$SHORTCUT_LANG_PARAM"
+  CreateShortCut "$INSTDIR\$INSTSHORTCUT Viewer Portable.lnk" "$INSTDIR\$INSTEXE" "$SHORTCUT_LANG_PARAM --portable"
+  CreateShortCut "$INSTDIR\Uninstall $INSTSHORTCUT Viewer.lnk" "$INSTDIR\uninst.exe" ""
+!endif
     
   ;Write registry
   WriteRegStr HKLM "SOFTWARE\${VENDORSTR}\$INSTPROG" "" "$INSTDIR"
@@ -464,9 +473,9 @@ Section "Viewer"
   WriteRegStr HKLM "SOFTWARE\${VENDORSTR}\$INSTPROG" "Exe" "$INSTEXE"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "Comments" "A viewer for the meta-verse!"
 !ifdef WIN64_BIN_BUILD
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "DisplayName" "$INSTSHORTCUT x64"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "DisplayName" "$INSTSHORTCUT (64 bit) Viewer"
 !else
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "DisplayName" "$INSTSHORTCUT"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "DisplayName" "$INSTSHORTCUT Viewer"
 !endif
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "DisplayIcon" "$INSTDIR\$INSTEXE"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "DisplayVersion" "${VERSION_LONG}"
@@ -586,9 +595,16 @@ Section "Uninstall"
   Delete "$INSTDIR\VivoxVoiceService-*.log"
 
   ;Shortcuts in install directory
-  Delete "$INSTDIR\$INSTSHORTCUT.lnk"
-  Delete "$INSTDIR\Uninstall $INSTSHORTCUT.lnk"
-
+!ifdef WIN64_BIN_BUILD
+  Delete "$INSTDIR\$INSTSHORTCUT (64 bit) Viewer.lnk"
+  Delete "$INSTDIR\$INSTSHORTCUT (64 bit) Viewer Portable.lnk"
+  Delete "$INSTDIR\Uninstall $INSTSHORTCUT (64 bit) Viewer.lnk"
+!else
+  Delete "$INSTDIR\$INSTSHORTCUT Viewer.lnk"
+  Delete "$INSTDIR\$INSTSHORTCUT Viewer Portable.lnk"
+  Delete "$INSTDIR\Uninstall $INSTSHORTCUT Viewer.lnk"
+!endif
+  
   Delete "$INSTDIR\uninst.exe"
   RMDir "$INSTDIR"
   
