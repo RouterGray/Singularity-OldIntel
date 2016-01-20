@@ -141,6 +141,7 @@ LLVersionInfo::ViewerMaturity LLVersionInfo::getViewerMaturity()
     std::string channel = getChannel();
 
 	static const boost::regex is_test_channel("\\bTest\\b");
+	static const boost::regex is_alpha_channel("\\bAlpha\\b");
 	static const boost::regex is_beta_channel("\\bBeta\\b");
 	static const boost::regex is_project_channel("\\bProject\\b");
 	static const boost::regex is_release_channel("\\bRelease\\b");
@@ -153,6 +154,10 @@ LLVersionInfo::ViewerMaturity LLVersionInfo::getViewerMaturity()
     {
         maturity = BETA_VIEWER;
     }
+	else if (boost::regex_search(channel, is_alpha_channel))
+	{
+		maturity = ALPHA_VIEWER;
+	}
     else if (boost::regex_search(channel, is_project_channel))
     {
         maturity = PROJECT_VIEWER;

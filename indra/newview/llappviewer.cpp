@@ -2262,6 +2262,33 @@ bool LLAppViewer::initConfiguration()
 		LL_INFOS() << "Using command line specified settings filename: " 
 			<< user_settings_filename << LL_ENDL;
 	}
+	else
+	{
+		std::string channel(LLVersionInfo::getChannel());
+		LLStringUtil::toLower(channel);
+		switch (LLVersionInfo::getViewerMaturity())
+		{
+		default:
+		case LLVersionInfo::TEST_VIEWER:
+		case LLVersionInfo::PROJECT_VIEWER:
+		case LLVersionInfo::ALPHA_VIEWER:
+		case LLVersionInfo::BETA_VIEWER:
+		{
+			channel.erase(std::remove_if(channel.begin(), channel.end(), isspace), channel.end());
+			break;
+		}
+		case LLVersionInfo::RELEASE_VIEWER:
+			size_t pos = channel.find(' ');
+			if (pos != channel.npos)
+				channel.erase(pos, channel.npos);
+			break;
+		}
+		std::string settings_filename = gDirUtilp->getExpandedFilename(LL_PATH_USER_SETTINGS,
+			llformat("settings_%s.xml", channel.c_str()));
+		gSavedSettings.setString("ClientSettingsFile", settings_filename);
+		LL_INFOS() << "Using default settings filename from channel: "
+			<< settings_filename << LL_ENDL;
+	}
 
 	// - load overrides from user_settings 
 	loadSettingsFromDirectory(settings_w, "User");

@@ -73,6 +73,7 @@ public:
     {
         TEST_VIEWER,
         PROJECT_VIEWER,
+		ALPHA_VIEWER,
         BETA_VIEWER,
         RELEASE_VIEWER
     } ViewerMaturity;
