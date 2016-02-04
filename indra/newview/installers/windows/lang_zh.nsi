@@ -36,12 +36,12 @@ LangString CheckIfCurrentMB ${LANG_TRADCHINESE} "${APPNAME} ${VERSION_LONG} 版�
 LangString MissingSSE2 ${LANG_TRADCHINESE} "This machine may not have a CPU with SSE2 support, which is required to run ${APPNAME} ${VERSION_LONG}. Do you want to continue?"
 
 ; closesecondlife function (install)
-LangString CloseSecondLifeInstDP ${LANG_TRADCHINESE} "等待 Alchemy 停止運行…"
-LangString CloseSecondLifeInstMB ${LANG_TRADCHINESE} "如果 Alchemy 仍在運行，將無法進行安裝。$\n$\n請結束您在 Alchemy 內的活動，然後選擇確定，將 Alchemy 關閉，以繼續安裝。$\n選擇「取消」，取消安裝。"
+LangString CloseSecondLifeInstDP ${LANG_TRADCHINESE} "等待 Singularity 停止運行…"
+LangString CloseSecondLifeInstMB ${LANG_TRADCHINESE} "如果 Singularity 仍在運行，將無法進行安裝。$\n$\n請結束您在 Singularity 內的活動，然後選擇確定，將 Singularity 關閉，以繼續安裝。$\n選擇「取消」，取消安裝。"
 
 ; closesecondlife function (uninstall)
-LangString CloseSecondLifeUnInstDP ${LANG_TRADCHINESE} "等待 Alchemy 停止運行…"
-LangString CloseSecondLifeUnInstMB ${LANG_TRADCHINESE} "如果 Alchemy 仍在運行，將無法進行卸載。$\n$\n請結束您在 Alchemy 內的活動，然後選擇確定，將 Alchemy 關閉，以繼續卸載。$\n選擇「取消」，取消卸載。"
+LangString CloseSecondLifeUnInstDP ${LANG_TRADCHINESE} "等待 Singularity 停止運行…"
+LangString CloseSecondLifeUnInstMB ${LANG_TRADCHINESE} "如果 Singularity 仍在運行，將無法進行卸載。$\n$\n請結束您在 Singularity 內的活動，然後選擇確定，將 Singularity 關閉，以繼續卸載。$\n選擇「取消」，取消卸載。"
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_TRADCHINESE} "正在檢查網路連接..."

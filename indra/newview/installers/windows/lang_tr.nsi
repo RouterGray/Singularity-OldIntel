@@ -36,12 +36,12 @@ LangString CheckIfCurrentMB ${LANG_TURKISH} "${APPNAME} ${VERSION_LONG} zaten y�
 LangString MissingSSE2 ${LANG_TURKISH} "Bu makinede SSE2 desteğine sahip bir CPU bulunmayabilir, ${APPNAME} ${VERSION_LONG} çalıştırmak için bu gereklidir. Devam etmek istiyor musunuz?"
 
 ; closesecondlife function (install)
-LangString CloseSecondLifeInstDP ${LANG_TURKISH} "Alchemy'ın kapatılması bekleniyor..."
-LangString CloseSecondLifeInstMB ${LANG_TURKISH} "Alchemy zaten çalışırken kapatılamaz.$\n$\nYaptığınız işi bitirdikten sonra Alchemy'ı kapatmak ve devam etmek için Tamam seçimini yapın.$\nYüklemeyi iptal etmek için İPTAL seçimini yapın."
+LangString CloseSecondLifeInstDP ${LANG_TURKISH} "Singularity'ın kapatılması bekleniyor..."
+LangString CloseSecondLifeInstMB ${LANG_TURKISH} "Singularity zaten çalışırken kapatılamaz.$\n$\nYaptığınız işi bitirdikten sonra Singularity'ı kapatmak ve devam etmek için Tamam seçimini yapın.$\nYüklemeyi iptal etmek için İPTAL seçimini yapın."
 
 ; closesecondlife function (uninstall)
-LangString CloseSecondLifeUnInstDP ${LANG_TURKISH} "Alchemy'ın kapatılması bekleniyor..."
-LangString CloseSecondLifeUnInstMB ${LANG_TURKISH} "Alchemy zaten çalışırken kaldırılamaz.$\n$\nYaptığınız işi bitirdikten sonra Alchemy'ı kapatmak ve devam etmek için Tamam seçimini yapın.$\nİptal etmek için İPTAL seçimini yapın."
+LangString CloseSecondLifeUnInstDP ${LANG_TURKISH} "Singularity'ın kapatılması bekleniyor..."
+LangString CloseSecondLifeUnInstMB ${LANG_TURKISH} "Singularity zaten çalışırken kaldırılamaz.$\n$\nYaptığınız işi bitirdikten sonra Singularity'ı kapatmak ve devam etmek için Tamam seçimini yapın.$\nİptal etmek için İPTAL seçimini yapın."
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_TURKISH} "Ağ bağlantısı kontrol ediliyor..."

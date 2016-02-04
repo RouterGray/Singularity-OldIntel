@@ -36,12 +36,12 @@ LangString CheckIfCurrentMB ${LANG_ITALIAN} "${APPNAME} ${VERSION_LONG} è stato
 LangString MissingSSE2 ${LANG_ITALIAN} "This machine may not have a CPU with SSE2 support, which is required to run ${APPNAME} ${VERSION_LONG}. Do you want to continue?"
 
 ; closesecondlife function (install)
-LangString CloseSecondLifeInstDP ${LANG_ITALIAN} "In attesa che Alchemy chiuda…"
-LangString CloseSecondLifeInstMB ${LANG_ITALIAN} "Non è possibile installare Alchemy se è già in funzione..$\n$\nTermina le operazioni in corso e scegli OK per chiudere Alchemy e continuare.$\nScegli CANCELLA per annullare l’installazione."
+LangString CloseSecondLifeInstDP ${LANG_ITALIAN} "In attesa che Singularity chiuda…"
+LangString CloseSecondLifeInstMB ${LANG_ITALIAN} "Non è possibile installare Singularity se è già in funzione..$\n$\nTermina le operazioni in corso e scegli OK per chiudere Singularity e continuare.$\nScegli CANCELLA per annullare l’installazione."
 
 ; closesecondlife function (uninstall)
-LangString CloseSecondLifeUnInstDP ${LANG_ITALIAN} "In attesa della chiusura di Alchemy…"
-LangString CloseSecondLifeUnInstMB ${LANG_ITALIAN} "Non è possibile installare Alchemy se è già in funzione.$\n$\nTermina le operazioni in corso e scegli OK per chiudere Alchemy e continuare.$\nScegli CANCELLA per annullare."
+LangString CloseSecondLifeUnInstDP ${LANG_ITALIAN} "In attesa della chiusura di Singularity…"
+LangString CloseSecondLifeUnInstMB ${LANG_ITALIAN} "Non è possibile installare Singularity se è già in funzione.$\n$\nTermina le operazioni in corso e scegli OK per chiudere Singularity e continuare.$\nScegli CANCELLA per annullare."
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_ITALIAN} "Verifica connessione di rete in corso..."

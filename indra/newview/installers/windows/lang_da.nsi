@@ -36,12 +36,12 @@ LangString CheckIfCurrentMB ${LANG_DANISH} "Det ser ud til at ${APPNAME} ${VERSI
 LangString MissingSSE2 ${LANG_DANISH} "This machine may not have a CPU with SSE2 support, which is required to run ${APPNAME} ${VERSION_LONG}. Do you want to continue?"
 
 ; closesecondlife function (install)
-LangString CloseSecondLifeInstDP ${LANG_DANISH} "Venter på at Alchemy skal lukke ned..."
-LangString CloseSecondLifeInstMB ${LANG_DANISH} "Alchemy kan ikke installeres mens programmet kører.$\n$\nAfslut programmet for at fortsætte.$\nVælg ANNULÉR for at afbryde installation."
+LangString CloseSecondLifeInstDP ${LANG_DANISH} "Venter på at Singularity skal lukke ned..."
+LangString CloseSecondLifeInstMB ${LANG_DANISH} "Singularity kan ikke installeres mens programmet kører.$\n$\nAfslut programmet for at fortsætte.$\nVælg ANNULÉR for at afbryde installation."
 
 ; closesecondlife function (uninstall)
-LangString CloseSecondLifeUnInstDP ${LANG_DANISH} "Venter på at Alchemy skal lukke ned..."
-LangString CloseSecondLifeUnInstMB ${LANG_DANISH} "Alchemy kan ikke afinstalleres mens programmet kører.$\n$\nAfslut programmet for at fortsætte.$\nVælg ANNULÉR for at afbryde installation."
+LangString CloseSecondLifeUnInstDP ${LANG_DANISH} "Venter på at Singularity skal lukke ned..."
+LangString CloseSecondLifeUnInstMB ${LANG_DANISH} "Singularity kan ikke afinstalleres mens programmet kører.$\n$\nAfslut programmet for at fortsætte.$\nVælg ANNULÉR for at afbryde installation."
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_DANISH} "Checker netværksforbindelse..."

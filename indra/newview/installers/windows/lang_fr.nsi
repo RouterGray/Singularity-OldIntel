@@ -36,12 +36,12 @@ LangString CheckIfCurrentMB ${LANG_FRENCH} "Il semblerait que vous ayez déjà i
 LangString MissingSSE2 ${LANG_FRENCH} "This machine may not have a CPU with SSE2 support, which is required to run ${APPNAME} ${VERSION_LONG}. Do you want to continue?"
 
 ; closesecondlife function (install)
-LangString CloseSecondLifeInstDP ${LANG_FRENCH} "En attente de la fermeture de Alchemy..."
-LangString CloseSecondLifeInstMB ${LANG_FRENCH} "Alchemy ne peut pas être installé si l'application est déjà lancée..$\n$\nFinissez ce que vous faites puis sélectionnez OK pour fermer Alchemy et continuer.$\nSélectionnez ANNULER pour annuler l'installation."
+LangString CloseSecondLifeInstDP ${LANG_FRENCH} "En attente de la fermeture de Singularity..."
+LangString CloseSecondLifeInstMB ${LANG_FRENCH} "Singularity ne peut pas être installé si l'application est déjà lancée..$\n$\nFinissez ce que vous faites puis sélectionnez OK pour fermer Singularity et continuer.$\nSélectionnez ANNULER pour annuler l'installation."
 
 ; closesecondlife function (uninstall)
-LangString CloseSecondLifeUnInstDP ${LANG_FRENCH} "En attente de la fermeture de Alchemy..."
-LangString CloseSecondLifeUnInstMB ${LANG_FRENCH} "Alchemy ne peut pas être désinstallé si l'application est déjà lancée.$\n$\nFinissez ce que vous faites puis sélectionnez OK pour fermer Alchemy et continuer.$\nSélectionnez ANNULER pour annuler la désinstallation."
+LangString CloseSecondLifeUnInstDP ${LANG_FRENCH} "En attente de la fermeture de Singularity..."
+LangString CloseSecondLifeUnInstMB ${LANG_FRENCH} "Singularity ne peut pas être désinstallé si l'application est déjà lancée.$\n$\nFinissez ce que vous faites puis sélectionnez OK pour fermer Singularity et continuer.$\nSélectionnez ANNULER pour annuler la désinstallation."
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_FRENCH} "Connexion au réseau en cours de vérification..."

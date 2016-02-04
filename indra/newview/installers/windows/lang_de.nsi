@@ -36,12 +36,12 @@ LangString CheckIfCurrentMB ${LANG_GERMAN} "Anscheinend ist ${APPNAME} ${VERSION
 LangString MissingSSE2 ${LANG_GERMAN} "Dieser PC besitzt möglicherweise keinen Prozessor mit SSE2-Unterstützung, die für die Ausführung von ${APPNAME} ${VERSION_LONG} benötigt wird. Trotzdem installieren?"
 
 ; closesecondlife function (install)
-LangString CloseSecondLifeInstDP ${LANG_GERMAN} "Warten auf die Beendigung von Alchemy ..."
-LangString CloseSecondLifeInstMB ${LANG_GERMAN} "Alchemy kann nicht installiert oder ersetzt werden, wenn es bereits läuft.$\n$\nBeenden Sie, was Sie gerade tun und klicken Sie OK, um Alchemy zu beenden.$\nKlicken Sie CANCEL, um die Installation abzubrechen."
+LangString CloseSecondLifeInstDP ${LANG_GERMAN} "Warten auf die Beendigung von Singularity ..."
+LangString CloseSecondLifeInstMB ${LANG_GERMAN} "Singularity kann nicht installiert oder ersetzt werden, wenn es bereits läuft.$\n$\nBeenden Sie, was Sie gerade tun und klicken Sie OK, um Singularity zu beenden.$\nKlicken Sie CANCEL, um die Installation abzubrechen."
 
 ; closesecondlife function (uninstall)
-LangString CloseSecondLifeUnInstDP ${LANG_GERMAN} "Warten auf die Beendigung von Alchemy ..."
-LangString CloseSecondLifeUnInstMB ${LANG_GERMAN} "Alchemy kann nicht entfernt werden, wenn es bereits läuft.$\n$\nBeenden Sie, was Sie gerade tun und klicken Sie OK, um Alchemy zu beenden.$\nKlicken Sie CANCEL, um abzubrechen."
+LangString CloseSecondLifeUnInstDP ${LANG_GERMAN} "Warten auf die Beendigung von Singularity ..."
+LangString CloseSecondLifeUnInstMB ${LANG_GERMAN} "Singularity kann nicht entfernt werden, wenn es bereits läuft.$\n$\nBeenden Sie, was Sie gerade tun und klicken Sie OK, um Singularity zu beenden.$\nKlicken Sie CANCEL, um abzubrechen."
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_GERMAN} "Prüfe Netzwerkverbindung..."

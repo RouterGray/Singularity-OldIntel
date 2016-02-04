@@ -36,12 +36,12 @@ LangString CheckIfCurrentMB ${LANG_PORTUGUESEBR} "Parece que o ${APPNAME} ${VERS
 LangString MissingSSE2 ${LANG_PORTUGUESEBR} "This machine may not have a CPU with SSE2 support, which is required to run ${APPNAME} ${VERSION_LONG}. Do you want to continue?"
 
 ; closesecondlife function (install)
-LangString CloseSecondLifeInstDP ${LANG_PORTUGUESEBR} "Esperando o encerramento do Alchemy..."
-LangString CloseSecondLifeInstMB ${LANG_PORTUGUESEBR} "O Alchemy não pode ser instalado enquanto ainda está sendo executado.$\n$\nTermine o que estava fazendo e selecione OK para fechar o Alchemy e continuar.$\nSelecione CANCELAR para cancelar a instalação."
+LangString CloseSecondLifeInstDP ${LANG_PORTUGUESEBR} "Esperando o encerramento do Singularity..."
+LangString CloseSecondLifeInstMB ${LANG_PORTUGUESEBR} "O Singularity não pode ser instalado enquanto ainda está sendo executado.$\n$\nTermine o que estava fazendo e selecione OK para fechar o Singularity e continuar.$\nSelecione CANCELAR para cancelar a instalação."
 
 ; closesecondlife function (uninstall)
-LangString CloseSecondLifeUnInstDP ${LANG_PORTUGUESEBR} "Esperando o encerramento do Alchemy..."
-LangString CloseSecondLifeUnInstMB ${LANG_PORTUGUESEBR} "O Alchemy não pode ser desinstalado enquanto ainda está sendo executado.$\n$\nTermine o que estava fazendo e selecione OK para fechar o Alchemy e continuar.$\nSelecione CANCELAR para cancelar."
+LangString CloseSecondLifeUnInstDP ${LANG_PORTUGUESEBR} "Esperando o encerramento do Singularity..."
+LangString CloseSecondLifeUnInstMB ${LANG_PORTUGUESEBR} "O Singularity não pode ser desinstalado enquanto ainda está sendo executado.$\n$\nTermine o que estava fazendo e selecione OK para fechar o Singularity e continuar.$\nSelecione CANCELAR para cancelar."
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_PORTUGUESEBR} "Verificando a conexão de rede..."

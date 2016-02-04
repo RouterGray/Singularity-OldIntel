@@ -36,12 +36,12 @@ LangString CheckIfCurrentMB ${LANG_RUSSIAN} "Вероятно, версия ${AP
 LangString MissingSSE2 ${LANG_RUSSIAN} "Возможно, на этом компьютере нет ЦП с поддержкой SSE2, которая необходима для работы ${APPNAME} ${VERSION_LONG}. Продолжить?"
 
 ; closesecondlife function (install)
-LangString CloseSecondLifeInstDP ${LANG_RUSSIAN} "Ожидаю завершения работы Alchemy..."
-LangString CloseSecondLifeInstMB ${LANG_RUSSIAN} "Alchemy уже работает, выполнить установку невозможно.$\n$\nЗавершите текущую операцию и нажмите кнопку «OK», чтобы закрыть Alchemy и продолжить установку.$\nНажмите кнопку «ОТМЕНА» для отказа от установки."
+LangString CloseSecondLifeInstDP ${LANG_RUSSIAN} "Ожидаю завершения работы Singularity..."
+LangString CloseSecondLifeInstMB ${LANG_RUSSIAN} "Singularity уже работает, выполнить установку невозможно.$\n$\nЗавершите текущую операцию и нажмите кнопку «OK», чтобы закрыть Singularity и продолжить установку.$\nНажмите кнопку «ОТМЕНА» для отказа от установки."
 
 ; closesecondlife function (uninstall)
-LangString CloseSecondLifeUnInstDP ${LANG_RUSSIAN} "Ожидаю завершения работы Alchemy..."
-LangString CloseSecondLifeUnInstMB ${LANG_RUSSIAN} "Alchemy уже работает, выполнить удаление невозможно.$\n$\nЗавершите текущую операцию и нажмите кнопку «OK», чтобы закрыть Alchemy и продолжить удаление.$\nНажмите кнопку «ОТМЕНА» для отказа от удаления."
+LangString CloseSecondLifeUnInstDP ${LANG_RUSSIAN} "Ожидаю завершения работы Singularity..."
+LangString CloseSecondLifeUnInstMB ${LANG_RUSSIAN} "Singularity уже работает, выполнить удаление невозможно.$\n$\nЗавершите текущую операцию и нажмите кнопку «OK», чтобы закрыть Singularity и продолжить удаление.$\nНажмите кнопку «ОТМЕНА» для отказа от удаления."
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_RUSSIAN} "Проверка подключения к сети..."

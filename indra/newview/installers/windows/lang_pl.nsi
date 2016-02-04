@@ -36,12 +36,12 @@ LangString CheckIfCurrentMB ${LANG_POLISH} "${APPNAME} ${VERSION_LONG} jest już
 LangString MissingSSE2 ${LANG_POLISH} "Ten komputer może nie mieć procesora z obsługą SSE2, który jest wymagany aby uruchomić ${APPNAME} w wersji ${VERSION_LONG}. Chcesz kontynuować?"
 
 ; closesecondlife function (install)
-LangString CloseSecondLifeInstDP ${LANG_POLISH} "Oczekiwanie na zamknięcie Alchemy..."
-LangString CloseSecondLifeInstMB ${LANG_POLISH} "Alchemy nie może zostać zainstalowane, ponieważ jest już włączone.$\n$\nZakończ swoje działania i wybierz OK aby zamknąć Alchemy i kontynuować.$\nWybierz CANCEL aby anulować instalację."
+LangString CloseSecondLifeInstDP ${LANG_POLISH} "Oczekiwanie na zamknięcie Singularity..."
+LangString CloseSecondLifeInstMB ${LANG_POLISH} "Singularity nie może zostać zainstalowane, ponieważ jest już włączone.$\n$\nZakończ swoje działania i wybierz OK aby zamknąć Singularity i kontynuować.$\nWybierz CANCEL aby anulować instalację."
 
 ; closesecondlife function (uninstall)
-LangString CloseSecondLifeUnInstDP ${LANG_POLISH} "Oczekiwanie na zamknięcie Alchemy..."
-LangString CloseSecondLifeUnInstMB ${LANG_POLISH} "Alchemy nie może zostać zainstalowane, ponieważ jest już włączone.$\n$\nZakończ swoje działania i wybierz OK aby zamknąć Alchemy i kontynuować.$\nWybierz CANCEL aby anulować."
+LangString CloseSecondLifeUnInstDP ${LANG_POLISH} "Oczekiwanie na zamknięcie Singularity..."
+LangString CloseSecondLifeUnInstMB ${LANG_POLISH} "Singularity nie może zostać zainstalowane, ponieważ jest już włączone.$\n$\nZakończ swoje działania i wybierz OK aby zamknąć Singularity i kontynuować.$\nWybierz CANCEL aby anulować."
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_POLISH} "Sprawdzanie połączenia sieciowego..."
