@@ -1749,30 +1749,38 @@ bool is_spam_filtered(const EInstantMessage& dialog, bool is_friend, bool is_own
 	{
 	case IM_GROUP_NOTICE:
 	case IM_GROUP_NOTICE_REQUESTED:
-		if (!gSavedSettings.getBOOL("AntiSpamGroupNotices")) return false;
+		static LLCachedControl<bool> filter(gSavedSettings,"AntiSpamGroupNotices");
+		if (!filter) return false;
 		break;
 	case IM_GROUP_INVITATION:
-		if (!gSavedSettings.getBOOL("AntiSpamGroupInvites")) return false;
+		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamGroupInvites");
+		if (!filter) return false;
 		break;
 	case IM_INVENTORY_OFFERED:
 	case IM_TASK_INVENTORY_OFFERED:
-		if (!gSavedSettings.getBOOL("AntiSpamItemOffers")) return false;
+		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamItemOffers");
+		if (!filter) return false;
 		break;
 	case IM_FROM_TASK_AS_ALERT:
-		if (!gSavedSettings.getBOOL("AntiSpamAlerts")) return false;
+		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamAlerts");
+		if (!filter) return false;
 		break;
 	case IM_LURE_USER:
-		if (!gSavedSettings.getBOOL("AntiSpamTeleports")) return false;
+		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamTeleports");
+		if (!filter) return false;
 		break;
 	case IM_TELEPORT_REQUEST:
-		if (!gSavedSettings.getBOOL("AntiSpamTeleportRequests")) return false;
+		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamTeleportRequests");
+		if (!filter) return false;
 		break;
 	case IM_FRIENDSHIP_OFFERED:
-		if (!gSavedSettings.getBOOL("AntiSpamFriendshipOffers")) return false;
+		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamFriendshipOffers");
+		if (!filter) return false;
 		break;
 	case IM_COUNT:
 		// Bit of a hack, we should never get here unless we did this on purpose, though, doesn't matter because we'd do nothing anyway
-		if (!gSavedSettings.getBOOL("AntiSpamScripts")) return false;
+		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamScripts");
+		if (!filter) return false;
 		break;
 	default:
 		return false;
