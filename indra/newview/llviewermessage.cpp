@@ -1727,14 +1727,24 @@ bool LLOfferInfo::inventory_offer_callback(const LLSD& notification, const LLSD&
 	return false;
 }
 
+bool has_spam_bypass(bool is_friend, bool is_owned_by_me)
+{
+	static LLCachedControl<bool> antispam_not_mine(gSavedSettings,"AntiSpamNotMine");
+	static LLCachedControl<bool> antispam_not_friend(gSavedSettings,"AntiSpamNotFriend");
+	return (antispam_not_mine && is_owned_by_me) || (antispam_not_friend && is_friend);
+}
+
 void script_msg_api(const std::string& msg);
 bool is_spam_filtered(const EInstantMessage& dialog, bool is_friend, bool is_owned_by_me)
 {
-	// First, check the master filter
+	// First, check that this doesn't bypass.
+	if (has_spam_bypass(is_friend, is_owned_by_me)) return false;
+
+	// Second, check the master filter
 	static LLCachedControl<bool> antispam(gSavedSettings,"_NACL_Antispam");
 	if (antispam) return true;
 
-	// Second, check if this dialog type is even being filtered
+	// Third, check if this dialog type is even being filtered
 	switch(dialog)
 	{
 	case IM_GROUP_NOTICE:
@@ -1767,15 +1777,6 @@ bool is_spam_filtered(const EInstantMessage& dialog, bool is_friend, bool is_own
 	default:
 		return false;
 	}
-
-	// Third, possibly filtered, check the filter bypasses
-	static LLCachedControl<bool> antispam_not_mine(gSavedSettings,"AntiSpamNotMine");
-	if (antispam_not_mine && is_owned_by_me)
-		return false;
-
-	static LLCachedControl<bool> antispam_not_friend(gSavedSettings,"AntiSpamNotFriend");
-	if (antispam_not_friend && is_friend)
-		return false;
 
 	// Last, definitely filter
 	return true;
