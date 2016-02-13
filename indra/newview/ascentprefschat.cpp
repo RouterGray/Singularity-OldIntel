@@ -256,6 +256,7 @@ void LLPrefsAscentChat::refreshValues()
 
 	//Autoresponse ------------------------------------------------------------------------
 	mIMResponseRepeat            = gSavedPerAccountSettings.getBOOL("AscentInstantMessageResponseRepeat");
+	mIMResponseAway              = gSavedPerAccountSettings.getBOOL("AutoresponseOnlyIfAway");
 	mIMResponseAnyone            = gSavedPerAccountSettings.getBOOL("AutoresponseAnyone");
 	mIMResponseAnyoneFriends     = gSavedPerAccountSettings.getBOOL("AutoresponseAnyoneFriendsOnly");
 	mIMResponseAnyoneItem        = gSavedPerAccountSettings.getBOOL("AutoresponseAnyoneItem");
@@ -495,6 +496,7 @@ void LLPrefsAscentChat::cancel()
 
 	//Autoresponse ------------------------------------------------------------------------
 	gSavedPerAccountSettings.setBOOL("AscentInstantMessageResponseRepeat", mIMResponseRepeat);
+	gSavedPerAccountSettings.setBOOL("AutoresponseOnlyIfAway",             mIMResponseAway);
 	gSavedPerAccountSettings.setBOOL("AutoresponseAnyone",                 mIMResponseAnyone);
 	gSavedPerAccountSettings.setBOOL("AutoresponseAnyoneFriendsOnly",      mIMResponseAnyoneFriends);
 	gSavedPerAccountSettings.setBOOL("AutoresponseAnyoneItem",             mIMResponseAnyoneItem);

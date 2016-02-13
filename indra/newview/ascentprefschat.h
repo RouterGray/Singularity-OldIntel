@@ -96,6 +96,7 @@ private:
 
 	//Autoresponse ------------------------------------------------------------------------
 	bool mIMResponseRepeat;
+	bool mIMResponseAway;
 	bool mIMResponseAnyone;
 	bool mIMResponseAnyoneFriends;
 	bool mIMResponseAnyoneItem;
