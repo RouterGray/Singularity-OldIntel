@@ -1749,39 +1749,55 @@ bool is_spam_filtered(const EInstantMessage& dialog, bool is_friend, bool is_own
 	{
 	case IM_GROUP_NOTICE:
 	case IM_GROUP_NOTICE_REQUESTED:
-		static LLCachedControl<bool> filter(gSavedSettings,"AntiSpamGroupNotices");
+	{
+		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamGroupNotices");
 		if (!filter) return false;
 		break;
+	}
 	case IM_GROUP_INVITATION:
+	{
 		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamGroupInvites");
 		if (!filter) return false;
 		break;
+	}
 	case IM_INVENTORY_OFFERED:
 	case IM_TASK_INVENTORY_OFFERED:
+	{
 		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamItemOffers");
 		if (!filter) return false;
 		break;
+	}
 	case IM_FROM_TASK_AS_ALERT:
+	{
 		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamAlerts");
 		if (!filter) return false;
 		break;
+	}
 	case IM_LURE_USER:
+	{
 		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamTeleports");
 		if (!filter) return false;
 		break;
+	}
 	case IM_TELEPORT_REQUEST:
+	{
 		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamTeleportRequests");
 		if (!filter) return false;
 		break;
+	}
 	case IM_FRIENDSHIP_OFFERED:
+	{
 		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamFriendshipOffers");
 		if (!filter) return false;
 		break;
+	}
 	case IM_COUNT:
+	{
 		// Bit of a hack, we should never get here unless we did this on purpose, though, doesn't matter because we'd do nothing anyway
 		static LLCachedControl<bool> filter(gSavedSettings, "AntiSpamScripts");
 		if (!filter) return false;
 		break;
+	}
 	default:
 		return false;
 	}
