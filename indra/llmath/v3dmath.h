@@ -191,7 +191,7 @@ inline LLVector3d::LLVector3d(const LLVector3d &copy)
 // checker
 inline BOOL LLVector3d::isFinite() const
 {
-	return (llfinite(mdV[VX]) && llfinite(mdV[VY]) && llfinite(mdV[VZ]));
+	return (std::isfinite(mdV[VX]) && std::isfinite(mdV[VY]) && std::isfinite(mdV[VZ]));
 }
 
 

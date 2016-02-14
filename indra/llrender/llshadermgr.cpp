@@ -865,7 +865,6 @@ GLhandleARB LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shade
 				dumpObjectLog(ret);
 				error_str = get_object_log(ret);
 
-#if LL_WINDOWS
 				std::stringstream ostr;
 				//dump shader source for debugging
 				for (GLuint i = 0; i < count; i++)
@@ -882,19 +881,6 @@ GLhandleARB LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shade
 				}
 
 				LL_WARNS("ShaderLoading") << "\n" << ostr.str() << LL_ENDL;
-#else
-				std::string str;
-				
-				for (GLuint i = 0; i < count; i++) {
-					str.append(text[i]);
-					
-					if (i % 128 == 0)
-					{
-						LL_WARNS("ShaderLoading") << str << LL_ENDL;
-						str = "";
-					}
-				}
-#endif
 				glDeleteObjectARB(ret); //no longer need handle
 				ret = 0;
 			}	

@@ -696,7 +696,7 @@ public:
 				(mData.size() > gOctreeReserveCapacity && mData.capacity() > gOctreeReserveCapacity + mData.size() - 1 - (mData.size() - gOctreeReserveCapacity - 1) % 4))
 			{
 				//Shrink to lowest possible (reserve)+4*i size.. Say reserve is 5, here are [size,capacity] pairs. [10,13],[9,9],[8,9],[7,9],[6,9],[5,5],[4,5],[3,5],[2,5],[1,5],[0,5]
-				vector_shrink_to_fit(mData);
+				mData.shrink_to_fit();
 			}
 #ifdef LL_OCTREE_STATS
 			if(old_cap != mData.capacity())

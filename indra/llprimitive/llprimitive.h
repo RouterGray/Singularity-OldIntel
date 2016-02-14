@@ -528,7 +528,7 @@ inline BOOL LLPrimitive::isApp(const LLPCode pcode)
 // Special case for setPosition.  If not check-for-finite, fall through to LLXform method.
 void LLPrimitive::setPosition(const F32 x, const F32 y, const F32 z)
 {
-	if (llfinite(x) && llfinite(y) && llfinite(z))
+	if (std::isfinite(x) && std::isfinite(y) && std::isfinite(z))
 	{
 		LLXform::setPosition(x, y, z);
 	}
@@ -565,7 +565,7 @@ void LLPrimitive::setAngularVelocity(const LLVector3& avel)
 
 void LLPrimitive::setAngularVelocity(const F32 x, const F32 y, const F32 z)		
 { 
-	if (llfinite(x) && llfinite(y) && llfinite(z))
+	if (std::isfinite(x) && std::isfinite(y) && std::isfinite(z))
 	{
 		mAngularVelocity.setVec(x,y,z);
 	}
@@ -589,7 +589,7 @@ void LLPrimitive::setVelocity(const LLVector3& vel)
 
 void LLPrimitive::setVelocity(const F32 x, const F32 y, const F32 z)			
 { 
-	if (llfinite(x) && llfinite(y) && llfinite(z))
+	if (std::isfinite(x) && std::isfinite(y) && std::isfinite(z))
 	{
 		mVelocity.setVec(x,y,z); 
 	}
@@ -601,7 +601,7 @@ void LLPrimitive::setVelocity(const F32 x, const F32 y, const F32 z)
 
 void LLPrimitive::setVelocityX(const F32 x)							
 { 
-	if (llfinite(x))
+	if (std::isfinite(x))
 	{
 		mVelocity.mV[VX] = x;
 	}
@@ -613,7 +613,7 @@ void LLPrimitive::setVelocityX(const F32 x)
 
 void LLPrimitive::setVelocityY(const F32 y)							
 { 
-	if (llfinite(y))
+	if (std::isfinite(y))
 	{
 		mVelocity.mV[VY] = y;
 	}
@@ -625,7 +625,7 @@ void LLPrimitive::setVelocityY(const F32 y)
 
 void LLPrimitive::setVelocityZ(const F32 z)							
 { 
-	if (llfinite(z))
+	if (std::isfinite(z))
 	{
 		mVelocity.mV[VZ] = z;
 	}
@@ -661,7 +661,7 @@ void LLPrimitive::setAcceleration(const LLVector3& accel)
 
 void LLPrimitive::setAcceleration(const F32 x, const F32 y, const F32 z)		
 { 
-	if (llfinite(x) && llfinite(y) && llfinite(z))
+	if (std::isfinite(x) && std::isfinite(y) && std::isfinite(z))
 	{
 		mAcceleration.setVec(x,y,z); 
 	}

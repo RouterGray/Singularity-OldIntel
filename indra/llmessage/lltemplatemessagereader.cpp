@@ -326,7 +326,7 @@ void LLTemplateMessageReader::getF32(const char *block, const char *var,
 {
 	getData(block, var, &d, sizeof(F32), blocknum);
 
-	if( !llfinite( d ) )
+	if( !std::isfinite( d ) )
 	{
 		LL_WARNS() << "non-finite in getF32Fast " << block << " " << var 
 				<< LL_ENDL;
@@ -339,7 +339,7 @@ void LLTemplateMessageReader::getF64(const char *block, const char *var,
 {
 	getData(block, var, &d, sizeof(F64), blocknum);
 
-	if( !llfinite( d ) )
+	if( !std::isfinite( d ) )
 	{
 		LL_WARNS() << "non-finite in getF64Fast " << block << " " << var 
 				<< LL_ENDL;

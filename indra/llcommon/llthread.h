@@ -201,7 +201,7 @@ protected:
 #include <boost/thread/condition_variable.hpp>
 typedef boost::recursive_mutex LLMutexImpl;
 typedef boost::condition_variable_any LLConditionVariableImpl;
-#elif defined(USE_STD_MUTEX) && defined(LL_CPP11)
+#elif defined(USE_STD_MUTEX)
 #include <mutex>
 typedef std::recursive_mutex LLMutexImpl;
 typedef std::condition_variable_any LLConditionVariableImpl;

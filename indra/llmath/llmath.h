@@ -41,23 +41,6 @@
 // llcommon depend on llmath.
 #include "is_approx_equal_fraction.h"
 
-
-// work around for Windows & older gcc non-standard function names.
-#if LL_WINDOWS
-#include <float.h>
-#define llisnan(val)	_isnan(val)
-#define llfinite(val)	_finite(val)
-#elif (LL_LINUX && __GNUC__ <= 2)
-#define llisnan(val)	isnan(val)
-#define llfinite(val)	isfinite(val)
-#elif LL_SOLARIS
-#define llisnan(val)    isnan(val)
-#define llfinite(val)   (val <= std::numeric_limits<double>::max())
-#else
-#define llisnan(val)	std::isnan(val)
-#define llfinite(val)	std::isfinite(val)
-#endif
-
 // Single Precision Floating Point Routines
 // (There used to be more defined here, but they appeared to be redundant and 
 // were breaking some other includes. Removed by Falcon, reviewed by Andrew, 11/25/09)
@@ -156,36 +139,12 @@ inline F64 llabs(const F64 a)
 
 inline S32 lltrunc( F32 f )
 {
-#if LL_WINDOWS && !defined( __INTEL_COMPILER ) && !defined(_WIN64) && !(_MSC_VER >= 1800)
-		// Avoids changing the floating point control word.
-		// Add or subtract 0.5 - epsilon and then round
-		const static U32 zpfp[] = { 0xBEFFFFFF, 0x3EFFFFFF };
-		S32 result;
-		__asm {
-			fld		f
-			mov		eax,	f
-			shr		eax,	29
-			and		eax,	4
-			fadd	dword ptr [zpfp + eax]
-			fistp	result
-		}
-		return result;
-#else
-#ifdef LL_CPP11
-		return (S32)trunc(f);
-#else
-		return (S32)f;
-#endif
-#endif
+	return (S32)trunc(f);
 }
 
 inline S32 lltrunc( F64 f )
 {
-#ifdef LL_CPP11
 	return (S32)trunc(f);
-#else
-	return (S32)f;
-#endif
 }
 
 inline S32 llfloor( F32 f )
@@ -217,29 +176,17 @@ inline S32 llceil( F32 f )
 // Use this round.  Does an arithmetic round (0.5 always rounds up)
 inline S32 ll_round(const F32 val)
 {
-#ifdef LL_CPP11
 	return (S32)round(val);
-#else
-	return llfloor(val + 0.5f);
-#endif
 }
 
 inline F32 ll_round(F32 val, F32 nearest)
 {
-#ifdef LL_CPP11
 	return F32(round(val * (1.0f / nearest))) * nearest;
-#else
-	return F32(floor(val * (1.0f / nearest) + 0.5f)) * nearest;
-#endif
 }
 
 inline F64 ll_round(F64 val, F64 nearest)
 {
-#ifdef LL_CPP11
 	return F64(round(val * (1.0 / nearest))) * nearest;
-#else
-	return F64(floor(val * (1.0 / nearest) + 0.5)) * nearest;
-#endif
 }
 
 // these provide minimum peak error

@@ -221,14 +221,7 @@ template <typename T>
 //Singu note: This has been generalized to support a broader range of map-esque containers
 inline bool is_in_map(const T& inmap, typename T::key_type const& key)
 {
-	if(inmap.find(key) == inmap.end())
-	{
-		return false;
-	}
-	else
-	{
-		return true;
-	}
+	return inmap.find(key) != inmap.end();
 }
 
 // Similar to get_ptr_in_map, but for any type with a valid T(0) constructor.
@@ -326,19 +319,6 @@ inline T* vector_append(std::vector<T>& invec, S32 N)
 	U32 sz = invec.size();
 	invec.resize(sz+N);
 	return &(invec[sz]);
-}
-
-template <typename T>
-inline void vector_shrink_to_fit(std::vector<T>& invec)
-{
-	//For Windows: We always assume vs2010 or later, which support this c++11 feature with no configuration needed.
-	//For GCC: __cplusplus >= 201103L indicates C++11 support. __GXX_EXPERIMENTAL_CXX0X being set indicates experimental c++0x support. C++11 support replaces C++0x support.
-	//		   std::vector::shrink_to_fit was added to GCCs C++0x implementation in version 4.5.0.
-#if defined(LL_WINDOWS) || __cplusplus >= 201103L || (defined(__GXX_EXPERIMENTAL_CXX0X) && __GNUC_MINOR__ >= 5)
-	invec.shrink_to_fit();
-#else
-	std::vector<T>(invec).swap(invec);
-#endif
 }
 
 // call function f to n members starting at first. similar to std::for_each
@@ -529,27 +509,6 @@ llbind2nd(const _Operation& __oper, const _Tp& __x)
 }
 
 /**
- * Compare std::type_info* pointers a la std::less. We break this out as a
- * separate function for use in two different std::less specializations.
- */
-inline
-bool before(const std::type_info* lhs, const std::type_info* rhs)
-{
-#if LL_LINUX && defined(__GNUC__) && ((__GNUC__ < 4) || (__GNUC__ == 4 && __GNUC_MINOR__ < 4))
-	// If we're building on Linux with gcc, and it's either gcc 3.x or
-	// 4.{0,1,2,3}, then we have to use a workaround. Note that we use gcc on
-	// Mac too, and some people build with gcc on Windows (cygwin or mingw).
-	// On Linux, different load modules may produce different type_info*
-	// pointers for the same type. Have to compare name strings to get good
-	// results.
-	return strcmp(lhs->name(), rhs->name()) < 0;
-#else  // not Linux, or gcc 4.4+
-	// Just use before(), as we normally would
-	return lhs->before(*rhs);
-#endif
-}
-
-/**
  * Specialize std::less<std::type_info*> to use std::type_info::before().
  * See MAINT-1175. It is NEVER a good idea to directly compare std::type_info*
  * because, on Linux, you might get different std::type_info* pointers for the
@@ -563,7 +522,7 @@ namespace std
 	{
 		bool operator()(const std::type_info* lhs, const std::type_info* rhs) const
 		{
-			return before(lhs, rhs);
+			return lhs->before(*rhs);
 		}
 	};
 
@@ -573,7 +532,7 @@ namespace std
 	{
 		bool operator()(std::type_info* lhs, std::type_info* rhs) const
 		{
-			return before(lhs, rhs);
+			return lhs->before(*rhs);
 		}
 	};
 } // std

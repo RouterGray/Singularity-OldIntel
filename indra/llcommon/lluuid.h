@@ -307,8 +307,6 @@ struct lluuid_less
 
 typedef std::set<LLUUID, lluuid_less> uuid_list_t;
 
-
-#ifdef LL_CPP11
 namespace std {
 	template <> struct hash<LLUUID>
 {
@@ -319,7 +317,6 @@ namespace std {
 		}
 	};
 }
-#endif
 
 namespace boost {
 	template<> class hash<LLUUID>

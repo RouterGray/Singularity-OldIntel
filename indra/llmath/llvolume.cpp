@@ -167,8 +167,8 @@ void calc_tangent_from_triangle(
 	float r = ((rd*rd) > FLT_EPSILON) ? (1.0f / rd)
 											    : ((rd > 0.0f) ? 1024.f : -1024.f); //some made up large ratio for division by zero
 
-	llassert(llfinite(r));
-	llassert(!llisnan(r));
+	llassert(std::isfinite(r));
+	llassert(!std::isnan(r));
 
 	LLVector4a sdir(
 		(t2 * x1 - t1 * x2) * r,
@@ -5989,13 +5989,13 @@ BOOL LLVolumeFace::createCap(LLVolume* volume, BOOL partial_build)
 		normal.set(0,0,1);
 	}
 
-	llassert(llfinite(normal.getF32ptr()[0]));
-	llassert(llfinite(normal.getF32ptr()[1]));
-	llassert(llfinite(normal.getF32ptr()[2]));
+	llassert(std::isfinite(normal.getF32ptr()[0]));
+	llassert(std::isfinite(normal.getF32ptr()[1]));
+	llassert(std::isfinite(normal.getF32ptr()[2]));
 
-	llassert(!llisnan(normal.getF32ptr()[0]));
-	llassert(!llisnan(normal.getF32ptr()[1]));
-	llassert(!llisnan(normal.getF32ptr()[2]));
+	llassert(!std::isnan(normal.getF32ptr()[0]));
+	llassert(!std::isnan(normal.getF32ptr()[1]));
+	llassert(!std::isnan(normal.getF32ptr()[2]));
 	
 	for (S32 i = 0; i < num_vertices; i++)
 	{
@@ -6810,8 +6810,8 @@ void CalculateTangentArray(U32 vertexCount, const LLVector4a *vertex, const LLVe
 		float r = ((rd*rd) > FLT_EPSILON) ? (1.0f / rd)
 													 : ((rd > 0.0f) ? 1024.f : -1024.f); //some made up large ratio for division by zero
 
-		llassert(llfinite(r));
-		llassert(!llisnan(r));
+		llassert(std::isfinite(r));
+		llassert(!std::isnan(r));
 
 		LLVector4a sdir((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r,
 				(t2 * z1 - t1 * z2) * r);

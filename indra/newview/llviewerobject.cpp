@@ -1822,7 +1822,7 @@ U32 LLViewerObject::processUpdateMessage(LLMessageSystem *mesgsys,
 		
 		LLVector3 diff = new_pos_parent - test_pos_parent ;
 		F32 mag_sqr = diff.magVecSquared() ;
-		if(llfinite(mag_sqr)) 
+		if(std::isfinite(mag_sqr))
 		{
 			setPositionParent(new_pos_parent);
 		}

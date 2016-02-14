@@ -166,7 +166,7 @@ public:
 // checker
 inline BOOL	LLQuaternion::isFinite() const
 {
-	return (llfinite(mQ[VX]) && llfinite(mQ[VY]) && llfinite(mQ[VZ]) && llfinite(mQ[VS]));
+	return (std::isfinite(mQ[VX]) && std::isfinite(mQ[VY]) && std::isfinite(mQ[VZ]) && std::isfinite(mQ[VS]));
 }
 
 inline BOOL LLQuaternion::isIdentity() const

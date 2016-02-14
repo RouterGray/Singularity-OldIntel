@@ -408,7 +408,7 @@ BOOL LLVOPartGroup::updateGeometry(LLDrawable *drawable)
 		else
 			inv_camera_dist_squared = 1.f;
 
-		llassert(llfinite(inv_camera_dist_squared));
+		llassert(std::isfinite(inv_camera_dist_squared));
 		llassert(!llisnan(inv_camera_dist_squared));
 
 		F32 area = part->mScale.mV[0] * part->mScale.mV[1] * inv_camera_dist_squared;

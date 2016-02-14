@@ -161,7 +161,7 @@ private:
 	F32 _min(const F32& a, const F32& b) const { return llmin(a, b); }
 	F32 _max(const F32& a, const F32& b) const { return llmax(a, b); }
 	
-	bool checkNaN(const F32& a) const { return !llisnan(a); }
+	bool checkNaN(const F32& a) const { return !std::isnan(a); }
 	
 	//FIX* non ambiguous function fix making SIN() work for calc -Cryogenic Blitz
 	F32 _sin(const F32& a) const { return sin(DEG_TO_RAD * a); }
