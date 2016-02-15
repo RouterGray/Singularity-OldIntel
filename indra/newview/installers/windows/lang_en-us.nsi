@@ -37,11 +37,11 @@ LangString MissingSSE2 ${LANG_ENGLISH} "This machine may not have a CPU with SSE
 
 ; closesecondlife function (install)
 LangString CloseSecondLifeInstDP ${LANG_ENGLISH} "Waiting for ${APPNAME} to shut down..."
-LangString CloseSecondLifeInstMB ${LANG_ENGLISH} "${APPNAME} can't be installed while it is already running.$\n$\nFinish what you're doing then select OK to close ${APPNAME} and continue.$\nSelect CANCEL to cancel installation."
+LangString CloseSecondLifeInstMB ${LANG_ENGLISH} "${APPNAME} can't be installed while it is already running.$\n$\nFinish what you're doing then select OK to close ${APPNAME} and continue.$\nSelect NO to proceed without closing the viewer, Caution: this can prevent a proper install, use with care (like when installing a different viewer than the one you are running).$\nSelect CANCEL to cancel installation."
 
 ; closesecondlife function (uninstall)
 LangString CloseSecondLifeUnInstDP ${LANG_ENGLISH} "Waiting for ${APPNAME} to shut down..."
-LangString CloseSecondLifeUnInstMB ${LANG_ENGLISH} "${APPNAME} can't be uninstalled while it is already running.$\n$\nFinish what you're doing then select OK to close ${APPNAME} and continue.$\nSelect CANCEL to cancel."
+LangString CloseSecondLifeUnInstMB ${LANG_ENGLISH} "${APPNAME} can't be uninstalled while it is already running.$\n$\nFinish what you're doing then select OK to close ${APPNAME} and continue.$\nSelect NO to proceed without closing the viewer, Caution: this can prevent a proper uninstall, use with care (like when uninstalling a different viewer than the one you are running).$\nSelect CANCEL to cancel."
 
 ; CheckNetworkConnection
 LangString CheckNetworkConnectionDP ${LANG_ENGLISH} "Checking network connection..."
