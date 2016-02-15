@@ -561,7 +561,7 @@ void LLLayoutStack::updateFractionalSizes()
 			panelp->mFractionalSize = panel_resizable_dim > 0.f 
 				? llclamp(panel_resizable_dim / total_resizable_dim, MIN_FRACTIONAL_SIZE, MAX_FRACTIONAL_SIZE)
 				: MIN_FRACTIONAL_SIZE;
-			llassert(!llisnan(panelp->mFractionalSize));
+			llassert(!std::isnan(panelp->mFractionalSize));
 		}
 	}
 
@@ -789,7 +789,7 @@ void LLLayoutStack::updatePanelRect( LLLayoutPanel* resized_panel, const LLRect&
 				fraction_given_up -= new_fractional_size - panelp->mFractionalSize;
 				fraction_remaining -= panelp->mFractionalSize;
 				panelp->mFractionalSize = new_fractional_size;
-				llassert(!llisnan(panelp->mFractionalSize));
+				llassert(!std::isnan(panelp->mFractionalSize));
 			}
 			else
 			{
@@ -805,7 +805,7 @@ void LLLayoutStack::updatePanelRect( LLLayoutPanel* resized_panel, const LLRect&
 				fraction_given_up -= new_fractional_size - panelp->mFractionalSize;
 				fraction_remaining -= panelp->mFractionalSize;
 				panelp->mFractionalSize = new_fractional_size;
-				llassert(!llisnan(panelp->mFractionalSize));
+				llassert(!std::isnan(panelp->mFractionalSize));
 			}
 			else
 			{	// freeze new size as original size
