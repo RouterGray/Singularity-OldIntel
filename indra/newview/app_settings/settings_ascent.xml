@@ -951,6 +951,17 @@
       <key>Value</key>
       <real>3.5</real>
     </map>
+    <key>LiruFlashWhenMinimized</key>
+    <map>
+      <key>Comment</key>
+      <string>Whether or not to flash the taskbar when a message comes in while minimized.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>1</integer>
+    </map>
     <key>OBJExportNotifyFailed</key>
     <map>
       <key>Comment</key>

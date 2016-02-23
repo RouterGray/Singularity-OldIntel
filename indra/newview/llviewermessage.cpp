@@ -3500,7 +3500,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 	}
 
 	LLWindow* viewer_window = gViewerWindow->getWindow();
-	if (viewer_window && viewer_window->getMinimized())
+	if (viewer_window && viewer_window->getMinimized() && gSavedSettings.getBOOL("LiruFlashWhenMinimized"))
 	{
 		viewer_window->flashIcon(5.f);
 	}
