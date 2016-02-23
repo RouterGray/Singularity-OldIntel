@@ -26,7 +26,6 @@
 #include "rlvinventory.h"
 
 #include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
 
 // ============================================================================
 // RlvCommmand
@@ -913,7 +912,7 @@ void RlvForceWear::updatePendingAttachments()
 	if (RlvForceWear::instanceExists())
 	{
 		RlvForceWear* pThis = RlvForceWear::getInstance();
-		BOOST_FOREACH(const pendingattachments_map_t::value_type& itAttach, pThis->m_pendingAttachments)
+		for (const auto& itAttach : pThis->m_pendingAttachments)
 			LLAttachmentsMgr::instance().addAttachment(itAttach.first, itAttach.second & ~ATTACHMENT_ADD, itAttach.second & ATTACHMENT_ADD);
 		pThis->m_pendingAttachments.clear();
 	}
@@ -954,7 +953,7 @@ void RlvForceWear::done()
 	// Wearables
 	if (m_remWearables.size())
 	{
-		BOOST_FOREACH(const LLViewerWearable* pWearable, m_remWearables)
+		for (const LLViewerWearable* pWearable : m_remWearables)
 			remItems.push_back(pWearable->getItemID());
 		m_remWearables.clear();
 	}
@@ -963,7 +962,7 @@ void RlvForceWear::done()
 	if (m_remGestures.size())
 	{
 		// NOTE: LLGestureMgr::deactivateGesture() will call LLAppearanceMgr::removeCOFItemLinks() for us and supply its own callback
-		BOOST_FOREACH(const LLViewerInventoryItem* pItem, m_remGestures)
+		for (const LLViewerInventoryItem* pItem : m_remGestures)
 			LLGestureMgr::instance().deactivateGesture(pItem->getUUID());
 		m_remGestures.clear();
 	}
@@ -972,7 +971,7 @@ void RlvForceWear::done()
 	if (m_remAttachments.size())
 	{
 		LLAgentWearables::userRemoveMultipleAttachments(m_remAttachments);
-		BOOST_FOREACH(const LLViewerObject* pAttachObj, m_remAttachments)
+		for (const LLViewerObject* pAttachObj : m_remAttachments)
 			remItems.push_back(pAttachObj->getAttachmentItemID());
 		m_remAttachments.clear();
 	}
@@ -986,7 +985,7 @@ void RlvForceWear::done()
 	for (addwearables_map_t::const_iterator itAddWearables = m_addWearables.begin(); itAddWearables != m_addWearables.end(); ++itAddWearables)
 	{
 		// NOTE: LLAppearanceMgr will filter our duplicates so no need for us to check here
-		BOOST_FOREACH(LLViewerInventoryItem* pItem, itAddWearables->second)
+		for (LLViewerInventoryItem* pItem : itAddWearables->second)
 		{
 			if (LLAssetType::AT_BODYPART == pItem->getType())
 				addBodyParts.push_back(pItem);
@@ -999,7 +998,7 @@ void RlvForceWear::done()
 	// Until LL provides a way for updateCOF to selectively attach add/replace we have to deal with attachments ourselves
 	for (addattachments_map_t::const_iterator itAddAttachments = m_addAttachments.begin(); itAddAttachments != m_addAttachments.end(); ++itAddAttachments)
 	{
-		BOOST_FOREACH(const LLViewerInventoryItem* pItem, itAddAttachments->second)
+		for (const LLViewerInventoryItem* pItem : itAddAttachments->second)
 			addPendingAttachment(pItem->getLinkedUUID(), itAddAttachments->first);
 	}
 	m_addAttachments.clear();

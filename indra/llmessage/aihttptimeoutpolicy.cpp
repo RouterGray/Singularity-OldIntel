@@ -942,7 +942,6 @@ P2(meshHeaderResponder,							connect_30s);
 P2(meshLODResponder,							connect_30s);
 P2(meshPhysicsShapeResponder,					connect_30s);
 P2(meshSkinInfoResponder,						connect_30s);
-P(moderationResponder);
 P(objectCostResponder);
 P(physicsFlagsResponder);
 P(productInfoRequestResponder);

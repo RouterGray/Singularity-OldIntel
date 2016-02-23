@@ -46,15 +46,9 @@
 #include "lltimer.h"
 #include "llsdserialize.h"
 #include "llsdutil.h"
-#include <boost/bind.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/regex.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/range.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/type_traits/is_integral.hpp>
-#include <boost/type_traits/is_float.hpp>
 
 using namespace llsd;
 
@@ -96,8 +90,6 @@ const char MEMINFO_FILE[] = "/proc/meminfo";
 extern int errno;
 #endif
 
-
-static const S32 CPUINFO_BUFFER_SIZE = 16383;
 LLCPUInfo gSysCPU;
 
 // Don't log memory info any more often than this. It also serves as our
@@ -108,6 +100,15 @@ static const F32 MEM_INFO_THROTTLE = 20;
 // If we only triggered FrameWatcher logging when the session framerate
 // dropped below the login framerate, we'd have very little additional data.
 static const F32 MEM_INFO_WINDOW = 10*60;
+
+#if LL_WINDOWS
+
+#pragma warning(disable : 4996)
+
+#ifndef _WIN32_WINNT_WIN10
+#define _WIN32_WINNT_WIN10 0x0A00
+#endif
+#endif // LL_WINDOWS
 
 // Wrap boost::regex_match() with a function that doesn't throw.
 template <typename S, typename M, typename R>
@@ -148,7 +149,7 @@ LLOSInfo::LLOSInfo() :
 #if LL_WINDOWS
 	bool is_server = IsWindowsServer();
 	std::string service_pack;
-	if (IsWindows10OrGreater())
+	if (IsWindowsVersionOrGreater(HIBYTE(_WIN32_WINNT_WIN10), LOBYTE(_WIN32_WINNT_WIN10), 0))
 	{
 		if (is_server)
 		{
@@ -517,8 +518,6 @@ const std::string& LLOSInfo::getOSVersionString() const
 	return mOSVersionString;
 }
 
-const S32 STATUS_SIZE = 8192;
-
 //static
 U32 LLOSInfo::getProcessVirtualSizeKB()
 {
@@ -526,6 +525,7 @@ U32 LLOSInfo::getProcessVirtualSizeKB()
 #if LL_WINDOWS
 #endif
 #if LL_LINUX
+#   define STATUS_SIZE 2048
 	LLFILE* status_filep = LLFile::fopen("/proc/self/status", "rb");
 	if (status_filep)
 	{
@@ -683,7 +683,7 @@ public:
 	// Store every integer type as LLSD::Integer.
 	template <class T>
 	void add(const LLSD::String& name, const T& value,
-			 typename boost::enable_if<boost::is_integral<T> >::type* = 0)
+			 typename std::enable_if<std::is_integral<T>::value>::type* = nullptr)
 	{
 		mStats[name] = LLSD::Integer(value);
 	}
@@ -691,7 +691,7 @@ public:
 	// Store every floating-point type as LLSD::Real.
 	template <class T>
 	void add(const LLSD::String& name, const T& value,
-			 typename boost::enable_if<boost::is_float<T> >::type* = 0)
+			 typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr)
 	{
 		mStats[name] = LLSD::Real(value);
 	}
@@ -878,7 +878,7 @@ void LLMemoryInfo::stream(std::ostream& s) const
 
 	// Max key length
 	size_t key_width(0);
-	BOOST_FOREACH(const MapEntry& pair, inMap(mStatsMap))
+	for (const MapEntry& pair : inMap(mStatsMap))
 	{
 		size_t len(pair.first.length());
 		if (len > key_width)
@@ -888,7 +888,7 @@ void LLMemoryInfo::stream(std::ostream& s) const
 	}
 
 	// Now stream stats
-	BOOST_FOREACH(const MapEntry& pair, inMap(mStatsMap))
+	for (const MapEntry& pair : inMap(mStatsMap))
 	{
 		s << pfx << std::setw(key_width+1) << (pair.first + ':') << ' ';
 		LLSD value(pair.second);
@@ -1176,7 +1176,8 @@ public:
         // Hooking onto the "mainloop" event pump gets us one call per frame.
         mConnection(LLEventPumps::instance()
                     .obtain("mainloop")
-                    .listen("FrameWatcher", boost::bind(&FrameWatcher::tick, this, _1))),
+					.listen("FrameWatcher", std::bind(&FrameWatcher::tick, this, std::placeholders::_1))),
+
         // Initializing mSampleStart to an invalid timestamp alerts us to skip
         // trying to compute framerate on the first call.
         mSampleStart(-1),

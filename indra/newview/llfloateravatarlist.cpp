@@ -52,7 +52,6 @@
 #include "llworld.h"
 
 #include <boost/date_time.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 // [RLVa:KB]
@@ -412,7 +411,7 @@ BOOL LLFloaterAvatarList::postBuild()
 	mAvatarList->setCommitCallback(boost::bind(&LLFloaterAvatarList::onSelectName,this));
 	mAvatarList->setDoubleClickCallback(boost::bind(&LLFloaterAvatarList::onClickFocus,this));
 	mAvatarList->setSortChangedCallback(boost::bind(&LLFloaterAvatarList::onAvatarSortingChanged,this));
-	BOOST_FOREACH(LLViewerRegion* region, LLWorld::instance().getRegionList())
+	for (LLViewerRegion* region : LLWorld::instance().getRegionList())
 	{
 		updateAvatarList(region);
 	}
@@ -605,9 +604,9 @@ void LLFloaterAvatarList::expireAvatarList(const std::list<LLUUID>& ids)
 		std::vector<LLUUID> existing_avs;
 		std::vector<LLViewerRegion*> neighbors;
 		gAgent.getRegion()->getNeighboringRegions(neighbors);
-		BOOST_FOREACH(const LLViewerRegion* region, neighbors)
+		for (const LLViewerRegion* region : neighbors)
 			existing_avs.insert(existing_avs.end(), region->mMapAvatarIDs.begin(), region->mMapAvatarIDs.end());
-		BOOST_FOREACH(const LLUUID& id, ids)
+		for (const LLUUID& id : ids)
 		{
 			if (std::find(existing_avs.begin(), existing_avs.end(), id) != existing_avs.end()) continue; // Now in another region we know.
 			av_list_t::iterator it(std::find_if(mAvatars.begin(), mAvatars.end(), LLAvatarListEntry::uuidMatch(id)));
@@ -671,7 +670,7 @@ void LLFloaterAvatarList::refreshAvatarList()
 
 	av_list_t dead_entries;
 	bool name_restricted(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
-	BOOST_FOREACH(av_list_t::value_type& entry, mAvatars)
+	for (auto& entry : mAvatars)
 	{
 		LLVector3d position = entry->getPosition();
 		LLVector3d delta = position - mypos;
@@ -974,7 +973,7 @@ void LLFloaterAvatarList::refreshAvatarList()
 		mAvatarList->addRow(element);
 	}
 
-	BOOST_FOREACH(av_list_t::value_type& dead, dead_entries)
+	for (auto& dead : dead_entries)
 		mAvatars.erase(std::remove(mAvatars.begin(), mAvatars.end(), dead), mAvatars.end());
 
 	if (mAvatars.empty())
@@ -1003,7 +1002,7 @@ void LLFloaterAvatarList::resetAvatarNames()
 	bool hide_tags(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS));
 	bool anon_names(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
 	const std::string& hidden(RlvStrings::getString(RLV_STRING_HIDDEN));
-	BOOST_FOREACH(av_list_t::value_type& entry, mAvatars)
+	for (auto& entry : mAvatars)
 	{
 		entry->resetName(hide_tags, anon_names, hidden);
 	}
@@ -1144,7 +1143,7 @@ void LLFloaterAvatarList::onClickFocus()
 
 void LLFloaterAvatarList::removeFocusFromAll()
 {
-	BOOST_FOREACH(av_list_t::value_type& entry, mAvatars)
+	for (auto& entry : mAvatars)
 	{
 		entry->setFocus(false);
 	}
