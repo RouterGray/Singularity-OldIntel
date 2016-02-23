@@ -604,6 +604,9 @@ bool LLGLManager::initGL()
 		LLImageGL::sCompressTextures = false;
 	}
 	
+#if LL_WINDOWS
+	bool mIsHD3K(false);
+#endif
 	// Trailing space necessary to keep "nVidia Corpor_ati_on" cards
 	// from being recognized as ATI.
 	if (mGLVendor.substr(0,4) == "ATI ")
@@ -675,6 +678,14 @@ bool LLGLManager::initGL()
 	{
 		mGLVendorShort = "INTEL";
 		mIsIntel = TRUE;
+#if LL_WINDOWS
+		if (mGLRenderer.find("HD") != std::string::npos
+			&& ((mGLRenderer.find("2000") != std::string::npos || mGLRenderer.find("3000") != std::string::npos)
+				|| (mGLVersion == 3.1f && mGLRenderer.find("INTEL(R) HD GRAPHICS") != std::string::npos)))
+		{
+			mIsHD3K = TRUE;
+		}
+#endif
 	}
 	else
 	{
@@ -721,6 +732,11 @@ bool LLGLManager::initGL()
 	if (mHasVertexShader)
 	{
 		//According to the spec, the resulting value should never be less than 512. We need at least 1024 to use skinned shaders.
+#if LL_WINDOWS
+		if (mIsHD3K)
+			mGLMaxVertexUniformComponents = 4096;
+		else
+#endif
 		glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS_ARB, &mGLMaxVertexUniformComponents);
 	}
 
