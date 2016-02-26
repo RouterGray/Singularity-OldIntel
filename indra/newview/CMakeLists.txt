@@ -42,6 +42,10 @@ include(ViewerMiscLibs)
 include(WinManifest)
 include(ZLIB)
 
+if (MSVC)
+    use_prebuilt_binary(vcredist)
+endif (MSVC)
+
 include_directories(
     ${STATEMACHINE_INCLUDE_DIRS}
     ${DBUSGLIB_INCLUDE_DIRS}
@@ -64,7 +68,6 @@ include_directories(
     ${LLWINDOW_INCLUDE_DIRS}
     ${LLXML_INCLUDE_DIRS}
     ${HUNSPELL_INCLUDE_DIR}
-
     ${LLAPPEARANCE_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
@@ -593,8 +596,7 @@ set(viewer_SOURCE_FILES
     wlfPanel_AdvSettings.cpp
     )
 
-# This gets renamed in the packaging step
-set(VIEWER_BINARY_NAME "secondlife-bin" CACHE STRING
+set(VIEWER_BINARY_NAME "singularity-bin" CACHE STRING
     "The name of the viewer executable to create.")
 
 set(viewer_HEADER_FILES
@@ -1628,7 +1630,6 @@ target_link_libraries(${VIEWER_BINARY_NAME}
     ${LLVFS_LIBRARIES}
     ${LLWINDOW_LIBRARIES}
     ${LLXML_LIBRARIES}
-#    ${LSCRIPT_LIBRARIES}
     ${LLMATH_LIBRARIES}
     ${LLCOMMON_LIBRARIES}
     ${NDOF_LIBRARY}
@@ -1671,7 +1672,7 @@ if (LINUX)
   add_dependencies(${VIEWER_BINARY_NAME} generate_viewer_version)
 
   add_custom_command(
-      OUTPUT ${product}.tar.bz2
+      OUTPUT ${product}.tar.xz
       COMMAND ${PYTHON_EXECUTABLE}
       ARGS
         ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
@@ -1733,7 +1734,7 @@ if (DARWIN)
   set(MACOSX_BUNDLE_BUNDLE_NAME "${VIEWER_BRANDING_NAME}")
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VIEWER_SHORT_VERSION}")
   set(MACOSX_BUNDLE_BUNDLE_VERSION "${${ROOT_PROJECT_NAME}_VERSION}")
-  set(MACOSX_BUNDLE_COPYRIGHT "Copyright 2013 Siana Gearz")
+  set(MACOSX_BUNDLE_COPYRIGHT "Copyright 2010-2016 Siana Gearz")
 
   set_target_properties(
     ${VIEWER_BINARY_NAME}
@@ -1803,7 +1804,6 @@ endif (DARWIN)
 if (INSTALL)
   include(${CMAKE_CURRENT_SOURCE_DIR}/ViewerInstall.cmake)
 endif (INSTALL)
-
 
 if (PACKAGE)
   set(SYMBOL_NAME ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${VIEWER_BRANDING_NAME_CAMELCASE}-${${ROOT_PROJECT_NAME}_VERSION}-symbols)

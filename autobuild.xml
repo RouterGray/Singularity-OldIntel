@@ -438,11 +438,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>6e443a01d85367e1f058fbfb378cf80e</string>
+              <string>edeb99f22363e6c7dde1ade2d2810246</string>
               <key>hash_algorithm</key>
               <string>md5</string>
               <key>url</key>
-              <string>http://depot.alchemyviewer.org/pub/windows/lib-vc14/curl-7.46.0-windows-201601151153.tar.bz2</string>
+              <string>http://depot.alchemyviewer.org/pub/windows/lib-vc14/curl-7.47.0-windows-201601291530.tar.bz2</string>
             </map>
             <key>name</key>
             <string>windows</string>
@@ -452,18 +452,18 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>9aca8339f269df5f42484f4bfafbf430</string>
+              <string>c822bf688eaaa9524d821c8a9d72e1d7</string>
               <key>hash_algorithm</key>
               <string>md5</string>
               <key>url</key>
-              <string>http://depot.alchemyviewer.org/pub/windows64/lib-vc14/curl-7.46.0-windows64-201512122022.tar.bz2</string>
+              <string>http://depot.alchemyviewer.org/pub/windows64/lib-vc14/curl-7.47.0-windows64-201601291527.tar.bz2</string>
             </map>
             <key>name</key>
             <string>windows64</string>
           </map>
         </map>
         <key>version</key>
-        <string>7.46.0</string>
+        <string>7.47.0</string>
       </map>
       <key>dbus-glib</key>
       <map>
@@ -1137,18 +1137,6 @@
         <string>gperftools</string>
         <key>platforms</key>
         <map>
-          <key>darwin</key>
-          <map>
-            <key>archive</key>
-            <map>
-              <key>hash</key>
-              <string>0137e450bf24cff7e78634bb9a1c85e4</string>
-              <key>url</key>
-              <string>http://automated-builds-secondlife-com.s3.amazonaws.com/hg/repo/google-perftools_3p-update-google-perftools/rev/297263/arch/Darwin/installer/gperftools-2.0.297263-darwin-297263.tar.bz2</string>
-            </map>
-            <key>name</key>
-            <string>darwin</string>
-          </map>
           <key>linux</key>
           <map>
             <key>archive</key>
@@ -1166,9 +1154,21 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>2946f9bbf227dee8881af43856ebb3a1</string>
+              <string>e81d9e4526ceac49f1532d6518085985</string>
               <key>url</key>
-              <string>http://automated-builds-secondlife-com.s3.amazonaws.com/hg/repo/google-perftools_3p-update-google-perftools/rev/297263/arch/CYGWIN/installer/gperftools-2.0.297263-windows-297263.tar.bz2</string>
+              <string>https://bitbucket.org/alchemyviewer/publiclibs/downloads/gperftools-2.1-windows-20140120.tar.bz2</string>
+            </map>
+            <key>name</key>
+            <string>windows</string>
+          </map>
+          <key>windows64</key>
+          <map>
+            <key>archive</key>
+            <map>
+              <key>hash</key>
+              <string>da6ec7472ed69fe3231eb95432a789d9</string>
+              <key>url</key>
+              <string>https://bitbucket.org/alchemyviewer/publiclibs/downloads/gperftools-2.2-windows64-20140605.tar.bz2</string>
             </map>
             <key>name</key>
             <string>windows</string>
@@ -1249,7 +1249,7 @@
           </map>
         </map>
         <key>version</key>
-        <string>0.0</string>
+        <string>0.0.2</string>
       </map>
       <key>jpeglib</key>
       <map>
@@ -2232,11 +2232,11 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>213e62795373d12621282636fc760f20</string>
+              <string>835a1e2a994acd82a51d99e382de1549</string>
               <key>hash_algorithm</key>
               <string>md5</string>
               <key>url</key>
-              <string>http://depot.alchemyviewer.org/pub/windows/lib-vc14/openssl-1.0.2e-windows-201601151130.tar.bz2</string>
+              <string>http://depot.alchemyviewer.org/pub/windows/lib-vc14/openssl-1.0.2f-windows-201601291508.tar.bz2</string>
             </map>
             <key>name</key>
             <string>windows</string>
@@ -2246,18 +2246,18 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>44f5553704a5fc74f23342ac1216175b</string>
+              <string>5aae87070da31ed959585ca641ba3ad9</string>
               <key>hash_algorithm</key>
               <string>md5</string>
               <key>url</key>
-              <string>http://depot.alchemyviewer.org/pub/windows64/lib-vc14/openssl-1.0.2e-windows64-201512121953.tar.bz2</string>
+              <string>http://depot.alchemyviewer.org/pub/windows64/lib-vc14/openssl-1.0.2f-windows64-201601291450.tar.bz2</string>
             </map>
             <key>name</key>
             <string>windows64</string>
           </map>
         </map>
         <key>version</key>
-        <string>1.0.2e</string>
+        <string>1.0.2f</string>
       </map>
       <key>quicktime</key>
       <map>
@@ -2324,9 +2324,9 @@
             <key>archive</key>
             <map>
               <key>hash</key>
-              <string>48ed7ddcf93fa3c751d677f5eb5f9367</string>
+              <string>9f60e56aba35ec90b3045e9d049ac284</string>
               <key>url</key>
-              <string>http://automated-builds-secondlife-com.s3.amazonaws.com/hg/repo/slvoice_3p-update-slvoice/rev/298329/arch/Linux/installer/slvoice-3.2.0002.10426.298329-linux-298329.tar.bz2</string>
+              <string>http://depot.alchemyviewer.org/pub/linux/lib/slvoice-4.5.0009.17865-linux-20141214.tar.bz2</string>
             </map>
             <key>name</key>
             <string>linux</string>
@@ -2492,6 +2492,52 @@
         </map>
         <key>version</key>
         <string>0.8.4</string>
+      </map>
+      <key>vcredist</key>
+      <map>
+        <key>copyright</key>
+        <string>Copyright (c) Microsoft Corporation. All rights reserved.</string>
+        <key>description</key>
+        <string>The Visual Studio C and C++ runtime redistributable</string>
+        <key>license</key>
+        <string>Proprietary</string>
+        <key>license_file</key>
+        <string>LICENSES/vcredist.txt</string>
+        <key>name</key>
+        <string>vcredist</string>
+        <key>platforms</key>
+        <map>
+          <key>windows</key>
+          <map>
+            <key>archive</key>
+            <map>
+              <key>hash</key>
+              <string>960953da9ab7c335a0f4f97e9bf8341c</string>
+              <key>hash_algorithm</key>
+              <string>md5</string>
+              <key>url</key>
+              <string>http://depot.alchemyviewer.org/pub/windows/lib-vc14/vcredist-14.0.23506.0-windows-201601191536.tar.bz2</string>
+            </map>
+            <key>name</key>
+            <string>windows</string>
+          </map>
+          <key>windows64</key>
+          <map>
+            <key>archive</key>
+            <map>
+              <key>hash</key>
+              <string>918588215463f36836eeefd9d3891868</string>
+              <key>hash_algorithm</key>
+              <string>md5</string>
+              <key>url</key>
+              <string>http://depot.alchemyviewer.org/pub/windows64/lib-vc14/vcredist-14.0.23506.0-windows64-201601191536.tar.bz2</string>
+            </map>
+            <key>name</key>
+            <string>windows64</string>
+          </map>
+        </map>
+        <key>version</key>
+        <string>14.0.23506.0</string>
       </map>
       <key>xmlrpc-epi</key>
       <map>
@@ -2667,15 +2713,15 @@
     <key>package_description</key>
     <map>
       <key>copyright</key>
-      <string>Copyright (c) 2014, Linden Research, Inc.</string>
+      <string>Copyright (c) 2010-2016, Singularity Viewer Team</string>
       <key>description</key>
-      <string>Second Life Viewer</string>
+      <string>Singularity Viewer</string>
       <key>license</key>
       <string>LGPL</string>
       <key>license_file</key>
       <string>docs/LICENSE-source.txt</string>
       <key>name</key>
-      <string>Second Life Viewer</string>
+      <string>Singularity Viewer</string>
       <key>platforms</key>
       <map>
         <key>common</key>
@@ -2940,7 +2986,7 @@
                   <string>--config</string>
                   <string>RelWithDebInfo</string>
                   <string>--startup</string>
-                  <string>secondlife-bin</string>
+                  <string>singularity-bin</string>
                 </array>
                 <key>options</key>
                 <array>
@@ -2987,7 +3033,7 @@
                   <string>--config</string>
                   <string>Release</string>
                   <string>--startup</string>
-                  <string>secondlife-bin</string>
+                  <string>singularity-bin</string>
                 </array>
                 <key>options</key>
                 <array>
@@ -3042,7 +3088,7 @@
                   <string>--config</string>
                   <string>RelWithDebInfo</string>
                   <string>--startup</string>
-                  <string>secondlife-bin</string>
+                  <string>singularity-bin</string>
                 </array>
                 <key>options</key>
                 <array>
@@ -3090,7 +3136,7 @@
                   <string>--config</string>
                   <string>Release</string>
                   <string>--startup</string>
-                  <string>secondlife-bin</string>
+                  <string>singularity-bin</string>
                 </array>
                 <key>options</key>
                 <array>

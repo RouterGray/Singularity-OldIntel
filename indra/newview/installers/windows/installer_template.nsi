@@ -423,11 +423,11 @@ Section "Viewer"
   ;This placeholder is replaced by the complete list of all the files in the installer, by viewer_manifest.py
   %%INSTALL_FILES%%
   
-;!ifdef WIN64_BIN_BUILD
-;  ExecWait '"$INSTDIR\redist\vc_redist.x64.exe" /passive'
-;!else
-;  ExecWait '"$INSTDIR\redist\vc_redist.x86.exe" /passive'
-;!endif
+!ifdef WIN64_BIN_BUILD
+  ExecWait '"$INSTDIR\redist\vc_redist.x64.exe" /passive /norestart'
+!else
+  ExecWait '"$INSTDIR\redist\vc_redist.x86.exe" /passive /norestart'
+!endif
   
   ;Pass the installer's language to the client to use as a default
   StrCpy $SHORTCUT_LANG_PARAM "--set InstallLanguage $(LanguageCode)"
@@ -482,7 +482,7 @@ Section "Viewer"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "NoRepair" 1
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "Publisher" "${VENDORSTR}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "URLInfoAbout" "http://www.singularityviewer.org"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "URLUpdateInfo" "http://www.singularityviewer.org"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "URLUpdateInfo" "http://www.singularityviewer.org/downloads"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "UninstallString" "$\"$INSTDIR\uninst.exe$\""
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\$INSTPROG" "QuietUninstallString" "$\"$INSTDIR\uninst.exe$\" /S"
   ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2

@@ -78,7 +78,7 @@ class ViewerManifest(LLManifest):
                 # ... and the entire windlight directory
                 self.path("windlight")
 
-                # ... and the hunspell dictionaries
+                # ... and the included spell checking dictionaries
                 self.path("dictionaries")
 
                 # include the extracted packages information (see BuildPackagesInfo.cmake)
@@ -243,6 +243,51 @@ class WindowsManifest(ViewerManifest):
     def final_exe(self):
         return self.app_name_oneword()+"Viewer.exe"
 
+    def test_msvcrt_and_copy_action(self, src, dst):
+        # This is used to test a dll manifest.
+        # It is used as a temporary override during the construct method
+        from test_win32_manifest import test_assembly_binding
+        if src and (os.path.exists(src) or os.path.islink(src)):
+            # ensure that destination path exists
+            self.cmakedirs(os.path.dirname(dst))
+            self.created_paths.append(dst)
+            if not os.path.isdir(src):
+                if(self.args['configuration'].lower() == 'debug'):
+                    test_assembly_binding(src, "Microsoft.VC80.DebugCRT", "8.0.50727.4053")
+                else:
+                    test_assembly_binding(src, "Microsoft.VC80.CRT", "8.0.50727.4053")
+                self.ccopy(src,dst)
+            else:
+                raise Exception("Directories are not supported by test_CRT_and_copy_action()")
+        else:
+            print "Doesn't exist:", src
+
+    def test_for_no_msvcrt_manifest_and_copy_action(self, src, dst):
+        # This is used to test that no manifest for the msvcrt exists.
+        # It is used as a temporary override during the construct method
+        from test_win32_manifest import test_assembly_binding
+        from test_win32_manifest import NoManifestException, NoMatchingAssemblyException
+        if src and (os.path.exists(src) or os.path.islink(src)):
+            # ensure that destination path exists
+            self.cmakedirs(os.path.dirname(dst))
+            self.created_paths.append(dst)
+            if not os.path.isdir(src):
+                try:
+                    if(self.args['configuration'].lower() == 'debug'):
+                        test_assembly_binding(src, "Microsoft.VC80.DebugCRT", "")
+                    else:
+                        test_assembly_binding(src, "Microsoft.VC80.CRT", "")
+                    raise Exception("Unknown condition")
+                except NoManifestException, err:
+                    pass
+                except NoMatchingAssemblyException, err:
+                    pass
+
+                self.ccopy(src,dst)
+            else:
+                raise Exception("Directories are not supported by test_CRT_and_copy_action()")
+        else:
+            print "Doesn't exist:", src
 
     def construct(self):
         super(WindowsManifest, self).construct()
@@ -252,8 +297,8 @@ class WindowsManifest(ViewerManifest):
         debpkgdir = os.path.join(pkgdir, "lib", "debug")
 
         if self.is_packaging_viewer():
-            # Find secondlife-bin.exe in the 'configuration' dir, then rename it to the result of final_exe.
-            self.path(src='%s/secondlife-bin.exe' % self.args['configuration'], dst=self.final_exe())
+            # Find singularity-bin.exe in the 'configuration' dir, then rename it to the result of final_exe.
+            self.path(src='%s/singularity-bin.exe' % self.args['configuration'], dst=self.final_exe())
 
         # Plugin host application
         self.path2basename(os.path.join(os.pardir,
@@ -582,6 +627,11 @@ class Windows_i686_Manifest(WindowsManifest):
                     self.path("fmod.dll")
             except:
                 print "Skipping fmodstudio audio library(assuming other audio engine)"
+
+            self.end_prefix()
+
+        if self.prefix(src=os.path.join(self.args['build'], os.pardir, 'packages', 'bin'), dst="redist"):
+            self.path("vc_redist.x86.exe")
             self.end_prefix()
 
 
@@ -601,7 +651,13 @@ class Windows_x86_64_Manifest(WindowsManifest):
                     self.path("fmod64.dll")
             except:
                 print "Skipping fmodstudio audio library(assuming other audio engine)"
+
             self.end_prefix()
+
+        if self.prefix(src=os.path.join(self.args['build'], os.pardir, 'packages', 'bin'), dst="redist"):
+            self.path("vc_redist.x64.exe")
+            self.end_prefix()
+
 
 class DarwinManifest(ViewerManifest):
     def construct(self):
@@ -893,7 +949,7 @@ class LinuxManifest(ViewerManifest):
         # self.put_in_file(self.flags_list(), 'gridargs.dat')
 
         if self.prefix(src="", dst="bin"):
-            self.path("secondlife-bin","do-not-directly-run-singularity-bin")
+            self.path("singularity-bin","do-not-directly-run-singularity-bin")
             self.path2basename("../llplugin/slplugin", "SLPlugin")
             self.end_prefix("bin")
 
@@ -1043,13 +1099,13 @@ class Linux_x86_64_Manifest(LinuxManifest):
             except:
                 print "Skipping libfmod.so - not found"
                 pass
+
             self.end_prefix("lib64")
 
         # Vivox runtimes
         if self.prefix(src=relpkgdir, dst="bin"):
             self.path("SLVoice")
             self.end_prefix("bin")
-
         if self.prefix(src=relpkgdir, dst="lib32"):
             self.path("libortp.so")
             self.path("libsndfile.so.1")
@@ -1083,4 +1139,3 @@ def symlinkf(src, dst):
 
 if __name__ == "__main__":
     main()
-
