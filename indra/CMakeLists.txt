@@ -58,5 +58,5 @@ add_subdirectory(${LIBS_OPEN_PREFIX}plugins)
 
 add_subdirectory(${VIEWER_PREFIX}newview/statemachine)
 add_subdirectory(${VIEWER_PREFIX}newview)
-add_dependencies(viewer secondlife-bin)
+add_dependencies(viewer singularity-bin)
 
