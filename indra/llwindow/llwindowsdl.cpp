@@ -177,7 +177,7 @@ LLWindowSDL::LLWindowSDL(LLWindowCallbacks* callbacks,
 			 const S32 vsync_mode,
 			 BOOL ignore_pixel_depth, U32 fsaa_samples)
 	: LLWindow(callbacks, fullscreen, flags),
-	  Lock_Display(NULL),
+	  mGamma(1.0f)
 {
 	// Initialize the keyboard
 	gKeyboard = new LLKeyboardSDL();
