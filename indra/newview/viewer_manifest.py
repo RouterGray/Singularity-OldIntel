@@ -107,6 +107,8 @@ class ViewerManifest(LLManifest):
                 self.path("default/*.xml")
                 self.path("dark.xml")
                 self.path("dark/*.xml")
+                self.path("Gemini.xml")
+                self.path("gemini/*")
                 # include the entire textures directory recursively
                 if self.prefix(src="default/textures"):
                     self.path("*.tga")
@@ -971,12 +973,88 @@ class LinuxManifest(ViewerManifest):
         # plugins
         if self.prefix(src="", dst="bin/llplugin"):
             self.path2basename("../plugins/filepicker", "libbasic_plugin_filepicker.so")
-            self.path2basename("../plugins/webkit", "libmedia_plugin_webkit.so")
             self.path("../plugins/gstreamer010/libmedia_plugin_gstreamer010.so", "libmedia_plugin_gstreamer.so")
+            self.path("../plugins/cef/libmedia_plugin_cef.so", "libmedia_plugin_webkitcef.so")
             self.end_prefix("bin/llplugin")
 
-        self.path("featuretable_linux.txt")
+        # CEF files 
+        if self.prefix(src=os.path.join(pkgdir, 'bin', 'release'), dst="bin"):
+            self.path("chrome-sandbox")
+            self.path("llceflib_host")
+            self.path("natives_blob.bin")
+            self.path("snapshot_blob.bin")
+            self.end_prefix()
 
+        if self.prefix(src=os.path.join(pkgdir, 'resources'), dst="bin"):
+            self.path("cef.pak")
+            self.path("cef_extensions.pak")
+            self.path("cef_100_percent.pak")
+            self.path("cef_200_percent.pak")
+            self.path("devtools_resources.pak")
+            self.path("icudtl.dat")
+            self.end_prefix()
+
+        if self.prefix(src=os.path.join(pkgdir, 'resources', 'locales'), dst=os.path.join('bin', 'locales')):
+            self.path("am.pak")
+            self.path("ar.pak")
+            self.path("bg.pak")
+            self.path("bn.pak")
+            self.path("ca.pak")
+            self.path("cs.pak")
+            self.path("da.pak")
+            self.path("de.pak")
+            self.path("el.pak")
+            self.path("en-GB.pak")
+            self.path("en-US.pak")
+            self.path("es.pak")
+            self.path("es-419.pak")
+            self.path("et.pak")
+            self.path("fa.pak")
+            self.path("fi.pak")
+            self.path("fil.pak")
+            self.path("fr.pak")
+            self.path("gu.pak")
+            self.path("he.pak")
+            self.path("hi.pak")
+            self.path("hr.pak")
+            self.path("hu.pak")
+            self.path("id.pak")
+            self.path("it.pak")
+            self.path("ja.pak")
+            self.path("kn.pak")
+            self.path("ko.pak")
+            self.path("lt.pak")
+            self.path("lv.pak")
+            self.path("ml.pak")
+            self.path("mr.pak")
+            self.path("ms.pak")
+            self.path("nb.pak")
+            self.path("nl.pak")
+            self.path("pl.pak")
+            self.path("pt-BR.pak")
+            self.path("pt-PT.pak")
+            self.path("ro.pak")
+            self.path("ru.pak")
+            self.path("sk.pak")
+            self.path("sl.pak")
+            self.path("sr.pak")
+            self.path("sv.pak")
+            self.path("sw.pak")
+            self.path("ta.pak")
+            self.path("te.pak")
+            self.path("th.pak")
+            self.path("tr.pak")
+            self.path("uk.pak")
+            self.path("vi.pak")
+            self.path("zh-CN.pak")
+            self.path("zh-TW.pak")
+            self.end_prefix()
+
+        # llcommon
+        if not self.path("../llcommon/libllcommon.so", "lib/libllcommon.so"):
+            print "Skipping llcommon.so (assuming llcommon was linked statically)"
+
+        self.path("featuretable_linux.txt")
 
 
     def package_finish(self):
@@ -1020,7 +1098,9 @@ class LinuxManifest(ViewerManifest):
     def strip_binaries(self):
         if self.args['buildtype'].lower() == 'release' and self.is_packaging_viewer():
             print "* Going strip-crazy on the packaged binaries, since this is a RELEASE build"
-            self.run_command(r"find %(d)r/bin %(d)r/lib %(d)r/lib32 %(d)r/lib64 -type f \! -name update_install | xargs --no-run-if-empty strip -S" % {'d': self.get_dst_prefix()} ) # makes some small assumptions about our packaged dir structure
+            # makes some small assumptions about our packaged dir structure
+            self.run_command(r"find %(d)r/lib %(d)r/lib32 %(d)r/lib64 -type f \! -name update_install | xargs --no-run-if-empty strip -S" % {'d': self.get_dst_prefix()} )
+            self.run_command(r"find %(d)r/bin -executable -type f \! -name update_install | xargs --no-run-if-empty strip -S" % {'d': self.get_dst_prefix()} )
 
 
 class Linux_i686_Manifest(LinuxManifest):
@@ -1031,18 +1111,13 @@ class Linux_i686_Manifest(LinuxManifest):
         relpkgdir = os.path.join(pkgdir, "lib", "release")
         debpkgdir = os.path.join(pkgdir, "lib", "debug")
 
-        # llcommon
-        if not self.path("../llcommon/libllcommon.so", "lib/libllcommon.so"):
-            print "Skipping llcommon.so (assuming llcommon was linked statically)"
-
         if (not self.standalone()) and self.prefix(src=relpkgdir, dst="lib"):
             self.path("libapr-1.so*")
             self.path("libaprutil-1.so*")
-
-            self.path("libexpat.so*")
+            self.path("libcef.so")
+            self.path("libexpat.so.*")
             self.path("libGLOD.so")
-            self.path("libSDL-1.2.so*")
-            # OpenAL
+            self.path("libSDL-1.2.so.*")
             self.path("libalut.so")
             self.path("libopenal.so.1")
 
@@ -1066,10 +1141,6 @@ class Linux_i686_Manifest(LinuxManifest):
 class Linux_x86_64_Manifest(LinuxManifest):
     def construct(self):
         super(Linux_x86_64_Manifest, self).construct()
-
-        # llcommon
-        if not self.path("../llcommon/libllcommon.so", "lib64/libllcommon.so"):
-            print "Skipping llcommon.so (assuming llcommon was linked statically)"
 
         pkgdir = os.path.join(self.args['build'], os.pardir, 'packages')
         relpkgdir = os.path.join(pkgdir, "lib", "release")
@@ -1113,6 +1184,11 @@ class Linux_x86_64_Manifest(LinuxManifest):
             self.path("libvivoxsdk.so")
             self.path("libvivoxplatform.so")
             self.end_prefix("lib32")
+
+        # plugin runtime
+        if self.prefix(src=relpkgdir, dst="lib64"):
+            self.path("libcef.so")
+            self.end_prefix("lib64")
 
 
 ################################################################

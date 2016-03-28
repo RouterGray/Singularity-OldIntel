@@ -86,7 +86,6 @@ void glh_set_current_projection(const LLMatrix4a& mat);
 
 extern LLFastTimer::DeclareTimer FTM_RENDER_GEOMETRY;
 extern LLFastTimer::DeclareTimer FTM_RENDER_GRASS;
-extern LLFastTimer::DeclareTimer FTM_RENDER_INVISIBLE;
 extern LLFastTimer::DeclareTimer FTM_RENDER_OCCLUSION;
 extern LLFastTimer::DeclareTimer FTM_RENDER_SHINY;
 extern LLFastTimer::DeclareTimer FTM_RENDER_SIMPLE;
@@ -448,7 +447,6 @@ public:
 		RENDER_TYPE_MATERIALS					= LLDrawPool::POOL_MATERIALS,
 		RENDER_TYPE_AVATAR						= LLDrawPool::POOL_AVATAR,
 		RENDER_TYPE_TREE		= LLDrawPool::POOL_TREE,
-		RENDER_TYPE_INVISIBLE	= LLDrawPool::POOL_INVISIBLE,
 		RENDER_TYPE_VOIDWATER	= LLDrawPool::POOL_VOIDWATER,
 		RENDER_TYPE_WATER						= LLDrawPool::POOL_WATER,
  		RENDER_TYPE_ALPHA						= LLDrawPool::POOL_ALPHA,
@@ -456,8 +454,6 @@ public:
 		RENDER_TYPE_PASS_SIMPLE 				= LLRenderPass::PASS_SIMPLE,
 		RENDER_TYPE_PASS_GRASS					= LLRenderPass::PASS_GRASS,
 		RENDER_TYPE_PASS_FULLBRIGHT				= LLRenderPass::PASS_FULLBRIGHT,
-		RENDER_TYPE_PASS_INVISIBLE				= LLRenderPass::PASS_INVISIBLE,
-		RENDER_TYPE_PASS_INVISI_SHINY			= LLRenderPass::PASS_INVISI_SHINY,
 		RENDER_TYPE_PASS_FULLBRIGHT_SHINY		= LLRenderPass::PASS_FULLBRIGHT_SHINY,
 		RENDER_TYPE_PASS_SHINY					= LLRenderPass::PASS_SHINY,
 		RENDER_TYPE_PASS_BUMP					= LLRenderPass::PASS_BUMP,
@@ -771,7 +767,6 @@ private:
 	LLRenderPass*				mAlphaMaskPool;
 	LLRenderPass*				mFullbrightAlphaMaskPool;
 	LLRenderPass*				mFullbrightPool;
-	LLDrawPool*					mInvisiblePool;
 	LLDrawPool*					mGlowPool;
 	LLDrawPool*					mBumpPool;
 	LLDrawPool*					mMaterialsPool;

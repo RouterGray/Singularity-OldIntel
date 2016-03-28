@@ -13,6 +13,7 @@ include(Linking)
 include(PluginAPI)
 include(MediaPluginBase)
 include(OpenGL)
+include(PulseAudio)
 
 include(CEFPlugin)
 
@@ -28,6 +29,7 @@ include_directories(
 )
 include_directories(SYSTEM
     ${LLCOMMON_SYSTEM_INCLUDE_DIRS}
+    ${PULSEAUDIO_INCLUDE_DIRS}
     )
 
 
@@ -57,9 +59,14 @@ set (media_plugin_cef_LINK_LIBRARIES
 
 # Select which VolumeCatcher implementation to use
 if (LINUX)
-  message(FATAL_ERROR "CEF plugin has been enabled for a Linux compile.\n"
-    "  Please create a volume_catcher implementation for this platform.")
-
+  if (PULSEAUDIO_FOUND)
+    list(APPEND media_plugin_cef_SOURCE_FILES linux_volume_catcher.cpp)
+  else (PULSEAUDIO_FOUND)
+    list(APPEND media_plugin_cef_SOURCE_FILES dummy_volume_catcher.cpp)
+  endif (PULSEAUDIO_FOUND)
+  list(APPEND media_plugin_webkit_LINK_LIBRARIES
+       ${UI_LIBRARIES}     # for glib/GTK
+       )
 elseif (DARWIN)
   list(APPEND media_plugin_cef_SOURCE_FILES mac_volume_catcher.cpp)
   find_library(CORESERVICES_LIBRARY CoreServices)
@@ -110,6 +117,14 @@ if (DARWIN)
     BUILD_WITH_INSTALL_RPATH 1
     INSTALL_NAME_DIR "@executable_path"
     LINK_FLAGS "-exported_symbols_list ${CMAKE_CURRENT_SOURCE_DIR}/../base/media_plugin_base.exp"
+  )
+
+  add_custom_command(TARGET media_plugin_cef
+    POST_BUILD COMMAND ${CMAKE_INSTALL_NAME_TOOL} -change "@executable_path/Chromium Embedded Framework"
+        "@executable_path/../../../../Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework"
+        "$<TARGET_FILE:media_plugin_cef>"
+    VERBATIM
+    COMMENT "Fixing path to CEF Framework"
   )
 
 endif (DARWIN)

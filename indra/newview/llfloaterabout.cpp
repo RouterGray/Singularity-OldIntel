@@ -70,9 +70,7 @@
 #include "lldxhardware.h"
 #endif
 
-#if !LL_LINUX
 #include "cef/llceflib.h"
-#endif
 
 extern LLMemoryInfo gSysMemory;
 extern U32 gPacketsIn;
@@ -199,10 +197,10 @@ LLFloaterAbout::LLFloaterAbout()
 		else
 			support.append(RlvStrings::getString(RLV_STRING_HIDDEN_REGION));
 // [/RLVa:KN]
-		support.append("\n");
+		support.append('\n');
 
 		support.append(gLastVersionChannel);
-		support.append("\n");
+		support.append('\n');
 
 		support_widget->appendColoredText(support, FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
 
@@ -224,7 +222,7 @@ LLFloaterAbout::LLFloaterAbout()
 	// CPU
 	support.append("CPU: ");
 	support.append( gSysCPU.getCPUString() );
-	support.append("\n");
+	support.append('\n');
 
 	/* This is confusing and WRONG.
 	support.append("SSE Support:");
@@ -243,15 +241,15 @@ LLFloaterAbout::LLFloaterAbout()
 
 	support.append("OS Version: ");
 	support.append( LLAppViewer::instance()->getOSInfo().getOSString() );
-	support.append("\n");
+	support.append('\n');
 
 	support.append("Graphics Card Vendor: ");
 	support.append( (const char*) glGetString(GL_VENDOR) );
-	support.append("\n");
+	support.append('\n');
 
 	support.append("Graphics Card: ");
 	support.append( (const char*) glGetString(GL_RENDERER) );
-	support.append("\n");
+	support.append('\n');
 
 #if LL_WINDOWS
     getWindow()->incBusyCount();
@@ -262,7 +260,7 @@ LLFloaterAbout::LLFloaterAbout()
     {
         support.append(driver_info["DriverVersion"]);
     }
-    support.append("\n");
+    support.append('\n');
     getWindow()->decBusyCount();
     getWindow()->setCursor(UI_CURSOR_ARROW);
 #endif
@@ -270,30 +268,27 @@ LLFloaterAbout::LLFloaterAbout()
 	support.append("OpenGL Version: ");
 	support.append( (const char*) glGetString(GL_VERSION) );
 // [RLVa:KB] - Checked: 2010-04-18 (RLVa-1.2.0)
-	support.append("\n");
+	support.append('\n');
 	support.append("RLV Version: " + (RlvActions::isRlvEnabled() ? RlvStrings::getVersionAbout() : "(disabled)"));
 // [/RLVa:KB]
 	support.append("\n\n");
 
 	support.append("libcurl Version: ");
 	support.append( LLCurl::getVersionString() );
-	support.append("\n");
+	support.append('\n');
 
 	support.append("J2C Decoder Version: ");
 	support.append( LLImageJ2C::getEngineInfo() );
-	support.append("\n");
+	support.append('\n');
 
 	support.append("Audio Driver Version: ");
 	bool want_fullname = true;
 	support.append( gAudiop ? gAudiop->getDriverName(want_fullname) : "(none)" );
-	support.append("\n");
+	support.append('\n');
 
-#if !LL_LINUX
-	// TODO: Implement media plugin version query
 	support.append("LLCEFLib/CEF Version: ");
 	support.append(LLCEFLIB_VERSION);
-	support.append("\n");
-#endif
+	support.append('\n');
 
 	if (gPacketsIn > 0)
 	{
@@ -302,7 +297,7 @@ LLFloaterAbout::LLFloaterAbout()
 			F32(gPacketsIn),
 			100.f*LLViewerStats::getInstance()->mPacketsLostStat.getCurrent() / F32(gPacketsIn) );
 		support.append(packet_loss);
-		support.append("\n");
+		support.append('\n');
 	}
 
 	support_widget->appendColoredText(support, FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
@@ -328,7 +323,7 @@ LLFloaterAbout::LLFloaterAbout()
 		licenses_widget->clear();
 		while (std::getline(licenses_file, license_line))
 		{
-			licenses_widget->appendColoredText(license_line + "\n", FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
+			licenses_widget->appendColoredText(license_line + '\n', FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
 		}
 		licenses_file.close();
 	}

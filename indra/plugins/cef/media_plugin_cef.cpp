@@ -180,7 +180,7 @@ void MediaPluginCEF::onPageChangedCallback(unsigned char* pixels, int x, int y, 
 			{
 				memcpy(mPixels, pixels, mWidth * mHeight * mDepth);
 			}
-			
+
 		}
 		setDirty(0, 0, mWidth, mHeight);
 	}
@@ -252,7 +252,7 @@ void MediaPluginCEF::onAddressChangeCallback(std::string url)
 {
 	LLPluginMessage message(LLPLUGIN_MESSAGE_CLASS_MEDIA_BROWSER, "location_changed");
 	message.setValue("uri", url);
-	sendMessage(message); 
+	sendMessage(message);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -465,6 +465,7 @@ void MediaPluginCEF::receiveMessage(const char* message_string)
 				settings.initial_width = 1024;
 				settings.initial_height = 1024;
 				settings.plugins_enabled = mPluginsEnabled;
+				settings.media_stream_enabled = false; // MAINT-6060 - WebRTC media removed until we can add granualrity/query UI
 				settings.javascript_enabled = mJavascriptEnabled;
 				settings.cookies_enabled = mCookiesEnabled;
 				settings.cookie_store_path = mCookiePath;
@@ -643,11 +644,11 @@ void MediaPluginCEF::receiveMessage(const char* message_string)
                 {
                     key_event = LLCEFLib::KE_KEY_REPEAT;
                 }
-                
+
                 keyEvent(key_event, key, LLCEFLib::KM_MODIFIER_NONE, native_key_data);
-              
+
 #endif
-#elif LL_WINDOWS
+#else
 				std::string event = message_in.getValue("event");
 				S32 key = message_in.getValueS32("key");
 				std::string modifiers = message_in.getValue("modifiers");
@@ -784,6 +785,13 @@ void MediaPluginCEF::deserializeKeyboardData(LLSD native_key_data, uint32_t& nat
 		native_scan_code = (uint32_t)(native_key_data["scan_code"].asInteger());
 		native_virtual_key = (uint32_t)(native_key_data["virtual_key"].asInteger());
 		// TODO: I don't think we need to do anything with native modifiers here -- please verify
+#elif LL_LINUX
+		native_scan_code = (uint32_t)(native_key_data["sdl_sym"].asInteger());
+		native_virtual_key = (uint32_t)(native_key_data["virtual_key"].asInteger());
+		native_modifiers = (uint32_t)(native_key_data["cef_modifiers"].asInteger());
+
+		if( native_scan_code == '\n' )
+			native_scan_code = '\r';
 #endif
 	};
 };
@@ -808,18 +816,25 @@ void MediaPluginCEF::keyEvent(LLCEFLib::EKeyEvent key_event, int key, LLCEFLib::
     char eventChars = static_cast<char>(native_key_data["event_chars"].isUndefined() ? 0 : native_key_data["event_chars"].asInteger());
     char eventUChars = static_cast<char>(native_key_data["event_umodchars"].isUndefined() ? 0 : native_key_data["event_umodchars"].asInteger());
     bool eventIsRepeat = native_key_data["event_isrepeat"].asBoolean();
-    
+
     mLLCEFLib->keyboardEventOSX(eventType, eventModifiers, (eventChars) ? &eventChars : NULL,
                                 (eventUChars) ? &eventUChars : NULL, eventIsRepeat, eventKeycode);
-    
+
 #elif LL_WINDOWS
 	U32 msg = ll_U32_from_sd(native_key_data["msg"]);
 	U32 wparam = ll_U32_from_sd(native_key_data["w_param"]);
 	U64 lparam = ll_U32_from_sd(native_key_data["l_param"]);
-    
+
 	mLLCEFLib->nativeKeyboardEvent(msg, wparam, lparam);
+#elif LL_LINUX
+	uint32_t native_scan_code = 0;
+	uint32_t native_virtual_key = 0;
+	uint32_t native_modifiers = 0;
+	deserializeKeyboardData(native_key_data, native_scan_code, native_virtual_key, native_modifiers);
+
+	mLLCEFLib->nativeKeyboardEvent(key_event, native_scan_code, native_virtual_key, native_modifiers);
 #endif
-};
+}
 
 void MediaPluginCEF::unicodeInput(const std::string &utf8str, LLCEFLib::EKeyboardModifier modifiers, LLSD native_key_data = LLSD::emptyMap())
 {
@@ -833,14 +848,22 @@ void MediaPluginCEF::unicodeInput(const std::string &utf8str, LLCEFLib::EKeyboar
     uint32_t unmodifiedChar = native_key_data["event_umodchars"].asInteger();
     uint32_t keyCode = native_key_data["event_keycode"].asInteger();
     uint32_t rawmodifiers = native_key_data["event_modifiers"].asInteger();
-    
+
     mLLCEFLib->injectUnicodeText(unicodeChar, unmodifiedChar, keyCode, rawmodifiers);
-    
+
 #elif LL_WINDOWS
 	U32 msg = ll_U32_from_sd(native_key_data["msg"]);
 	U32 wparam = ll_U32_from_sd(native_key_data["w_param"]);
 	U64 lparam = ll_U32_from_sd(native_key_data["l_param"]);
 	mLLCEFLib->nativeKeyboardEvent(msg, wparam, lparam);
+#elif LL_LINUX
+	uint32_t native_scan_code = 0;
+	uint32_t native_virtual_key = 0;
+	uint32_t native_modifiers = 0;
+	deserializeKeyboardData(native_key_data, native_scan_code, native_virtual_key, native_modifiers);
+	
+	mLLCEFLib->nativeKeyboardEvent(LLCEFLib::KE_KEY_DOWN, native_scan_code, native_virtual_key, native_modifiers);
+	mLLCEFLib->nativeKeyboardEvent(LLCEFLib::KE_KEY_UP, native_scan_code, native_virtual_key, native_modifiers);
 #endif
 };
 
@@ -896,7 +919,9 @@ bool MediaPluginCEF::init()
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-int create_plugin(LLPluginInstance::sendMessageFunction send_message_function, LLPluginInstance* plugin_instance, BasicPluginBase** plugin_object)
+int create_plugin(LLPluginInstance::sendMessageFunction send_message_function,
+	LLPluginInstance* plugin_instance,
+	BasicPluginBase** plugin_object)
 {
 	*plugin_object = new MediaPluginCEF(send_message_function, plugin_instance);
 	return 0;
