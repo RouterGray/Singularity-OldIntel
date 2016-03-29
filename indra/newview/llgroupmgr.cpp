@@ -904,7 +904,7 @@ void LLGroupMgrGroupData::banMemberById(const LLUUID& participant_uuid)
 	LLGroupMgr::getInstance()->sendGroupMembersRequest(mID);
 	LLSD args;
 	std::string name;
-	LLAvatarNameCache::getNSName(participant_uuid, av_name);
+	LLAvatarNameCache::getNSName(participant_uuid, name);
 	args["AVATAR_NAME"] = name;
 	args["GROUP_NAME"] = mName;
 	LLNotifications::instance().add(LLNotification::Params("EjectAvatarFromGroup").substitutions(args));
