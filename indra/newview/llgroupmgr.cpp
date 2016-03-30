@@ -38,6 +38,7 @@
 
 #include "llappviewer.h" //For gFrameCount
 #include "llagent.h"
+#include "llavatarnamecache.h"
 #include "llui.h"
 #include "message.h"
 #include "roles_constants.h"
