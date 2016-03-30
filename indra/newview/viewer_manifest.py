@@ -974,7 +974,7 @@ class LinuxManifest(ViewerManifest):
         if self.prefix(src="", dst="bin/llplugin"):
             self.path2basename("../plugins/filepicker", "libbasic_plugin_filepicker.so")
             self.path("../plugins/gstreamer010/libmedia_plugin_gstreamer010.so", "libmedia_plugin_gstreamer.so")
-            self.path("../plugins/cef/libmedia_plugin_cef.so", "libmedia_plugin_webkitcef.so")
+            self.path("../plugins/cef/libmedia_plugin_cef.so", "libmedia_plugin_cef.so")
             self.end_prefix("bin/llplugin")
 
         # CEF files 
