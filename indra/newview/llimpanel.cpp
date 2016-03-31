@@ -747,6 +747,8 @@ void LLFloaterIMPanel::addHistoryLine(const std::string &utf8msg, LLColor4 incol
 			static const LLCachedControl<std::string> ding("LiruNewMessageSound");
 			static const LLCachedControl<std::string> dong("LiruNewMessageSoundForSystemMessages");
 			LLUI::sAudioCallback(LLUUID(from_user ? ding : dong));
+			void flash_viewer_window(S32);
+			flash_viewer_window(2);
 		}
 
 		// start tab flashing when receiving im for background session from user

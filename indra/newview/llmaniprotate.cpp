@@ -488,7 +488,7 @@ BOOL LLManipRotate::handleMouseUp(S32 x, S32 y, MASK mask)
 			LLViewerObject* root_object = (object == NULL) ? NULL : object->getRootEdit();
 
 			// have permission to move and object is root of selection or individually selected
-			if (object->permMove() && !object->isPermanentEnforced() &&
+			if (object && object->permMove() && !object->isPermanentEnforced() &&
 				((root_object == NULL) || !root_object->isPermanentEnforced()) &&
 				(object->isRootEdit() || selectNode->mIndividualSelection))
 			{
@@ -578,7 +578,7 @@ void LLManipRotate::drag( S32 x, S32 y )
 		LLViewerObject* root_object = (object == NULL) ? NULL : object->getRootEdit();
 
 		// have permission to move and object is root of selection or individually selected
-		if (object->permMove() && !object->isPermanentEnforced() &&
+		if (object && object->permMove() && !object->isPermanentEnforced() &&
 			((root_object == NULL) || !root_object->isPermanentEnforced()) &&
 			(object->isRootEdit() || selectNode->mIndividualSelection))
 		{

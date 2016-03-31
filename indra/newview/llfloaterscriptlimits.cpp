@@ -84,6 +84,8 @@ const S32 SIZE_OF_ONE_KB = 1024;
 
 LLFloaterScriptLimits::LLFloaterScriptLimits(const LLSD& seed)
 	: LLFloater(/*seed*/)
+	, mTab(nullptr)
+	, mInfoPanels()
 {
 	LLUICtrlFactory::getInstance()->buildFloater(this, "floater_script_limits.xml");
 }

@@ -57,7 +57,7 @@
 #include "llinitparam.h"
 #include "lltreeiterators.h"
 #include "llfocusmgr.h"
-#include <boost/unordered_map.hpp>
+#include <boost/container/flat_map.hpp> // <alchemy/>
 #include "ailist.h"
 
 const U32	FOLLOWS_NONE	= 0x00;
@@ -518,7 +518,7 @@ public:
 	const child_list_t*	getChildList() const { return &mChildList; }
 	child_list_const_iter_t	beginChild() const { return mChildList.begin(); }
 	child_list_const_iter_t	endChild() const { return mChildList.end(); }
-	boost::unordered_map<const std::string, LLView*> mChildHashMap;
+	boost::container::flat_map<std::string, LLView*> mChildHashMap; // <alchemy/>
 
 	// LLMouseHandler functions
 	//  Default behavior is to pass events to children

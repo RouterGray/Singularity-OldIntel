@@ -162,7 +162,8 @@ LLFloaterScriptDebugOutput::LLFloaterScriptDebugOutput()
 }
 
 LLFloaterScriptDebugOutput::LLFloaterScriptDebugOutput(const LLUUID& object_id)
-: LLFloater(std::string("script instance floater"), LLRect(0, 200, 200, 0), std::string("Script"), TRUE), mObjectID(object_id)
+: LLFloater(std::string("script instance floater"), LLRect(0, 200, 200, 0), std::string("Script"), TRUE), mObjectID(object_id),
+	mHistoryEditor(nullptr)
 {
 	S32 y = getRect().getHeight() - LLFLOATER_HEADER_SIZE - LLFLOATER_VPAD;
 	S32 x = LLFLOATER_HPAD;

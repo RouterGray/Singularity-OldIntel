@@ -157,7 +157,8 @@ private:
 	{
 		TransactionPreflight,
 		TransactionCurrency,
-		TransactionBuy
+		TransactionBuy,
+		TransactionNone
 	};
 	boost::intrusive_ptr<XMLRPCResponder> mResponder;
 	TransactionType		 mTransactionType;
@@ -281,11 +282,34 @@ void LLFloaterBuyLand::updateEstateOwnerName(const std::string& name)
 LLFloaterBuyLandUI::LLFloaterBuyLandUI()
 :	LLFloater(std::string("Buy Land")),
 	mParcelSelectionObserver(this),
+	mRegion(nullptr),
 	mParcel(0),
+	mIsClaim(false),
+	mIsForGroup(false),
+	mCanBuy(false),
+	mCannotBuyIsError(false),
 	mBought(false),
-	mParcelValid(false), mSiteValid(false),
-	mChildren(*this), mCurrency(*this),
-	mParcelBuyInfo(0)
+	mAgentCommittedTier(0),
+	mAgentHasNeverOwnedLand(true),
+	mParcelValid(false),
+	mParcelIsForSale(false),
+	mParcelIsGroupLand(false),
+	mParcelGroupContribution(0),
+	mParcelPrice(0),
+	mParcelActualArea(0),
+	mParcelBillableArea(0),
+	mParcelSupportedObjects(0),
+	mParcelSoldWithObjects(false),
+	mUserPlanChoice(0),
+	mSiteValid(false),
+	mSiteMembershipUpgrade(false),
+	mSiteLandUseUpgrade(false),
+	mPreflightAskBillableArea(0),
+	mPreflightAskCurrencyBuy(0),
+	mChildren(*this),
+	mCurrency(*this),
+	mParcelBuyInfo(nullptr),
+	mTransactionType(TransactionNone)
 {
 	LLUICtrlFactory::getInstance()->buildFloater(this, "floater_buy_land.xml");
 	LLViewerParcelMgr::getInstance()->addObserver(&mParcelSelectionObserver);
@@ -347,8 +371,6 @@ void LLFloaterBuyLandUI::updateParcelInfo()
 	mParcelSnapshot.setNull();
 	mParcelSellerName = "";
 	
-	mCanBuy = false;
-	mCannotBuyIsError = false;
 	
 	if (!mParcelValid)
 	{

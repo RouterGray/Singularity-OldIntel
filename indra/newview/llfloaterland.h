@@ -183,11 +183,7 @@ public:
 	virtual BOOL postBuild();
 
 protected:
-	BOOL			mUncheckedSell; // True only when verifying land information when land is for sale on sale info change
-	
-	LLTextBox*		mLabelName;
 	LLLineEditor*	mEditName;
-	LLTextBox*		mLabelDesc;
 	LLTextEditor*	mEditDesc;
 
 	LLTextBox*		mTextSalePending;
@@ -195,7 +191,6 @@ protected:
  	LLButton*		mBtnDeedToGroup;
  	LLButton*		mBtnSetGroup;
 
-	LLTextBox*		mTextOwnerLabel;
 	LLTextBox*		mTextOwner;
 	LLButton*		mBtnProfile;
 	
@@ -203,8 +198,6 @@ protected:
 	LLTextBox*		mLandType;
 
 	LLTextBox*		mTextGroup;
-	LLTextBox*		mTextGroupLabel;
-	LLTextBox*		mTextClaimDateLabel;
 	LLTextBox*		mTextClaimDate;
 
 	LLTextBox*		mTextPriceLabel;

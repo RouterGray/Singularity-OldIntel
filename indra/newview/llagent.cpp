@@ -430,7 +430,8 @@ LLAgent::LLAgent() :
 
 	mMouselookModeInSignal(NULL),
 	mMouselookModeOutSignal(NULL),
-	mPendingLure(NULL)
+	mPendingLure(NULL),
+	mFriendObserver(nullptr)
 {
 	for (U32 i = 0; i < TOTAL_CONTROLS; i++)
 	{

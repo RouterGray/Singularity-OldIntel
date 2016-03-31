@@ -204,6 +204,9 @@ LLUUID LLFloaterRegionInfo::sRequestInvoice;
 
 
 LLFloaterRegionInfo::LLFloaterRegionInfo(const LLSD& seed)
+	: LLFloater()
+	, mTab(nullptr)
+	, mInfoPanels()
 {
 	LLUICtrlFactory::getInstance()->buildFloater(this, "floater_region_info.xml", NULL, FALSE);
 }
@@ -2463,8 +2466,13 @@ bool LLPanelEstateInfo::onMessageCommit(const LLSD& notification, const LLSD& re
 }
 
 LLPanelEstateCovenant::LLPanelEstateCovenant()
-	:
-	mCovenantID(LLUUID::null)
+	: LLPanelRegionInfo()
+	, mEstateNameText(nullptr)
+	, mEstateOwnerText(nullptr)
+	, mLastModifiedText(nullptr)
+	, mCovenantID(LLUUID::null)
+	, mEditor(nullptr)
+	, mAssetStatus(ASSET_ERROR)
 {
 }
 

@@ -96,7 +96,11 @@ LLFloaterScriptQueue::LLFloaterScriptQueue(const std::string& name,
 										   const std::string& start_string) :
 	LLFloater(name, rect, title,
 			  RESIZE_YES, DEFAULT_MIN_WIDTH, DEFAULT_MIN_HEIGHT,
-			  DRAG_ON_TOP, MINIMIZE_YES, CLOSE_YES)
+			  DRAG_ON_TOP, MINIMIZE_YES, CLOSE_YES),
+	mMessages(nullptr),
+	mCloseBtn(nullptr),
+	mDone(false),
+	mMono(false)
 {
 	mID.generate();
 	
@@ -111,7 +115,6 @@ LLFloaterScriptQueue::LLFloaterScriptQueue(const std::string& name,
 	translate(rect.mLeft - curRect.mLeft, rect.mTop - curRect.mTop);
 	
 	mStartString = start_string;
-	mDone = FALSE;
 	sInstances.addData(mID, this);
 }
 

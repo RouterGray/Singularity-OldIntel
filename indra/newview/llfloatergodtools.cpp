@@ -118,6 +118,8 @@ void LLFloaterGodTools::refreshAll()
 
 LLFloaterGodTools::LLFloaterGodTools()
 :	LLFloater(std::string("godtools floater")),
+	mPanelRegionTools(nullptr),
+	mPanelObjectTools(nullptr),
 	mCurrentHost(LLHost::invalid),
 	mUpdateTimer()
 {

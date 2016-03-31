@@ -55,6 +55,7 @@ LLFloaterSettingsDebug::LLFloaterSettingsDebug()
 ,	mCurrentControlVariable(NULL)
 ,	mOldControlVariable(NULL)
 ,	mOldSearchTerm(std::string("---"))
+,	mComment(nullptr)
 {
 	mCommitCallbackRegistrar.add("SettingSelect",	boost::bind(&LLFloaterSettingsDebug::onSettingSelect, this));
 	mCommitCallbackRegistrar.add("CommitSettings",	boost::bind(&LLFloaterSettingsDebug::onCommitSettings, this));

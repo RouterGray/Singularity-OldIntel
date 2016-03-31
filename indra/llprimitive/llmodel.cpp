@@ -53,8 +53,6 @@
 # include "zlib/zlib.h"
 #endif
 
-
-
 std::string model_names[] =
 {
 	"lowest_lod",
@@ -68,7 +66,7 @@ const int MODEL_NAMES_LENGTH = sizeof(model_names) / sizeof(std::string);
 
 LLModel::LLModel(LLVolumeParams& params, F32 detail)
 	: LLVolume(params, detail), mNormalizedScale(1,1,1), mNormalizedTranslation(0,0,0)
-	, mPelvisOffset( 0.0f ), mStatus(NO_ERRORS)
+	, mPelvisOffset( 0.0f ), mStatus(NO_ERRORS), mSubmodelID(0)
 {
 	mDecompID = -1;
 	mLocalID = -1;
@@ -1909,7 +1907,7 @@ LLModel::weight_list& LLModel::getJointInfluences(const LLVector3& pos)
 
 		weight_map::iterator best = iter_up;
 
-		F32 min_dist = (iter->first - pos).magVec();
+		F32 min_dist = (iter_up->first - pos).magVec();
 
 		bool done = false;
 		while (!done)
@@ -2015,21 +2013,20 @@ bool LLModel::loadModel(std::istream& is)
 		}
 	}
 
-	std::string nm[] = 
-	{
+	mSubmodelID = header.has("submodel_id") ? header["submodel_id"].asInteger() : false;
+
+    static const std::array<std::string, 5> lod_name = {{
 		"lowest_lod",
 		"low_lod",
 		"medium_lod",
 		"high_lod",
 		"physics_mesh",
-	};
+    }};
 
-	const S32 MODEL_LODS = 5;
+	S32 lod = llclamp((S32) mDetail, 0, (S32)lod_name.size() - 1);
 
-	S32 lod = llclamp((S32) mDetail, 0, MODEL_LODS);
-
-	if (header[nm[lod]]["offset"].asInteger() == -1 || 
-		header[nm[lod]]["size"].asInteger() == 0 )
+	if (header[lod_name[lod]]["offset"].asInteger() == -1 || 
+		header[lod_name[lod]]["size"].asInteger() == 0 )
 	{ //cannot load requested LOD
 		LL_WARNS() << "LoD data is invalid!" << LL_ENDL;
 		return false;
@@ -2038,23 +2035,23 @@ bool LLModel::loadModel(std::istream& is)
 	bool has_skin = header["skin"]["offset"].asInteger() >=0 &&
 					header["skin"]["size"].asInteger() > 0;
 
-	if (lod == LLModel::LOD_HIGH)
+	if ((lod == LLModel::LOD_HIGH) && !mSubmodelID)
 	{ //try to load skin info and decomp info
 		std::ios::pos_type cur_pos = is.tellg();
 		loadSkinInfo(header, is);
 		is.seekg(cur_pos);
 	}
 
-	if (lod == LLModel::LOD_HIGH || lod == LLModel::LOD_PHYSICS)
+	if ((lod == LLModel::LOD_HIGH || lod == LLModel::LOD_PHYSICS) && !mSubmodelID)
 	{
 		std::ios::pos_type cur_pos = is.tellg();
 		loadDecomposition(header, is);
 		is.seekg(cur_pos);
 	}
 
-	is.seekg(header[nm[lod]]["offset"].asInteger(), std::ios_base::cur);
+	is.seekg(header[lod_name[lod]]["offset"].asInteger(), std::ios_base::cur);
 
-	if (unpackVolumeFaces(is, header[nm[lod]]["size"].asInteger()))
+	if (unpackVolumeFaces(is, header[lod_name[lod]]["size"].asInteger()))
 	{
 		if (has_skin)
 		{ 
@@ -2112,7 +2109,7 @@ bool LLModel::isMaterialListSubset( LLModel* ref )
 		
 		for (S32 dst = 0; dst < refCnt; ++dst)
 		{
-			//LL_INFOS() <<mMaterialList[src]<<" "<<ref->mMaterialList[dst]<<LL_ENDL;
+			//LL_INFOS()<<mMaterialList[src]<<" "<<ref->mMaterialList[dst]<<LL_ENDL;
 			foundRef = mMaterialList[src] == ref->mMaterialList[dst];									
 				
 			if ( foundRef )
@@ -2120,8 +2117,10 @@ bool LLModel::isMaterialListSubset( LLModel* ref )
 				break;
 			}										
 		}
+
 		if (!foundRef)
 		{
+            LL_INFOS() << "Could not find material " << mMaterialList[src] << " in reference model " << ref->mLabel << LL_ENDL;
 			return false;
 		}
 	}
@@ -2157,7 +2156,7 @@ bool LLModel::matchMaterialOrder(LLModel* ref, int& refFaceCnt, int& modelFaceCn
 	bool isASubset = isMaterialListSubset( ref );
 	if ( !isASubset )
 	{
-		LL_INFOS() <<"Material of model is not a subset of reference."<<LL_ENDL;
+		LL_INFOS()<<"Material of model is not a subset of reference."<<LL_ENDL;
 		return false;
 	}
 	
@@ -2172,41 +2171,42 @@ bool LLModel::matchMaterialOrder(LLModel* ref, int& refFaceCnt, int& modelFaceCn
 	for (U32 i = 0; i < mMaterialList.size(); i++)
 	{
 		index_map[ref->mMaterialList[i]] = i;
-		if (!reorder)
-		{ //if any material name does not match reference, we need to reorder
-			reorder = ref->mMaterialList[i] != mMaterialList[i];
-		}
+		//if any material name does not match reference, we need to reorder
+		reorder |= ref->mMaterialList[i] != mMaterialList[i];
 		base_mat.insert(ref->mMaterialList[i]);
 		cur_mat.insert(mMaterialList[i]);
 	}
 
 
-	if (reorder && 
-		base_mat == cur_mat) //don't reorder if material name sets don't match
+	if (reorder &&  (base_mat == cur_mat)) //don't reorder if material name sets don't match
 	{
 		std::vector<LLVolumeFace> new_face_list;
-		new_face_list.resize(mVolumeFaces.size());
+		new_face_list.resize(mMaterialList.size());
 
 		std::vector<std::string> new_material_list;
-		new_material_list.resize(mVolumeFaces.size());
+		new_material_list.resize(mMaterialList.size());
 
 		//rebuild face list so materials have the same order 
 		//as the reference model
 		for (U32 i = 0; i < mMaterialList.size(); ++i)
 		{ 
 			U32 ref_idx = index_map[mMaterialList[i]];
-			new_face_list[ref_idx] = mVolumeFaces[i];
 
+			if (i < mVolumeFaces.size())
+			{
+				new_face_list[ref_idx] = mVolumeFaces[i];
+			}
 			new_material_list[ref_idx] = mMaterialList[i];
 		}
 
 		llassert(new_material_list == ref->mMaterialList);
 		
 		mVolumeFaces = new_face_list;
-	}
 
-	//override material list with reference model ordering
-	mMaterialList = ref->mMaterialList;
+		//override material list with reference model ordering
+		mMaterialList = ref->mMaterialList;
+	}
+	
 	return true;
 }
 
@@ -2237,7 +2237,7 @@ bool LLModel::loadDecomposition(LLSD& header, std::istream& is)
 	S32 offset = header["physics_convex"]["offset"].asInteger();
 	S32 size = header["physics_convex"]["size"].asInteger();
 
-	if (offset >= 0 && size > 0)
+	if (offset >= 0 && size > 0 && !mSubmodelID)
 	{
 		is.seekg(offset, std::ios_base::cur);
 

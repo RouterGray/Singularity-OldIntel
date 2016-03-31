@@ -704,7 +704,7 @@ BOOL LLManipTranslate::handleHover(S32 x, S32 y, MASK mask)
 		}
 
 		LLViewerObject* root_object = (object == NULL) ? NULL : object->getRootEdit();
-		if (object->permMove() && !object->isPermanentEnforced() &&
+		if (object && object->permMove() && !object->isPermanentEnforced() &&
 			((root_object == NULL) || !root_object->isPermanentEnforced()))
 		{
 			// handle attachments in local space
@@ -2317,7 +2317,7 @@ BOOL LLManipTranslate::canAffectSelection()
 			virtual bool apply(LLViewerObject* objectp)
 			{
 				LLViewerObject *root_object = (objectp == NULL) ? NULL : objectp->getRootEdit();
-				return objectp->permMove() && !objectp->isPermanentEnforced() &&
+				return object && objectp->permMove() && !objectp->isPermanentEnforced() &&
 					((root_object == NULL) || !root_object->isPermanentEnforced()) &&
 					(objectp->permModify() || !gSavedSettings.getBOOL("EditLinkedParts"));
 			}
