@@ -133,7 +133,7 @@ BOOL LLFloaterScriptQueue::postBuild()
 // static
 LLFloaterScriptQueue* LLFloaterScriptQueue::findInstance(const LLUUID& id)
 {
-	return sInstances.checkData(id)? sInstances.getData(id) : NULL
+	return sInstances.checkData(id) ? sInstances.getData(id) : NULL;
 }
 
 // This is the callback method for the viewer object currently being
@@ -270,7 +270,7 @@ BOOL LLFloaterScriptQueue::startQueue()
 	return nextObject();
 }
 
-/* Singu TODO: Experiences
+#if 0 // Singu TODO: Experiences
 class CompileQueueExperienceResponder : public LLHTTPClient::ResponderWithResult
 {
 public:
@@ -298,7 +298,7 @@ public:
 	}
 	/*virtual*/ char const* getName() const { return "RequiredRubbish"; }
 };
-*/
+#endif
 
 
 
