@@ -243,7 +243,6 @@ LLFloaterLand::LLFloaterLand(const LLSD& seed)
 	, mPanelMedia(nullptr)
 	, mPanelAccess(nullptr)
 	, mPanelCovenant(nullptr)
-	, mPanelExperiences(nullptr)
 {
 	mFactoryMap["land_general_panel"] = LLCallbackMap(createPanelLandGeneral, this);
 	mFactoryMap["land_covenant_panel"] = LLCallbackMap(createPanelLandCovenant, this);

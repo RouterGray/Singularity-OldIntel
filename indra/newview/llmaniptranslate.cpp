@@ -2317,7 +2317,7 @@ BOOL LLManipTranslate::canAffectSelection()
 			virtual bool apply(LLViewerObject* objectp)
 			{
 				LLViewerObject *root_object = (objectp == NULL) ? NULL : objectp->getRootEdit();
-				return object && objectp->permMove() && !objectp->isPermanentEnforced() &&
+				return objectp && objectp->permMove() && !objectp->isPermanentEnforced() &&
 					((root_object == NULL) || !root_object->isPermanentEnforced()) &&
 					(objectp->permModify() || !gSavedSettings.getBOOL("EditLinkedParts"));
 			}
