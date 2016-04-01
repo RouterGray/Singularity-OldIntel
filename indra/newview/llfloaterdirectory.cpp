@@ -247,7 +247,7 @@ LLFloaterDirectory::LLFloaterDirectory(const std::string& name)
 
 	factory_map["Panel Avatar"] = LLCallbackMap(createPanelAvatar, this);
 	
-	mCommitCallbackRegistrar.add("Search.WebFloater", boost::bind(&LLFloaterSearch::open, boost::bind(LLFloaterSearch::getInstance)));
+	mCommitCallbackRegistrar.add("Search.WebFloater", boost::bind(&LLFloaterSearch::open, boost::bind(&LLFloaterSearch::getInstance)));
 	LLUICtrlFactory::getInstance()->buildFloater(this, "floater_directory.xml", &factory_map);
 	moveResizeHandlesToFront();
 
