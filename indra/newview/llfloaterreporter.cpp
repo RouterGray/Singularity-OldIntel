@@ -74,7 +74,7 @@
 #include "llfloateravatarpicker.h"
 #include "lldir.h"
 #include "llselectmgr.h"
-#include "sgversion.h"
+#include "llversioninfo.h"
 #include "lluictrlfactory.h"
 #include "llviewernetwork.h"
 
@@ -624,10 +624,7 @@ LLSD LLFloaterReporter::gatherReport()
 
 	std::ostringstream details;
 
-	details << "V" << gVersionMajor << "."	// client version moved to body of email for abuse reports
-		<< gVersionMinor << "."
-		<< gVersionPatch << "."
-		<< gVersionBuild << std::endl << std::endl;
+	details << "V" << LLVersionInfo::getVersion() << std::endl;	// client version moved to body of email for abuse reports
 
 	std::string object_name = getChild<LLUICtrl>("object_name")->getValue().asString();
 	if (!object_name.empty() && !mOwnerName.empty())
@@ -644,10 +641,8 @@ LLSD LLFloaterReporter::gatherReport()
 
 	std::string version_string;
 	version_string = llformat(
-			"%d.%d.%d %s %s %s %s",
-			gVersionMajor,
-			gVersionMinor,
-			gVersionPatch,
+			"%s %s %s %s %s",
+			LLVersionInfo::getShortVersion().c_str(),
 			platform,
 			gSysCPU.getFamily().c_str(),
 			gGLManager.mGLRenderer.c_str(),

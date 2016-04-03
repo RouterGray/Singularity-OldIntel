@@ -1,5 +1,6 @@
 # -*- cmake -*-
 include(Prebuilt)
+include(FreeType)
 
 if (STANDALONE)
   include(FindPkgConfig)
@@ -32,11 +33,10 @@ if (STANDALONE)
   endforeach(pkg)
 else (STANDALONE)
   if (LINUX)
-    use_prebuilt_binary(glib)		# gtk-etc needs glib
     use_prebuilt_binary(gtk-atk-pango-glib)
     set(UI_LIBRARIES
         atk-1.0
-        X11
+        cairo
         gdk-x11-2.0
         gdk_pixbuf-2.0
         Xinerama
@@ -48,25 +48,19 @@ else (STANDALONE)
         gtk-x11-2.0
         pango-1.0
         pangoft2-1.0
-        pangox-1.0
         pangoxft-1.0
         pangocairo-1.0
+        pixman-1
+        X11
+        ${FREETYPE_LIBRARIES}
         )
   endif (LINUX)
 
   include_directories (
-      ${LIBS_PREBUILT_DIR}/packages/include
-      ${LIBS_PREBUILT_DIR}/packages/include/cairo
-      ${LIBS_PREBUILT_DIR}/packages/include/pixman-1
-      ${LIBS_PREBUILT_LEGACY_DIR}/include
-      ${LIBS_PREBUILT_LEGACY_DIR}/include/cairo
-      ${LIBS_PREBUILT_LEGACY_DIR}/include/pixman-1
+      ${LIBS_PREBUILT_DIR}/include
       )
   foreach(include ${${LL_ARCH}_INCLUDES})
-      include_directories(
-        ${LIBS_PREBUILT_DIR}/include/${include}
-        ${LIBS_PREBUILT_LEGACY_DIR}/include/${include}
-        )
+      include_directories(${LIBS_PREBUILT_DIR}/include/${include})
   endforeach(include)
 endif (STANDALONE)
 

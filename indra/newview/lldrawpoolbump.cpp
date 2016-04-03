@@ -330,11 +330,10 @@ void LLDrawPoolBump::endRenderPass(S32 pass)
 }
 
 //static
-void LLDrawPoolBump::beginShiny(bool invisible)
+void LLDrawPoolBump::beginShiny()
 {
 	LLFastTimer t(FTM_RENDER_SHINY);
-	if ((!invisible && !gPipeline.hasRenderBatches(LLRenderPass::PASS_SHINY))|| 
-		(invisible && !gPipeline.hasRenderBatches(LLRenderPass::PASS_INVISI_SHINY)))
+	if (!gPipeline.hasRenderBatches(LLRenderPass::PASS_SHINY))
 	{
 		return;
 	}
@@ -342,7 +341,7 @@ void LLDrawPoolBump::beginShiny(bool invisible)
 	mShiny = TRUE;
 	sVertexMask = VERTEX_MASK_SHINY;
 	// Second pass: environment map
-	if (!invisible && mVertexShaderLevel > 1)
+	if (mVertexShaderLevel > 1)
 	{
 		sVertexMask = VERTEX_MASK_SHINY | LLVertexBuffer::MAP_TEXCOORD0;
 	}
@@ -357,7 +356,7 @@ void LLDrawPoolBump::beginShiny(bool invisible)
 		shader = NULL;
 	}
 
-	bindCubeMap(shader, mVertexShaderLevel, diffuse_channel, cube_channel, invisible);
+	bindCubeMap(shader, mVertexShaderLevel, diffuse_channel, cube_channel);
 
 	if (mVertexShaderLevel > 1)
 	{ //indexed texture rendering, channel 0 is always diffuse
@@ -366,12 +365,12 @@ void LLDrawPoolBump::beginShiny(bool invisible)
 }
 
 //static
-void LLDrawPoolBump::bindCubeMap(LLGLSLShader* shader, S32 shader_level, S32& diffuse_channel, S32& cube_channel, bool invisible)
+void LLDrawPoolBump::bindCubeMap(LLGLSLShader* shader, S32 shader_level, S32& diffuse_channel, S32& cube_channel)
 {
 	LLCubeMap* cube_map = gSky.mVOSkyp ? gSky.mVOSkyp->getCubeMap() : NULL;
 	if( cube_map )
 	{
-		if (!invisible && shader )
+		if (shader)
 		{
 			LLMatrix4 mat(gGLModelView.getF32ptr());
 			LLVector3 vec = LLVector3(gShinyOrigin) * mat;
@@ -412,11 +411,10 @@ void LLDrawPoolBump::bindCubeMap(LLGLSLShader* shader, S32 shader_level, S32& di
 	}
 }
 
-void LLDrawPoolBump::renderShiny(bool invisible)
+void LLDrawPoolBump::renderShiny()
 {
 	LLFastTimer t(FTM_RENDER_SHINY);
-	if ((!invisible && !gPipeline.hasRenderBatches(LLRenderPass::PASS_SHINY))|| 
-		(invisible && !gPipeline.hasRenderBatches(LLRenderPass::PASS_INVISI_SHINY)))
+	if (!gPipeline.hasRenderBatches(LLRenderPass::PASS_SHINY))
 	{
 		return;
 	}
@@ -424,28 +422,24 @@ void LLDrawPoolBump::renderShiny(bool invisible)
 	if( gSky.mVOSkyp->getCubeMap() )
 	{
 		LLGLEnable blend_enable(GL_BLEND);
-		if (!invisible && mVertexShaderLevel > 1)
+		if (mVertexShaderLevel > 1)
 		{
 			LLRenderPass::pushBatches(LLRenderPass::PASS_SHINY, sVertexMask | LLVertexBuffer::MAP_TEXTURE_INDEX, TRUE, TRUE);
 		}
-		else if (!invisible)
+		else
 		{
 			renderGroups(LLRenderPass::PASS_SHINY, sVertexMask);
 		}
-		//else // invisible (deprecated)
-		//{
-			//renderGroups(LLRenderPass::PASS_INVISI_SHINY, sVertexMask);
-		//}
 	}
 }
 
 //static
-void LLDrawPoolBump::unbindCubeMap(LLGLSLShader* shader, S32 shader_level, S32& diffuse_channel, S32& cube_channel, bool invisible)
+void LLDrawPoolBump::unbindCubeMap(LLGLSLShader* shader, S32 shader_level, S32& diffuse_channel, S32& cube_channel)
 {
 	LLCubeMap* cube_map = gSky.mVOSkyp ? gSky.mVOSkyp->getCubeMap() : NULL;
 	if( cube_map )
 	{
-		if (!invisible && shader_level > 1)
+		if (shader_level > 1)
 		{
 			shader->disableTexture(LLViewerShaderMgr::ENVIRONMENT_MAP, LLTexUnit::TT_CUBE_MAP);
 					
@@ -473,16 +467,15 @@ void LLDrawPoolBump::unbindCubeMap(LLGLSLShader* shader, S32 shader_level, S32& 
 	}
 }
 
-void LLDrawPoolBump::endShiny(bool invisible)
+void LLDrawPoolBump::endShiny()
 {
 	LLFastTimer t(FTM_RENDER_SHINY);
-	if ((!invisible && !gPipeline.hasRenderBatches(LLRenderPass::PASS_SHINY))|| 
-		(invisible && !gPipeline.hasRenderBatches(LLRenderPass::PASS_INVISI_SHINY)))
+	if (!gPipeline.hasRenderBatches(LLRenderPass::PASS_SHINY))
 	{
 		return;
 	}
 
-	unbindCubeMap(shader, mVertexShaderLevel, diffuse_channel, cube_channel, invisible);
+	unbindCubeMap(shader, mVertexShaderLevel, diffuse_channel, cube_channel);
 	if (shader)
 	{
 		shader->unbind();
@@ -1544,77 +1537,4 @@ void LLDrawPoolBump::pushBatch(LLDrawInfo& params, U32 mask, BOOL texture, BOOL 
 		gGL.loadIdentity();
 		gGL.matrixMode(LLRender::MM_MODELVIEW);
 	}
-}
-
-void LLDrawPoolInvisible::render(S32 pass)
-{ //render invisiprims
-	LLFastTimer t(FTM_RENDER_INVISIBLE);
-  
-	if (LLGLSLShader::sNoFixedFunction)
-	{
-		gOcclusionProgram.bind();
-	}
-
-	U32 invisi_mask = LLVertexBuffer::MAP_VERTEX;
-	glStencilMask(0);
-	gGL.setColorMask(false, false);
-	pushBatches(LLRenderPass::PASS_INVISIBLE, invisi_mask, FALSE);
-	gGL.setColorMask(true, false);
-	glStencilMask(0xFFFFFFFF);
-
-	if (LLGLSLShader::sNoFixedFunction)
-	{
-		gOcclusionProgram.unbind();
-	}
-
-	/*if (gPipeline.hasRenderBatches(LLRenderPass::PASS_INVISI_SHINY)) // invisible (deprecated)
-	{
-		beginShiny(true);
-		renderShiny(true);
-		endShiny(true);
-	}*/
-}
-
-void LLDrawPoolInvisible::beginDeferredPass(S32 pass)
-{
-	static const LLCachedControl<bool> enable("SianaRenderDeferredInvisiprim");
-	if (!enable)
-	{
-	    return;
-	}
-	beginRenderPass(pass);
-}
-
-void LLDrawPoolInvisible::endDeferredPass( S32 pass )
-{
-	endRenderPass(pass);
-}
-
-void LLDrawPoolInvisible::renderDeferred( S32 pass )
-{ //render invisiprims; this doesn't work becaue it also blocks all the post-deferred stuff
-	static const LLCachedControl<bool> enable("SianaRenderDeferredInvisiprim");
-	if (!enable)
-	{
-	    return;
-	}
-
-	LLFastTimer t(FTM_RENDER_INVISIBLE);
- 
-	gOcclusionProgram.bind();
-
-	U32 invisi_mask = LLVertexBuffer::MAP_VERTEX;
-	glStencilMask(0);
-	gGL.setColorMask(false, false);
-	pushBatches(LLRenderPass::PASS_INVISIBLE, invisi_mask, FALSE);
-	gGL.setColorMask(true, true);
-	glStencilMask(0xFFFFFFFF);
-	
-	gOcclusionProgram.unbind();
-
-	/*if (gPipeline.hasRenderBatches(LLRenderPass::PASS_INVISI_SHINY)) // invisible (deprecated)
-	{
-		beginShiny(true);
-		renderShiny(true);
-		endShiny(true);
-	}*/
 }

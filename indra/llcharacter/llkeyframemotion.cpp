@@ -1382,7 +1382,7 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 	}
 	
 	if (mJointMotionList->mDuration > MAX_ANIM_DURATION ||
-	    !llfinite(mJointMotionList->mDuration))
+	    !std::isfinite(mJointMotionList->mDuration))
 	{
 		LL_WARNS() << "invalid animation duration" << LL_ENDL;
 		return FALSE;
@@ -1407,14 +1407,14 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 	// get loop
 	//-------------------------------------------------------------------------
 	if (!dp.unpackF32(mJointMotionList->mLoopInPoint, "loop_in_point") ||
-	    !llfinite(mJointMotionList->mLoopInPoint))
+	    !std::isfinite(mJointMotionList->mLoopInPoint))
 	{
 		LL_WARNS() << "can't read loop point" << LL_ENDL;
 		return FALSE;
 	}
 
 	if (!dp.unpackF32(mJointMotionList->mLoopOutPoint, "loop_out_point") ||
-	    !llfinite(mJointMotionList->mLoopOutPoint))
+	    !std::isfinite(mJointMotionList->mLoopOutPoint))
 	{
 		LL_WARNS() << "can't read loop point" << LL_ENDL;
 		return FALSE;
@@ -1430,14 +1430,14 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 	// get easeIn and easeOut
 	//-------------------------------------------------------------------------
 	if (!dp.unpackF32(mJointMotionList->mEaseInDuration, "ease_in_duration") ||
-	    !llfinite(mJointMotionList->mEaseInDuration))
+	    !std::isfinite(mJointMotionList->mEaseInDuration))
 	{
 		LL_WARNS() << "can't read easeIn" << LL_ENDL;
 		return FALSE;
 	}
 
 	if (!dp.unpackF32(mJointMotionList->mEaseOutDuration, "ease_out_duration") ||
-	    !llfinite(mJointMotionList->mEaseOutDuration))
+	    !std::isfinite(mJointMotionList->mEaseOutDuration))
 	{
 		LL_WARNS() << "can't read easeOut" << LL_ENDL;
 		return FALSE;
@@ -1608,7 +1608,7 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 			if (old_version)
 			{
 				if (!dp.unpackF32(time, "time") ||
-				    !llfinite(time))
+				    !std::isfinite(time))
 				{
 					LL_WARNS() << "can't read rotation key (" << k << ")" << LL_ENDL;
 					return FALSE;
@@ -1702,7 +1702,7 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 			if (old_version)
 			{
 				if (!dp.unpackF32(pos_key.mTime, "time") ||
-				    !llfinite(pos_key.mTime))
+				    !std::isfinite(pos_key.mTime))
 				{
 					LL_WARNS() << "can't read position key (" << k << ")" << LL_ENDL;
 					return FALSE;
@@ -1907,28 +1907,28 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 	//			constraintp->mTargetConstraintDir *= constraintp->mSourceConstraintOffset.magVec();
 			}
 
-			if (!dp.unpackF32(constraintp->mEaseInStartTime, "ease_in_start") || !llfinite(constraintp->mEaseInStartTime))
+			if (!dp.unpackF32(constraintp->mEaseInStartTime, "ease_in_start") || !std::isfinite(constraintp->mEaseInStartTime))
 			{
 				LL_WARNS() << "can't read constraint ease in start time" << LL_ENDL;
 				delete constraintp;
 				return FALSE;
 			}
 
-			if (!dp.unpackF32(constraintp->mEaseInStopTime, "ease_in_stop") || !llfinite(constraintp->mEaseInStopTime))
+			if (!dp.unpackF32(constraintp->mEaseInStopTime, "ease_in_stop") || !std::isfinite(constraintp->mEaseInStopTime))
 			{
 				LL_WARNS() << "can't read constraint ease in stop time" << LL_ENDL;
 				delete constraintp;
 				return FALSE;
 			}
 
-			if (!dp.unpackF32(constraintp->mEaseOutStartTime, "ease_out_start") || !llfinite(constraintp->mEaseOutStartTime))
+			if (!dp.unpackF32(constraintp->mEaseOutStartTime, "ease_out_start") || !std::isfinite(constraintp->mEaseOutStartTime))
 			{
 				LL_WARNS() << "can't read constraint ease out start time" << LL_ENDL;
 				delete constraintp;
 				return FALSE;
 			}
 
-			if (!dp.unpackF32(constraintp->mEaseOutStopTime, "ease_out_stop") || !llfinite(constraintp->mEaseOutStopTime))
+			if (!dp.unpackF32(constraintp->mEaseOutStopTime, "ease_out_stop") || !std::isfinite(constraintp->mEaseOutStopTime))
 			{
 				LL_WARNS() << "can't read constraint ease out stop time" << LL_ENDL;
 				delete constraintp;

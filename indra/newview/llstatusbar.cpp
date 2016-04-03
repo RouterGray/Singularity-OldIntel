@@ -41,7 +41,6 @@
 #include "llfloaterbuycurrency.h"
 #include "llfloaterchat.h"
 #include "llfloaterinventory.h"
-#include "llfloaterlagmeter.h"
 #include "llfloaterland.h"
 #include "llfloaterregioninfo.h"
 #include "llfloaterscriptdebug.h"
@@ -276,7 +275,6 @@ mIsNavMeshDirty(false)
 	addChild(mSGPacketLoss);
 
 	mStatBtn = getChild<LLTextBox>("stat_btn");
-	mStatBtn->setClickedCallback(boost::bind(LLFloaterLagMeter::showInstance, LLSD()));
 }
 
 LLStatusBar::~LLStatusBar()

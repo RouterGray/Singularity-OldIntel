@@ -4177,17 +4177,17 @@ void LLModelPreview::updateStatusMessages()
 		{
 			for (LLModelLoader::model_instance_list::iterator instance = iter->second.begin(), end_instance = iter->second.end(); instance != end_instance; ++instance)
 			{
-				LLModel* model = instance->mModel;
-				if (model)
+				LLModel* lod_model = instance->mModel;
+				if (lod_model)
 				{
 					 //for each model in the lod
 					S32 cur_tris = 0;
 					S32 cur_verts = 0;
-					S32 cur_submeshes = model->getNumVolumeFaces();
+					S32 cur_submeshes = lod_model->getNumVolumeFaces();
 
 					for (S32 j = 0; j < cur_submeshes; ++j)
 					{ //for each submesh (face), add triangles and vertices to current total
-						const LLVolumeFace& face = model->getVolumeFace(j);
+						const LLVolumeFace& face = lod_model->getVolumeFace(j);
 						cur_tris += face.mNumIndices/3;
 						cur_verts += face.mNumVertices;
 					}
@@ -4201,6 +4201,11 @@ void LLModelPreview::updateStatusMessages()
 					tris[lod].push_back(cur_tris);
 					verts[lod].push_back(cur_verts);
 					submeshes[lod].push_back(cur_submeshes);
+				}
+				else // !lod_model
+				{
+					setLoadState( LLModelLoader::ERROR_MATERIALS );
+					mFMP->childDisable( "calculate_btn" );
 				}
 			}
 		}

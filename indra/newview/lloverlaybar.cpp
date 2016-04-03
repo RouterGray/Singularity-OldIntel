@@ -65,7 +65,7 @@
 #include "rlvhandler.h"
 // [/RLVa:KB]
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 //
 // Globals
@@ -244,7 +244,7 @@ void LLOverlayBar::layoutButtons()
 	{
 		U32 button_count = 0;
 		const child_list_t& view_list = *(mStateManagementContainer->getChildList());
-		BOOST_FOREACH(LLView* viewp, view_list)
+		for (LLView* viewp : view_list)
 		{
 			if(!viewp->getEnabled())
 				continue;
@@ -264,7 +264,7 @@ void LLOverlayBar::layoutButtons()
 		S32 left = 0;
 		S32 bottom = 1;
 
-		BOOST_REVERSE_FOREACH(LLView* viewp, view_list)
+		for (LLView* viewp : boost::adaptors::reverse(view_list))
 		{
 			if(!viewp->getEnabled())
 				continue;

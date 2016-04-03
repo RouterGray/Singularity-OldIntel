@@ -85,7 +85,7 @@ BOOL LLFloaterBlacklist::postBuild()
 }
 void LLFloaterBlacklist::refresh()
 {
-	
+
 	LLScrollListCtrl* list = getChild<LLScrollListCtrl>("file_list");
 	list->clearRows();
 	for(std::map<LLUUID,LLSD>::iterator iter = blacklist_entries.begin(); iter != blacklist_entries.end(); ++iter)
@@ -207,13 +207,17 @@ void LLFloaterBlacklist::onClickRemove(void* user_data)
 	LLScrollListCtrl* list = floaterp->getChild<LLScrollListCtrl>("file_list");
 	if(list->getFirstSelected())
 	{
-		LLScrollListItem* item = list->getFirstSelected();
-		LLUUID selected_id = item->getColumn(0)->getValue().asUUID();
-		if(selected_id.isNull()) return;
-		list->deleteSingleItem(list->getFirstSelectedIndex());
-		blacklist_entries.erase(selected_id);
+		uuid_vec_t selectedIDs = list->getSelectedIDs();
+		uuid_vec_t::const_iterator iterator;
+		for(iterator  = selectedIDs.begin();
+		    iterator != selectedIDs.end();
+		    ++iterator)
+		{
+			LLUUID selectedID = *iterator;
+			blacklist_entries.erase(selectedID);
+		}
+		list->deleteSelectedItems();
 		updateBlacklists();
-		
 	}
 }
 // static
@@ -252,12 +256,12 @@ void LLFloaterBlacklist::updateBlacklists()
 			{
 				gAssetStorage->mBlackListedAsset.push_back(LLUUID(iter->first));
 			}
-			
+
 			if(blacklist_entries[iter->first]["entry_type"].asString() == "6")
 			{
 				blacklist_objects.push_back(LLUUID(iter->first));
 			}
-			
+
 		}
 		saveToDisk();
 		LLFloaterBlacklist* instance = LLFloaterBlacklist::getInstance();
@@ -300,7 +304,7 @@ void LLFloaterBlacklist::onClickSave_continued(AIFilePicker* filepicker)
 		{
 			data[iter->first.asString()] = iter->second;
 		}
-		LLSDSerialize::toPrettyXML(data, export_file);	
+		LLSDSerialize::toPrettyXML(data, export_file);
 		export_file.close();
 	}
 }

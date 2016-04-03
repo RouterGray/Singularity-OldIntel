@@ -400,6 +400,16 @@
   <texture name="media_btn_stoploading.png"/>
   <texture name="media_panel_divider.png"/>
   <texture name="media_panel_scrollbg.png"/>
+
+  <texture name="Accordion_ArrowClosed_Off" file_name="Accordion_ArrowClosed_Off.png" preload="false" />
+  <texture name="Accordion_ArrowClosed_Press" file_name="Accordion_ArrowClosed_Press.png" preload="false" />
+  <texture name="Accordion_ArrowOpened_Off" file_name="Accordion_ArrowOpened_Off.png" preload="false" />
+  <texture name="Accordion_ArrowOpened_Press" file_name="Accordion_ArrowOpened_Press.png" preload="false" />
+  <texture name="Accordion_Off" file_name="Accordion_Off.png" preload="false" />
+  <texture name="Accordion_Press" file_name="Accordion_Press.png" preload="false" />
+  <texture name="Accordion_Over" file_name="Accordion_Over.png" preload="false" />
+  <texture name="Accordion_Selected" file_name="Accordion_Selected.png" preload="false" />
+
   
   <texture name="Parcel_Exp_Color.png" file_name="Parcel_Exp_Color.png" preload="false" />
   <texture name="Flag.png" file_name="Flag.png" preload="false" />

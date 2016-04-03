@@ -78,6 +78,15 @@ const F32 CONTEXT_FADE_TIME = 0.08f;
 
 LLFloaterColorPicker::LLFloaterColorPicker (LLColorSwatchCtrl* swatch, BOOL show_apply_immediate )
 	: LLFloater (std::string("Color Picker Floater")),
+	  origR(1.f),
+	  origG(1.f),
+	  origB(1.f),
+	  curR(1.f),
+	  curG(1.f),
+	  curB(1.f),
+	  curH(0.f),
+	  curS(0.f),
+	  curL(1.f),
 	  mComponents			( 3 ),
 	  mMouseDownInLumRegion	( FALSE ),
 	  mMouseDownInHueRegion	( FALSE ),
@@ -108,7 +117,11 @@ LLFloaterColorPicker::LLFloaterColorPicker (LLColorSwatchCtrl* swatch, BOOL show
 	  mPaletteRegionHeight	( 40 ),
 	  mSwatch				( swatch ),
 	  mActive				( TRUE ),
+	  mApplyImmediateCheck(nullptr),
 	  mCanApplyImmediately	( show_apply_immediate ),
+	  mSelectBtn(nullptr),
+	  mCancelBtn(nullptr),
+	  mPipetteBtn(nullptr),
 	  mContextConeOpacity	( 0.f )
 {
 	// build the majority of the gui using the factory builder

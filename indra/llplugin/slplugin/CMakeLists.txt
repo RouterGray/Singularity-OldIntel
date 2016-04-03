@@ -6,6 +6,7 @@ include(LLPlugin)
 include(Linking)
 include(PluginAPI)
 include(LLMessage)
+include(WinManifest)
 
 include_directories(
     ${LLPLUGIN_INCLUDE_DIRS}
@@ -56,8 +57,9 @@ set_target_properties(SLPlugin
 if (WINDOWS)
   set_target_properties(SLPlugin
     PROPERTIES
-    LINK_FLAGS "/OPT:NOREF"
+    LINK_FLAGS_DEBUG "/NODEFAULTLIB:\"LIBCMTD\""
   )
+  EMBED_MANIFEST(SLPlugin 1)
 endif()
 
 target_link_libraries(SLPlugin

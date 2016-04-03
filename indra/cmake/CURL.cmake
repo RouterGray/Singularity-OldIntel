@@ -13,13 +13,8 @@ else (STANDALONE)
     debug libcurld
     optimized libcurl)
   else (WINDOWS)
-    set(CURL_LIBRARIES curl)
-    if(LINUX AND WORD_SIZE EQUAL 64)
-      list(APPEND CURL_LIBRARIES idn)
-    endif(LINUX AND WORD_SIZE EQUAL 64)
+    use_prebuilt_binary(libidn)
+    set(CURL_LIBRARIES curl idn)
   endif (WINDOWS)
-  set(CURL_INCLUDE_DIRS
-    ${LIBS_PREBUILT_DIR}/include
-    ${LIBS_PREBUILT_LEGACY_DIR}/include
-    )
+  set(CURL_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/include)
 endif (STANDALONE)

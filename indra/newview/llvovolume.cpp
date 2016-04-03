@@ -1757,7 +1757,7 @@ void LLVOVolume::setNumTEs(const U8 num_tes)
 	}
 	else if(old_num_tes > num_tes && mMediaImplList.size() > num_tes) //old faces removed
 	{
-		U8 end = mMediaImplList.size() ;
+		size_t end = mMediaImplList.size() ;
 		for(U8 i = num_tes; i < end ; i++)
 		{
 			removeMediaImpl(i) ;				
@@ -3073,7 +3073,6 @@ U32 LLVOVolume::getRenderCost(texture_cost_t &textures) const
 	static const F32 ARC_BUMP_MULT = 1.25f; // tested based on performance
 	static const F32 ARC_FLEXI_MULT = 5; // tested based on performance
 	static const F32 ARC_SHINY_MULT = 1.6f; // tested based on performance
-	static const F32 ARC_INVISI_COST = 1.2f; // tested based on performance
 	static const F32 ARC_WEIGHTED_MESH = 1.2f; // tested based on performance
 
 	static const F32 ARC_PLANAR_COST = 1.0f; // tested based on performance to have negligible impact
@@ -3082,7 +3081,6 @@ U32 LLVOVolume::getRenderCost(texture_cost_t &textures) const
 
 	F32 shame = 0;
 
-	U32 invisi = 0;
 	U32 shiny = 0;
 	U32 glow = 0;
 	U32 alpha = 0;
@@ -3190,10 +3188,6 @@ U32 LLVOVolume::getRenderCost(texture_cost_t &textures) const
 		{
 			alpha = 1;
 		}
-		else if (img && img->getPrimaryFormat() == GL_ALPHA)
-		{
-			invisi = 1;
-		}
 		if (face->hasMedia())
 		{
 			media_faces++;
@@ -3245,11 +3239,6 @@ U32 LLVOVolume::getRenderCost(texture_cost_t &textures) const
 	if (alpha)
 	{
 		shame *= alpha * ARC_ALPHA_COST;
-	}
-
-	if(invisi)
-	{
-		shame *= invisi * ARC_INVISI_COST;
 	}
 
 	if (glow)
@@ -3934,8 +3923,9 @@ void LLRiggedVolume::update(const LLMeshSkinInfo* skin, LLVOAvatar* avatar, cons
 				{
 					F32 w = weight[j][k];
 
-					idx[k] = (S32) floorf(w);
-					wght[k] = w - floorf(w);
+					const F32 w_floor = floorf(w);
+					idx[k] = (S32) w_floor;
+					wght[k] = w - w_floor;
 					scale += wght[k];
 				}
 
@@ -3947,8 +3937,10 @@ void LLRiggedVolume::update(const LLMeshSkinInfo* skin, LLVOAvatar* avatar, cons
 				for (U32 k = 0; k < 4; k++)
 				{
 					F32 w = wght[k];
+
 					LLMatrix4a src;
-					src.setMul(mp[idx[k]], w);
+					// clamp k to kMaxJoints to avoid reading garbage off stack in release
+					src.setMul(mp[(idx[k] < (S32)count) ? idx[k] : 0], w);
 
 					final_mat.add(src);
 				}
@@ -4054,11 +4046,6 @@ bool can_batch_texture(const LLFace* facep)
 		return false;
 	}
 
-	if (facep->getTexture() && facep->getTexture()->getPrimaryFormat() == GL_ALPHA)
-	{ //can't batch invisiprims
-		return false;
-	}
-
 	if (facep->isState(LLFace::TEXTURE_ANIM) && facep->getVirtualSize() > MIN_TEX_ANIM_SIZE)
 	{ //texture animation breaks batches
 		return false;
@@ -4074,11 +4061,6 @@ bool can_batch_texture(const LLFace* facep)
 
 	if (LLPipeline::sRenderDeferred && (facep->getPoolType() == LLDrawPool::POOL_ALPHA || facep->getPoolType() == LLDrawPool::POOL_MATERIALS) && facep->getTextureEntry()->getMaterialParams().notNull())
 	{ //materials don't work with texture batching yet
-		return false;
-	}
-
-	if (facep->getPoolType() != LLDrawPool::POOL_ALPHA && facep->getTexture() && facep->getTexture()->getPrimaryFormat() == GL_ALPHA)
-	{ //can't batch invisiprims
 		return false;
 	}
 
@@ -4115,7 +4097,6 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
 
 	if(!facep->mShinyInAlpha)
 		facep->mShinyInAlpha =	(type == LLRenderPass::PASS_FULLBRIGHT_SHINY) || 
-								(type == LLRenderPass::PASS_INVISI_SHINY) || 
 								(type == LLRenderPass::PASS_SHINY) || 
 								(LLPipeline::sRenderDeferred && type == LLRenderPass::PASS_BUMP) ||
 								(LLPipeline::sRenderDeferred && type == LLRenderPass::PASS_SIMPLE);
@@ -4130,7 +4111,6 @@ void LLVolumeGeometryManager::registerFace(LLSpatialGroup* group, LLFace* facep,
 	if(!alt_batching)
 	{
 	fullbright = (type == LLRenderPass::PASS_FULLBRIGHT) ||
-		(type == LLRenderPass::PASS_INVISIBLE) ||
 		(type == LLRenderPass::PASS_FULLBRIGHT_ALPHA_MASK) ||
 		(type == LLRenderPass::PASS_ALPHA && facep->isState(LLFace::FULLBRIGHT)) ||
 		(facep->getTextureEntry()->getFullbright());
@@ -6047,12 +6027,7 @@ void LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFac
 				&& te->getShiny()
 				&& can_be_shiny)
 			{ //shiny
-				if (tex->getPrimaryFormat() == GL_ALPHA)
-				{ //invisiprim+shiny
-					registerFace(group, facep, LLRenderPass::PASS_INVISI_SHINY);
-					registerFace(group, facep, LLRenderPass::PASS_INVISIBLE);
-				}
-				else if (LLPipeline::sRenderDeferred && !hud_group)
+				if (LLPipeline::sRenderDeferred && !hud_group)
 				{ //deferred rendering
 					if (te->getFullbright())
 					{ //register in post deferred fullbright shiny pass
@@ -6083,11 +6058,7 @@ void LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFac
 			}
 			else
 			{ //not alpha and not shiny
-				if (!is_alpha && tex->getPrimaryFormat() == GL_ALPHA)
-				{ //invisiprim
-					registerFace(group, facep, LLRenderPass::PASS_INVISIBLE);
-				}
-				else if (fullbright)
+				if (fullbright)
 				{ //fullbright
 					if (mat && mat->getDiffuseAlphaMode() == LLMaterial::DIFFUSE_ALPHA_MODE_MASK)
 					{
@@ -6210,15 +6181,7 @@ void LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFac
 			}
 			else
 			{
-				if (tex->getPrimaryFormat() == GL_ALPHA)
-				{
-					if(is_shiny_shader && facep->getPoolType() == LLDrawPool::POOL_BUMP)
-					{
-						registerFace(group, facep, LLRenderPass::PASS_INVISI_SHINY);
-					}
-					registerFace(group, facep, LLRenderPass::PASS_INVISIBLE);
-				}
-				else if (facep->getPoolType() == LLDrawPool::POOL_SIMPLE)
+				if (facep->getPoolType() == LLDrawPool::POOL_SIMPLE)
 				{
 					registerFace(group, facep, LLRenderPass::PASS_SIMPLE);
 				}

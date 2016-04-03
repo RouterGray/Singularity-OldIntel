@@ -30,7 +30,6 @@
 
 #include "sys.h"
 #include "aihttptimeoutpolicy.h"
-#define NOMINMAX
 #include "llerror.h"
 #include "lldefs.h"
 #include "v3math.h"
@@ -943,8 +942,6 @@ P2(meshHeaderResponder,							connect_30s);
 P2(meshLODResponder,							connect_30s);
 P2(meshPhysicsShapeResponder,					connect_30s);
 P2(meshSkinInfoResponder,						connect_30s);
-P(mimeDiscoveryResponder);
-P(moderationResponder);
 P(objectCostResponder);
 P(physicsFlagsResponder);
 P(productInfoRequestResponder);
@@ -960,8 +957,6 @@ P(translationReceiver);
 P(uploadModelPremissionsResponder);
 P(verifiedDestinationResponder);
 P(viewerChatterBoxInvitationAcceptResponder);
-P(viewerMediaOpenIDResponder);
-P(viewerMediaWebProfileResponder);
 P(viewerStatsResponder);
 P(voiceCallCapResponder);
 P(webProfileResponders);

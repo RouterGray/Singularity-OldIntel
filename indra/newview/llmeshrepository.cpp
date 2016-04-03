@@ -2137,7 +2137,8 @@ void LLMeshHeaderResponder::completedRaw(LLChannelDescriptors const& channels,
 LLMeshRepository::LLMeshRepository()
 : mMeshMutex(NULL),
   mMeshThreadCount(0),
-  mThread(NULL)
+  mThread(NULL),
+  mDecompThread(nullptr)
 {
 
 }

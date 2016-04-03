@@ -1882,7 +1882,7 @@ void LLPanelObjectInventory::createViewsForCategory(LLInventoryObject::object_li
 	}
 
 	// now, for each category, do the second pass
-	for(S32 i = 0; i < child_categories.size(); i++)
+	for(U32 i = 0; i < child_categories.size(); i++)
 	{
 		createViewsForCategory(inventory, child_categories[i]->first,
 							   child_categories[i]->second );

@@ -61,7 +61,7 @@ const S32 NUDGE_FRAMES = 2;
 const F32 ORBIT_NUDGE_RATE = 0.05f;  // fraction of normal speed
 
 struct LLKeyboardActionRegistry 
-:	public LLRegistrySingleton<std::string, boost::function<void (EKeystate keystate)>, LLKeyboardActionRegistry>
+:	public LLRegistrySingleton<std::string, std::function<void (EKeystate keystate)>, LLKeyboardActionRegistry>
 {
 };
 
@@ -70,13 +70,14 @@ LLViewerKeyboard gViewerKeyboard;
 void agent_jump( EKeystate s )
 {
 	if( KEYSTATE_UP == s  ) return;
+	static LLCachedControl<bool> sAutomaticFly(gSavedSettings, "AutomaticFly");
 	F32 time = gKeyboard->getCurKeyElapsedTime();
 	S32 frame_count = ll_round(gKeyboard->getCurKeyElapsedFrameCount());
 
 	if( time < FLY_TIME 
 		|| frame_count <= FLY_FRAMES 
 		|| gAgent.upGrabbed()
-		|| !gSavedSettings.getBOOL("AutomaticFly"))
+		|| !sAutomaticFly())
 	{
 		gAgent.moveUp(1);
 	}
@@ -86,22 +87,24 @@ void agent_jump( EKeystate s )
 		gAgent.moveUp(1);
 	}
 }
-// <singu>
+
 void agent_toggle_down( EKeystate s )
 {
 	if (KEYSTATE_UP == s) return;
 
-	if (KEYSTATE_DOWN == s && !gAgent.getFlying() && gSavedSettings.getBOOL("SGShiftCrouchToggle"))
+	static LLCachedControl<bool> sCrouchToggle(gSavedSettings, "SGShiftCrouchToggle");
+	if (KEYSTATE_DOWN == s
+		&& !gAgent.getFlying()
+		&& sCrouchToggle())
 	{
 		gAgent.toggleCrouch();
 	}
 	gAgent.moveUp(-1);
 }
-// </singu>
 
 void agent_push_down( EKeystate s )
 {
-	if( KEYSTATE_UP == s  ) return;
+	if( KEYSTATE_UP == s ) return;
 	gAgent.moveUp(-1);
 }
 
@@ -570,11 +573,11 @@ void start_gesture( EKeystate s )
 #define REGISTER_KEYBOARD_ACTION(KEY, ACTION) LLREGISTER_STATIC(LLKeyboardActionRegistry, KEY, ACTION);
 REGISTER_KEYBOARD_ACTION("jump", agent_jump);
 REGISTER_KEYBOARD_ACTION("push_down", agent_push_down);
+REGISTER_KEYBOARD_ACTION("toggle_down", agent_toggle_down);
 REGISTER_KEYBOARD_ACTION("push_forward", agent_push_forward);
 REGISTER_KEYBOARD_ACTION("push_backward", agent_push_backward);
 REGISTER_KEYBOARD_ACTION("look_up", agent_look_up);
 REGISTER_KEYBOARD_ACTION("look_down", agent_look_down);
-REGISTER_KEYBOARD_ACTION("toggle_down", agent_toggle_down);
 REGISTER_KEYBOARD_ACTION("toggle_fly", agent_toggle_fly);
 REGISTER_KEYBOARD_ACTION("turn_left", agent_turn_left);
 REGISTER_KEYBOARD_ACTION("turn_right", agent_turn_right);
@@ -702,13 +705,16 @@ BOOL LLViewerKeyboard::handleKey(KEY translated_key,  MASK translated_mask, BOOL
 	return mKeyHandledByUI[translated_key];
 }
 
-
+BOOL LLViewerKeyboard::handleKeyUp(KEY translated_key, MASK translated_mask)
+{
+	return gViewerWindow->handleKeyUp(translated_key, translated_mask);
+}
 
 BOOL LLViewerKeyboard::bindKey(const S32 mode, const KEY key, const MASK mask, const std::string& function_name)
 {
 	S32 index;
-	typedef boost::function<void(EKeystate)> function_t;
-	function_t function = NULL;
+	typedef std::function<void(EKeystate)> function_t;
+	function_t function;
 	std::string name;
 
 	// Allow remapping of F2-F12

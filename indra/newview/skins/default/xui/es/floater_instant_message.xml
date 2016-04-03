@@ -35,21 +35,21 @@
 	</string>
 	<flyout_button label="Perfil" name="instant_message_flyout">
 		<flyout_button_item label="Solicitar Teleporte" name="request_teleport_item"/>
-		<flyout_button_item label="Invitar al Grupo" name="group_invite_item"/>
+		<flyout_button_item label="Invitar a Grupo" name="group_invite_item"/>
 		<flyout_button_item label="Copiar SLURL" name="copy_slurl_item"/>
 	</flyout_button>
 	<string name="ding on" value="Timbre en Nuevos Mensajes (Encendido)"/>
-    <string name="ding off" value="Timbre en Nuevos Mensajes (Apagado)"/>
+	<string name="ding off" value="Timbre en Nuevos Mensajes (Apagado)"/>
 	<string name="rp mode on" value="Modo RP (Encendido)"/>
 	<string name="rp mode off" value="Modo RP (Apagado)"/>
 	<string name="add friend" value="Añadir Contacto"/>
 	<string name="remove friend" value="Eliminar Contacto"/>
-    <string name="mute" value="Ignorar"/>
-    <string name="unmute" value="No Ignorar"/>
+	<string name="mute" value="Ignorar"/>
+	<string name="unmute" value="No Ignorar"/>
 	<button name="tp_btn" label="TP"/>
 	<button name="pay_btn" label="Pagar"/>
 	<button name="history_btn" label="Historial" width="60" />
-	<button label="Llamar" name="start_call_btn"/>
+	<button label="Llamar" name="start_call_btn" left_delta="60"/>
 	<button label="Colgar" name="end_call_btn"/>
 	<panel name="speaker_controls">
 		<button label="" name="mute_btn" tool_tip="Silenciar la Voz" width="25"/>

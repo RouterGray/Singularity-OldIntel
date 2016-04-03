@@ -33,7 +33,10 @@
 #ifndef LL_LLTHREADWATCHDOG_H
 #define LL_LLTHREADWATCHDOG_H
 
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 
 #ifndef LL_TIMER_H					
 	#include "lltimer.h"

@@ -1,9 +1,11 @@
 # -*- cmake -*-
 
-if(INSTALL_PROPRIETARY)
+if(INSTALL_PROPRIETARY OR USE_QUICKTIME_PREBUILT)
   include(Prebuilt)
-  use_prebuilt_binary(quicktime)
-endif(INSTALL_PROPRIETARY)
+  if (WINDOWS)
+    use_prebuilt_binary(quicktime)
+  endif (WINDOWS)
+endif(INSTALL_PROPRIETARY OR USE_QUICKTIME_PREBUILT)
 
 if (DARWIN)
   include(CMakeFindFrameworks)
@@ -23,15 +25,13 @@ elseif (WINDOWS AND WORD_SIZE EQUAL 32)
 
   find_library(DEBUG_QUICKTIME_LIBRARY qtmlclient
                PATHS
-               ${LIBS_PREBUILT_DIR}/lib/debug
-			   ${LIBS_PREBUILT_LEGACY_DIR}/lib/debug
+               ${ARCH_PREBUILT_DIRS_DEBUG}
                "${QUICKTIME_SDK_DIR}\\libraries"
                )
 
   find_library(RELEASE_QUICKTIME_LIBRARY qtmlclient
                PATHS
-               ${LIBS_PREBUILT_DIR}/lib/release
-			   ${LIBS_PREBUILT_LEGACY_DIR}/lib/release
+               ${ARCH_PREBUILT_DIRS_RELEASE}
                "${QUICKTIME_SDK_DIR}\\libraries"
                )
 
@@ -45,7 +45,6 @@ elseif (WINDOWS AND WORD_SIZE EQUAL 32)
   
   include_directories(
     ${LIBS_PREBUILT_DIR}/include/quicktime
-    ${LIBS_PREBUILT_LEGACY_DIR}/include/quicktime
     "${QUICKTIME_SDK_DIR}\\CIncludes"
     )
 endif (DARWIN)

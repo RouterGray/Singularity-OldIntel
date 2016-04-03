@@ -144,6 +144,7 @@ void LLPrefsAscentSys::refreshValues()
 {
     //General -----------------------------------------------------------------------------
     mDoubleClickTeleport		= gSavedSettings.getBOOL("DoubleClickTeleport");
+    mDoubleClickAutoPilot		= gSavedSettings.getBOOL("DoubleClickAutoPilot");
         mResetCameraAfterTP		= gSavedSettings.getBOOL("OptionRotateCamAfterLocalTP");
         mOffsetTPByUserHeight	= gSavedSettings.getBOOL("OptionOffsetTPByAgentHeight");
 	mClearBeaconAfterTeleport	= gSavedSettings.getBOOL("ClearBeaconAfterTeleport");
@@ -293,6 +294,7 @@ void LLPrefsAscentSys::cancel()
 {
     //General -----------------------------------------------------------------------------
     gSavedSettings.setBOOL("DoubleClickTeleport", mDoubleClickTeleport);
+    gSavedSettings.setBOOL("DoubleClickAutoPilot", mDoubleClickAutoPilot);
         gSavedSettings.setBOOL("OptionRotateCamAfterLocalTP", mResetCameraAfterTP);
         gSavedSettings.setBOOL("OptionOffsetTPByAgentHeight", mOffsetTPByUserHeight);
 	gSavedSettings.setBOOL("ClearBeaconAfterTeleport", mClearBeaconAfterTeleport);

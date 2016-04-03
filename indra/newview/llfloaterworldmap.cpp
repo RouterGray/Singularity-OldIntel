@@ -617,7 +617,7 @@ void LLFloaterWorldMap::trackLandmark( const LLUUID& landmark_item_id )
 
 	buildLandmarkIDLists();
 	BOOL found = FALSE;
-	S32 idx;
+	U32 idx;
 	for (idx = 0; idx < mLandmarkItemIDList.size(); idx++)
 	{
 		if ( mLandmarkItemIDList.at(idx) == landmark_item_id)

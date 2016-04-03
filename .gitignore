@@ -1,5 +1,3 @@
-/installed.xml
-/indra/llcommon/llversionviewer.h
 /indra/build-*
 /indra/tools/vstool/obj/
 *.aps
@@ -12,13 +10,14 @@
 /indra/viewer-*
 /indra/newview/vivox-runtime/
 /indra/newview/dbghelp.dll
+indra/newview/res/viewer_icon.*
+indra/newview/res-sdl/viewer_icon.*
 /libraries/
 /lib/
 *.pyc
 *.orig
 *.rej
 *.bak
-*~
 *.DS_Store
 /LICENSES/
 /edited-files.txt
@@ -26,12 +25,5 @@ qtcreator-build/
 /.pc
 /build-*
 /viewer-*
-/indra/newview/res/viewerRes.rc
-/indra/newview/res/viewerRes_bc.rc
-/indra/newview/English.lproj/InfoPlist.strings
-/indra/newview/linux_tools/handle_secondlifeprotocol.sh
-/indra/newview/linux_tools/install.sh
-/indra/newview/linux_tools/refresh_desktop_app_entry.sh
-/indra/newview/linux_tools/wrapper.sh
 
 

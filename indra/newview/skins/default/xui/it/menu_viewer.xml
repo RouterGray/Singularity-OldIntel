@@ -190,7 +190,6 @@
 		<menu_item_separator label="-----------" name="separator3"/>
 		<menu_item_call label="Denuncia di abuso..." name="Report Abuse..."/>
 		<menu_item_call label="Collisioni, Spinte &amp; Colpi..." name="Bumps, Pushes &amp;amp; Hits..."/>
-		<menu_item_call label="Misuratore del lag" name="Lag Meter"/>
 		<menu_item_separator label="-----------" name="separator7"/>
 		<menu label="Segnalazione di un bug" name="Bug Reporting">
 			<menu_item_call label="Registro pubblico errori..." name="Public Issue Tracker..."/>

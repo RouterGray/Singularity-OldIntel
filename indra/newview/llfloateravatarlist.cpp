@@ -27,6 +27,7 @@
 #include "llscrolllistctrl.h"
 #include "llscrolllistitem.h"
 #include "llsdutil.h"
+#include "lltrans.h"
 #include "lluictrlfactory.h"
 #include "llwindow.h"
 
@@ -51,7 +52,6 @@
 #include "llworld.h"
 
 #include <boost/date_time.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 // [RLVa:KB]
@@ -88,22 +88,21 @@ namespace
 		static LLCachedControl<bool> radar_alert_chat_range(gSavedSettings, "RadarAlertChatRange");
 		static LLCachedControl<bool> radar_alert_age(gSavedSettings, "RadarAlertAge");
 
-		LLFloaterAvatarList& inst(LLFloaterAvatarList::instance());
 		LLStringUtil::format_map_t args;
 		LLChat chat;
 		switch(type)
 		{
-			case STAT_TYPE_SIM:			if (radar_alert_sim)			args["[RANGE]"] = inst.getString("the_sim");											break;
-			case STAT_TYPE_DRAW:		if (radar_alert_draw)			args["[RANGE]"] = inst.getString("draw_distance");										break;
-			case STAT_TYPE_SHOUTRANGE:	if (radar_alert_shout_range)	args["[RANGE]"] = inst.getString("shout_range");										break;
-			case STAT_TYPE_CHATRANGE:	if (radar_alert_chat_range)		args["[RANGE]"] = inst.getString("chat_range");										break;
-			case STAT_TYPE_AGE:			if (radar_alert_age)			chat.mText = name + " " + inst.getString("has_triggered_your_avatar_age_alert") + ".";	break;
+			case STAT_TYPE_SIM:			if (radar_alert_sim)			args["[RANGE]"] = LLTrans::getString("the_sim");											break;
+			case STAT_TYPE_DRAW:		if (radar_alert_draw)			args["[RANGE]"] = LLTrans::getString("draw_distance");										break;
+			case STAT_TYPE_SHOUTRANGE:	if (radar_alert_shout_range)	args["[RANGE]"] = LLTrans::getString("shout_range");										break;
+			case STAT_TYPE_CHATRANGE:	if (radar_alert_chat_range)		args["[RANGE]"] = LLTrans::getString("chat_range");										break;
+			case STAT_TYPE_AGE:			if (radar_alert_age)			chat.mText = name + " " + LLTrans::getString("has_triggered_your_avatar_age_alert") + ".";	break;
 			default:					llassert(type);																											break;
 		}
 		args["[NAME]"] = name;
-		args["[ACTION]"] = inst.getString(entering ? "has_entered" : "has_left");
+		args["[ACTION]"] = LLTrans::getString(entering ? "has_entered" : "has_left");
 		if (args.find("[RANGE]") != args.end())
-			chat.mText = inst.getString("template", args);
+			chat.mText = LLTrans::getString("radar_alert_template", args);
 		else if (chat.mText.empty()) return;
 		if (entering) // Note: If we decide to make this for leaving as well, change this check to dist != F32_MIN
 		{
@@ -145,6 +144,7 @@ LLAvatarListEntry::LLAvatarListEntry(const LLUUID& id, const std::string& name, 
 
 LLAvatarListEntry::~LLAvatarListEntry()
 {
+	setPosition(mPosition, F32_MIN, false); // Dead and gone
 	LLAvatarPropertiesProcessor::instance().removeObserver(mID, this);
 }
 
@@ -268,7 +268,7 @@ void LLFloaterAvatarList::draw()
 
 void LLFloaterAvatarList::onOpen()
 {
-	if (mAvatars.size()) refreshAvatarList();
+	refreshAvatarList();
 }
 
 void LLFloaterAvatarList::onClose(bool app_quitting)
@@ -411,7 +411,7 @@ BOOL LLFloaterAvatarList::postBuild()
 	mAvatarList->setCommitCallback(boost::bind(&LLFloaterAvatarList::onSelectName,this));
 	mAvatarList->setDoubleClickCallback(boost::bind(&LLFloaterAvatarList::onClickFocus,this));
 	mAvatarList->setSortChangedCallback(boost::bind(&LLFloaterAvatarList::onAvatarSortingChanged,this));
-	BOOST_FOREACH(LLViewerRegion* region, LLWorld::instance().getRegionList())
+	for (LLViewerRegion* region : LLWorld::instance().getRegionList())
 	{
 		updateAvatarList(region);
 	}
@@ -509,6 +509,12 @@ void updateParticleActivity(LLDrawable *drawablep)
 	}
 }
 
+const F32& radar_range_radius()
+{
+	static const LLCachedControl<F32> radius("RadarRangeRadius", 0);
+	return radius;
+}
+
 void LLFloaterAvatarList::updateAvatarList(const LLViewerRegion* region)
 {
 	// Check whether updates are enabled
@@ -523,8 +529,7 @@ void LLFloaterAvatarList::updateAvatarList(const LLViewerRegion* region)
 		const std::vector<LLUUID>& map_avids(region->mMapAvatarIDs);
 		const LLVector3d& mypos(gAgent.getPositionGlobal());
 		const LLVector3d& origin(region->getOriginGlobal());
-		static const LLCachedControl<F32> radar_range_radius("RadarRangeRadius", 0);
-		const F32 max_range(radar_range_radius * radar_range_radius);
+		const F32 max_range(radar_range_radius() * radar_range_radius());
 
 		static LLCachedControl<bool> announce(gSavedSettings, "RadarChatKeys");
 		std::queue<LLUUID> announce_keys;
@@ -594,26 +599,20 @@ void LLFloaterAvatarList::updateAvatarList(const LLViewerRegion* region)
 
 void LLFloaterAvatarList::expireAvatarList(const std::list<LLUUID>& ids)
 {
-	BOOST_FOREACH(const LLUUID& id, ids)
+	if (!ids.empty())
 	{
-		av_list_t::iterator it(std::find_if(mAvatars.begin(), mAvatars.end(), LLAvatarListEntry::uuidMatch(id)));
-		if (it != mAvatars.end())
+		std::vector<LLUUID> existing_avs;
+		std::vector<LLViewerRegion*> neighbors;
+		gAgent.getRegion()->getNeighboringRegions(neighbors);
+		for (const LLViewerRegion* region : neighbors)
+			existing_avs.insert(existing_avs.end(), region->mMapAvatarIDs.begin(), region->mMapAvatarIDs.end());
+		for (const LLUUID& id : ids)
 		{
-			LLAvatarListEntry* entry = it->get();
-			entry->setPosition(entry->getPosition(), F32_MIN, false); // Dead and gone
-			mAvatars.erase(it);
+			if (std::find(existing_avs.begin(), existing_avs.end(), id) != existing_avs.end()) continue; // Now in another region we know.
+			av_list_t::iterator it(std::find_if(mAvatars.begin(), mAvatars.end(), LLAvatarListEntry::uuidMatch(id)));
+			if (it != mAvatars.end())
+				mAvatars.erase(it);
 		}
-	}
-
-	if (mAvatars.empty())
-		setTitle(getString("Title"));
-	else if (mAvatars.size() == 1)
-		setTitle(getString("TitleOneAvatar"));
-	else
-	{
-		LLStringUtil::format_map_t args;
-		args["[COUNT]"] = boost::lexical_cast<std::string>(mAvatars.size());
-		setTitle(getString("TitleWithCount", args));
 	}
 
 	refreshAvatarList();
@@ -648,7 +647,7 @@ bool getCustomColorRLV(const LLUUID& id, LLColor4& color, LLViewerRegion* parent
  */
 void LLFloaterAvatarList::refreshAvatarList() 
 {
-	// Don't update list when interface is hidden
+	// Don't update when interface is hidden
 	if (!getVisible()) return;
 
 	// We rebuild the list fully each time it's refreshed
@@ -669,8 +668,9 @@ void LLFloaterAvatarList::refreshAvatarList()
 	localRectToScreen(getLocalRect(), &screen_rect);
 	speakermgr.update(!(screen_rect.pointInRect(gViewerWindow->getCurrentMouseX(), gViewerWindow->getCurrentMouseY()) && gMouseIdleTimer.getElapsedTimeF32() < 5.f));
 
+	av_list_t dead_entries;
 	bool name_restricted(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS) || gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
-	BOOST_FOREACH(av_list_t::value_type& entry, mAvatars)
+	for (auto& entry : mAvatars)
 	{
 		LLVector3d position = entry->getPosition();
 		LLVector3d delta = position - mypos;
@@ -684,7 +684,11 @@ void LLFloaterAvatarList::refreshAvatarList()
 
 		//jcool410 -- this fucks up seeing dueds thru minimap data > 1024m away, so, lets just say > 2048m to the side is bad
 		//aka 8 sims
-		if (delta.magVec() > 2048.0) continue;
+		if (delta.magVec() > 2048.0)
+		{
+			dead_entries.push_back(entry);
+			continue;
+		}
 
 		entry->setInList();
 		const LLUUID& av_id = entry->getID();
@@ -969,6 +973,20 @@ void LLFloaterAvatarList::refreshAvatarList()
 		mAvatarList->addRow(element);
 	}
 
+	for (auto& dead : dead_entries)
+		mAvatars.erase(std::remove(mAvatars.begin(), mAvatars.end(), dead), mAvatars.end());
+
+	if (mAvatars.empty())
+		setTitle(getString("Title"));
+	else if (mAvatars.size() == 1)
+		setTitle(getString("TitleOneAvatar"));
+	else
+	{
+		LLStringUtil::format_map_t args;
+		args["[COUNT]"] = boost::lexical_cast<std::string>(mAvatars.size());
+		setTitle(getString("TitleWithCount", args));
+	}
+
 	// finish
 	mAvatarList->updateSort();
 	mAvatarList->selectMultiple(selected);
@@ -984,7 +1002,7 @@ void LLFloaterAvatarList::resetAvatarNames()
 	bool hide_tags(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMETAGS));
 	bool anon_names(gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES));
 	const std::string& hidden(RlvStrings::getString(RLV_STRING_HIDDEN));
-	BOOST_FOREACH(av_list_t::value_type& entry, mAvatars)
+	for (auto& entry : mAvatars)
 	{
 		entry->resetName(hide_tags, anon_names, hidden);
 	}
@@ -1125,7 +1143,7 @@ void LLFloaterAvatarList::onClickFocus()
 
 void LLFloaterAvatarList::removeFocusFromAll()
 {
-	BOOST_FOREACH(av_list_t::value_type& entry, mAvatars)
+	for (auto& entry : mAvatars)
 	{
 		entry->setFocus(false);
 	}
@@ -1235,7 +1253,7 @@ void LLFloaterAvatarList::sendKeys() const
 	std::ostringstream ids;
 	U32 num_ids = 0;
 
-	for (S32 i = 0; i < regionp->mMapAvatarIDs.size(); ++i)
+	for (U32 i = 0; i < regionp->mMapAvatarIDs.size(); ++i)
 	{
 		ids << "," << regionp->mMapAvatarIDs.at(i);
 		++num_ids;

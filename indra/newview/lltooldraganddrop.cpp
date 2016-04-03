@@ -1199,7 +1199,7 @@ void LLToolDragAndDrop::dropTextureOneFace(LLViewerObject* hit_obj,
 			break;
 		}
 	}
-	else
+	else if (hit_obj)
 	{
 		//hit_obj->setTEImage(hit_face, image);
 		hit_obj->setTETexture(hit_face, asset_id);	//Singu note: setTETexture will allow the real id to be passed to LLPrimitive::setTETexture,

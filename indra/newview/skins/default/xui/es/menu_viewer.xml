@@ -108,9 +108,20 @@
 		<menu_item_call label="Crear un Hito Aquí" name="Create Landmark Here"/>
 		<menu_item_call label="Fijar Base Aquí" name="Set Home to Here"/>
 		<menu_item_call label="Teleportar a Base" name="Teleport Home"/>
-		<menu_item_call label="Falso Estado Ausente" name="Fake Away Status"/>
-		<menu_item_call label="Pasar a Estado Ausente" name="Set Away"/>
-		<menu_item_call label="Pasar a Estado Ocupado" name="Set Busy"/>
+		<menu label="Estado" name="Status">
+			<menu_item_call label="Falso Estado Ausente" name="Fake Away Status"/>
+			<menu_item_call label="Pasar a Estado Ausente" name="Set Away"/>
+			<menu_item_call label="Pasar a Estado Ocupado" name="Set Busy"/>
+			<menu label="Respuesta Automática" name="Autoresponse">
+				<menu_item_check label="Repetir" name="Repeat"/>
+				<menu_item_check label="Sólo en estado Ausente" name="Only send when away"/>
+				<menu_item_check label="General" name="General"/>
+				<menu_item_check label="&#8226;Sólo Amigos" name="Friends Only"/>
+				<menu_item_check label="No Amigos" name="Non-Friends"/>
+				<menu_item_check label="Ignorados" name="Muted"/>
+			</menu>
+			<menu_item_check label="Sentarte al estar Ausente" name="Sit when away"/>
+		</menu>		
 		<menu_item_call label="Detener las animaciones del Avatar" name="Stop Animating My Avatar"/>
 		<menu_item_call label="Liberar Teclas" name="Release Keys"/>
 		<menu_item_call label="Historial de la Cuenta..." name="Account History..."/>
@@ -177,7 +188,7 @@
 		<menu_item_call label="Devolver Objeto al Contenido de Objetos" name="Save Object Back to Object Contents"/>
 		<menu_item_call label="Administrador: Borrar" name="Admin Delete"/>
 		<menu_item_call label="Mostrar ventana de avisos/errores de Script " name="Show Script Warning/Error Window"/>
-		<menu label="Recompilar Scripts de la Selección" name="Recompilar Scripts in Selection">
+		<menu label="Recompilar Scripts de la Selección" name="Recompile Scripts in Selection">
 			<menu_item_call label="Mono" name="Mono"/>
 			<menu_item_call label="LSL" name="LSL"/>
 		</menu>
@@ -201,7 +212,6 @@
 		<menu_item_call label="Portal de Scripting..." name="Scripting Portal..."/>
 		<menu_item_call label="Denunciar Abuso..." name="Report Abuse..."/>
 		<menu_item_call label="Choques, Empujones y Golpes..." name="Bumps, Pushes &amp;amp; Hits..."/>
-		<menu_item_call label="Medidor de Lag" name="Lag Meter"/>
 		<menu label="Informe de Fallos" name="Bug Reporting" >
 			<menu_item_call label="Seguimiento de Problemas Público..." name="Public Issue Tracker..."/>
 			<menu_item_call label="Ayuda del Seguimiento de Problemas Público..." name="Publc Issue Tracker Help..."/>

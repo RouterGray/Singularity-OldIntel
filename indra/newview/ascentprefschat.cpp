@@ -69,25 +69,6 @@ LLPrefsAscentChat::LLPrefsAscentChat()
 		autoresponse->setToolTip(LLTrans::getString("NotLoggedIn"));
 	}
 
-	// Saved per account settings aren't detected by control_name, therefore autoresponse controls get their values here and have them saved during apply.
-	childSetValue("AscentInstantMessageResponseRepeat",  gSavedPerAccountSettings.getBOOL("AscentInstantMessageResponseRepeat"));
-	childSetValue("AutoresponseAnyone",                  gSavedPerAccountSettings.getBOOL("AutoresponseAnyone"));
-	childSetValue("AutoresponseAnyoneFriendsOnly",       gSavedPerAccountSettings.getBOOL("AutoresponseAnyoneFriendsOnly"));
-	childSetValue("AutoresponseAnyoneItem",              gSavedPerAccountSettings.getBOOL("AutoresponseAnyoneItem"));
-	childSetValue("AutoresponseAnyoneMessage",           gSavedPerAccountSettings.getString("AutoresponseAnyoneMessage"));
-	childSetValue("AutoresponseAnyoneShow",              gSavedPerAccountSettings.getBOOL("AutoresponseAnyoneShow"));
-	childSetValue("AutoresponseNonFriends",              gSavedPerAccountSettings.getBOOL("AutoresponseNonFriends"));
-	childSetValue("AutoresponseNonFriendsItem",          gSavedPerAccountSettings.getBOOL("AutoresponseNonFriendsItem"));
-	childSetValue("AutoresponseNonFriendsMessage",       gSavedPerAccountSettings.getString("AutoresponseNonFriendsMessage"));
-	childSetValue("AutoresponseNonFriendsShow",          gSavedPerAccountSettings.getBOOL("AutoresponseNonFriendsShow"));
-	childSetValue("AutoresponseMuted",                   gSavedPerAccountSettings.getBOOL("AutoresponseMuted"));
-	childSetValue("AutoresponseMutedItem",               gSavedPerAccountSettings.getBOOL("AutoresponseMutedItem"));
-	childSetValue("AutoresponseMutedMessage",            gSavedPerAccountSettings.getString("AutoresponseMutedMessage"));
-	childSetValue("AutoresponseMutedShow",               gSavedPerAccountSettings.getBOOL("AutoresponseMutedShow"));
-	childSetValue("BusyModeResponse",                    gSavedPerAccountSettings.getString("BusyModeResponse"));
-	childSetValue("BusyModeResponseItem",                gSavedPerAccountSettings.getBOOL("BusyModeResponseItem"));
-	childSetValue("BusyModeResponseShow",                gSavedPerAccountSettings.getBOOL("BusyModeResponseShow"));
-
 	childSetEnabled("reset_antispam", started);
 	getChild<LLUICtrl>("reset_antispam")->setCommitCallback(boost::bind(NACLAntiSpamRegistry::purgeAllQueues));
 
@@ -274,28 +255,28 @@ void LLPrefsAscentChat::refreshValues()
 	mSpeakerNames                   = gSavedSettings.getS32("SpeakerNameSystem");
 
 	//Autoresponse ------------------------------------------------------------------------
-	mIMResponseAnyoneItemID     = gSavedPerAccountSettings.getString("AutoresponseAnyoneItemID");
-	mIMResponseNonFriendsItemID = gSavedPerAccountSettings.getString("AutoresponseNonFriendsItemID");
-	mIMResponseMutedItemID      = gSavedPerAccountSettings.getString("AutoresponseMutedItemID");
-	mIMResponseBusyItemID       = gSavedPerAccountSettings.getString("BusyModeResponseItemID");
-
-	gSavedPerAccountSettings.setBOOL("AscentInstantMessageResponseRepeat", childGetValue("AscentInstantMessageResponseRepeat"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseAnyone",                 childGetValue("AutoresponseAnyone"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseAnyoneFriendsOnly",      childGetValue("AutoresponseAnyoneFriendsOnly"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseAnyoneItem",             childGetValue("AutoresponseAnyoneItem"));
-	gSavedPerAccountSettings.setString("AutoresponseAnyoneMessage",        childGetValue("AutoresponseAnyoneMessage"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseAnyoneShow",             childGetValue("AutoresponseAnyoneShow"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseNonFriends",             childGetValue("AutoresponseNonFriends"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseNonFriendsItem",         childGetValue("AutoresponseNonFriendsItem"));
-	gSavedPerAccountSettings.setString("AutoresponseNonFriendsMessage",    childGetValue("AutoresponseNonFriendsMessage"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseNonFriendsShow",         childGetValue("AutoresponseNonFriendsShow"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseMuted",                  childGetValue("AutoresponseMuted"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseMutedItem",              childGetValue("AutoresponseMutedItem"));
-	gSavedPerAccountSettings.setString("AutoresponseMutedMessage",         childGetValue("AutoresponseMutedMessage"));
-	gSavedPerAccountSettings.setBOOL("AutoresponseMutedShow",              childGetValue("AutoresponseMutedShow"));
-	gSavedPerAccountSettings.setString("BusyModeResponse",                 childGetValue("BusyModeResponse"));
-	gSavedPerAccountSettings.setBOOL("BusyModeResponseItem",               childGetValue("BusyModeResponseItem"));
-	gSavedPerAccountSettings.setBOOL("BusyModeResponseShow",               childGetValue("BusyModeResponseShow"));
+	mIMResponseRepeat            = gSavedPerAccountSettings.getBOOL("AscentInstantMessageResponseRepeat");
+	mIMResponseAway              = gSavedPerAccountSettings.getBOOL("AutoresponseOnlyIfAway");
+	mIMResponseAnyone            = gSavedPerAccountSettings.getBOOL("AutoresponseAnyone");
+	mIMResponseAnyoneFriends     = gSavedPerAccountSettings.getBOOL("AutoresponseAnyoneFriendsOnly");
+	mIMResponseAnyoneItem        = gSavedPerAccountSettings.getBOOL("AutoresponseAnyoneItem");
+	mIMResponseAnyoneItemID      = gSavedPerAccountSettings.getString("AutoresponseAnyoneItemID");
+	mIMResponseAnyoneMessage     = gSavedPerAccountSettings.getString("AutoresponseAnyoneMessage");
+	mIMResponseAnyoneShow        = gSavedPerAccountSettings.getBOOL("AutoresponseAnyoneShow");
+	mIMResponseNonFriends        = gSavedPerAccountSettings.getBOOL("AutoresponseNonFriends");
+	mIMResponseNonFriendsItem    = gSavedPerAccountSettings.getBOOL("AutoresponseNonFriendsItem");
+	mIMResponseNonFriendsItemID  = gSavedPerAccountSettings.getString("AutoresponseNonFriendsItemID");
+	mIMResponseNonFriendsMessage = gSavedPerAccountSettings.getString("AutoresponseNonFriendsMessage");
+	mIMResponseNonFriendsShow    = gSavedPerAccountSettings.getBOOL("AutoresponseNonFriendsShow");
+	mIMResponseMuted             = gSavedPerAccountSettings.getBOOL("AutoresponseMuted");
+	mIMResponseMutedItem         = gSavedPerAccountSettings.getBOOL("AutoresponseMutedItem");
+	mIMResponseMutedItemID       = gSavedPerAccountSettings.getString("AutoresponseMutedItemID");
+	mIMResponseMutedMessage      = gSavedPerAccountSettings.getString("AutoresponseMutedMessage");
+	mIMResponseMutedShow         = gSavedPerAccountSettings.getBOOL("AutoresponseMutedShow");
+	mIMResponseBusyItem          = gSavedPerAccountSettings.getBOOL("BusyModeResponseItem");
+	mIMResponseBusyItemID        = gSavedPerAccountSettings.getString("BusyModeResponseItemID");
+	mIMResponseBusyMessage       = gSavedPerAccountSettings.getString("BusyModeResponse");
+	mIMResponseBusyShow          = gSavedPerAccountSettings.getBOOL("BusyModeResponseShow");
 
     //Spam --------------------------------------------------------------------------------
 	mEnableAS                       = gSavedSettings.getBOOL("AntiSpamEnabled");
@@ -514,12 +495,30 @@ void LLPrefsAscentChat::cancel()
 	gSavedSettings.setS32("SpeakerNameSystem",                     mSpeakerNames);
 
 	//Autoresponse ------------------------------------------------------------------------
-	gSavedPerAccountSettings.setString("AutoresponseAnyoneItemID",      mIMResponseAnyoneItemID);
-	gSavedPerAccountSettings.setString("AutoresponseNonFriendsItemID",  mIMResponseNonFriendsItemID);
-	gSavedPerAccountSettings.setString("AutoresponseMutedItemID",       mIMResponseMutedItemID);
-	gSavedPerAccountSettings.setString("BusyModeResponseItemID",        mIMResponseBusyItemID);
+	gSavedPerAccountSettings.setBOOL("AscentInstantMessageResponseRepeat", mIMResponseRepeat);
+	gSavedPerAccountSettings.setBOOL("AutoresponseOnlyIfAway",             mIMResponseAway);
+	gSavedPerAccountSettings.setBOOL("AutoresponseAnyone",                 mIMResponseAnyone);
+	gSavedPerAccountSettings.setBOOL("AutoresponseAnyoneFriendsOnly",      mIMResponseAnyoneFriends);
+	gSavedPerAccountSettings.setBOOL("AutoresponseAnyoneItem",             mIMResponseAnyoneItem);
+	gSavedPerAccountSettings.setString("AutoresponseAnyoneItemID",         mIMResponseAnyoneItemID);
+	gSavedPerAccountSettings.setString("AutoresponseAnyoneMessage",        mIMResponseAnyoneMessage);
+	gSavedPerAccountSettings.setBOOL("AutoresponseAnyoneShow",             mIMResponseAnyoneShow);
+	gSavedPerAccountSettings.setBOOL("AutoresponseNonFriends",             mIMResponseNonFriends);
+	gSavedPerAccountSettings.setBOOL("AutoresponseNonFriendsItem",         mIMResponseNonFriendsItem);
+	gSavedPerAccountSettings.setString("AutoresponseNonFriendsItemID",     mIMResponseNonFriendsItemID);
+	gSavedPerAccountSettings.setString("AutoresponseNonFriendsMessage",    mIMResponseNonFriendsMessage);
+	gSavedPerAccountSettings.setBOOL("AutoresponseNonFriendsShow",         mIMResponseNonFriendsShow);
+	gSavedPerAccountSettings.setBOOL("AutoresponseMuted",                  mIMResponseMuted);
+	gSavedPerAccountSettings.setBOOL("AutoresponseMutedItem",              mIMResponseMutedItem);
+	gSavedPerAccountSettings.setString("AutoresponseMutedItemID",          mIMResponseMutedItemID);
+	gSavedPerAccountSettings.setString("AutoresponseMutedMessage",         mIMResponseMutedMessage);
+	gSavedPerAccountSettings.setBOOL("AutoresponseMutedShow",              mIMResponseMutedShow);
+	gSavedPerAccountSettings.setBOOL("BusyModeResponseItem",               mIMResponseBusyItem);
+	gSavedPerAccountSettings.setString("BusyModeResponseItemID",           mIMResponseBusyItemID);
+	gSavedPerAccountSettings.setString("BusyModeResponse",                 mIMResponseBusyMessage);
+	gSavedPerAccountSettings.setBOOL("BusyModeResponseShow",               mIMResponseBusyShow);
 
-    //Spam --------------------------------------------------------------------------------
+	//Spam --------------------------------------------------------------------------------
 	gSavedSettings.setBOOL("AntiSpamEnabled",                mEnableAS);
     gSavedSettings.setBOOL("_NACL_AntiSpamGlobalQueue",      mGlobalQueue);
     gSavedSettings.setU32("_NACL_AntiSpamAmount",            mChatSpamCount);

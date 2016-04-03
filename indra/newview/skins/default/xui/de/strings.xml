@@ -1798,6 +1798,17 @@ Where tag = tag string to match.  Removes bot's matching the tag.
     <string name="ScriptCountObject">Counted [SCRIPTS] scripts in [OBJECTS] objects.</string>
     <string name="ScriptDeleteObject">Deleted [SCRIPTS] scripts in [OBJECTS] objects.</string>
     <string name="took_a_snapshot">took a snapshot</string>
+    <!-- Radar Alert Strings -->
+    <string name="radar_alert_template">[NAME] [ACTION] [RANGE].</string>
+    <!-- [ACTION] -->
+    <string name="has_triggered_your_avatar_age_alert">hat Avatar-Alters-Alarm ausgelöst</string>
+    <string name="has_entered">ist eingetroffen</string>
+    <string name="has_left">hat verlassen</string>
+    <!-- [RANGE] -->
+    <string name="the_sim">die Sim</string>
+    <string name="draw_distance">Anzeigeentfernung</string>
+    <string name="shout_range">Rufweite</string>
+    <string name="chat_range">Sprechweite</string>
 
   <!-- Avatar busy/away mode -->
 	<string name="AvatarSetNotAway">Nicht abwesend</string>
@@ -2137,6 +2148,10 @@ Gültige Formate: .wav, .tga, .bmp, .jpg, .jpeg oder .bvh</string>
 	<string name="accel-win-control">Strg-</string>
 	<string name="accel-win-alt">Alt-</string>
 	<string name="accel-win-shift">Umschalt-</string>
+
+        <!-- Tab Containers -->
+        <string name="tab_tooltip_prev">[ALT]Linke Pfeiltaste zum vorherigen Tab.</string>
+        <string name="tab_tooltip_next">[ALT]Rechte Pfeiltaste zum nächsten Tab.</string>
 
 	<!-- Previews -->
 	<string name="FileSaved">Datei wurde gespeichert</string>

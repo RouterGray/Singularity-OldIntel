@@ -174,7 +174,6 @@ const LLMatrix4a* gGLLastMatrix = NULL;
 
 LLFastTimer::DeclareTimer FTM_RENDER_GEOMETRY("Geometry");
 LLFastTimer::DeclareTimer FTM_RENDER_GRASS("Grass");
-LLFastTimer::DeclareTimer FTM_RENDER_INVISIBLE("Invisible");
 LLFastTimer::DeclareTimer FTM_RENDER_OCCLUSION("Occlusion");
 LLFastTimer::DeclareTimer FTM_RENDER_SHINY("Shiny");
 LLFastTimer::DeclareTimer FTM_RENDER_SIMPLE("Simple");
@@ -234,7 +233,6 @@ std::string gPoolNames[] =
 	"POOL_SKY",
 	"POOL_WL_SKY",
 	"POOL_GRASS",
-	"POOL_INVISIBLE",
 	"POOL_AVATAR",
 	"POOL_VOIDWATER",
 	"POOL_WATER",
@@ -382,7 +380,6 @@ LLPipeline::LLPipeline() :
 	mAlphaMaskPool(NULL),
 	mFullbrightAlphaMaskPool(NULL),
 	mFullbrightPool(NULL),
-	mInvisiblePool(NULL),
 	mGlowPool(NULL),
 	mBumpPool(NULL),
 	mMaterialsPool(NULL),
@@ -421,7 +418,6 @@ void LLPipeline::init()
 	getPool(LLDrawPool::POOL_FULLBRIGHT_ALPHA_MASK);
 	getPool(LLDrawPool::POOL_GRASS);
 	getPool(LLDrawPool::POOL_FULLBRIGHT);
-	getPool(LLDrawPool::POOL_INVISIBLE);
 	getPool(LLDrawPool::POOL_BUMP);
 	getPool(LLDrawPool::POOL_MATERIALS);
 	getPool(LLDrawPool::POOL_GLOW);
@@ -553,8 +549,6 @@ void LLPipeline::cleanup()
 	mSimplePool = NULL;
 	delete mFullbrightPool;
 	mFullbrightPool = NULL;
-	delete mInvisiblePool;
-	mInvisiblePool = NULL;
 	delete mGlowPool;
 	mGlowPool = NULL;
 	delete mBumpPool;
@@ -1393,10 +1387,6 @@ LLDrawPool *LLPipeline::findPool(const U32 type, LLViewerTexture *tex0)
 
 	case LLDrawPool::POOL_FULLBRIGHT:
 		poolp = mFullbrightPool;
-		break;
-
-	case LLDrawPool::POOL_INVISIBLE:
-		poolp = mInvisiblePool;
 		break;
 
 	case LLDrawPool::POOL_GLOW:
@@ -5059,18 +5049,6 @@ void LLPipeline::addToQuickLookup( LLDrawPool* new_poolp )
 		}
 		break;
 
-	case LLDrawPool::POOL_INVISIBLE:
-		if (mInvisiblePool)
-		{
-			llassert(0);
-			LL_WARNS() << "Ignoring duplicate simple pool." << LL_ENDL;
-		}
-		else
-		{
-			mInvisiblePool = (LLRenderPass*) new_poolp;
-		}
-		break;
-
 	case LLDrawPool::POOL_GLOW:
 		if (mGlowPool)
 		{
@@ -5219,11 +5197,6 @@ void LLPipeline::removeFromQuickLookup( LLDrawPool* poolp )
 	case LLDrawPool::POOL_FULLBRIGHT:
 		llassert(mFullbrightPool == poolp);
 		mFullbrightPool = NULL;
-		break;
-
-	case LLDrawPool::POOL_INVISIBLE:
-		llassert(mInvisiblePool == poolp);
-		mInvisiblePool = NULL;
 		break;
 
 	case LLDrawPool::POOL_WL_SKY:
@@ -7468,7 +7441,15 @@ void LLPipeline::renderBloom(BOOL for_snapshot, F32 zoom_factor, int subfield, b
 
 		gGL.getTexUnit(0)->bind(&mPhysicsDisplay);
 
-		drawFullScreenRect(LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_TEXCOORD0);
+		gGL.begin(LLRender::TRIANGLES);
+		gGL.texCoord2f(0.f, 0.f);
+		gGL.vertex2f(-1.f, -1.f);
+		gGL.texCoord2f(0.f, mScreen.getHeight() * 2.f);
+		gGL.vertex2f(-1.f,  3.f);
+		gGL.texCoord2f(mScreen.getWidth() * 2.f, 0.f);
+		gGL.vertex2f( 3.f, -1.f);
+		gGL.end();
+		gGL.flush();
 
 		if (LLGLSLShader::sNoFixedFunction)
 		{
@@ -8306,8 +8287,6 @@ void LLPipeline::renderDeferredLighting()
 						 LLPipeline::RENDER_TYPE_PASS_GLOW,
 						 LLPipeline::RENDER_TYPE_PASS_GRASS,
 						 LLPipeline::RENDER_TYPE_PASS_SHINY,
-						 LLPipeline::RENDER_TYPE_PASS_INVISIBLE,
-						 LLPipeline::RENDER_TYPE_PASS_INVISI_SHINY,
 						 LLPipeline::RENDER_TYPE_AVATAR,
 						 LLPipeline::RENDER_TYPE_ALPHA_MASK,
 						 LLPipeline::RENDER_TYPE_FULLBRIGHT_ALPHA_MASK,
@@ -8878,8 +8857,6 @@ void LLPipeline::renderDeferredLightingToRT(LLRenderTarget* target)
 						 LLPipeline::RENDER_TYPE_PASS_GLOW,
 						 LLPipeline::RENDER_TYPE_PASS_GRASS,
 						 LLPipeline::RENDER_TYPE_PASS_SHINY,
-						 LLPipeline::RENDER_TYPE_PASS_INVISIBLE,
-						 LLPipeline::RENDER_TYPE_PASS_INVISI_SHINY,
 						 LLPipeline::RENDER_TYPE_AVATAR,
 						 LLPipeline::RENDER_TYPE_ALPHA_MASK,
 						 LLPipeline::RENDER_TYPE_FULLBRIGHT_ALPHA_MASK,
@@ -10534,12 +10511,9 @@ void LLPipeline::generateImpostor(LLVOAvatar* avatar)
 			LLPipeline::RENDER_TYPE_PASS_GLOW,
 			LLPipeline::RENDER_TYPE_PASS_GRASS,
 						LLPipeline::RENDER_TYPE_PASS_SHINY,
-						LLPipeline::RENDER_TYPE_PASS_INVISIBLE,
-						LLPipeline::RENDER_TYPE_PASS_INVISI_SHINY,
 			LLPipeline::RENDER_TYPE_AVATAR,
 			LLPipeline::RENDER_TYPE_ALPHA_MASK,
 			LLPipeline::RENDER_TYPE_FULLBRIGHT_ALPHA_MASK,
-			LLPipeline::RENDER_TYPE_INVISIBLE,
 			LLPipeline::RENDER_TYPE_SIMPLE,
 						END_RENDER_TYPES);
 	}

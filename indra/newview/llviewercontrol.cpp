@@ -70,7 +70,6 @@
 #include "llnotify.h"
 #include "llkeyboard.h"
 #include "llerrorcontrol.h"
-#include "sgversion.h"
 #include "llappviewer.h"
 #include "llvosurfacepatch.h"
 #include "llvowlsky.h"
@@ -98,7 +97,6 @@ LLControlGroup gColors("Colors");	// saved at end of session
 LLControlGroup gCrashSettings("CrashSettings");	// saved at end of session
 
 std::string gLastRunVersion;
-std::string gCurrentVersion;
 
 extern BOOL gResizeScreenTexture;
 extern BOOL gDebugGL;
@@ -654,6 +652,19 @@ static bool handleAllowLargeSounds(const LLSD& newvalue)
 	return true;
 }
 
+enum DCAction { AUTOPILOT, TELEPORT };
+static void handleDoubleClickActionChanged(const DCAction& action, const LLSD& newvalue)
+{
+	// Doubleclick actions - there can be only one
+	if (newvalue.asBoolean())
+	{
+		if (action == AUTOPILOT)
+			gSavedSettings.setBOOL("DoubleClickTeleport", false);
+		else
+			gSavedSettings.setBOOL("DoubleClickAutoPilot", false);
+	}
+}
+
 void handleHighResChanged(const LLSD& val)
 {
 	if (val) // High Res Snapshot active, must uncheck RenderUIInSnapshot
@@ -855,6 +866,8 @@ void settings_setup_listeners()
 
 	gSavedSettings.getControl("AllowLargeSounds")->getSignal()->connect(boost::bind(&handleAllowLargeSounds, _2));
 	gSavedSettings.getControl("LiruUseZQSDKeys")->getSignal()->connect(boost::bind(load_default_bindings, _2));
+	gSavedSettings.getControl("DoubleClickAutoPilot")->getSignal()->connect(boost::bind(handleDoubleClickActionChanged, AUTOPILOT, _2));
+	gSavedSettings.getControl("DoubleClickTeleport")->getSignal()->connect(boost::bind(handleDoubleClickActionChanged, TELEPORT, _2));
 	gSavedSettings.getControl("HighResSnapshot")->getSignal()->connect(boost::bind(&handleHighResChanged, _2));
 }
 

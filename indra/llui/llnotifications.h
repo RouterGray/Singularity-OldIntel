@@ -92,7 +92,6 @@
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/type_traits.hpp>
 #include <boost/signals2.hpp>
 
 // we want to minimize external dependencies, but this one is important
@@ -307,7 +306,7 @@ public:
 
 	// after someone responds to a notification (usually by clicking a button,
 	// but sometimes by filling out a little form and THEN clicking a button),
-    // the result of the response (the name and value of the button clicked,
+	// the result of the response (the name and value of the button clicked,
 	// plus any other data) should be packaged up as LLSD, then passed as a
 	// parameter to the notification's respond() method here. This will look up
 	// and call the appropriate responder.
@@ -320,7 +319,7 @@ public:
 	// ["payload"] = transaction specific data, such as ["source_id"] (originator of notification),  
 	//				["item_id"] (attached inventory item), etc.
 	// ["substitutions"] = string substitutions used to generate notification message
-    // from the template
+	// from the template
 	// ["time"] = time at which notification was generated;
 	// ["expiry"] = time at which notification expires;
 	// ["responseFunctor"] = name of registered functor that handles responses to notification;
@@ -514,7 +513,7 @@ namespace LLNotificationComparators
 	struct orderBy
 	{
 		typedef boost::function<T (LLNotificationPtr)> field_t;
-        	orderBy(field_t field, EDirection direction = ORDER_INCREASING) : mField(field), mDirection(direction) {}
+			orderBy(field_t field, EDirection direction = ORDER_INCREASING) : mField(field), mDirection(direction) {}
 		bool operator()(LLNotificationPtr lhs, LLNotificationPtr rhs)
 		{
 			if (mDirection == ORDER_DECREASING)
@@ -632,18 +631,18 @@ class LLNotificationChannel :
 public:  
 	virtual ~LLNotificationChannel() {}
 	typedef LLNotificationSet::iterator Iterator;
-    
+	
 	std::string getName() const { return mName; }
 	std::string getParentChannelName() { return mParent; }
-    
-    bool isEmpty() const;
-    
-    Iterator begin();
-    Iterator end();
+	
+	bool isEmpty() const;
+	
+	Iterator begin();
+	Iterator end();
 
-    // Channels have a comparator to control sort order;
+	// Channels have a comparator to control sort order;
 	// the default sorts by arrival date
-    void setComparator(LLNotificationComparator comparator);
+	void setComparator(LLNotificationComparator comparator);
 	
 	std::string summarize();
 
@@ -654,7 +653,7 @@ public:
 						LLNotificationComparator comparator=LLNotificationComparators::orderByUUID());
 	
 protected:
-    // Notification Channels have a filter, which determines which notifications
+	// Notification Channels have a filter, which determines which notifications
 	// will be added to this channel. 
 	// Channel filters cannot change.
 	// Channels have a protected constructor so you can't make smart pointers that don't 

@@ -56,4 +56,3 @@ set_source_files_properties(${statemachine_HEADER_FILES}
 list(APPEND statemachine_SOURCE_FILES ${statemachine_HEADER_FILES})
 
 add_library (statemachine ${statemachine_SOURCE_FILES})
-add_dependencies(statemachine prepare)

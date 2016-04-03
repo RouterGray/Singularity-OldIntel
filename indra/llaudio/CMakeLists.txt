@@ -5,12 +5,7 @@ project(llaudio)
 include(00-Common)
 include(Audio)
 include(LLAudio)
-if (FMODSTUDIO)
-  include(FMODSTUDIO)
-endif (FMODSTUDIO)
-if (FMODEX)
-  include(FMODEX)
-endif (FMODEX)
+include(FMODSTUDIO)
 include(OPENAL)
 include(LLCommon)
 include(LLMath)
@@ -68,20 +63,6 @@ if (FMODSTUDIO)
          )
 endif (FMODSTUDIO)
 
-if (FMODEX)
-    list(APPEND llaudio_SOURCE_FILES
-         llaudioengine_fmodex.cpp
-         lllistener_fmodex.cpp
-         llstreamingaudio_fmodex.cpp
-         )
-
-    list(APPEND llaudio_HEADER_FILES
-         llaudioengine_fmodex.h
-         lllistener_fmodex.h
-         llstreamingaudio_fmodex.h
-         )
-endif (FMODEX)
-
 if (OPENAL)
   list(APPEND llaudio_SOURCE_FILES
     llaudioengine_openal.cpp
@@ -100,5 +81,3 @@ set_source_files_properties(${llaudio_HEADER_FILES}
 list(APPEND llaudio_SOURCE_FILES ${llaudio_HEADER_FILES})
 
 add_library (llaudio ${llaudio_SOURCE_FILES})
-add_dependencies(llaudio prepare)
-

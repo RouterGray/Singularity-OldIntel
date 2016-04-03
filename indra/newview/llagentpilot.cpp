@@ -110,7 +110,7 @@ void LLAgentPilot::save(const std::string& filename)
 
 	file << mActions.size() << '\n';
 
-	S32 i;
+	U32 i;
 	for (i = 0; i < mActions.size(); i++)
 	{
 		file << mActions[i].mTime << "\t" << mActions[i].mType << "\t";
@@ -184,7 +184,7 @@ void LLAgentPilot::updateTarget()
 {
 	if (mPlaying)
 	{
-		if (mCurrentAction < mActions.size())
+		if (mCurrentAction < (S32)mActions.size())
 		{
 			if (0 == mCurrentAction)
 			{
@@ -209,7 +209,7 @@ void LLAgentPilot::updateTarget()
 				//gAgent.stopAutoPilot();
 				mCurrentAction++;
 
-				if (mCurrentAction < mActions.size())
+				if (mCurrentAction < (S32)mActions.size())
 				{
 					gAgent.startAutoPilotGlobal(mActions[mCurrentAction].mTarget);
 				}

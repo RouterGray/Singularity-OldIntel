@@ -194,7 +194,7 @@ inline LLVector4::LLVector4(const LLVector3 &vec, F32 w)
 
 inline BOOL LLVector4::isFinite() const
 {
-	return (llfinite(mV[VX]) && llfinite(mV[VY]) && llfinite(mV[VZ]) && llfinite(mV[VW]));
+	return (std::isfinite(mV[VX]) && std::isfinite(mV[VY]) && std::isfinite(mV[VZ]) && std::isfinite(mV[VW]));
 }
 
 // Clear and Assignment Functions

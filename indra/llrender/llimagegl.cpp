@@ -1089,31 +1089,31 @@ void LLImageGL::deleteTextures(S32 numTextures, U32 *textures)
 
 //#include "crnlib.h"
 struct DDS_PIXELFORMAT {
-	DWORD dwSize;
-	DWORD dwFlags;
-	DWORD dwFourCC;
-	DWORD dwRGBBitCount;
-	DWORD dwRBitMask;
-	DWORD dwGBitMask;
-	DWORD dwBBitMask;
-	DWORD dwABitMask;
+	U32 dwSize;
+	U32 dwFlags;
+	U32 dwFourCC;
+	U32 dwRGBBitCount;
+	U32 dwRBitMask;
+	U32 dwGBitMask;
+	U32 dwBBitMask;
+	U32 dwABitMask;
 };
 
 typedef struct {
-	DWORD           dwSize;
-	DWORD           dwFlags;
-	DWORD           dwHeight;
-	DWORD           dwWidth;
-	DWORD           dwPitchOrLinearSize;
-	DWORD           dwDepth;
-	DWORD           dwMipMapCount;
-	DWORD           dwReserved1[11];
+	U32           dwSize;
+	U32           dwFlags;
+	U32           dwHeight;
+	U32           dwWidth;
+	U32           dwPitchOrLinearSize;
+	U32           dwDepth;
+	U32           dwMipMapCount;
+	U32           dwReserved1[11];
 	DDS_PIXELFORMAT ddspf;
-	DWORD           dwCaps;
-	DWORD           dwCaps2;
-	DWORD           dwCaps3;
-	DWORD           dwCaps4;
-	DWORD           dwReserved2;
+	U32           dwCaps;
+	U32           dwCaps2;
+	U32           dwCaps3;
+	U32           dwCaps4;
+	U32           dwReserved2;
 } DDS_HEADER;
 
 typedef enum DXGI_FORMAT {
@@ -1291,9 +1291,9 @@ typedef enum D3D10_RESOURCE_DIMENSION {
 typedef struct {
 	DXGI_FORMAT              dxgiFormat;
 	D3D10_RESOURCE_DIMENSION resourceDimension;
-	UINT                     miscFlag;
-	UINT                     arraySize;
-	UINT                     miscFlags2;
+	U32                      miscFlag;
+	U32                      arraySize;
+	U32                      miscFlags2;
 } DDS_HEADER_DXT10;
 
 // static
@@ -1440,7 +1440,7 @@ void LLImageGL::setManualImage(U32 target, S32 miplevel, S32 intformat, S32 widt
 				{
 					glTexParameteri(target, GL_GENERATE_MIPMAP, GL_FALSE);
 
-					U32 pos = sizeof(DWORD);
+					U32 pos = sizeof(U32);
 					const DDS_HEADER& header = *(DDS_HEADER*)(((U8*)compressed_data) + pos);
 					pos += sizeof(DDS_HEADER);
 					if (header.ddspf.dwFlags & 0x4 && header.ddspf.dwFourCC == '01XD')

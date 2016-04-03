@@ -65,7 +65,10 @@
 #include "llwearablelist.h"
 #include "llinventoryicon.h"
 
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 
 // subparts of the UI for focus, camera position, etc.
 enum ESubpart
@@ -735,7 +738,7 @@ BOOL LLPanelEditWearable::postBuild()
 		{
 			LL_WARNS() << "could not get wearable dictionary entry for wearable of type: " << mType << LL_ENDL;
 		}
-		U8 num_subparts = wearable_entry->mSubparts.size();
+		U8 num_subparts = (U8) wearable_entry->mSubparts.size();
 
 		for (U8 index = 0; index < num_subparts; ++index)
 		{
@@ -856,7 +859,7 @@ void LLPanelEditWearable::draw()
 	const LLEditWearableDictionary::WearableEntry *wearable_entry = LLEditWearableDictionary::getInstance()->getWearable(mType);
 	if (wearable_entry)
 	{
-		U8 num_subparts = wearable_entry->mSubparts.size();
+		U8 num_subparts = (U8) wearable_entry->mSubparts.size();
 
 		for (U8 index = 0; index < num_subparts; ++index)
 		{

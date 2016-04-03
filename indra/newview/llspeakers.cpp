@@ -42,10 +42,6 @@
 
 #include "rlvhandler.h"
 
-#include <boost/foreach.hpp>
-
-extern AIHTTPTimeoutPolicy moderationResponder_timeout;
-
 const LLColor4 INACTIVE_COLOR(0.3f, 0.3f, 0.3f, 0.5f);
 const LLColor4 ACTIVE_COLOR(0.5f, 0.5f, 0.5f, 1.f);
 
@@ -204,7 +200,7 @@ BOOL LLSpeakerActionTimer::tick()
 
 void LLSpeakerActionTimer::unset()
 {
-	mActionCallback = 0;
+	mActionCallback = NULL;
 }
 
 LLSpeakersDelayActionsStorage::LLSpeakersDelayActionsStorage(LLSpeakerActionTimer::action_callback_t action_cb, F32 action_delay)
@@ -289,9 +285,10 @@ public:
 		mSessionID = session_id;
 	}
 
-	virtual void httpFailure(void)
+protected:
+	virtual void httpFailure()
 	{
-		LL_WARNS() << mStatus << ": " << mReason << LL_ENDL;
+		LL_WARNS() << dumpResponse() << LL_ENDL;
 
 		if ( gIMMgr )
 		{
@@ -314,7 +311,6 @@ public:
 			}
 		}
 	}
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return moderationResponder_timeout; }
 	/*virtual*/ char const* getName(void) const { return "ModerationResponder"; }
 
 private:
@@ -819,7 +815,7 @@ void LLIMSpeakerMgr::updateSpeakers(const LLSD& update)
 				}
 				else
 				{
-					LL_WARNS() << "bad membership list update " << ll_print_sd(agent_data["transition"]) << LL_ENDL;
+					LL_WARNS() << "bad membership list update from 'agent_updates' for agent " << agent_id << ", transition " << ll_print_sd(agent_data["transition"]) << LL_ENDL;
 				}
 			}
 
@@ -872,8 +868,7 @@ void LLIMSpeakerMgr::updateSpeakers(const LLSD& update)
 			}
 			else
 			{
-				LL_WARNS() << "bad membership list update "
-						<< agent_transition << LL_ENDL;
+				LL_WARNS() << "bad membership list update from 'updates' for agent " << agent_id << ", transition " << agent_transition << LL_ENDL;
 			}
 		}
 	}
@@ -1043,8 +1038,8 @@ void LLLocalSpeakerMgr::updateSpeakerList()
 
 	// pick up non-voice speakers in chat range
 	uuid_vec_t avatar_ids;
-	LLWorld::getInstance()->getAvatars(&avatar_ids, NULL, gAgent.getPositionGlobal(), CHAT_NORMAL_RADIUS);
-	BOOST_FOREACH(const LLUUID& id, avatar_ids)
+	LLWorld::getInstance()->getAvatars(&avatar_ids, nullptr, gAgent.getPositionGlobal(), CHAT_NORMAL_RADIUS);
+	for (const auto& id : avatar_ids)
 	{
 		setSpeaker(id);
 	}
@@ -1054,7 +1049,7 @@ void LLLocalSpeakerMgr::updateSpeakerList()
 	{
 		LLUUID speaker_id = speaker_it->first;
 		LLSpeaker* speakerp = speaker_it->second;
-		if (speakerp->mStatus == LLSpeaker::STATUS_TEXT_ONLY)
+		if (speakerp && speakerp->mStatus == LLSpeaker::STATUS_TEXT_ONLY)
 		{
 			LLVOAvatar* avatarp = gObjectList.findAvatar(speaker_id);
 			if (!avatarp || dist_vec_squared(avatarp->getPositionAgent(), gAgent.getPositionAgent()) > CHAT_NORMAL_RADIUS * CHAT_NORMAL_RADIUS)

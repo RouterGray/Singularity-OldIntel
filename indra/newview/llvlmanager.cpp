@@ -46,7 +46,7 @@ LLVLManager gVLManager;
 
 LLVLManager::~LLVLManager()
 {
-	S32 i;
+	U32 i;
 	for (i = 0; i < mPacketData.size(); i++)
 	{
 		delete mPacketData[i];
@@ -95,7 +95,7 @@ void LLVLManager::unpackData(const S32 num_packets)
 {
 	static LLFrameTimer decode_timer;
 	
-	S32 i;
+	U32 i;
 	for (i = 0; i < mPacketData.size(); i++)
 	{
 		LLVLData *datap = mPacketData[i];
@@ -163,7 +163,7 @@ S32 LLVLManager::getTotalBytes() const
 
 void LLVLManager::cleanupData(LLViewerRegion *regionp)
 {
-	S32 cur = 0;
+	U32 cur = 0;
 	while (cur < mPacketData.size())
 	{
 		if (mPacketData[cur]->mRegionp == regionp)

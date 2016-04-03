@@ -250,7 +250,7 @@ inline F32		LLVector2::normalize(void)
 // checker
 inline bool LLVector2::isFinite() const
 {
-	return (llfinite(mV[VX]) && llfinite(mV[VY]));
+	return (std::isfinite(mV[VX]) && std::isfinite(mV[VY]));
 }
 
 // deprecated

@@ -58,7 +58,10 @@ static const int& nil(nil_);
 
 #include <string>
 #include <boost/shared_ptr.hpp>
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 #include <boost/bind.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/utility/enable_if.hpp>

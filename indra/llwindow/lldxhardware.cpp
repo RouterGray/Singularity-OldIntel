@@ -183,11 +183,11 @@ HRESULT GetVideoMemoryViaWMI( WCHAR* strInputDeviceID, DWORD* pdwAdapterRam )
 						SAFE_RELEASE( pVideoControllers[iController] );
 					}
 				}
-				SAFE_RELEASE(pEnumVideoControllers);
 			}
 
 			if( pClassName )
 				SysFreeString( pClassName );
+            SAFE_RELEASE( pEnumVideoControllers );
 		}
 
 		if( pNamespace )
@@ -206,7 +206,7 @@ HRESULT GetVideoMemoryViaWMI( WCHAR* strInputDeviceID, DWORD* pdwAdapterRam )
 		return E_FAIL;
 }
 
-void get_wstring(IDxDiagContainer* containerp, WCHAR* wszPropName, WCHAR* wszPropValue, int outputSize)
+void get_wstring(IDxDiagContainer* containerp, const WCHAR* wszPropName, WCHAR* wszPropValue, int outputSize)
 {
 	HRESULT hr;
 	VARIANT var;
@@ -219,10 +219,10 @@ void get_wstring(IDxDiagContainer* containerp, WCHAR* wszPropName, WCHAR* wszPro
 		switch( var.vt )
 		{
 			case VT_UI4:
-				swprintf( wszPropValue, L"%d", var.ulVal );	/* Flawfinder: ignore */
+				swprintf(wszPropValue, outputSize, L"%d", var.ulVal);	/* Flawfinder: ignore */
 				break;
 			case VT_I4:
-				swprintf( wszPropValue, L"%d", var.lVal );	/* Flawfinder: ignore */
+				swprintf(wszPropValue, outputSize, L"%d", var.lVal);	/* Flawfinder: ignore */
 				break;
 			case VT_BOOL:
 				wcscpy( wszPropValue, (var.boolVal) ? L"true" : L"false" );	/* Flawfinder: ignore */
@@ -237,7 +237,7 @@ void get_wstring(IDxDiagContainer* containerp, WCHAR* wszPropName, WCHAR* wszPro
 	VariantClear( &var );
 }
 
-std::string get_string(IDxDiagContainer *containerp, WCHAR *wszPropName)
+std::string get_string(IDxDiagContainer *containerp, const WCHAR *wszPropName)
 {
 	WCHAR wszPropValue[256];
 	get_wstring(containerp, wszPropName, wszPropValue, 256);
@@ -452,9 +452,9 @@ BOOL LLDXHardware::getInfo(BOOL vram_only)
     hr = CoInitialize(NULL);
 	if (FAILED(hr))
 	{
-		LL_WARNS("AppInit") << "COM library initialization failed!" << LL_ENDL;
-		gWriteDebug("COM library initialization failed!\n");
-		return FALSE;
+		LL_WARNS() << "COM initialization failure!" << LL_ENDL;
+		gWriteDebug("COM initialization failure!\n");
+		return ok;
 	}
 
     IDxDiagProvider *dx_diag_providerp = NULL;
@@ -506,8 +506,6 @@ BOOL LLDXHardware::getInfo(BOOL vram_only)
 		{
             goto LCleanup;
 		}
-
-		HRESULT hr;
 
 		// Get display driver information
 		LL_DEBUGS("AppInit") << "dx_diag_rootp->GetChildContainer" << LL_ENDL;
@@ -718,8 +716,8 @@ LLSD LLDXHardware::getDisplayInfo()
     hr = CoInitialize(NULL);
 	if (FAILED(hr))
 	{
-		LL_WARNS("AppInit") << "COM library initialization failed!" << LL_ENDL;
-		gWriteDebug("COM library initialization failed!\n");
+		LL_WARNS() << "COM initialization failure!" << LL_ENDL;
+		gWriteDebug("COM initialization failure!\n");
 		return ret;
 	}
 
@@ -771,8 +769,6 @@ LLSD LLDXHardware::getDisplayInfo()
 		{
             goto LCleanup;
 		}
-
-		HRESULT hr;
 
 		// Get display driver information
 		LL_INFOS() << "dx_diag_rootp->GetChildContainer" << LL_ENDL;

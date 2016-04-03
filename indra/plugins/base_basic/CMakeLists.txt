@@ -33,8 +33,11 @@ set(basic_plugin_base_HEADER_FILES
     basic_plugin_base.h
 )
 
+set_source_files_properties(${basic_plugin_base_HEADER_FILES}
+                            PROPERTIES HEADER_FILE_ONLY TRUE)
+
+list(APPEND basic_plugin_base_SOURCE_FILES ${basic_plugin_base_HEADER_FILES})
+
 add_library(basic_plugin_base
     ${basic_plugin_base_SOURCE_FILES}
 )
-
-add_dependencies(basic_plugin_base prepare)

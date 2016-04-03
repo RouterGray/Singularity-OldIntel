@@ -406,7 +406,7 @@ BOOL LLUICtrl::isCtrl() const
 //virtual 
 void LLUICtrl::setValue(const LLSD& value)
 {
-    mViewModel->setValue(value);
+	mViewModel->setValue(value);
 }
 
 //virtual
@@ -419,10 +419,10 @@ LLSD LLUICtrl::getValue() const
 /// change), share their ViewModel.
 void    LLUICtrl::shareViewModelFrom(const LLUICtrl& other)
 {
-    // Because mViewModel is an LLViewModelPtr, this assignment will quietly
-    // dispose of the previous LLViewModel -- unless it's already shared by
-    // somebody else.
-    mViewModel = other.mViewModel;
+	// Because mViewModel is an LLViewModelPtr, this assignment will quietly
+	// dispose of the previous LLViewModel -- unless it's already shared by
+	// somebody else.
+	mViewModel = other.mViewModel;
 }
 
 //virtual
@@ -635,7 +635,7 @@ BOOL LLUICtrl::isDirty() const
 //virtual
 void LLUICtrl::resetDirty()
 {
-    mViewModel->resetDirty();
+	mViewModel->resetDirty();
 }
 
 // virtual

@@ -13,7 +13,7 @@ include_directories(
     )
 
 set(llxml_SOURCE_FILES
-    aixml.cpp
+    #aixml.cpp
     llcontrol.cpp
     llxmlnode.cpp
     llxmlparser.cpp
@@ -23,7 +23,7 @@ set(llxml_SOURCE_FILES
 set(llxml_HEADER_FILES
     CMakeLists.txt
 
-    aixml.h
+    #aixml.h
     llcontrol.h
     llcontrolgroupreader.h
     llxmlnode.h
@@ -37,7 +37,7 @@ set_source_files_properties(${llxml_HEADER_FILES}
 list(APPEND llxml_SOURCE_FILES ${llxml_HEADER_FILES})
 
 add_library (llxml ${llxml_SOURCE_FILES})
-add_dependencies(llxml prepare)
+
 target_link_libraries(
     llxml
     ${EXPAT_LIBRARIES}

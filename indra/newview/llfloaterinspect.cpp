@@ -54,6 +54,7 @@
 
 LLFloaterInspect::LLFloaterInspect(const LLSD&)
   : LLFloater(std::string("Inspect Object")),
+	mObjectList(nullptr),
 	mDirty(FALSE)
 {
 	mCommitCallbackRegistrar.add("Inspect.OwnerProfile",	boost::bind(&LLFloaterInspect::onClickOwnerProfile, this));

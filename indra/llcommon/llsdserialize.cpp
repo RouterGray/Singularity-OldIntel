@@ -1330,13 +1330,7 @@ S32 LLSDNotationFormatter::format_impl(const LLSD& data, std::ostream& ostr, U32
 		break;
 
 	case LLSD::TypeBoolean:
-		if(mBoolAlpha ||
-#if( LL_WINDOWS || __GNUC__ > 2)
-		   (ostr.flags() & std::ios::boolalpha)
-#else
-		   (ostr.flags() & 0x0100)
-#endif
-			)
+		if(mBoolAlpha || (ostr.flags() & std::ios::boolalpha))
 		{
 			ostr << (data.asBoolean()
 					 ? NOTATION_TRUE_SERIAL : NOTATION_FALSE_SERIAL);

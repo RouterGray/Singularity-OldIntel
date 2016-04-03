@@ -56,7 +56,6 @@ class LLMediaEntry;
 class LLVOVolume;
 class LLMimeDiscoveryResponder;
 class LLPluginCookieStore;
-class AIHTTPHeaders;
 
 typedef LLPointer<LLViewerMediaImpl> viewer_media_t;
 ///////////////////////////////////////////////////////////////////////////////
@@ -92,6 +91,7 @@ public:
 	typedef std::list<LLViewerMediaImpl*> impl_list;
 	
 	typedef std::map<LLUUID, LLViewerMediaImpl*> impl_id_map;
+
 	// Special case early init for just web browser component
 	// so we can show login screen.  See .cpp file for details. JC
 	
@@ -137,7 +137,7 @@ public:
 	static bool isParcelMediaPlaying();
 	static bool isParcelAudioPlaying();
 	
-	static bool onAuthSubmit(const LLSD& notification, const LLSD& response);
+	static void onAuthSubmit(const LLSD& notification, const LLSD& response);
 
 	// Clear all cookies for all plugins
 	static void clearAllCookies();
@@ -169,7 +169,7 @@ public:
 
 	static void setOnlyAudibleMediaTextureID(const LLUUID& texture_id);
 
-	static AIHTTPHeaders getHeaders();
+	static class AIHTTPHeaders getHeaders();
 
 private:
 	static void setOpenIDCookie();
@@ -234,6 +234,7 @@ public:
 	void mouseDown(const LLVector2& texture_coords, MASK mask, S32 button = 0);
 	void mouseUp(const LLVector2& texture_coords, MASK mask, S32 button = 0);
 	void mouseMove(const LLVector2& texture_coords, MASK mask);
+    void mouseDoubleClick(const LLVector2& texture_coords, MASK mask);
 	void mouseDoubleClick(S32 x,S32 y, MASK mask, S32 button = 0);
 	void scrollWheel(S32 x, S32 y, MASK mask);
 	void mouseCapture();
@@ -247,6 +248,7 @@ public:
 	void navigateInternal();
 	void navigateStop();
 	bool handleKeyHere(KEY key, MASK mask);
+	bool handleKeyUpHere(KEY key, MASK mask);
 	bool handleUnicodeCharHere(llwchar uni_char);
 	bool canNavigateForward();
 	bool canNavigateBack();
@@ -257,6 +259,7 @@ public:
 	void setHomeURL(const std::string& home_url, const std::string& mime_type = LLStringUtil::null) { mHomeURL = home_url; mHomeMimeType = mime_type;};
 	void clearCache();
 	void setPageZoomFactor( double factor );
+	double getPageZoomFactor() {return mZoomFactor;}
 	std::string getMimeType() { return mMimeType; }
 	void scaleMouse(S32 *mouse_x, S32 *mouse_y);
 	void scaleTextureCoords(const LLVector2& texture_coords, S32 *x, S32 *y);

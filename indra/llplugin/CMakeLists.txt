@@ -13,7 +13,6 @@ include_directories(
     ${LLMATH_INCLUDE_DIRS}
     ${LLMESSAGE_INCLUDE_DIRS}
     ${LLRENDER_INCLUDE_DIRS}
-    ${LLQTWEBKIT_INCLUDE_DIR}
     )
 
 set(llplugin_SOURCE_FILES
@@ -61,8 +60,6 @@ add_library (llplugin ${llplugin_SOURCE_FILES})
 if(LINUX AND STANDALONE)
     target_link_libraries (llplugin rt dl)
 endif(LINUX AND STANDALONE)
-
-add_dependencies(llplugin prepare)
 
 add_subdirectory(slplugin)
 

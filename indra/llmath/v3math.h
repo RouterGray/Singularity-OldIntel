@@ -199,7 +199,7 @@ inline LLVector3::LLVector3(const LLVector3 &copy)
 // checker
 inline BOOL LLVector3::isFinite() const
 {
-	return (llfinite(mV[VX]) && llfinite(mV[VY]) && llfinite(mV[VZ]));
+	return (std::isfinite(mV[VX]) && std::isfinite(mV[VY]) && std::isfinite(mV[VZ]));
 }
 
 

@@ -73,7 +73,7 @@ public:
 	BOOL	set(const std::string& in_string, BOOL emit = TRUE);	// Convert from string, if emit is FALSE, do not emit warnings
 	void	setNull();					// Faster than setting to LLUUID::null.
 
-    S32     cmpTime(uuid_time_t *t1, uuid_time_t *t2);
+	S32     cmpTime(uuid_time_t *t1, uuid_time_t *t2);
 	static void    getSystemTime(uuid_time_t *timestamp);
 	void    getCurrentTime(uuid_time_t *timestamp);
 
@@ -307,8 +307,6 @@ struct lluuid_less
 
 typedef std::set<LLUUID, lluuid_less> uuid_list_t;
 
-
-#ifdef LL_CPP11
 namespace std {
 	template <> struct hash<LLUUID>
 {
@@ -319,7 +317,6 @@ namespace std {
 		}
 	};
 }
-#endif
 
 namespace boost {
 	template<> class hash<LLUUID>

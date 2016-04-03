@@ -95,10 +95,28 @@ private:
 	S32 mSpeakerNames;
 
 	//Autoresponse ------------------------------------------------------------------------
+	bool mIMResponseRepeat;
+	bool mIMResponseAway;
+	bool mIMResponseAnyone;
+	bool mIMResponseAnyoneFriends;
+	bool mIMResponseAnyoneItem;
 	std::string mIMResponseAnyoneItemID;
+	std::string mIMResponseAnyoneMessage;
+	bool mIMResponseAnyoneShow;
+	bool mIMResponseNonFriends;
+	bool mIMResponseNonFriendsItem;
 	std::string mIMResponseNonFriendsItemID;
+	std::string mIMResponseNonFriendsMessage;
+	bool mIMResponseNonFriendsShow;
+	bool mIMResponseMuted;
+	bool mIMResponseMutedItem;
 	std::string mIMResponseMutedItemID;
+	std::string mIMResponseMutedMessage;
+	bool mIMResponseMutedShow;
+	bool mIMResponseBusyItem;
 	std::string mIMResponseBusyItemID;
+	std::string mIMResponseBusyMessage;
+	bool mIMResponseBusyShow;
 
 	//Spam --------------------------------------------------------------------------------
 	bool mEnableAS;

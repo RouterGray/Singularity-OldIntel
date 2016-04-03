@@ -1630,7 +1630,7 @@ void LLAppearanceMgr::takeOffOutfit(const LLUUID& cat_id)
 	// deactivate all gestures in the outfit folder
 	LLInventoryModel::item_array_t gest_items;
 	getDescendentsOfAssetType(cat_id, gest_items, LLAssetType::AT_GESTURE, true);
-	for(S32 i = 0; i  < gest_items.size(); ++i)
+	for(U32 i = 0; i  < gest_items.size(); ++i)
 	{
 		LLViewerInventoryItem *gest_item = gest_items[i];
 		if ( LLGestureMgr::instance().isGestureActive( gest_item->getLinkedUUID()) )
@@ -1855,7 +1855,12 @@ bool LLAppearanceMgr::getCanRemoveFromCOF(const LLUUID& outfit_cat_id)
 	}
 
 	LLFindWearablesEx is_worn(/*is_worn=*/ true, /*include_body_parts=*/ false);
-	return gInventory.hasMatchingDirectDescendent(outfit_cat_id, is_worn, true);
+	// Singu Note: Diverge from LL here in order to dive into subfolder.
+	//return gInventory.hasMatchingDirectDescendent(outfit_cat_id, is_worn, true);
+	LLInventoryModel::item_array_t items;
+	LLInventoryModel::cat_array_t cats;
+	gInventory.collectDescendentsIf(outfit_cat_id, cats, items, LLInventoryModel::EXCLUDE_TRASH, is_worn, /*follow_folder_links=*/ true);
+	return items.size();
 }
 
 // static
@@ -1961,7 +1966,7 @@ void LLAppearanceMgr::purgeBaseOutfitLink(const LLUUID& category, LLPointer<LLIn
 	LLInventoryModel::item_array_t items;
 	gInventory.collectDescendents(category, cats, items,
 								  LLInventoryModel::EXCLUDE_TRASH);
-	for (S32 i = 0; i < items.size(); ++i)
+	for (U32 i = 0; i < items.size(); ++i)
 	{
 		LLViewerInventoryItem *item = items.at(i);
 		if (item->getActualType() != LLAssetType::AT_LINK_FOLDER)
@@ -1983,7 +1988,7 @@ void LLAppearanceMgr::purgeCategory(const LLUUID& category, bool keep_outfit_lin
 	LLInventoryModel::item_array_t items;
 	gInventory.collectDescendents(category, cats, items,
 								  LLInventoryModel::EXCLUDE_TRASH);
-	for (S32 i = 0; i < items.size(); ++i)
+	for (U32 i = 0; i < items.size(); ++i)
 	{
 		LLViewerInventoryItem *item = items.at(i);
 		if (keep_outfit_links && (item->getActualType() == LLAssetType::AT_LINK_FOLDER))
@@ -2001,7 +2006,7 @@ void LLAppearanceMgr::filterWearableItems(
 	LLInventoryModel::item_array_t& items, S32 max_per_type, S32 max_total)
 {
     // Restrict by max total items first.
-    if ((max_total > 0) && (items.size() > max_total))
+    if ((max_total > 0) && ((S32)items.size() > max_total))
     {
         LLInventoryModel::item_array_t items_to_keep;
         for (S32 i=0; i<max_total; i++)
@@ -2081,7 +2086,7 @@ void LLAppearanceMgr::updateCOF(LLInventoryModel::item_array_t& body_items_new,
 	{
 		LLInventoryModel::item_array_t gest_items;
 		getDescendentsOfAssetType(cof, gest_items, LLAssetType::AT_GESTURE);
-		for(S32 i = 0; i  < gest_items.size(); ++i)
+		for(U32 i = 0; i < gest_items.size(); ++i)
 		{
 			LLViewerInventoryItem *gest_item = gest_items.at(i);
 			if ( LLGestureMgr::instance().isGestureActive( gest_item->getLinkedUUID()) )
@@ -2634,7 +2639,7 @@ void LLAppearanceMgr::updateAppearanceFromCOF(bool enforce_item_restrictions,
 	// callback will be called (and this object deleted)
 	// before the final getNextData().
 
-	for(S32 i = 0; i  < wear_items.size(); ++i)
+	for(U32 i = 0; i  < wear_items.size(); ++i)
 	{
 		LLViewerInventoryItem *item = wear_items.at(i);
 		LLViewerInventoryItem *linked_item = item ? item->getLinkedItem() : NULL;
@@ -3796,7 +3801,7 @@ void RequestAgentUpdateAppearanceResponder::debugCOF(const LLSD& content)
 	LLInventoryModel::item_array_t item_array;
 	gInventory.collectDescendents(LLAppearanceMgr::instance().getCOF(),
 								  cat_array,item_array,LLInventoryModel::EXCLUDE_TRASH);
-	for (S32 i=0; i<item_array.size(); i++)
+	for (U32 i=0; i<item_array.size(); i++)
 	{
 		const LLViewerInventoryItem* inv_item = item_array.at(i).get();
 		local_items.insert(inv_item->getUUID());
@@ -3904,7 +3909,7 @@ LLSD LLAppearanceMgr::dumpCOF() const
 	LLInventoryModel::cat_array_t cat_array;
 	LLInventoryModel::item_array_t item_array;
 	gInventory.collectDescendents(getCOF(),cat_array,item_array,LLInventoryModel::EXCLUDE_TRASH);
-	for (S32 i=0; i<item_array.size(); i++)
+	for (U32 i=0; i<item_array.size(); i++)
 	{
 		const LLViewerInventoryItem* inv_item = item_array.at(i).get();
 		LLSD item;
@@ -4686,7 +4691,7 @@ void LLAppearanceMgr::dumpCat(const LLUUID& cat_id, const std::string& msg)
 void LLAppearanceMgr::dumpItemArray(const LLInventoryModel::item_array_t& items,
 									const std::string& msg)
 {
-	for (S32 i=0; i<items.size(); i++)
+	for (U32 i=0; i<items.size(); i++)
 	{
 		LLViewerInventoryItem *item = items.at(i);
 		LLViewerInventoryItem *linked_item = item ? item->getLinkedItem() : NULL;

@@ -95,7 +95,12 @@ LLInventoryView::LLInventoryView(const std::string& name,
 	LLFloater(name, rect, std::string("Inventory"), RESIZE_YES,
 			  INV_MIN_WIDTH, INV_MIN_HEIGHT, DRAG_ON_TOP,
 			  MINIMIZE_NO, CLOSE_YES),
-	mActivePanel(NULL)
+	mFilterEditor(nullptr),
+	mFilterTabs(nullptr),
+	mActivePanel(nullptr),
+	mResortActivePanel(true),
+	mSavedFolderState(nullptr),
+	mFilterText("")
 	//LLHandle<LLFloater> mFinderHandle takes care of its own initialization
 {
 	init(inventory);
@@ -107,7 +112,12 @@ LLInventoryView::LLInventoryView(const std::string& name,
 	LLFloater(name, rect, std::string("Inventory"), RESIZE_YES,
 			  INV_MIN_WIDTH, INV_MIN_HEIGHT, DRAG_ON_TOP,
 			  MINIMIZE_NO, CLOSE_YES),
-	mActivePanel(NULL)
+	mFilterEditor(nullptr),
+	mFilterTabs(nullptr),
+	mActivePanel(nullptr),
+	mResortActivePanel(true),
+	mSavedFolderState(nullptr),
+	mFilterText("")
 	//LLHandle<LLFloater> mFinderHandle takes care of its own initialization
 {
 	init(inventory);

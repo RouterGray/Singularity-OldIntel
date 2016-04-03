@@ -49,6 +49,9 @@
 
 LLFloaterJoystick::LLFloaterJoystick(const LLSD& data)
 	: LLFloater("floater_joystick")
+	, mCheckJoystickEnabled(nullptr)
+	, mCheckFlycamEnabled(nullptr)
+	, mAxisStatsBar({ {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr} })
 {
 	LLUICtrlFactory::getInstance()->buildFloater(this, "floater_joystick.xml");
 	center();

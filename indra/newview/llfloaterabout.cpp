@@ -49,7 +49,7 @@
 #include "llagent.h"
 #include "llviewerstats.h"
 #include "llviewerregion.h"
-#include "sgversion.h"
+#include "llversioninfo.h"
 #include "lluictrlfactory.h"
 #include "lluri.h"
 #include "llweb.h"
@@ -69,6 +69,8 @@
 #if LL_WINDOWS
 #include "lldxhardware.h"
 #endif
+
+#include "cef/llceflib.h"
 
 extern LLMemoryInfo gSysMemory;
 extern U32 gPacketsIn;
@@ -111,6 +113,9 @@ LLFloaterAbout::LLFloaterAbout()
 
 	LLViewerTextEditor *credits_widget = 
 		getChild<LLViewerTextEditor>("credits_editor", true);
+
+	LLViewerTextEditor *licenses_widget =
+		getChild<LLViewerTextEditor>("licenses_editor", true);
 	
 	childSetAction("copy_btn", onAboutClickCopyToClipboard, this);
 
@@ -135,9 +140,9 @@ LLFloaterAbout::LLFloaterAbout()
 		+ " (64 bit)"
 #endif
 		+ llformat(" %d.%d.%d (%d) %s %s (%s)\n",
-		gVersionMajor, gVersionMinor, gVersionPatch, gVersionBuild,
+		LLVersionInfo::getMajor(), LLVersionInfo::getMinor(), LLVersionInfo::getPatch(), LLVersionInfo::getBuild(),
 		__DATE__, __TIME__,
-		gVersionChannel));
+		LLVersionInfo::getChannel().c_str()));
 	support_widget->appendColoredText(version, FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
 	support_widget->appendStyledText(LLTrans::getString("ReleaseNotes"), false, false, viewer_link_style);
 
@@ -192,10 +197,10 @@ LLFloaterAbout::LLFloaterAbout()
 		else
 			support.append(RlvStrings::getString(RLV_STRING_HIDDEN_REGION));
 // [/RLVa:KN]
-		support.append("\n");
+		support += '\n';
 
 		support.append(gLastVersionChannel);
-		support.append("\n");
+		support += '\n';
 
 		support_widget->appendColoredText(support, FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
 
@@ -217,7 +222,7 @@ LLFloaterAbout::LLFloaterAbout()
 	// CPU
 	support.append("CPU: ");
 	support.append( gSysCPU.getCPUString() );
-	support.append("\n");
+	support += '\n';
 
 	/* This is confusing and WRONG.
 	support.append("SSE Support:");
@@ -236,15 +241,15 @@ LLFloaterAbout::LLFloaterAbout()
 
 	support.append("OS Version: ");
 	support.append( LLAppViewer::instance()->getOSInfo().getOSString() );
-	support.append("\n");
+	support += '\n';
 
 	support.append("Graphics Card Vendor: ");
 	support.append( (const char*) glGetString(GL_VENDOR) );
-	support.append("\n");
+	support += '\n';
 
 	support.append("Graphics Card: ");
 	support.append( (const char*) glGetString(GL_RENDERER) );
-	support.append("\n");
+	support += '\n';
 
 #if LL_WINDOWS
     getWindow()->incBusyCount();
@@ -255,7 +260,7 @@ LLFloaterAbout::LLFloaterAbout()
     {
         support.append(driver_info["DriverVersion"]);
     }
-    support.append("\n");
+    support += '\n';
     getWindow()->decBusyCount();
     getWindow()->setCursor(UI_CURSOR_ARROW);
 #endif
@@ -263,47 +268,27 @@ LLFloaterAbout::LLFloaterAbout()
 	support.append("OpenGL Version: ");
 	support.append( (const char*) glGetString(GL_VERSION) );
 // [RLVa:KB] - Checked: 2010-04-18 (RLVa-1.2.0)
-	support.append("\n");
+	support += '\n';
 	support.append("RLV Version: " + (RlvActions::isRlvEnabled() ? RlvStrings::getVersionAbout() : "(disabled)"));
 // [/RLVa:KB]
 	support.append("\n\n");
 
-	support.append("Viewer SSE Version: ");
-#if _M_IX86_FP > 0 //Windows
-	support.append(llformat("SSE%i\n", _M_IX86_FP ));
-#elif defined(__SSE2__) //GCC
-	support.append("SSE2\n");	
-#elif defined(__SSE__) //GCC
-	support.append("SSE\n");
-#else
-	support.append("None\n");
-#endif
-
 	support.append("libcurl Version: ");
 	support.append( LLCurl::getVersionString() );
-	support.append("\n");
+	support += '\n';
 
 	support.append("J2C Decoder Version: ");
 	support.append( LLImageJ2C::getEngineInfo() );
-	support.append("\n");
+	support += '\n';
 
 	support.append("Audio Driver Version: ");
 	bool want_fullname = true;
 	support.append( gAudiop ? gAudiop->getDriverName(want_fullname) : "(none)" );
-	support.append("\n");
+	support += '\n';
 
-	// TODO: Implement media plugin version query
-
-	support.append("Qt Webkit Version: ");
-	support.append(
-#if LL_LINUX && defined(__x86_64__)
-	"4.8.6"
-#else
-	"4.7.1"
-#endif
-	);
-	support.append(" (version number hard-coded)");
-	support.append("\n");
+	support.append("LLCEFLib/CEF Version: ");
+	support.append(LLCEFLIB_VERSION);
+	support += '\n';
 
 	if (gPacketsIn > 0)
 	{
@@ -312,7 +297,7 @@ LLFloaterAbout::LLFloaterAbout()
 			F32(gPacketsIn),
 			100.f*LLViewerStats::getInstance()->mPacketsLostStat.getCurrent() / F32(gPacketsIn) );
 		support.append(packet_loss);
-		support.append("\n");
+		support += '\n';
 	}
 
 	support_widget->appendColoredText(support, FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
@@ -327,6 +312,30 @@ LLFloaterAbout::LLFloaterAbout()
 	credits_widget->setEnabled(FALSE);
 	credits_widget->setTakesFocus(TRUE);
 	credits_widget->setHandleEditKeysDirectly(TRUE);
+
+	// Get the Versions and Copyrights, created at build time
+	std::string licenses_path = gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, "packages-info.txt");
+	llifstream licenses_file;
+	licenses_file.open(licenses_path);		/* Flawfinder: ignore */
+	if (licenses_file.is_open())
+	{
+		std::string license_line;
+		licenses_widget->clear();
+		while (std::getline(licenses_file, license_line))
+		{
+			licenses_widget->appendColoredText(license_line + '\n', FALSE, FALSE, gColors.getColor("TextFgReadOnlyColor"));
+		}
+		licenses_file.close();
+	}
+	else
+	{
+		// this case will use the (out of date) hard coded value from the XUI
+		LL_INFOS("AboutInit") << "Could not read licenses file at " << licenses_path << LL_ENDL;
+	}
+	licenses_widget->setCursorPos(0);
+	licenses_widget->setEnabled(FALSE);
+	licenses_widget->setTakesFocus(TRUE);
+	licenses_widget->setHandleEditKeysDirectly(TRUE);
 
 	center();
 

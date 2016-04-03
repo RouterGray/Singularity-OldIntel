@@ -38,7 +38,6 @@
 #include <cassert>
 
 #include <boost/tokenizer.hpp>
-#include <boost/foreach.hpp>
 
 #include "llrender.h"
 #include "llevent.h"
@@ -372,7 +371,7 @@ void LLView::removeChild(LLView* child)
 		// if we are removing an item we are currently iterating over, that would be bad
 		llassert(child->mInDraw == false);
 		mChildList.remove( child );
-		for(boost::unordered_map<const std::string, LLView*>::iterator it=mChildHashMap.begin(); it != mChildHashMap.end(); ++it)
+		for(boost::container::flat_map<std::string, LLView*>::iterator it=mChildHashMap.begin(); it != mChildHashMap.end(); ++it)
 		{
 			if(it->second == child)
 			{
@@ -400,7 +399,7 @@ void LLView::removeChild(LLView* child)
 LLView::ctrl_list_t LLView::getCtrlList() const
 {
 	ctrl_list_t controls;
-	BOOST_FOREACH(LLView* viewp, mChildList)
+	for (LLView* viewp : mChildList)
 	{
 		if(viewp->isCtrl())
 		{
@@ -613,12 +612,12 @@ void LLView::deleteAllChildren()
 		LLView* viewp = mChildList.front();
 		delete viewp; // will remove the child from mChildList
 	}
-	mChildHashMap.clear();
+	mChildHashMap.clear(); // <alchemy/>
 }
 
 void LLView::setAllChildrenEnabled(BOOL b)
 {
-	BOOST_FOREACH(LLView* viewp, mChildList)
+	for (LLView* viewp : mChildList)
 	{
 		viewp->setEnabled(b);
 	}
@@ -644,7 +643,7 @@ void LLView::setVisible(BOOL visible)
 // virtual
 void LLView::handleVisibilityChange ( BOOL new_visibility )
 {
-	BOOST_FOREACH(LLView* viewp, mChildList)
+	for (LLView* viewp : mChildList)
 	{
 		// only views that are themselves visible will have their overall visibility affected by their ancestors
 		if (viewp->getVisible())
@@ -722,7 +721,7 @@ BOOL LLView::handleToolTip(S32 x, S32 y, std::string& msg, LLRect* sticky_rect_s
 
 	std::string tool_tip;
 
-	BOOST_FOREACH(LLView* viewp, mChildList)
+	for(LLView* viewp : mChildList)
 	{
 		S32 local_x = x - viewp->mRect.mLeft;
 		S32 local_y = y - viewp->mRect.mBottom;
@@ -804,7 +803,7 @@ LLView* LLView::childrenHandleCharEvent(const std::string& desc, const METHOD& m
 {
 	if ( getVisible() && getEnabled() )
 	{
-		BOOST_FOREACH(LLView* viewp, mChildList)
+		for (LLView* viewp : mChildList)
 		{
 			if ((viewp->*method)(c, mask, TRUE))
 			{
@@ -823,7 +822,7 @@ LLView* LLView::childrenHandleCharEvent(const std::string& desc, const METHOD& m
 template <typename METHOD, typename XDATA>
 LLView* LLView::childrenHandleMouseEvent(const METHOD& method, S32 x, S32 y, XDATA extra, bool allow_mouse_block)
 {
-	BOOST_FOREACH(LLView* viewp, mChildList)
+	for (LLView* viewp : mChildList)
 	{
 		S32 local_x = x - viewp->getRect().mLeft;
 		S32 local_y = y - viewp->getRect().mBottom;
@@ -853,7 +852,7 @@ LLView* LLView::childrenHandleDragAndDrop(S32 x, S32 y, MASK mask,
 	// default to not accepting drag and drop, will be overridden by handler
 	*accept = ACCEPT_NO;
 
-	BOOST_FOREACH(LLView* viewp, mChildList)
+	for (LLView* viewp : mChildList)
 	{
 		S32 local_x = x - viewp->getRect().mLeft;
 		S32 local_y = y - viewp->getRect().mBottom;
@@ -879,7 +878,7 @@ LLView* LLView::childrenHandleDragAndDrop(S32 x, S32 y, MASK mask,
 
 LLView* LLView::childrenHandleHover(S32 x, S32 y, MASK mask)
 {
-	BOOST_FOREACH(LLView* viewp, mChildList)
+	for (LLView* viewp : mChildList)
 	{
 		S32 local_x = x - viewp->getRect().mLeft;
 		S32 local_y = y - viewp->getRect().mBottom;
@@ -904,9 +903,9 @@ LLView* LLView::childrenHandleHover(S32 x, S32 y, MASK mask)
 LLView*	LLView::childFromPoint(S32 x, S32 y, bool recur)
 {
 	if (!getVisible())
-		return NULL;
+		return NULL; // <alchemy/>
 
-	BOOST_FOREACH(LLView* viewp, mChildList)
+	for (LLView* viewp : mChildList)
 	{
 		S32 local_x = x - viewp->getRect().mLeft;
 		S32 local_y = y - viewp->getRect().mBottom;
@@ -930,7 +929,7 @@ LLView*	LLView::childFromPoint(S32 x, S32 y, bool recur)
 		return viewp;
 
 	}
-	return 0;
+	return NULL; // <alchemy/>
 }
 
 BOOL LLView::handleKey(KEY key, MASK mask, BOOL called_from_parent)
@@ -947,8 +946,10 @@ BOOL LLView::handleKey(KEY key, MASK mask, BOOL called_from_parent)
 
 		if (!handled)
 		{
+			// For event logging we don't care which widget handles it
+			// So we capture the key at the end of this function once we know if it was handled
 			handled = handleKeyHere( key, mask );
-			if (handled && LLView::sDebugKeys)
+			if (handled && LLView::sDebugKeys) // <alchemy/> - AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
 			{
 				LL_INFOS() << "Key handled by " << getName() << LL_ENDL;
 			}
@@ -963,9 +964,48 @@ BOOL LLView::handleKey(KEY key, MASK mask, BOOL called_from_parent)
 	return handled;
 }
 
+BOOL LLView::handleKeyUp(KEY key, MASK mask, BOOL called_from_parent)
+{
+	BOOL handled = FALSE;
+
+	if (getVisible() && getEnabled())
+	{
+		if (called_from_parent)
+		{
+			// Downward traversal
+			handled = childrenHandleKeyUp(key, mask) != NULL;
+		}
+
+		if (!handled)
+		{
+			// For event logging we don't care which widget handles it
+			// So we capture the key at the end of this function once we know if it was handled
+			handled = handleKeyUpHere(key, mask);
+			if (handled)
+			{
+				LL_DEBUGS() << "Key handled by " << getName() << LL_ENDL;
+			}
+		}
+	}
+
+	if (!handled && !called_from_parent && mParentView)
+	{
+		// Upward traversal
+		handled = mParentView->handleKeyUp(key, mask, FALSE);
+	}
+	return handled;
+}
+
 // Called from handleKey()
 // Handles key in this object.  Checking parents and children happens in handleKey()
 BOOL LLView::handleKeyHere(KEY key, MASK mask)
+{
+	return FALSE;
+}
+
+// Called from handleKey()
+// Handles key in this object.  Checking parents and children happens in handleKey()
+BOOL LLView::handleKeyUpHere(KEY key, MASK mask)
 {
 	return FALSE;
 }
@@ -1096,6 +1136,12 @@ LLView* LLView::childrenHandleKey(KEY key, MASK mask)
 }
 
 // Called during downward traversal
+LLView* LLView::childrenHandleKeyUp(KEY key, MASK mask)
+{
+	return childrenHandleCharEvent("Key Up", &LLView::handleKeyUp, key, mask);
+}
+
+// Called during downward traversal
 LLView* LLView::childrenHandleUnicodeChar(llwchar uni_char)
 {
 	return childrenHandleCharEvent("Unicode character", &LLView::handleUnicodeCharWithDummyMask,
@@ -1137,7 +1183,7 @@ LLView* LLView::childrenHandleMiddleMouseUp(S32 x, S32 y, MASK mask)
 	LLView* handled_view = NULL;
 	if( getVisible() && getEnabled() )
 	{
-		BOOST_FOREACH(LLView* viewp, mChildList)
+		for (LLView* viewp : mChildList)
 		{
 			S32 local_x = x - viewp->getRect().mLeft;
 			S32 local_y = y - viewp->getRect().mBottom;
@@ -1332,8 +1378,10 @@ void LLView::reshape(S32 width, S32 height, BOOL called_from_parent)
 		mRect.mTop = getRect().mBottom + height;
 
 		// move child views according to reshape flags
-		BOOST_FOREACH(LLView* viewp, mChildList)
+		for (LLView* viewp : mChildList)
 		{
+			if (viewp != NULL)
+			{
 			LLRect child_rect( viewp->mRect );
 
 			if (viewp->followsRight() && viewp->followsLeft())
@@ -1383,6 +1431,7 @@ void LLView::reshape(S32 width, S32 height, BOOL called_from_parent)
 			}
 		}
 	}
+	}
 
 	if (!called_from_parent)
 	{
@@ -1399,7 +1448,7 @@ LLRect LLView::calcBoundingRect()
 {
 	LLRect local_bounding_rect = LLRect::null;
 
-	BOOST_FOREACH(LLView* childp, mChildList)
+	for (LLView* childp : mChildList)
 	{
 		// ignore invisible and "top" children when calculating bounding rect
 		// such as combobox popups
@@ -1561,7 +1610,7 @@ LLView* LLView::getChildView(const std::string& name, BOOL recurse, BOOL create_
 	//if(name.empty())
 	//	return NULL;
 	// Look for direct children *first*
-	/*BOOST_FOREACH(LLView* childp, mChildList)
+	/*for (LLView* childp : mChildList)
 	{
 		llassert(childp);
 		if (childp->getName() == name)
@@ -1569,7 +1618,7 @@ LLView* LLView::getChildView(const std::string& name, BOOL recurse, BOOL create_
 			return childp;
 		}
 	}*/
-	boost::unordered_map<const std::string, LLView*>::const_iterator it = mChildHashMap.find(name);
+	boost::container::flat_map<std::string, LLView*>::const_iterator it = mChildHashMap.find(name);
 	if(it != mChildHashMap.end())
 	{
 		return it->second;
@@ -1577,7 +1626,7 @@ LLView* LLView::getChildView(const std::string& name, BOOL recurse, BOOL create_
 	if (recurse)
 	{
 		// Look inside each child as well.
-		BOOST_FOREACH(LLView* childp, mChildList)
+		for (LLView* childp : mChildList)
 		{
 			llassert(childp);
 			LLView* viewp = childp->getChildView(name, recurse, FALSE);
@@ -3013,7 +3062,7 @@ S32	LLView::notifyParent(const LLSD& info)
 bool	LLView::notifyChildren(const LLSD& info)
 {
 	bool ret = false;
-	BOOST_FOREACH(LLView* childp, mChildList)
+	for (LLView* childp : mChildList)
 	{
 		ret = ret || childp->notifyChildren(info);
 	}

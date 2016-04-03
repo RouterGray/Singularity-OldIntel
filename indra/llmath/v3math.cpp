@@ -76,7 +76,7 @@ BOOL LLVector3::clampLength( F32 length_limit )
 	BOOL changed = FALSE;
 
 	F32 len = length();
-	if (llfinite(len))
+	if (std::isfinite(len))
 	{
 		if ( len > length_limit)
 		{
@@ -97,7 +97,7 @@ BOOL LLVector3::clampLength( F32 length_limit )
 		for (S32 i = 0; i < 3; ++i)
 		{
 			F32 abs_component = fabs(mV[i]);
-			if (llfinite(abs_component))
+			if (std::isfinite(abs_component))
 			{
 				if (abs_component > max_abs_component)
 				{

@@ -1286,10 +1286,11 @@ public:
 		S32 target_index = input["body"]["Index"][0]["Prey"].asInteger();
 		S32 you_index    = input["body"]["Index"][0]["You" ].asInteger();
 
-		std::vector<U32>* avatar_locs = &region->mMapAvatars;
-		std::vector<LLUUID>* avatar_ids = &region->mMapAvatarIDs;
-		avatar_locs->clear();
-		avatar_ids->clear();
+		std::vector<U32>& avatar_locs = region->mMapAvatars;
+		std::vector<LLUUID>& avatar_ids = region->mMapAvatarIDs;
+		std::list<LLUUID> map_avids(avatar_ids.begin(), avatar_ids.end());
+		avatar_locs.clear();
+		avatar_ids.clear();
 
 		//LL_INFOS() << "coarse locations agent[0] " << input["body"]["AgentData"][0]["AgentID"].asUUID() << LL_ENDL;
 		//LL_INFOS() << "my agent id = " << gAgent.getID() << LL_ENDL;
@@ -1329,19 +1330,26 @@ public:
 				pos |= y;
 				pos <<= 8;
 				pos |= z;
-				avatar_locs->push_back(pos);
+				avatar_locs.push_back(pos);
 				//LL_INFOS() << "next pos: " << x << "," << y << "," << z << ": " << pos << LL_ENDL;
 				if(has_agent_data) // for backwards compatibility with old message format
 				{
 					LLUUID agent_id(agents_it->get("AgentID").asUUID());
 					//LL_INFOS() << "next agent: " << agent_id.asString() << LL_ENDL;
-					avatar_ids->push_back(agent_id);
+					avatar_ids.push_back(agent_id);
+					map_avids.remove(agent_id);
 				}
 			}
 			if (has_agent_data)
 			{
 				agents_it++;
 			}
+		}
+		if (LLFloaterAvatarList::instanceExists())
+		{
+			LLFloaterAvatarList& inst(LLFloaterAvatarList::instance());
+			inst.updateAvatarList(region);
+			inst.expireAvatarList(map_avids);
 		}
 	}
 };

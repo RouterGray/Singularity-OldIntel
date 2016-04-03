@@ -1362,7 +1362,11 @@ BOOL LLViewerWindow::handleTranslatedKeyDown(KEY key,  MASK mask, BOOL repeated)
 	// it's all entered/processed.
 	if (key == KEY_RETURN && mask == MASK_NONE)
 	{
-		return FALSE;
+        // RIDER: although, at times some of the controlls (in particular the CEF viewer
+        // would like to know about the KEYDOWN for an enter key... so ask and pass it along.
+        LLFocusableElement* keyboard_focus = gFocusMgr.getKeyboardFocus();
+        if (keyboard_focus && !keyboard_focus->wantsReturnKey())
+    		return FALSE;
 	}
 
 	return gViewerKeyboard.handleKey(key, mask, repeated);
@@ -1380,9 +1384,8 @@ BOOL LLViewerWindow::handleTranslatedKeyUp(KEY key,  MASK mask)
 		tool_inspectp->keyUp(key, mask);
 	}
 
-	return FALSE;
+	return gViewerKeyboard.handleKeyUp(key, mask);
 }
-
 
 void LLViewerWindow::handleScanKey(KEY key, BOOL key_down, BOOL key_up, BOOL key_level)
 {
@@ -2681,6 +2684,46 @@ void LLViewerWindow::draw()
 #endif
 }
 
+// Takes a single keyup event, usually when UI is visible
+BOOL LLViewerWindow::handleKeyUp(KEY key, MASK mask)
+{
+    LLFocusableElement* keyboard_focus = gFocusMgr.getKeyboardFocus();
+
+    if (keyboard_focus
+		&& !(mask & (MASK_CONTROL | MASK_ALT))
+		&& !gFocusMgr.getKeystrokesOnly())
+	{
+		// We have keyboard focus, and it's not an accelerator
+        if (keyboard_focus && keyboard_focus->wantsKeyUpKeyDown())
+        {
+            return keyboard_focus->handleKeyUp(key, mask, FALSE);
+        }
+        else if (key < 0x80)
+		{
+			// Not a special key, so likely (we hope) to generate a character.  Let it fall through to character handler first.
+			return (gFocusMgr.getKeyboardFocus() != NULL);
+		}
+	}
+
+	if (keyboard_focus)
+	{
+		if (keyboard_focus->handleKeyUp(key, mask, FALSE))
+		{
+			LL_DEBUGS() << "LLviewerWindow::handleKeyUp - in 'traverse up' - no loops seen... just called keyboard_focus->handleKeyUp an it returned true" << LL_ENDL;
+			//LLViewerEventRecorder::instance().logKeyEvent(key, mask);
+			return TRUE;
+		}
+		else {
+			LL_DEBUGS() << "LLviewerWindow::handleKeyUp - in 'traverse up' - no loops seen... just called keyboard_focus->handleKeyUp an it returned FALSE" << LL_ENDL;
+		}
+	}
+
+	// don't pass keys on to world when something in ui has focus
+	return gFocusMgr.childHasKeyboardFocus(mRootView)
+		|| LLMenuGL::getKeyboardMode()
+		|| (gMenuBarView && gMenuBarView->getHighlightedItem() && gMenuBarView->getHighlightedItem()->isActive());
+}
+
 // Takes a single keydown event, usually when UI is visible
 BOOL LLViewerWindow::handleKey(KEY key, MASK mask)
 {
@@ -2699,7 +2742,11 @@ BOOL LLViewerWindow::handleKey(KEY key, MASK mask)
 		&& !gFocusMgr.getKeystrokesOnly())
 	{
 		// We have keyboard focus, and it's not an accelerator
-		if (key < 0x80)
+        if (gFocusMgr.getKeyboardFocus() && gFocusMgr.getKeyboardFocus()->wantsKeyUpKeyDown())
+        {
+            return gFocusMgr.getKeyboardFocus()->handleKey(key, mask, FALSE );
+        }
+		else if (key < 0x80)
 		{
 			// Not a special key, so likely (we hope) to generate a character.  Let it fall through to character handler first.
 			return (gFocusMgr.getKeyboardFocus() != NULL);

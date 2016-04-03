@@ -144,14 +144,13 @@ std::string STATUS[] =
 // LLFloaterBvhPreview()
 //-----------------------------------------------------------------------------
 LLFloaterBvhPreview::LLFloaterBvhPreview(const std::string& filename, void* item) :
-	LLFloaterNameDesc(filename, item)
+	LLFloaterNameDesc(filename, item),
+	mItem(item), //<edit/>
+	mLastMouseX(0),
+	mLastMouseY(0),
+	mPlayButton(nullptr),
+	mStopButton(nullptr)
 {
-	//<edit>
-	mItem = item;
-	//<edit>
-	mLastMouseX = 0;
-	mLastMouseY = 0;
-
 	mIDList["Standing"] = ANIM_AGENT_STAND;
 	mIDList["Walking"] = ANIM_AGENT_FEMALE_WALK;
 	mIDList["Sitting"] = ANIM_AGENT_SIT_FEMALE;

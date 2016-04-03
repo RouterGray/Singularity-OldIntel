@@ -28,7 +28,10 @@
 #define LL_LLKEYBOARD_H
 
 #include <map>
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 
 #include "llstringtable.h"
 #include "lltimer.h"

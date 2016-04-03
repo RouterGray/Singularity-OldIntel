@@ -16,16 +16,13 @@ if (OPENAL)
     pkg_check_modules(OPENAL_LIB REQUIRED openal)
     pkg_check_modules(FREEALUT_LIB REQUIRED freealut)
   else (STANDALONE)
-    use_prebuilt_binary(openal-soft)
+    use_prebuilt_binary(openal)
   endif (STANDALONE)
   set(OPENAL_LIBRARIES 
     openal
     alut
     )
-    set(OPENAL_INCLUDE_DIRS
-      ${LIBS_PREBUILT_DIR}/include
-      ${LIBS_PREBUILT_LEGACY_DIR}/include
-      )
+    set(OPENAL_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/include)
 endif (OPENAL)
 
 if (OPENAL)

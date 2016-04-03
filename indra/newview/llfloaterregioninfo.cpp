@@ -204,6 +204,9 @@ LLUUID LLFloaterRegionInfo::sRequestInvoice;
 
 
 LLFloaterRegionInfo::LLFloaterRegionInfo(const LLSD& seed)
+	: LLFloater()
+	, mTab(nullptr)
+	, mInfoPanels()
 {
 	LLUICtrlFactory::getInstance()->buildFloater(this, "floater_region_info.xml", NULL, FALSE);
 }
@@ -508,11 +511,7 @@ void LLFloaterRegionInfo::refreshFromRegion(LLViewerRegion* region)
 		mInfoPanels.begin(),
 		mInfoPanels.end(),
 		llbind2nd(
-#if LL_WINDOWS
-			std::mem_fun1(&LLPanelRegionInfo::refreshFromRegion),
-#else
 			std::mem_fun(&LLPanelRegionInfo::refreshFromRegion),
-#endif
 			region));
 }
 
@@ -2467,8 +2466,13 @@ bool LLPanelEstateInfo::onMessageCommit(const LLSD& notification, const LLSD& re
 }
 
 LLPanelEstateCovenant::LLPanelEstateCovenant()
-	:
-	mCovenantID(LLUUID::null)
+	: LLPanelRegionInfo()
+	, mEstateNameText(nullptr)
+	, mEstateOwnerText(nullptr)
+	, mLastModifiedText(nullptr)
+	, mCovenantID(LLUUID::null)
+	, mEditor(nullptr)
+	, mAssetStatus(ASSET_ERROR)
 {
 }
 

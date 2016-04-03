@@ -36,7 +36,12 @@
 
 #include "llrect.h"
 #include "llsd.h"
+#include "llregistry.h"
+
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 #include <boost/signals2.hpp>
 
 #include "llinitparam.h"
@@ -128,7 +133,7 @@ public:
 	void initFromParams(const Params& p);
 	static const Params& getDefaultParams();
 	LLUICtrl(const Params& p = getDefaultParams(),
-             const LLViewModelPtr& viewmodel=LLViewModelPtr(new LLViewModel));
+			 const LLViewModelPtr& viewmodel=LLViewModelPtr(new LLViewModel));
 	// Singu Note: This constructor is deprecated:
 	LLUICtrl( const std::string& name, const LLRect rect = LLRect(), BOOL mouse_opaque = TRUE,
 		commit_callback_t commit_callback = NULL,
@@ -139,8 +144,8 @@ public:
 
 	// We need this virtual so we can override it with derived versions
 	virtual LLViewModel* getViewModel() const;
-    // We shouldn't ever need to set this directly
-    //virtual void    setViewModel(const LLViewModelPtr&);
+	// We shouldn't ever need to set this directly
+	//virtual void    setViewModel(const LLViewModelPtr&);
 
 	virtual BOOL	postBuild();
 
@@ -179,9 +184,9 @@ public:
 	virtual BOOL	getTentative() const;
 	virtual void	setValue(const LLSD& value);
 	virtual LLSD	getValue() const;
-    /// When two widgets are displaying the same data (e.g. during a skin
-    /// change), share their ViewModel.
-    virtual void    shareViewModelFrom(const LLUICtrl& other);
+	/// When two widgets are displaying the same data (e.g. during a skin
+	/// change), share their ViewModel.
+	virtual void    shareViewModelFrom(const LLUICtrl& other);
 
 	virtual BOOL	setTextArg(  const std::string& key, const LLStringExplicit& text );
 	virtual void	setIsChrome(BOOL is_chrome);
@@ -259,12 +264,12 @@ public:
 	};
 
 	template <typename F, typename DERIVED> class CallbackRegistry : public LLRegistrySingleton<std::string, F, DERIVED >
-	{};	
+	{};
 
 	class CommitCallbackRegistry : public CallbackRegistry<commit_callback_t, CommitCallbackRegistry>{};
 	// the enable callback registry is also used for visiblity callbacks
 	class EnableCallbackRegistry : public CallbackRegistry<enable_callback_t, EnableCallbackRegistry>{};
-		
+
 protected:
 
 	static bool controlListener(const LLSD& newvalue, LLHandle<LLUICtrl> handle, std::string type);
@@ -282,7 +287,7 @@ protected:
 
 	mouse_signal_t*		mDoubleClickSignal;
 	
-    LLViewModelPtr  mViewModel;
+	LLViewModelPtr  mViewModel;
 
 	LLControlVariable* mEnabledControlVariable;
 	boost::signals2::connection mEnabledControlConnection;

@@ -1464,7 +1464,7 @@ void LLAgentWearables::setWearableOutfit(const LLInventoryItem::item_array_t& it
 		}
 #endif
 		// If we got here, everything matches.
-		matched++;
+		//matched++; // TODO: Find out why this was here, this became unreachable at some point.
 	}
 	LL_DEBUGS("Avatar") << "matched " << matched << " mismatched " << mismatched << LL_ENDL;
 	for (S32 j=0; j<LLWearableType::WT_COUNT; j++)
@@ -1775,7 +1775,7 @@ void LLAgentWearables::findAttachmentsAddRemoveInfo(LLInventoryModel::item_array
 
 	std::set<LLUUID> requested_item_ids;
 	std::set<LLUUID> current_item_ids;
-	for (S32 i=0; i<obj_item_array.size(); i++)
+	for (U32 i=0; i<obj_item_array.size(); i++)
 	{
 		const LLUUID & requested_id = obj_item_array[i].get()->getLinkedUUID();
 		//LL_INFOS() << "Requested attachment id " << requested_id << LL_ENDL;
@@ -1941,11 +1941,10 @@ void LLAgentWearables::userAttachMultipleAttachments(LLInventoryModel::item_arra
 		}
 
 		const LLInventoryItem* item = obj_item_array.at(i).get();
-		bool replace = !gHippoGridManager->getConnectedGrid()->supportsInvLinks();
 		msg->nextBlockFast(_PREHASH_ObjectData );
 		msg->addUUIDFast(_PREHASH_ItemID, item->getLinkedUUID());
 		msg->addUUIDFast(_PREHASH_OwnerID, item->getPermissions().getOwner());
-		msg->addU8Fast(_PREHASH_AttachmentPt, replace? 0 : ATTACHMENT_ADD);	// Wear at the previous or default attachment point
+		msg->addU8Fast(_PREHASH_AttachmentPt, ATTACHMENT_ADD);	// Wear at the previous or default attachment point
 // [RLVa:KB] - Checked: 2011-05-22 (RLVa-1.3.1)
 		if ( (rlv_handler_t::isEnabled()) && (sInitialAttachmentsRequested) && (gRlvAttachmentLocks.hasLockedAttachmentPoint(RLV_LOCK_ANY)) )
 		{

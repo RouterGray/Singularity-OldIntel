@@ -91,17 +91,11 @@
 #include "rlvhandler.h"
 #include "rlvlocks.h"
 // [/RLVa:KB]
-#include <boost/foreach.hpp>
 
 // Marketplace outbox current disabled
 #define ENABLE_MERCHANT_OUTBOX_CONTEXT_MENU	1
 #define ENABLE_MERCHANT_SEND_TO_MARKETPLACE_CONTEXT_MENU 1
 #define BLOCK_WORN_ITEMS_IN_OUTBOX 1
-
-bool InventoryLinksEnabled()
-{
-	return gHippoGridManager->getConnectedGrid()->supportsInvLinks();
-}
 
 typedef std::pair<LLUUID, LLUUID> two_uuids_t;
 typedef std::list<two_uuids_t> two_uuids_list_t;
@@ -318,8 +312,8 @@ void LLInvFVBridge::removeBatch(std::vector<LLFolderViewEventListener*>& batch)
 	LLViewerInventoryCategory* cat = NULL;
 	LLInventoryModel::cat_array_t	descendent_categories;
 	LLInventoryModel::item_array_t	descendent_items;
-	S32 count = batch.size();
-	S32 i,j;
+	U32 count = batch.size();
+	U32 i,j;
 	for(i = 0; i < count; ++i)
 	{
 		bridge = (LLInvFVBridge*)(batch.at(i));
@@ -574,10 +568,6 @@ bool LLInvFVBridge::isClipboardPasteableAsCopy() const
 
 BOOL LLInvFVBridge::isClipboardPasteableAsLink() const
 {
-	if (!InventoryLinksEnabled())
-	{
-		return FALSE;
-	}
 	if (!LLInventoryClipboard::instance().hasContents() || !isAgentInventory())
 	{
 		return FALSE;
@@ -814,7 +804,7 @@ void LLInvFVBridge::getClipboardEntries(bool show_asset_id,
 	{
 		items.push_back(std::string("Paste"));
 		// Paste as copy if we have links.
-		if (InventoryLinksEnabled() && isClipboardPasteableAsCopy())
+		if (isClipboardPasteableAsCopy())
 		{
 			items.push_back(std::string("Paste As Copy"));
 			paste_as_copy = true;
@@ -827,7 +817,7 @@ void LLInvFVBridge::getClipboardEntries(bool show_asset_id,
 		paste_as_copy = false;
 	}
 
-	if (!paste_as_copy && InventoryLinksEnabled())
+	if (!paste_as_copy)
 	{
 		items.push_back(std::string("Paste As Link"));
 		if (!isClipboardPasteableAsLink() || (flags & FIRST_SELECTED_ITEM) == 0)
@@ -1852,21 +1842,18 @@ BOOL LLItemBridge::removeItem()
 // [SL:KB] - Patch: Inventory-Links | Checked: 2010-06-01 (Catznip-2.2.0a) | Added: Catznip-2.0.1a
 	// Users move folders around and reuse links that way... if we know something has links then it's just bad not to warn them :|
 // [/SL:KB]
-//	if (!InventoryLinksEnabled())
+	if (!item->getIsLinkType())
 	{
-		if (!item->getIsLinkType())
+		LLInventoryModel::item_array_t item_array = gInventory.collectLinksTo(mUUID);
+		const U32 num_links = item_array.size();
+		if (num_links > 0)
 		{
-			LLInventoryModel::item_array_t item_array = gInventory.collectLinksTo(mUUID);
-			const U32 num_links = item_array.size();
-			if (num_links > 0)
-			{
-				// Warn if the user is will break any links when deleting this item.
-				LLNotifications::instance().add(params);
-				return FALSE;
-			}
+			// Warn if the user is will break any links when deleting this item.
+			LLNotifications::instance().add(params);
+			return FALSE;
 		}
 	}
-	
+
 	LLNotifications::instance().forceResponse(params, 0);
 	return TRUE;
 }
@@ -1924,7 +1911,7 @@ BOOL LLItemBridge::isItemCopyable() const
 		// NOTE: we do *not* want to return TRUE on everything like LL seems to do in SL-2.1.0 because not all types are "linkable"
 		return (item->getPermissions().allowCopyBy(gAgent.getID())) || (LLAssetType::lookupCanLink(item->getType()));
 // [/SL:KB]
-//		return item->getPermissions().allowCopyBy(gAgent.getID()) || InventoryLinksEnabled();
+//		return item->getPermissions().allowCopyBy(gAgent.getID());
 	}
 	return FALSE;
 }
@@ -2209,7 +2196,7 @@ int get_folder_levels(LLInventoryCategory* inv_cat)
 
 	int max_child_levels = 0;
 
-	for (S32 i=0; i < cats->size(); ++i)
+	for (size_t i=0; i < cats->size(); ++i)
 	{
 		LLInventoryCategory* category = cats->at(i);
 		max_child_levels = llmax(max_child_levels, get_folder_levels(category));
@@ -2319,7 +2306,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 		if (is_movable)
 		{
 			model->collectDescendents(cat_id, descendent_categories, descendent_items, FALSE);
-			for (S32 i=0; i < descendent_categories.size(); ++i)
+			for (U32 i=0; i < descendent_categories.size(); ++i)
 			{
 				LLInventoryCategory* category = descendent_categories[i];
 				if(LLFolderType::lookupIsProtectedType(category->getPreferredType()))
@@ -2354,7 +2341,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 		}
 		if (is_movable && move_is_into_trash)
 		{
-			for (S32 i=0; i < descendent_items.size(); ++i)
+			for (U32 i=0; i < descendent_items.size(); ++i)
 			{
 				LLInventoryItem* item = descendent_items[i];
 				if (get_is_item_worn(item->getUUID()))
@@ -2366,7 +2353,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 		}
 		if (is_movable && move_is_into_landmarks)
 		{
-			for (S32 i=0; i < descendent_items.size(); ++i)
+			for (U32 i=0; i < descendent_items.size(); ++i)
 			{
 				LLViewerInventoryItem* item = descendent_items[i];
 
@@ -2459,7 +2446,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 				
 				if (is_movable == TRUE)
 				{
-					for (S32 i=0; i < descendent_items.size(); ++i)
+					for (size_t i=0; i < descendent_items.size(); ++i)
 					{
 						LLInventoryItem* item = descendent_items[i];
 						if (!can_move_to_outbox(item))
@@ -2482,7 +2469,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 			// Look for any gestures and deactivate them
 			if (move_is_into_trash)
 			{
-				for (S32 i=0; i < descendent_items.size(); i++)
+				for (U32 i=0; i < descendent_items.size(); i++)
 				{
 					LLInventoryItem* item = descendent_items[i];
 					if (item->getType() == LLAssetType::AT_GESTURE
@@ -2510,7 +2497,7 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 						LLInventoryModel::item_array_t items;
 						model->collectDescendents(cat_id, cats, items, LLInventoryModel::EXCLUDE_TRASH);
 						LLInventoryObject::const_object_list_t citems;
-						BOOST_FOREACH(LLPointer<LLViewerInventoryItem> item, items)
+						for (LLPointer<LLViewerInventoryItem> item : items)
 						{
 							citems.push_back(item.get());
 						}
@@ -3585,15 +3572,13 @@ void build_context_menu_folder_options(LLInventoryModel* model, const LLUUID& mU
 		// Only enable add/replace outfit for non-system folders.
 		if (!is_system_folder)
 		{
-			if (InventoryLinksEnabled() /*&&
 			// Adding an outfit onto another (versus replacing) doesn't make sense.
 			// <singu/> Actually, it does make a bit of sense, in some cases.
-				!is_outfit*/)
+			//if(!is_outfit)
 			{
 				items.push_back(std::string("Add To Outfit"));
 			}
-			else //if(!InventoryLinksEnabled())
-				items.push_back(std::string("Wearable And Object Wear"));
+			//items.push_back(std::string("Wearable And Object Wear"));
 
 			items.push_back(std::string("Replace Outfit"));
 		}
@@ -5615,8 +5600,7 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 			{
 				items.push_back(std::string("Wearable And Object Separator"));
 				items.push_back(std::string("Wearable And Object Wear"));
-				if (InventoryLinksEnabled())
-					items.push_back(std::string("Wearable Add"));
+				items.push_back(std::string("Wearable Add"));
 				items.push_back(std::string("Attach To"));
 				items.push_back(std::string("Attach To HUD"));
 				// commented out for DEV-32347 - AND Commented back in for non-morons. -HgB
@@ -5926,7 +5910,6 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 		// Disable wear and take off based on whether the item is worn.
 		if(item)
 		{
-			bool cof_pending = LLUpdateAppearanceOnDestroy::sActiveCallbacks;
 			switch (item->getType())
 			{
 				case LLAssetType::AT_CLOTHING:
@@ -5935,12 +5918,20 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 				case LLAssetType::AT_BODYPART:
 					items.push_back(std::string("Wearable And Object Wear"));
 
-					if (!cof_pending && get_is_item_worn(item->getUUID()))
+					if (LLUpdateAppearanceOnDestroy::sActiveCallbacks) // cof_pending
+					{
+						disabled_items.push_back(std::string("Wearable And Object Wear"));
+						disabled_items.push_back(std::string("Wearable Add"));
+						disabled_items.push_back(std::string("Take Off"));
+						disabled_items.push_back(std::string("Wearable Move Forward"));
+						disabled_items.push_back(std::string("Wearable Move Back"));
+					}
+					else if (get_is_item_worn(item->getUUID()))
 					{
 						disabled_items.push_back(std::string("Wearable And Object Wear"));
 						disabled_items.push_back(std::string("Wearable Add"));
 // [RLVa:KB] - Checked: 2010-04-04 (RLVa-1.2.0c) | Added: RLVa-1.2.0c
-						if (cof_pending || (rlv_handler_t::isEnabled()) && (!gRlvWearableLocks.canRemove(item)))
+						if ((rlv_handler_t::isEnabled()) && (!gRlvWearableLocks.canRemove(item)))
 							disabled_items.push_back(std::string("Take Off"));
 // [/RLVa:KB]
 					}
@@ -5948,11 +5939,11 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 					{
 						disabled_items.push_back(std::string("Take Off"));
 						disabled_items.push_back(std::string("Wearable Edit"));
-						if (cof_pending || gAgentWearables.getWearableFromAssetID(item->getAssetUUID()))
+						if (gAgentWearables.getWearableFromAssetID(item->getAssetUUID()))
 						{
 							disabled_items.push_back(std::string("Wearable Add"));
 							LLViewerWearable* wearable = gAgentWearables.getWearableFromAssetID(item->getAssetUUID());
-							if (cof_pending || (wearable && wearable != gAgentWearables.getTopWearable(mWearableType)))
+							if (wearable && wearable != gAgentWearables.getTopWearable(mWearableType))
 								disabled_items.push_back(std::string("Wearable And Object Wear"));
 						}
 // [RLVa:KB] - Checked: 2010-06-09 (RLVa-1.2.0g) | Modified: RLVa-1.2.0g
@@ -5974,12 +5965,13 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 						items.push_back(std::string("Wearable Move Back"));
 
 						bool is_worn = get_is_item_worn(item->getUUID());
-						if (cof_pending || !is_worn || !gAgentWearables.canMoveWearable(item->getUUID(), false))
+						if (!is_worn || !gAgentWearables.canMoveWearable(item->getUUID(), false))
 							disabled_items.push_back(std::string("Wearable Move Forward"));
-						if (cof_pending || !is_worn || !gAgentWearables.canMoveWearable(item->getUUID(), true))
+						if (!is_worn || !gAgentWearables.canMoveWearable(item->getUUID(), true))
 							disabled_items.push_back(std::string("Wearable Move Back"));
 
-						if (cof_pending || !gAgentWearables.canAddWearable(mWearableType))
+						// <singu/> Allow adding for the behavior of replacing bodyparts but keeping worn things else.
+						if (item->getType() != LLAssetType::AT_BODYPART && !gAgentWearables.canAddWearable(mWearableType))
 						{
 							disabled_items.push_back(std::string("Wearable Add"));
 						}

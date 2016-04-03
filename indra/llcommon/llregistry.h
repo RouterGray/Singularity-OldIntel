@@ -29,7 +29,9 @@
 
 #include <list>
 
-#include <boost/type_traits.hpp>
+//#include <boost/type_traits.hpp>
+#include <boost/type_traits/add_reference.hpp>
+#include <boost/type_traits/add_pointer.hpp>
 #include "llsingleton.h"
 #include "llstl.h"
 

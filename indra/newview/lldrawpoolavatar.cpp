@@ -918,7 +918,7 @@ void LLDrawPoolAvatar::beginRiggedShinySimple()
 	llassert_always(sVertexProgram->mProgramObject > 0);
 
 	sVertexProgram->bind();
-	LLDrawPoolBump::bindCubeMap(sVertexProgram, 2, sDiffuseChannel, cube_channel, false);
+	LLDrawPoolBump::bindCubeMap(sVertexProgram, 2, sDiffuseChannel, cube_channel);
 }
 
 void LLDrawPoolAvatar::endRiggedShinySimple()
@@ -928,7 +928,7 @@ void LLDrawPoolAvatar::endRiggedShinySimple()
 	if(!sVertexProgram)
 		return;
 
-	LLDrawPoolBump::unbindCubeMap(sVertexProgram, 2, sDiffuseChannel, cube_channel, false);
+	LLDrawPoolBump::unbindCubeMap(sVertexProgram, 2, sDiffuseChannel, cube_channel);
 	sVertexProgram->unbind();
 	sVertexProgram = NULL;
 }
@@ -951,7 +951,7 @@ void LLDrawPoolAvatar::beginRiggedFullbrightShiny()
 	llassert_always(sVertexProgram->mProgramObject > 0);
 
 	sVertexProgram->bind();
-	LLDrawPoolBump::bindCubeMap(sVertexProgram, 2, sDiffuseChannel, cube_channel, false);
+	LLDrawPoolBump::bindCubeMap(sVertexProgram, 2, sDiffuseChannel, cube_channel);
 	if (LLPipeline::sRenderingHUDs || !LLPipeline::sRenderDeferred)
 	{
 		sVertexProgram->uniform1f(LLShaderMgr::TEXTURE_GAMMA, 1.0f);
@@ -971,7 +971,7 @@ void LLDrawPoolAvatar::endRiggedFullbrightShiny()
 	if(!sVertexProgram)
 		return;
 
-	LLDrawPoolBump::unbindCubeMap(sVertexProgram, 2, sDiffuseChannel, cube_channel, false);
+	LLDrawPoolBump::unbindCubeMap(sVertexProgram, 2, sDiffuseChannel, cube_channel);
 	sVertexProgram->unbind();
 	sVertexProgram = NULL;
 }

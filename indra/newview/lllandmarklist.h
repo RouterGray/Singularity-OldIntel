@@ -27,7 +27,10 @@
 #ifndef LL_LLLANDMARKLIST_H
 #define LL_LLLANDMARKLIST_H
 
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 #include <map>
 #include "lllandmark.h"
 #include "lluuid.h"

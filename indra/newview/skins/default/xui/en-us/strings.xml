@@ -158,7 +158,7 @@ Make sure you entered the correct Login URI. An example of a Login URI is: \"htt
 	<string name="Searching">Searching...</string>
 	<string name="NoneFound">None found.</string>
 
-	<!-- Indicates that an avatar's name or other similar datum is being retrieved. General usage. -->
+	<!-- Indicates that an avatar name or other similar datum is being retrieved. General usage. -->
 	<string name="RetrievingData">Retrieving...</string>
 
 	<string name="ReleaseNotes">Release Notes</string>
@@ -350,6 +350,8 @@ Make sure you entered the correct Login URI. An example of a Login URI is: \"htt
 	<string name="TrackYourCamera">Track your camera</string>
   <string name="ControlYourCamera">Control your camera</string>
   <string name="TeleportYourAgent">Teleport you</string>
+	<string name="ManageEstateSilently">Manage your estates silently</string>
+	<string name="ChangeYourDefaultAnimations">Change your default animations</string>
 	<string name="JoinAnExperience">Join an experience</string> <!-- not used -->
 	<string name="SilentlyManageEstateAccess">Suppress alerts when managing estate access lists</string>
 	<string name="OverrideYourAnimations">Replace your default animations</string>
@@ -389,13 +391,21 @@ Make sure you entered the correct Login URI. An example of a Login URI is: \"htt
 	<string name="load_file_verb">Load</string>
 	<string name="targa_image_files">Targa Images</string>
 	<string name="bitmap_image_files">Bitmap Images</string>
+	<string name="png_image_files">PNG Images</string>
+	<string name="jpg_image_files">JPEG Images</string>
+	<string name="j2c_image_files">Jpeg2000 Images</string>
+	<string name="save_texture_image_files">Targa, PNG, JPEG, Jpeg2000, or Bitmap Images</string>
 	<string name="avi_movie_file">AVI Movie File</string>
 	<string name="xaf_animation_file">XAF Anim File</string>
 	<string name="xml_file">XML File</string>
+	<string name="csv_files">Comma separated values</string>
 	<string name="raw_file">RAW File</string>
 	<string name="compressed_image_files">Compressed Images</string>
 	<string name="load_files">Load Files</string>
 	<string name="choose_the_directory">Choose Directory</string>
+	<string name="script_files">Scripts</string>
+	<string name="dictionary_files">Dictionaries</string>
+    <string name="zip_files">Zip files</string>
 
 	<string name="Sound: ">Sound: </string>
 
@@ -586,11 +596,11 @@ Returns the wind velocity at the object position + offset
 	</string>
 	<string name="LSLTipText_llSetStatus">
 llSetStatus(integer status, integer value)
-Sets status (STATUS_PHYSICS, STATUS_PHANTOM, STATUS_BLOCK_GRAB, STATUS_ROTATE_X, STATUS_ROTATE_Y, and/or STATUS_ROTATE_Z) to value
+Sets status (STATUS_PHYSICS, STATUS_PHANTOM, STATUS_BLOCK_GRAB, STATUS_BLOCK_GRAB_OBJECT, STATUS_ROTATE_X, STATUS_ROTATE_Y, and/or STATUS_ROTATE_Z) to value
 	</string>
 	<string name="LSLTipText_llGetStatus">
 integer llGetStatus(integer status)
-Returns value of status (STATUS_PHYSICS, STATUS_PHANTOM, STATUS_BLOCK_GRAB, STATUS_ROTATE_X, STATUS_ROTATE_Y, and/or STATUS_ROTATE_Z)
+Returns the boolean value of status (STATUS_PHYSICS, STATUS_PHANTOM, STATUS_BLOCK_GRAB, STATUS_BLOCK_GRAB_OBJECT, STATUS_ROTATE_X, STATUS_ROTATE_Y, and/or STATUS_ROTATE_Z)
 	</string>
 	<string name="LSLTipText_llSetScale">
 llSetScale(vector scale)
@@ -746,7 +756,7 @@ Returns the script time in seconds and then resets the script timer to zero
 	</string>
 	<string name="LSLTipText_llSound">
 llSound(string sound, float volume, integer queue, integer loop)
-Plays sound at volume and whether it should loop or not
+Plays sound at volume and whether it should loop or not.
 	</string>
 	<string name="LSLTipText_llPlaySound">
 llPlaySound(string sound, float volume)
@@ -3103,6 +3113,18 @@ Where tag = tag string to match.  Removes bot's matching the tag.
     <string name="ScriptDeleteObject">Deleted [SCRIPTS] scripts in [OBJECTS] objects.</string>
     <string name="took_a_snapshot">took a snapshot</string>
 
+    <!-- Radar Alert Strings -->
+    <string name="radar_alert_template">[NAME] [ACTION] [RANGE].</string>
+    <!-- [ACTION] -->
+    <string name="has_triggered_your_avatar_age_alert">has triggered your avatar age alert</string>
+    <string name="has_entered">has entered</string>
+    <string name="has_left">has left</string>
+    <!-- [RANGE] -->
+    <string name="the_sim">the sim</string>
+    <string name="draw_distance">draw distance</string>
+    <string name="shout_range">shout range</string>
+    <string name="chat_range">chat range</string>
+
   <!-- Avatar busy/away mode -->
 	<string name="AvatarSetNotAway">Not Away</string>
 	<string name="AvatarSetAway">Away</string>
@@ -3483,6 +3505,10 @@ Expected .wav, .tga, .bmp, .jpg, .jpeg, or .bvh
 	<string name="accel-win-control">Ctrl-</string>
 	<string name="accel-win-alt">Alt-</string>
 	<string name="accel-win-shift">Shift-</string>
+
+	<!-- Tab Containers -->
+	<string name="tab_tooltip_prev">[ALT]Left arrow for previous tab</string>
+	<string name="tab_tooltip_next">[ALT]Right arrow for next tab</string>
 
 	<!-- Previews -->
 	<string name="FileSaved">File Saved</string>

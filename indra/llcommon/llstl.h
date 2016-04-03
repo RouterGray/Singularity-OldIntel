@@ -35,11 +35,8 @@
 
 #include <functional>
 #include <algorithm>
-#include <map>
+#include <utility>
 #include <vector>
-#include <list>
-#include <set>
-#include <deque>
 #include <typeinfo>
 
 // Use to compare the first element only of a pair
@@ -224,14 +221,7 @@ template <typename T>
 //Singu note: This has been generalized to support a broader range of map-esque containers
 inline bool is_in_map(const T& inmap, typename T::key_type const& key)
 {
-	if(inmap.find(key) == inmap.end())
-	{
-		return false;
-	}
-	else
-	{
-		return true;
-	}
+	return inmap.find(key) != inmap.end();
 }
 
 // Similar to get_ptr_in_map, but for any type with a valid T(0) constructor.
@@ -331,19 +321,6 @@ inline T* vector_append(std::vector<T>& invec, S32 N)
 	return &(invec[sz]);
 }
 
-template <typename T>
-inline void vector_shrink_to_fit(std::vector<T>& invec)
-{
-	//For Windows: We always assume vs2010 or later, which support this c++11 feature with no configuration needed.
-	//For GCC: __cplusplus >= 201103L indicates C++11 support. __GXX_EXPERIMENTAL_CXX0X being set indicates experimental c++0x support. C++11 support replaces C++0x support.
-	//		   std::vector::shrink_to_fit was added to GCCs C++0x implementation in version 4.5.0.
-#if defined(LL_WINDOWS) || __cplusplus >= 201103L || (defined(__GXX_EXPERIMENTAL_CXX0X) && __GNUC_MINOR__ >= 5)
-	invec.shrink_to_fit();
-#else
-	std::vector<T>(invec).swap(invec);
-#endif
-}
-
 // call function f to n members starting at first. similar to std::for_each
 template <class InputIter, class Size, class Function>
 Function ll_for_n(InputIter first, Size n, Function f)
@@ -410,7 +387,7 @@ OutputIter ll_transform_n(
 template <class _Pair>
 struct _LLSelect1st : public std::unary_function<_Pair, typename _Pair::first_type> {
   const typename _Pair::first_type& operator()(const _Pair& __x) const {
-    return __x.first;
+	return __x.first;
   }
 };
 
@@ -418,7 +395,7 @@ template <class _Pair>
 struct _LLSelect2nd : public std::unary_function<_Pair, typename _Pair::second_type>
 {
   const typename _Pair::second_type& operator()(const _Pair& __x) const {
-    return __x.second;
+	return __x.second;
   }
 };
 
@@ -438,10 +415,10 @@ protected:
   _Operation2 __op2;
 public:
   ll_unary_compose(const _Operation1& __x, const _Operation2& __y)
-    : __op1(__x), __op2(__y) {}
+	: __op1(__x), __op2(__y) {}
   typename _Operation1::result_type
   operator()(const typename _Operation2::argument_type& __x) const {
-    return __op1(__op2(__x));
+	return __op1(__op2(__x));
   }
 };
 
@@ -463,20 +440,20 @@ protected:
 public:
   ll_binary_compose(const _Operation1& __x, const _Operation2& __y,
 					const _Operation3& __z)
-    : _M_op1(__x), _M_op2(__y), _M_op3(__z) { }
+	: _M_op1(__x), _M_op2(__y), _M_op3(__z) { }
   typename _Operation1::result_type
   operator()(const typename _Operation2::argument_type& __x) const {
-    return _M_op1(_M_op2(__x), _M_op3(__x));
+	return _M_op1(_M_op2(__x), _M_op3(__x));
   }
 };
 
 template <class _Operation1, class _Operation2, class _Operation3>
 inline ll_binary_compose<_Operation1, _Operation2, _Operation3>
 llcompose2(const _Operation1& __op1, const _Operation2& __op2,
-         const _Operation3& __op3)
+		 const _Operation3& __op3)
 {
   return ll_binary_compose<_Operation1,_Operation2,_Operation3>
-    (__op1, __op2, __op3);
+	(__op1, __op2, __op3);
 }
 
 // helpers to deal with the fact that MSDev does not package
@@ -491,7 +468,7 @@ protected:
 public:
   llbinder1st(const _Operation& __x,
 			  const typename _Operation::first_argument_type& __y)
-      : op(__x), value(__y) {}
+	  : op(__x), value(__y) {}
 	typename _Operation::result_type
 	operator()(const typename _Operation::second_argument_type& __x) const {
 		return op(value, __x);
@@ -532,27 +509,6 @@ llbind2nd(const _Operation& __oper, const _Tp& __x)
 }
 
 /**
- * Compare std::type_info* pointers a la std::less. We break this out as a
- * separate function for use in two different std::less specializations.
- */
-inline
-bool before(const std::type_info* lhs, const std::type_info* rhs)
-{
-#if LL_LINUX && defined(__GNUC__) && ((__GNUC__ < 4) || (__GNUC__ == 4 && __GNUC_MINOR__ < 4))
-    // If we're building on Linux with gcc, and it's either gcc 3.x or
-    // 4.{0,1,2,3}, then we have to use a workaround. Note that we use gcc on
-    // Mac too, and some people build with gcc on Windows (cygwin or mingw).
-    // On Linux, different load modules may produce different type_info*
-    // pointers for the same type. Have to compare name strings to get good
-    // results.
-    return strcmp(lhs->name(), rhs->name()) < 0;
-#else  // not Linux, or gcc 4.4+
-    // Just use before(), as we normally would
-    return lhs->before(*rhs);
-#endif
-}
-
-/**
  * Specialize std::less<std::type_info*> to use std::type_info::before().
  * See MAINT-1175. It is NEVER a good idea to directly compare std::type_info*
  * because, on Linux, you might get different std::type_info* pointers for the
@@ -566,7 +522,7 @@ namespace std
 	{
 		bool operator()(const std::type_info* lhs, const std::type_info* rhs) const
 		{
-			return before(lhs, rhs);
+			return lhs->before(*rhs);
 		}
 	};
 
@@ -576,7 +532,7 @@ namespace std
 	{
 		bool operator()(std::type_info* lhs, std::type_info* rhs) const
 		{
-			return before(lhs, rhs);
+			return lhs->before(*rhs);
 		}
 	};
 } // std
@@ -592,10 +548,10 @@ namespace std
 template <typename T, typename U>
 struct ll_template_cast_impl
 {
-    T operator()(U)
-    {
-        return 0;
-    }
+	T operator()(U)
+	{
+		return 0;
+	}
 };
 
 /**
@@ -637,7 +593,7 @@ struct ll_template_cast_impl
 template <typename T, typename U>
 T ll_template_cast(U value)
 {
-    return ll_template_cast_impl<T, U>()(value);
+	return ll_template_cast_impl<T, U>()(value);
 }
 
 /**
@@ -648,10 +604,10 @@ T ll_template_cast(U value)
 template <typename T>
 struct ll_template_cast_impl<T, T>
 {
-    T operator()(T value)
-    {
-        return value;
-    }
+	T operator()(T value)
+	{
+		return value;
+	}
 };
 
 /**
@@ -721,10 +677,10 @@ struct ll_template_cast_impl<T, T>
 template <>                                     \
 struct ll_template_cast_impl<DEST, SOURCE>      \
 {                                               \
-    DEST operator()(SOURCE wrapper)             \
-    {                                           \
-        return wrapper;                         \
-    }                                           \
+	DEST operator()(SOURCE wrapper)             \
+	{                                           \
+		return wrapper;                         \
+	}                                           \
 }
 
 

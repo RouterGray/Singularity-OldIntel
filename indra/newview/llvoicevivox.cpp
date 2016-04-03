@@ -3912,7 +3912,7 @@ void LLVivoxVoiceClient::sessionState::removeParticipant(const std::string& uri)
 		vector_replace_with_last(mParticipantList, iter);
 		if (mParticipantList.empty() || mParticipantList.capacity() - mParticipantList.size() > 16)
 		{
-			vector_shrink_to_fit(mParticipantList);
+			mParticipantList.shrink_to_fit();
 		}
 		mParticipantsChanged = true;
 		LL_DEBUGS("Voice") << "participant \"" << uri << "\" (" << iter->mAvatarID << ") removed." << LL_ENDL;
@@ -3929,7 +3929,7 @@ void LLVivoxVoiceClient::sessionState::removeAllParticipants()
 
 	// Singu Note: mParticipantList has replaced both mParticipantsByURI and mParticipantsByUUID, meaning we don't have two maps to maintain any longer.
 	mParticipantList.clear();
-	vector_shrink_to_fit(mParticipantList);
+	mParticipantList.shrink_to_fit();
 }
 
 void LLVivoxVoiceClient::getParticipantList(std::set<LLUUID> &participants)

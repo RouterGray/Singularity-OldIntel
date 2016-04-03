@@ -181,7 +181,11 @@ public:
 	bool isMaterialListSubset( LLModel* ref );
 	bool needToAddFaces( LLModel* ref, int& refFaceCnt, int& modelFaceCnt );
 	
-	std::vector<std::string> mMaterialList;
+	typedef std::vector<std::string> material_list;
+
+	material_list mMaterialList;
+
+	material_list& getMaterialList() { return mMaterialList; }
 
 	//data used for skin weights
 	class JointWeight
@@ -274,6 +278,8 @@ public:
 	Decomposition mPhysics;
 
 	EModelStatus mStatus ;
+
+	int mSubmodelID;
 protected:
 	void addVolumeFacesFromDomMesh(domMesh* mesh);
 	virtual BOOL createVolumeFacesFromDomMesh(domMesh *mesh);

@@ -235,7 +235,14 @@ void LLFloaterLand::onClose(bool app_quitting)
 
 
 LLFloaterLand::LLFloaterLand(const LLSD& seed)
-:	LLFloater(std::string("floaterland"), std::string("FloaterLandRect5"), std::string("About Land"))
+	: LLFloater(std::string("floaterland"), std::string("FloaterLandRect5"), std::string("About Land"))
+	, mTabLand(nullptr)
+	, mPanelGeneral(nullptr)
+	, mPanelObjects(nullptr)
+	, mPanelOptions(nullptr)
+	, mPanelMedia(nullptr)
+	, mPanelAccess(nullptr)
+	, mPanelCovenant(nullptr)
 {
 	mFactoryMap["land_general_panel"] = LLCallbackMap(createPanelLandGeneral, this);
 	mFactoryMap["land_covenant_panel"] = LLCallbackMap(createPanelLandCovenant, this);
@@ -354,9 +361,38 @@ void* LLFloaterLand::createPanelLandAccess(void* data)
 
 
 LLPanelLandGeneral::LLPanelLandGeneral(LLParcelSelectionHandle& parcel)
-:	LLPanel(std::string("land_general_panel")),
-	mUncheckedSell(FALSE),
-	mParcel(parcel)
+	: LLPanel(std::string("land_general_panel"))
+	, mEditName(nullptr)
+	, mEditDesc(nullptr)
+	, mTextSalePending(nullptr)
+	, mBtnDeedToGroup(nullptr)
+	, mBtnSetGroup(nullptr)
+	, mTextOwner(nullptr)
+	, mBtnProfile(nullptr)
+	, mContentRating(nullptr)
+	, mLandType(nullptr)
+	, mTextGroup(nullptr)
+	, mTextClaimDate(nullptr)
+	, mTextPriceLabel(nullptr)
+	, mTextPrice(nullptr)
+	, mCheckDeedToGroup(nullptr)
+	, mCheckContributeWithDeed(nullptr)
+	, mSaleInfoForSale1(nullptr)
+	, mSaleInfoForSale2(nullptr)
+	, mSaleInfoForSaleObjects(nullptr)
+	, mSaleInfoForSaleNoObjects(nullptr)
+	, mSaleInfoNotForSale(nullptr)
+	, mBtnSellLand(nullptr)
+	, mBtnStopSellLand(nullptr)
+	, mTextDwell(nullptr)
+	, mBtnBuyLand(nullptr)
+	, mBtnScriptLimits(nullptr)
+	, mBtnBuyGroupLand(nullptr)
+	, mBtnReleaseLand(nullptr)
+	, mBtnReclaimLand(nullptr)
+	, mBtnBuyPass(nullptr)
+	, mBtnStartAuction(nullptr)
+	, mParcel(parcel)
 {
 }
 
@@ -374,7 +410,6 @@ BOOL LLPanelLandGeneral::postBuild()
 	// preserve that ability.
 	
 	mTextSalePending = getChild<LLTextBox>("SalePending");
-	mTextOwnerLabel = getChild<LLTextBox>("Owner:");
 	mTextOwner = getChild<LLTextBox>("OwnerText");
 	
 	mContentRating = getChild<LLTextBox>("ContentRatingText");
@@ -384,7 +419,6 @@ BOOL LLPanelLandGeneral::postBuild()
 	mBtnProfile->setClickedCallback(boost::bind(&LLPanelLandGeneral::onClickProfile, this));
 
 	
-	mTextGroupLabel = getChild<LLTextBox>("Group:");
 	mTextGroup = getChild<LLTextBox>("GroupText");
 
 	
@@ -425,7 +459,6 @@ BOOL LLPanelLandGeneral::postBuild()
 	mBtnStopSellLand->setClickedCallback(onClickStopSellLand, this);
 
 	
-	mTextClaimDateLabel = getChild<LLTextBox>("Claimed:");
 	mTextClaimDate = getChild<LLTextBox>("DateClaimText");
 
 	
@@ -2412,8 +2445,10 @@ void LLPanelLandOptions::onClickPublishHelp(void*)
 //---------------------------------------------------------------------------
 
 LLPanelLandAccess::LLPanelLandAccess(LLParcelSelectionHandle& parcel)
-	: LLPanel(std::string("land_access_panel")),
-	  mParcel(parcel)
+	: LLPanel(std::string("land_access_panel"))
+	, mListAccess(nullptr)
+	, mListBanned(nullptr)
+	, mParcel(parcel)
 {
 }
 

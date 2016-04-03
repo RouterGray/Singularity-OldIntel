@@ -39,7 +39,7 @@
 #include "llviewermedia.h" // FIXME: don't use LLViewerMedia internals
 
 // third-party JSONCPP
-#include <json/reader.h>	// JSONCPP
+#include <jsoncpp/reader.h>	// JSONCPP
 
 /*
  * Workflow:
@@ -87,7 +87,7 @@ public:
 		Json::Reader reader;
 		if (!reader.parse(body, root))
 		{
-			LL_WARNS() << "Failed to parse upload config: " << reader.getFormatedErrorMessages() << LL_ENDL;
+			LL_WARNS() << "Failed to parse upload config: " << reader.getFormattedErrorMessages() << LL_ENDL;
 			LLWebProfile::reportImageUploadStatus(false);
 			return;
 		}

@@ -711,6 +711,7 @@ void init_menus()
 	menu->addChild(new LLMenuItemCallGL("Debug Settings...", handle_singleton_toggle<LLFloaterSettingsDebug>, NULL, NULL));
 	// Debugging view for unified notifications: CTRL-SHIFT-5
 	menu->addChild(new LLMenuItemCallGL("Notifications Console...", handle_show_notifications_console, NULL, NULL, '5', MASK_CONTROL|MASK_SHIFT));
+	menu->addChild(new LLMenuItemCallGL("Load from XML...", handle_load_from_xml));
 	gLoginMenuBarView->addChild(menu);
 	menu->updateParent(LLMenuGL::sMenuContainer);
 
@@ -4513,7 +4514,7 @@ static void derez_objects(
 			msg->addU8Fast(_PREHASH_PacketCount, packet_count);
 			msg->addU8Fast(_PREHASH_PacketNumber, packet_number);
 			objects_in_packet = 0;
-			while((object_index < objectsp->size())
+			while((object_index < (S32)objectsp->size())
 				  && (objects_in_packet++ < MAX_ROOTS_PER_PACKET))
 
 			{
@@ -7306,16 +7307,7 @@ void menu_toggle_double_click_control(void* user_data)
 {
 	std::string setting(static_cast<char*>(user_data));
 	LLControlVariable* control(gSavedSettings.getControl(setting));
-	bool checked = control->get();
-	// Doubleclick actions - there can be only one
-	if (!checked)
-	{
-		if (setting == "DoubleClickAutoPilot")
-			gSavedSettings.setBOOL("DoubleClickTeleport", false);
-		else if (setting == "DoubleClickTeleport")
-			gSavedSettings.setBOOL("DoubleClickAutoPilot", false);
-	}
-	control->set(!checked);
+	control->set(!control->get());
 }
 
 

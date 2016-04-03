@@ -32,7 +32,10 @@
 #include "llnotificationptr.h"
 #include "aialert.h"
 
+#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
+#define BOOST_FUNCTION_HPP_INCLUDED
+#endif
 
 class LLSD;
 

@@ -34,7 +34,7 @@
 			</text>
 			<text name="GroupText"/>
 			<button label="Definir..." label_selected="Definir..." name="Set..."/>
-			<button bottom="-160"  label="Info" name="group_profile"/>
+			<button label="Info" name="group_profile"/>
 			<check_box label="Permitir transferir al grupo" name="check deed" tool_tip="Un oficial del grupo puede transferir este terreno al grupo. El terreno será sostenido por el grupo en sus asignaciones de terreno."/>
 			<button label="Transferir..." label_selected="Transferir..." name="Deed..." tool_tip="Sólo puedes transferir un terreno si eres un oficial del grupo seleccionado."/>
 			<check_box label="El propietario hace una contribución transfiriendo" name="check contrib" tool_tip="Cuando el terreno se transfiere al grupo, el antiguo propietario contribuye con una asignación suficiente de terreno."/>

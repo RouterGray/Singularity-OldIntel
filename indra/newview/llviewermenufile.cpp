@@ -95,9 +95,26 @@ class LLFileEnableSaveAs : public view_listener_t
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 	{
-		bool new_value = gFloaterView->getFrontmost() &&
-						 gFloaterView->getFrontmost()->canSaveAs();
-		gMenuHolder->findControl(userdata["control"].asString())->setValue(new_value);
+		LLFloater* frontmost = gFloaterView->getFrontmost();
+		if (frontmost && frontmost->hasChild("Save Preview As...", true)) // If we're the tearoff.
+		{
+			// Get the next frontmost sibling.
+			const LLView::child_list_const_iter_t kids_end = gFloaterView->endChild();
+			LLView::child_list_const_iter_t kid = std::find(gFloaterView->beginChild(), kids_end, frontmost);
+			if (kids_end != kid)
+			{
+				for (++kid; kid != kids_end; ++kid)
+				{
+					LLView* viewp = *kid;
+					if (viewp->getVisible() && !viewp->isDead())
+					{
+						frontmost = static_cast<LLFloater*>(viewp);
+						break;
+					}
+				}
+			}
+		}
+		gMenuHolder->findControl(userdata["control"].asString())->setValue(frontmost && frontmost->canSaveAs());
 		return true;
 	}
 };

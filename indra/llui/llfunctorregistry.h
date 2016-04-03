@@ -37,8 +37,6 @@
 #include <string>
 #include <map>
 
-#include <boost/function.hpp>
-
 #include "llsd.h"
 #include "llsingleton.h"
 
@@ -139,6 +137,7 @@ public:
 		LLFunctorRegistry<FUNCTOR_TYPE>::instance().registerFunctor(name, functor);
 	}
 };
+
 
 #endif//LL_LLFUNCTORREGISTRY_H
 
