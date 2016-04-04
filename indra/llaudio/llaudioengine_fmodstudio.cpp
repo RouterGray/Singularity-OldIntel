@@ -45,7 +45,6 @@
 #include "fmod.hpp"
 #include "fmod_errors.h"
 #include "lldir.h"
-#include "llapr.h"
 
 #include "sound_ids.h"
 
@@ -234,15 +233,15 @@ public:
 } gSoundCheck;
 
 LLAudioEngine_FMODSTUDIO::LLAudioEngine_FMODSTUDIO(bool enable_profiler, bool verbose_debugging)
+	: mInited(false)
+	, mWindGen(NULL)
+	, mWindDSPDesc(NULL)
+	, mWindDSP(NULL)
+	, mSystem(NULL)
+	, mEnableProfiler(enable_profiler)
 {
 	sVerboseDebugging = verbose_debugging;
-	mInited = false;
-	mWindGen = NULL;
-	mWindDSP = NULL;
-	mSystem = NULL;
-	mEnableProfiler = enable_profiler;
 }
-
 
 LLAudioEngine_FMODSTUDIO::~LLAudioEngine_FMODSTUDIO()
 {
@@ -502,13 +501,13 @@ bool LLAudioEngine_FMODSTUDIO::initWind()
 
 	cleanupWind();
 
-	FMOD_DSP_DESCRIPTION dspdesc;
-	memset(&dspdesc, 0, sizeof(FMOD_DSP_DESCRIPTION));	//Set everything to zero
-	dspdesc.pluginsdkversion = FMOD_PLUGIN_SDK_VERSION;
-	strncpy(dspdesc.name,"Wind Unit", sizeof(dspdesc.name));	//Set name to "Wind Unit"
-	dspdesc.numoutputbuffers = 1;
-	dspdesc.read = &windDSPCallback; //Assign callback.
-	if (Check_FMOD_Error(mSystem->createDSP(&dspdesc, &mWindDSP), "FMOD::createDSP") || !mWindDSP)
+	mWindDSPDesc = new FMOD_DSP_DESCRIPTION();
+	memset(mWindDSPDesc, 0, sizeof(*mWindDSPDesc));	//Set everything to zero
+	mWindDSPDesc->pluginsdkversion = FMOD_PLUGIN_SDK_VERSION;
+	strncpy(mWindDSPDesc->name, "Wind Unit", sizeof(mWindDSPDesc->name));	//Set name to "Wind Unit"
+	mWindDSPDesc->numoutputbuffers = 1;
+	mWindDSPDesc->read = &windDSPCallback; //Assign callback.
+	if (Check_FMOD_Error(mSystem->createDSP(mWindDSPDesc, &mWindDSP), "FMOD::createDSP") || !mWindDSP)
 		return false;
 	
 	int frequency = 44100;
@@ -518,9 +517,9 @@ bool LLAudioEngine_FMODSTUDIO::initWind()
 		mWindGen = new LLWindGen<MIXBUFFERFORMAT>((U32)frequency);
 
 		if (!Check_FMOD_Error(mWindDSP->setUserData((void*)mWindGen), "FMOD::DSP::setUserData") &&
-			!Check_FMOD_Error(mSystem->playDSP(mWindDSP, NULL, false, 0), "FMOD::System::playDSP") &&
 			!Check_FMOD_Error(mSystem->getSoftwareFormat(NULL, &mode, NULL), "FMOD::System::getSoftwareFormat") &&
-			!Check_FMOD_Error(mWindDSP->setChannelFormat(FMOD_CHANNELMASK_STEREO, 2, mode), "FMOD::DSP::setChannelFormat"))
+			!Check_FMOD_Error(mWindDSP->setChannelFormat(FMOD_CHANNELMASK_STEREO, 2, mode), "FMOD::DSP::setChannelFormat") &&
+			!Check_FMOD_Error(mSystem->playDSP(mWindDSP, NULL, false, 0), "FMOD::System::playDSP"))
 			return true;	//Success
 	}
 
@@ -539,6 +538,9 @@ void LLAudioEngine_FMODSTUDIO::cleanupWind()
 		Check_FMOD_Error(mWindDSP->release(), "FMOD::DSP::release");
 		mWindDSP = NULL;
 	}
+
+	delete mWindDSPDesc;
+	mWindDSPDesc = NULL;
 
 	delete mWindGen;
 	mWindGen = NULL;
@@ -885,7 +887,7 @@ bool LLAudioBufferFMODSTUDIO::loadWAV(const std::string& filename)
 		return false;
 	}
 
-	if (!LLAPRFile::isExist(filename, LL_APR_RPB))
+	if (!gDirUtilp->fileExists(filename))
 	{
 		// File not found, abort.
 		return false;
