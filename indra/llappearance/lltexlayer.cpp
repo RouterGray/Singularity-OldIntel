@@ -1557,13 +1557,13 @@ void LLTexLayer::renderMorphMasks(S32 x, S32 y, S32 width, S32 height, const LLC
 		}
 
 		U32 cache_index = alpha_mask_crc.getCRC();
-		U8* alpha_data = NULL;//get_if_there(mAlphaCache,cache_index,(U8*)NULL);
+		U8* alpha_data = NULL; 
                 // We believe we need to generate morph masks, do not assume that the cached version is accurate.
                 // We can get bad morph masks during login, on minimize, and occasional gl errors.
                 // We should only be doing this when we believe something has changed with respect to the user's appearance.
-		//if (!alpha_data)
 		{
-			// clear out a slot if we have filled our cache
+                       LL_DEBUGS("Avatar") << "gl alpha cache of morph mask not found, doing readback: " << getName() << LL_ENDL;
+                        // clear out a slot if we have filled our cache
 			S32 max_cache_entries = getTexLayerSet()->getAvatarAppearance()->isSelf() ? 4 : 1;
 			while ((S32)mAlphaCache.size() >= max_cache_entries)
 			{
@@ -1573,8 +1573,12 @@ void LLTexLayer::renderMorphMasks(S32 x, S32 y, S32 width, S32 height, const LLC
 				mAlphaCache.erase(iter2);
 			}
 			alpha_data = new U8[width * height];
+			U8* pixels_tmp = new U8[width * height * 4];
+			glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels_tmp);
+			for (int i = 0; i < width * height; ++i)
+				alpha_data[i] = pixels_tmp[i * 4 + 3];
+			delete[] pixels_tmp;
 			mAlphaCache[cache_index] = alpha_data;
-			glReadPixels(x, y, width, height, GL_ALPHA, GL_UNSIGNED_BYTE, alpha_data);
 		}
 		
 		getTexLayerSet()->getAvatarAppearance()->dirtyMesh();
@@ -1783,13 +1787,11 @@ LLTexLayer* LLTexLayerTemplate::getLayer(U32 i) const
 /*virtual*/ void LLTexLayerTemplate::gatherAlphaMasks(U8 *data, S32 originX, S32 originY, S32 width, S32 height)
 {
 	U32 num_wearables = updateWearableCache();
-	for (U32 i = 0; i < num_wearables; i++)
+	U32 i = num_wearables - 1; // For rendering morph masks, we only want to use the top wearable
+	LLTexLayer *layer = getLayer(i);
+	if (layer)
 	{
-		LLTexLayer *layer = getLayer(i);
-		if (layer)
-		{
-			layer->addAlphaMask(data, originX, originY, width, height);
-		}
+		layer->addAlphaMask(data, originX, originY, width, height);
 	}
 }
 

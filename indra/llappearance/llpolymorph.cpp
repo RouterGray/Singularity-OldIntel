@@ -680,8 +680,8 @@ BOOL LLPolyMorphTarget::setInfo(LLPolyMorphTargetInfo* info)
 	if (!mMorphData)
 	{
 		const std::string driven_tag = "_Driven";
-		U32 pos = morph_param_name.find(driven_tag);
-		if (pos > 0)
+		size_t pos = morph_param_name.find(driven_tag);
+		if (pos != std::string::npos)
 		{
 			morph_param_name = morph_param_name.substr(0,pos);
 			mMorphData = mMesh->getMorphData(morph_param_name);
