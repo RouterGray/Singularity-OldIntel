@@ -225,6 +225,7 @@ BOOL LLEditingMotion::onUpdate(F32 time, U8* joint_mask)
 		  LL_CONT << "NULL";
 		}
 		LL_CONT << LL_ENDL;
+		target.setVec(1.f, 1.f, 1.f);
 	}
 	
 	mTarget.setPosition( target + mParentJoint.getPosition());
