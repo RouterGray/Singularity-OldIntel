@@ -63,6 +63,11 @@
 #include "lltexturecache.h"
 ///////////////////////////////////////////////////////////////////////////////
 
+// extern
+const S32Megabytes gMinVideoRam(32);
+const S32Megabytes gMaxVideoRam(1024);
+
+
 // statics
 LLPointer<LLViewerTexture>        LLViewerTexture::sNullImagep = NULL;
 LLPointer<LLViewerTexture>        LLViewerTexture::sBlackImagep = NULL;
@@ -83,12 +88,12 @@ S32 LLViewerTexture::sAuxCount = 0;
 LLFrameTimer LLViewerTexture::sEvaluationTimer;
 F32 LLViewerTexture::sDesiredDiscardBias = 0.f;
 F32 LLViewerTexture::sDesiredDiscardScale = 1.1f;
-S32 LLViewerTexture::sBoundTextureMemoryInBytes = 0;
-S32 LLViewerTexture::sTotalTextureMemoryInBytes = 0;
-S32 LLViewerTexture::sMaxBoundTextureMemInMegaBytes = 0;
-S32 LLViewerTexture::sMaxTotalTextureMemInMegaBytes = 0;
-S32 LLViewerTexture::sMaxDesiredTextureMemInBytes = 0 ;
-S8  LLViewerTexture::sCameraMovingDiscardBias = 0 ;
+S32Bytes LLViewerTexture::sBoundTextureMemory;
+S32Bytes LLViewerTexture::sTotalTextureMemory;
+S32Megabytes LLViewerTexture::sMaxBoundTextureMemory;
+S32Megabytes LLViewerTexture::sMaxTotalTextureMem;
+S32Bytes LLViewerTexture::sMaxDesiredTextureMem;
+S8  LLViewerTexture::sCameraMovingDiscardBias = 0;
 F32 LLViewerTexture::sCameraMovingBias = 0.0f ;
 S32 LLViewerTexture::sMaxSculptRez = 128 ; //max sculpt image size
 const S32 MAX_CACHED_RAW_IMAGE_AREA = 64 * 64 ;
@@ -450,8 +455,9 @@ bool LLViewerTexture::isMemoryForTextureLow()
 	timer.reset() ;
 
 	LLFastTimer t(FTM_TEXTURE_MEMORY_CHECK);
-	const static S32 MIN_FREE_TEXTURE_MEMORY = 5 ; //MB
-	const static S32 MIN_FREE_MAIN_MEMORy = 100 ; //MB
+
+	static const S32Megabytes MIN_FREE_TEXTURE_MEMORY(5); //MB
+	static const S32Megabytes MIN_FREE_MAIN_MEMORY(100); //MB	
 
 	bool low_mem = false ;
 	if (gGLManager.mHasATIMemInfo)
@@ -459,7 +465,7 @@ bool LLViewerTexture::isMemoryForTextureLow()
 		S32 meminfo[4];
 		glGetIntegerv(GL_TEXTURE_FREE_MEMORY_ATI, meminfo);
 
-		if(meminfo[0] / 1024 < MIN_FREE_TEXTURE_MEMORY)
+		if((S32Megabytes)meminfo[0] < MIN_FREE_TEXTURE_MEMORY)
 		{
 			low_mem = true ;
 		}
@@ -467,7 +473,7 @@ bool LLViewerTexture::isMemoryForTextureLow()
 		if(!low_mem) //check main memory, only works for windows.
 		{
 			LLMemory::updateMemoryInfo() ;
-			if(LLMemory::getAvailableMemKB() / 1024 < MIN_FREE_MAIN_MEMORy)
+			if(LLMemory::getAvailableMemKB() < MIN_FREE_TEXTURE_MEMORY)
 			{
 				low_mem = true ;
 			}
@@ -511,17 +517,17 @@ void LLViewerTexture::updateClass(const F32 velocity, const F32 angular_velocity
 		LLViewerMediaTexture::updateClass() ;
 	}
 
-	sBoundTextureMemoryInBytes = LLImageGL::sBoundTextureMemoryInBytes;//in bytes
-	sTotalTextureMemoryInBytes = LLImageGL::sGlobalTextureMemoryInBytes;//in bytes
-	sMaxBoundTextureMemInMegaBytes = gTextureList.getMaxResidentTexMem();//in MB	
-	sMaxTotalTextureMemInMegaBytes = gTextureList.getMaxTotalTextureMem() ;//in MB
-	sMaxDesiredTextureMemInBytes = MEGA_BYTES_TO_BYTES(sMaxTotalTextureMemInMegaBytes) ; //in Bytes, by default and when total used texture memory is small.
+	sBoundTextureMemory = LLImageGL::sBoundTextureMemory;
+	sTotalTextureMemory = LLImageGL::sGlobalTextureMemory;
+	sMaxBoundTextureMemory = S32Megabytes(gTextureList.getMaxResidentTexMem());
+	sMaxTotalTextureMem = S32Megabytes(gTextureList.getMaxTotalTextureMem());
+	sMaxDesiredTextureMem = sMaxTotalTextureMem; //in Bytes, by default and when total used texture memory is small.
 
-	if (BYTES_TO_MEGA_BYTES(sBoundTextureMemoryInBytes) >= sMaxBoundTextureMemInMegaBytes ||
-		BYTES_TO_MEGA_BYTES(sTotalTextureMemoryInBytes) >= sMaxTotalTextureMemInMegaBytes)
+	if (sBoundTextureMemory >= sMaxBoundTextureMemory ||
+		sTotalTextureMemory >= sMaxTotalTextureMem)
 	{
-		//when texture memory overflows, lower down the threashold to release the textures more aggressively.
-		sMaxDesiredTextureMemInBytes = llmin((S32)(sMaxDesiredTextureMemInBytes * 0.75f) , MEGA_BYTES_TO_BYTES(MAX_VIDEO_RAM_IN_MEGA_BYTES)) ;//512 MB
+		//when texture memory overflows, lower down the threshold to release the textures more aggressively.
+		sMaxDesiredTextureMem = llmin(sMaxDesiredTextureMem * 0.75f, F32Bytes(gMaxVideoRam));
 	
 		// If we are using more texture memory than we should,
 		// scale up the desired discard level
@@ -537,8 +543,8 @@ void LLViewerTexture::updateClass(const F32 velocity, const F32 angular_velocity
 		sEvaluationTimer.reset();
 	}
 	else if (sDesiredDiscardBias > 0.0f &&
-			 BYTES_TO_MEGA_BYTES(sBoundTextureMemoryInBytes) < sMaxBoundTextureMemInMegaBytes * texmem_lower_bound_scale &&
-			 BYTES_TO_MEGA_BYTES(sTotalTextureMemoryInBytes) < sMaxTotalTextureMemInMegaBytes * texmem_lower_bound_scale)
+			 sBoundTextureMemory < sMaxBoundTextureMemory * texmem_lower_bound_scale &&
+			 sTotalTextureMemory < sMaxTotalTextureMem * texmem_lower_bound_scale)
 	{			 
 		// If we are using less texture memory than we should,
 		// scale down the desired discard level
@@ -549,15 +555,14 @@ void LLViewerTexture::updateClass(const F32 velocity, const F32 angular_velocity
 		}
 	}
 	sDesiredDiscardBias = llclamp(sDesiredDiscardBias, desired_discard_bias_min, desired_discard_bias_max);
-	//LLViewerTexture::sUseTextureAtlas = gSavedSettings.getBOOL("EnableTextureAtlas") ;
 	
-	F32 camera_moving_speed = LLViewerCamera::getInstance()->getAverageSpeed() ;
+	F32 camera_moving_speed = LLViewerCamera::getInstance()->getAverageSpeed();
 	F32 camera_angular_speed = LLViewerCamera::getInstance()->getAverageAngularSpeed();
 	sCameraMovingBias = llmax(0.2f * camera_moving_speed, 2.0f * camera_angular_speed - 1);
 	sCameraMovingDiscardBias = (S8)(sCameraMovingBias);
 
-	LLViewerTexture::sFreezeImageScalingDown = (BYTES_TO_MEGA_BYTES(sBoundTextureMemoryInBytes) < 0.75f * sMaxBoundTextureMemInMegaBytes * texmem_middle_bound_scale) &&
-				(BYTES_TO_MEGA_BYTES(sTotalTextureMemoryInBytes) < 0.75f * sMaxTotalTextureMemInMegaBytes * texmem_middle_bound_scale) ;
+	LLViewerTexture::sFreezeImageScalingDown = (sBoundTextureMemory < 0.75f * sMaxBoundTextureMemory * texmem_middle_bound_scale) &&
+				(sTotalTextureMemory < 0.75f * sMaxTotalTextureMem * texmem_middle_bound_scale);
 }
 
 //end of static functions
@@ -1156,7 +1161,7 @@ void LLViewerFetchedTexture::dump()
 // ONLY called from LLViewerFetchedTextureList
 void LLViewerFetchedTexture::destroyTexture() 
 {
-	if(LLImageGL::sGlobalTextureMemoryInBytes < sMaxDesiredTextureMemInBytes * 0.95f)//not ready to release unused memory.
+	if(LLImageGL::sGlobalTextureMemory < sMaxDesiredTextureMem * 0.95f)//not ready to release unused memory.
 	{
 		return ;
 	}
@@ -3049,13 +3054,13 @@ void LLViewerLODTexture::processTextureStats()
 				scaleDown() ;
 			}
 			// Limit the amount of GL memory bound each frame
-			else if ( BYTES_TO_MEGA_BYTES(sBoundTextureMemoryInBytes) > sMaxBoundTextureMemInMegaBytes * texmem_middle_bound_scale &&
+			else if ( sBoundTextureMemory > sMaxBoundTextureMemory * texmem_middle_bound_scale &&
 				(!getBoundRecently() || mDesiredDiscardLevel >= mCachedRawDiscardLevel))
 			{
 				scaleDown() ;
 			}
 			// Only allow GL to have 2x the video card memory
-			else if ( BYTES_TO_MEGA_BYTES(sTotalTextureMemoryInBytes) > sMaxTotalTextureMemInMegaBytes*texmem_middle_bound_scale &&
+			else if ( sTotalTextureMemory > sMaxTotalTextureMem * texmem_middle_bound_scale &&
 				(!getBoundRecently() || mDesiredDiscardLevel >= mCachedRawDiscardLevel))
 			{
 				scaleDown() ;
@@ -3639,10 +3644,10 @@ LLTexturePipelineTester::LLTexturePipelineTester() : LLMetricPerformanceTesterWi
 	addMetric("TotalBytesBoundForLargeImage") ;
 	addMetric("PercentageBytesBound") ;
 	
-	mTotalBytesLoaded = 0 ;
-	mTotalBytesLoadedFromCache = 0 ;	
-	mTotalBytesLoadedForLargeImage = 0 ;
-	mTotalBytesLoadedForSculpties = 0 ;
+	mTotalBytesLoaded = (S32Bytes)0;
+	mTotalBytesLoadedFromCache = (S32Bytes)0;	
+	mTotalBytesLoadedForLargeImage = (S32Bytes)0;
+	mTotalBytesLoadedForSculpties = (S32Bytes)0;
 
 	reset() ;
 }
@@ -3656,8 +3661,8 @@ void LLTexturePipelineTester::update()
 {
 	mLastTotalBytesUsed = mTotalBytesUsed ;
 	mLastTotalBytesUsedForLargeImage = mTotalBytesUsedForLargeImage ;
-	mTotalBytesUsed = 0 ;
-	mTotalBytesUsedForLargeImage = 0 ;
+	mTotalBytesUsed = (S32Bytes)0;
+	mTotalBytesUsedForLargeImage = (S32Bytes)0;
 	
 	if(LLAppViewer::getTextureFetch()->getNumRequests() > 0) //fetching list is not empty
 	{
@@ -3698,10 +3703,10 @@ void LLTexturePipelineTester::reset()
 	mStartStablizingTime = 0.0f ;
 	mEndStablizingTime = 0.0f ;
 
-	mTotalBytesUsed = 0 ;
-	mTotalBytesUsedForLargeImage = 0 ;
-	mLastTotalBytesUsed = 0 ;
-	mLastTotalBytesUsedForLargeImage = 0 ;
+	mTotalBytesUsed = (S32Bytes)0;
+	mTotalBytesUsedForLargeImage = (S32Bytes)0;
+	mLastTotalBytesUsed = (S32Bytes)0;
+	mLastTotalBytesUsedForLargeImage = (S32Bytes)0;
 	
 	mStartFetchingTime = 0.0f ;
 	
@@ -3716,59 +3721,59 @@ void LLTexturePipelineTester::reset()
 void LLTexturePipelineTester::outputTestRecord(LLSD *sd) 
 {	
 	std::string currentLabel = getCurrentLabelName();
-	(*sd)[currentLabel]["TotalBytesLoaded"]              = (LLSD::Integer)mTotalBytesLoaded ;
-	(*sd)[currentLabel]["TotalBytesLoadedFromCache"]     = (LLSD::Integer)mTotalBytesLoadedFromCache ;
-	(*sd)[currentLabel]["TotalBytesLoadedForLargeImage"] = (LLSD::Integer)mTotalBytesLoadedForLargeImage ;
-	(*sd)[currentLabel]["TotalBytesLoadedForSculpties"]  = (LLSD::Integer)mTotalBytesLoadedForSculpties ;
+	(*sd)[currentLabel]["TotalBytesLoaded"]              = (LLSD::Integer)mTotalBytesLoaded.value();
+	(*sd)[currentLabel]["TotalBytesLoadedFromCache"]     = (LLSD::Integer)mTotalBytesLoadedFromCache.value();
+	(*sd)[currentLabel]["TotalBytesLoadedForLargeImage"] = (LLSD::Integer)mTotalBytesLoadedForLargeImage.value();
+	(*sd)[currentLabel]["TotalBytesLoadedForSculpties"]  = (LLSD::Integer)mTotalBytesLoadedForSculpties.value();
 
-	(*sd)[currentLabel]["StartFetchingTime"]             = (LLSD::Real)mStartFetchingTime ;
-	(*sd)[currentLabel]["TotalGrayTime"]                 = (LLSD::Real)mTotalGrayTime ;
-	(*sd)[currentLabel]["TotalStablizingTime"]           = (LLSD::Real)mTotalStablizingTime ;
+	(*sd)[currentLabel]["StartFetchingTime"]             = (LLSD::Real)mStartFetchingTime;
+	(*sd)[currentLabel]["TotalGrayTime"]                 = (LLSD::Real)mTotalGrayTime;
+	(*sd)[currentLabel]["TotalStablizingTime"]           = (LLSD::Real)mTotalStablizingTime;
 
-	(*sd)[currentLabel]["StartTimeLoadingSculpties"]     = (LLSD::Real)mStartTimeLoadingSculpties ;
-	(*sd)[currentLabel]["EndTimeLoadingSculpties"]       = (LLSD::Real)mEndTimeLoadingSculpties ;
+	(*sd)[currentLabel]["StartTimeLoadingSculpties"]     = (LLSD::Real)mStartTimeLoadingSculpties;
+	(*sd)[currentLabel]["EndTimeLoadingSculpties"]       = (LLSD::Real)mEndTimeLoadingSculpties;
 
-	(*sd)[currentLabel]["Time"]                          = LLImageGL::sLastFrameTime ;
-	(*sd)[currentLabel]["TotalBytesBound"]               = (LLSD::Integer)mLastTotalBytesUsed ;
-	(*sd)[currentLabel]["TotalBytesBoundForLargeImage"]  = (LLSD::Integer)mLastTotalBytesUsedForLargeImage ;
-	(*sd)[currentLabel]["PercentageBytesBound"]          = (LLSD::Real)(100.f * mLastTotalBytesUsed / mTotalBytesLoaded) ;
+	(*sd)[currentLabel]["Time"]                          = LLImageGL::sLastFrameTime;
+	(*sd)[currentLabel]["TotalBytesBound"]               = (LLSD::Integer)mLastTotalBytesUsed.value();
+	(*sd)[currentLabel]["TotalBytesBoundForLargeImage"]  = (LLSD::Integer)mLastTotalBytesUsedForLargeImage.value();
+	(*sd)[currentLabel]["PercentageBytesBound"]          = (LLSD::Real)(100.f * mLastTotalBytesUsed / mTotalBytesLoaded);
 }
 
 void LLTexturePipelineTester::updateTextureBindingStats(const LLViewerTexture* imagep) 
 {
-	U32 mem_size = (U32)imagep->getTextureMemory() ;
-	mTotalBytesUsed += mem_size ; 
+	U32Bytes mem_size = imagep->getTextureMemory();
+	mTotalBytesUsed += mem_size; 
 
-	if(MIN_LARGE_IMAGE_AREA <= (U32)(mem_size / (U32)imagep->getComponents()))
+	if(MIN_LARGE_IMAGE_AREA <= (U32)(mem_size.value() / (U32)imagep->getComponents()))
 	{
-		mTotalBytesUsedForLargeImage += mem_size ;
+		mTotalBytesUsedForLargeImage += mem_size;
 	}
 }
 	
 void LLTexturePipelineTester::updateTextureLoadingStats(const LLViewerFetchedTexture* imagep, const LLImageRaw* raw_imagep, BOOL from_cache) 
 {
-	U32 data_size = (U32)raw_imagep->getDataSize() ;
-	mTotalBytesLoaded += data_size ;
+	U32Bytes data_size = (U32Bytes)raw_imagep->getDataSize();
+	mTotalBytesLoaded += data_size;
 
 	if(from_cache)
 	{
-		mTotalBytesLoadedFromCache += data_size ;
+		mTotalBytesLoadedFromCache += data_size;
 	}
 
-	if(MIN_LARGE_IMAGE_AREA <= (U32)(data_size / (U32)raw_imagep->getComponents()))
+	if(MIN_LARGE_IMAGE_AREA <= (U32)(data_size.value() / (U32)raw_imagep->getComponents()))
 	{
-		mTotalBytesLoadedForLargeImage += data_size ;
+		mTotalBytesLoadedForLargeImage += data_size;
 	}
 
 	if(imagep->forSculpt())
 	{
-		mTotalBytesLoadedForSculpties += data_size ;
+		mTotalBytesLoadedForSculpties += data_size;
 
 		if(mStartTimeLoadingSculpties > mEndTimeLoadingSculpties)
 		{
-			mStartTimeLoadingSculpties = LLImageGL::sLastFrameTime ;
+			mStartTimeLoadingSculpties = LLImageGL::sLastFrameTime;
 		}
-		mEndTimeLoadingSculpties = LLImageGL::sLastFrameTime ;
+		mEndTimeLoadingSculpties = LLImageGL::sLastFrameTime;
 	}
 }
 

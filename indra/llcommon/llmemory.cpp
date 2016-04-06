@@ -32,7 +32,7 @@
 //#endif
 
 #if defined(LL_WINDOWS)
-//# include <windows.h>
+#include "llwin32headerslean.h"
 # include <psapi.h>
 #elif defined(LL_DARWIN)
 # include <sys/types.h>
@@ -50,11 +50,11 @@
 
 //static
 char* LLMemory::reserveMem = 0;
-U32 LLMemory::sAvailPhysicalMemInKB = U32_MAX ;
-U32 LLMemory::sMaxPhysicalMemInKB = 0;
-U32 LLMemory::sAllocatedMemInKB = 0;
-U32 LLMemory::sAllocatedPageSizeInKB = 0 ;
-U32 LLMemory::sMaxHeapSizeInKB = U32_MAX ;
+U32Kilobytes LLMemory::sAvailPhysicalMemInKB(U32_MAX);
+U32Kilobytes LLMemory::sMaxPhysicalMemInKB(0);
+U32Kilobytes LLMemory::sAllocatedMemInKB(0);
+U32Kilobytes LLMemory::sAllocatedPageSizeInKB(0);
+U32Kilobytes LLMemory::sMaxHeapSizeInKB(U32_MAX);
 BOOL LLMemory::sEnableMemoryFailurePrevention = FALSE;
 
 #if __DEBUG_PRIVATE_MEM__
@@ -93,9 +93,9 @@ void LLMemory::freeReserve()
 }
 
 //static 
-void LLMemory::initMaxHeapSizeGB(F32 max_heap_size_gb, BOOL prevent_heap_failure)
+void LLMemory::initMaxHeapSizeGB(F32Gigabytes max_heap_size, BOOL prevent_heap_failure)
 {
-	sMaxHeapSizeInKB = (U32)(max_heap_size_gb * 1024 * 1024) ;
+	sMaxHeapSizeInKB = max_heap_size;
 	sEnableMemoryFailurePrevention = prevent_heap_failure ;
 }
 
@@ -112,10 +112,10 @@ void LLMemory::updateMemoryInfo()
 		return ;
 	}
 
-	sAllocatedMemInKB = (U32)(counters.WorkingSetSize / 1024) ;
-	sAllocatedPageSizeInKB = (U32)(counters.PagefileUsage / 1024) ;
+	sAllocatedMemInKB = (U32Bytes)(counters.WorkingSetSize) ;
+	sAllocatedPageSizeInKB = (U32Bytes)(counters.PagefileUsage) ;
 
-	U32 avail_phys, avail_virtual;
+	U32Kilobytes avail_phys, avail_virtual;
 	LLMemoryInfo::getAvailableMemoryKB(avail_phys, avail_virtual) ;
 	sMaxPhysicalMemInKB = llmin(avail_phys + sAllocatedMemInKB, sMaxHeapSizeInKB);
 
@@ -125,14 +125,16 @@ void LLMemory::updateMemoryInfo()
 	}
 	else
 	{
-		sAvailPhysicalMemInKB = 0 ;
+		sAvailPhysicalMemInKB = U32Kilobytes(0);
 	}
 #else
 	//not valid for other systems for now.
-	sAllocatedMemInKB = (U32)(LLMemory::getCurrentRSS() / 1024) ;
-	sMaxPhysicalMemInKB = U32_MAX ;
-	sAvailPhysicalMemInKB = U32_MAX ;
+	sAllocatedMemInKB = (U32Bytes)LLMemory::getCurrentRSS();
+	sMaxPhysicalMemInKB = (U32Bytes)U32_MAX ;
+	sAvailPhysicalMemInKB = (U32Bytes)U32_MAX ;
 #endif
+
+	return ;
 }
 
 //
@@ -184,8 +186,8 @@ void LLMemory::logMemoryInfo(BOOL update)
 //static 
 bool LLMemory::isMemoryPoolLow()
 {
-	static const U32 LOW_MEMEOY_POOL_THRESHOLD_KB = 64 * 1024 ; //64 MB for emergency use
-	const static U32 MAX_SIZE_CHECKED_MEMORY_BLOCK = 64 * 1024 * 1024 ; //64 MB
+	static const U32Megabytes LOW_MEMORY_POOL_THRESHOLD(64);
+	const static U32Megabytes MAX_SIZE_CHECKED_MEMORY_BLOCK(64);
 	static void* last_reserved_address = NULL ;
 
 	if(!sEnableMemoryFailurePrevention)
@@ -193,32 +195,32 @@ bool LLMemory::isMemoryPoolLow()
 		return false ; //no memory failure prevention.
 	}
 
-	if(sAvailPhysicalMemInKB < (LOW_MEMEOY_POOL_THRESHOLD_KB >> 2)) //out of physical memory
+	if(sAvailPhysicalMemInKB < (LOW_MEMORY_POOL_THRESHOLD / 4)) //out of physical memory
 	{
 		return true ;
 	}
 
-	if(sAllocatedPageSizeInKB + (LOW_MEMEOY_POOL_THRESHOLD_KB >> 2) > sMaxHeapSizeInKB) //out of virtual address space.
+	if(sAllocatedPageSizeInKB + (LOW_MEMORY_POOL_THRESHOLD / 4) > sMaxHeapSizeInKB) //out of virtual address space.
 	{
 		return true ;
 	}
 
-	bool is_low = (S32)(sAvailPhysicalMemInKB < LOW_MEMEOY_POOL_THRESHOLD_KB || 
-		sAllocatedPageSizeInKB + LOW_MEMEOY_POOL_THRESHOLD_KB > sMaxHeapSizeInKB) ;
+	bool is_low = (S32)(sAvailPhysicalMemInKB < LOW_MEMORY_POOL_THRESHOLD 
+						|| sAllocatedPageSizeInKB + LOW_MEMORY_POOL_THRESHOLD > sMaxHeapSizeInKB) ;
 
 	//check the virtual address space fragmentation
 	if(!is_low)
 	{
 		if(!last_reserved_address)
 		{
-			last_reserved_address = LLMemory::tryToAlloc(last_reserved_address, MAX_SIZE_CHECKED_MEMORY_BLOCK) ;
+			last_reserved_address = LLMemory::tryToAlloc(last_reserved_address, MAX_SIZE_CHECKED_MEMORY_BLOCK.value()) ;
 		}
 		else
 		{
-			last_reserved_address = LLMemory::tryToAlloc(last_reserved_address, MAX_SIZE_CHECKED_MEMORY_BLOCK) ;
+			last_reserved_address = LLMemory::tryToAlloc(last_reserved_address, MAX_SIZE_CHECKED_MEMORY_BLOCK.value()) ;
 			if(!last_reserved_address) //failed, try once more
 			{
-				last_reserved_address = LLMemory::tryToAlloc(last_reserved_address, MAX_SIZE_CHECKED_MEMORY_BLOCK) ;
+				last_reserved_address = LLMemory::tryToAlloc(last_reserved_address, MAX_SIZE_CHECKED_MEMORY_BLOCK.value()) ;
 			}
 		}
 
@@ -229,19 +231,19 @@ bool LLMemory::isMemoryPoolLow()
 }
 
 //static 
-U32 LLMemory::getAvailableMemKB() 
+U32Kilobytes LLMemory::getAvailableMemKB() 
 {
 	return sAvailPhysicalMemInKB ;
 }
 
 //static 
-U32 LLMemory::getMaxMemKB() 
+U32Kilobytes LLMemory::getMaxMemKB() 
 {
 	return sMaxPhysicalMemInKB ;
 }
 
 //static 
-U32 LLMemory::getAllocatedMemKB() 
+U32Kilobytes LLMemory::getAllocatedMemKB() 
 {
 	return sAllocatedMemInKB ;
 }

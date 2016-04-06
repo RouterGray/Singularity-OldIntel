@@ -55,8 +55,8 @@ LLDate::LLDate(const LLDate& date) :
 	mSecondsSinceEpoch(date.mSecondsSinceEpoch)
 {}
 
-LLDate::LLDate(F64 seconds_since_epoch) :
-	mSecondsSinceEpoch(seconds_since_epoch)
+LLDate::LLDate(F64SecondsImplicit seconds_since_epoch) :
+	mSecondsSinceEpoch(seconds_since_epoch.value())
 {}
 
 LLDate::LLDate(const std::string& iso8601_date)
@@ -83,7 +83,7 @@ std::string LLDate::asString() const
 //        is one of the standards used and the prefered format
 std::string LLDate::asRFC1123() const
 {
-	return toHTTPDateString(LLStringExplicit("%A, %d %b %Y %H:%M:%S GMT"));
+	return toHTTPDateString (std::string ("%A, %d %b %Y %H:%M:%S GMT"));
 }
 
 LLFastTimer::DeclareTimer FT_DATE_FORMAT("Date Format");

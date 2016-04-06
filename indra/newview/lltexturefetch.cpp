@@ -316,11 +316,11 @@ private:
 	U8 mImageCodec;
 
 	LLViewerAssetStats::duration_t mMetricsStartTime;
-	unsigned int			mHttpReplySize;				// Actual received data size
-	unsigned int			mHttpReplyOffset;			// Actual received data offset
+	U32						mHttpReplySize,				// Actual received data size
+							mHttpReplyOffset;			// Actual received data offset
 	// State history
-	U32						mCacheReadCount;
-	U32						mCacheWriteCount;
+	U32						mCacheReadCount,
+							mCacheWriteCount;
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -425,7 +425,7 @@ public:
 				worker->setGetStatus(mStatus, mReason);
 				LL_WARNS() << "CURL GET FAILED, status:" << mStatus << " reason:" << mReason << LL_ENDL;
 			}
-			S32 data_size = worker->callbackHttpGet(mReplyOffset, mReplyLength, channels, buffer, partial, success);
+			S32BytesImplicit data_size = worker->callbackHttpGet(mReplyOffset, mReplyLength, channels, buffer, partial, success);
 			
 			if(log_texture_traffic && data_size > 0)
 			{

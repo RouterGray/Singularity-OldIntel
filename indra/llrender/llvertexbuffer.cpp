@@ -187,7 +187,7 @@ volatile U8* LLVBOPool::allocate(U32& name, U32 size, bool for_seed)
 		if (LLVertexBuffer::sDisableVBOMapping || mUsage != GL_DYNAMIC_DRAW_ARB)
 		{
 			glBufferDataARB(mType, size, 0, mUsage);
-			ret = (U8*) ll_aligned_malloc(size, 64);
+			ret = (U8*) ll_aligned_malloc<64>(size);
 		}
 		else
 		{ //always use a true hint of static draw when allocating non-client-backed buffers
@@ -240,7 +240,7 @@ void LLVBOPool::release(U32 name, volatile U8* buffer, U32 size)
 	llassert(vbo_block_size(size) == size);
 
 	deleteBuffer(name);
-	ll_aligned_free((U8*) buffer);
+	ll_aligned_free<64>((U8*) buffer);
 
 	if (mType == GL_ARRAY_BUFFER_ARB)
 	{
@@ -294,7 +294,7 @@ void LLVBOPool::cleanup()
 			
 			if (r.mClientData)
 			{
-				ll_aligned_free((void*) r.mClientData);
+				ll_aligned_free<64>((void*) r.mClientData);
 			}
 
 			l.pop_front();

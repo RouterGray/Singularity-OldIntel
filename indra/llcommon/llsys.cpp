@@ -53,9 +53,7 @@
 using namespace llsd;
 
 #if LL_WINDOWS
-#	define WIN32_LEAN_AND_MEAN
-#	include <winsock2.h>
-#	include <windows.h>
+#	include "llwin32headerslean.h"
 #   include <psapi.h>               // GetPerformanceInfo() et al.
 #	include <VersionHelpers.h>
 #elif LL_DARWIN
@@ -705,7 +703,7 @@ LLMemoryInfo::LLMemoryInfo()
 }
 
 #if LL_WINDOWS
-static U32 LLMemoryAdjustKBResult(U32 inKB)
+static U32Kilobytes LLMemoryAdjustKBResult(U32Kilobytes inKB)
 {
 	// Moved this here from llfloaterabout.cpp
 
@@ -716,16 +714,16 @@ static U32 LLMemoryAdjustKBResult(U32 inKB)
 	// returned from the GetMemoryStatusEx function.  Here we keep the
 	// original adjustment from llfoaterabout.cpp until this can be
 	// fixed somehow.
-	inKB += 1024;
+	inKB += U32Megabytes(1);
 
 	return inKB;
 }
 #endif
 
-U32 LLMemoryInfo::getPhysicalMemoryKB() const
+U32Kilobytes LLMemoryInfo::getPhysicalMemoryKB() const
 {
 #if LL_WINDOWS
-	return LLMemoryAdjustKBResult(mStatsMap["Total Physical KB"].asInteger());
+	return LLMemoryAdjustKBResult(U32Kilobytes(mStatsMap["Total Physical KB"].asInteger()));
 
 #elif LL_DARWIN
 	// This might work on Linux as well.  Someone check...
@@ -735,17 +733,17 @@ U32 LLMemoryInfo::getPhysicalMemoryKB() const
 	size_t len = sizeof(phys);	
 	sysctl(mib, 2, &phys, &len, NULL, 0);
 	
-	return (U32)(phys >> 10);
+	return U64Bytes(phys);
 
 #elif LL_LINUX
 	U64 phys = 0;
 	phys = (U64)(getpagesize()) * (U64)(get_phys_pages());
-	return (U32)(phys >> 10);
+	return U64Bytes(phys);
 
 #elif LL_SOLARIS
 	U64 phys = 0;
 	phys = (U64)(getpagesize()) * (U64)(sysconf(_SC_PHYS_PAGES));
-	return (U32)(phys >> 10);
+	return U64Bytes(phys);
 
 #else
 	return 0;
@@ -753,32 +751,32 @@ U32 LLMemoryInfo::getPhysicalMemoryKB() const
 #endif
 }
 
-U32 LLMemoryInfo::getPhysicalMemoryClamped() const
+U32Bytes LLMemoryInfo::getPhysicalMemoryClamped() const
 {
 	// Return the total physical memory in bytes, but clamp it
 	// to no more than U32_MAX
 	
-	U32 phys_kb = getPhysicalMemoryKB();
-	if (phys_kb >= 4194304 /* 4GB in KB */)
+	U32Kilobytes phys_kb = getPhysicalMemoryKB();
+	if (phys_kb >= U32Gigabytes(4))
 	{
-		return U32_MAX;
+		return U32Bytes(U32_MAX);
 	}
 	else
 	{
-		return phys_kb << 10;
+		return phys_kb;
 	}
 }
 
 //static
-void LLMemoryInfo::getAvailableMemoryKB(U32& avail_physical_mem_kb, U32& avail_virtual_mem_kb)
+void LLMemoryInfo::getAvailableMemoryKB(U32Kilobytes& avail_physical_mem_kb, U32Kilobytes& avail_virtual_mem_kb)
 {
 #if LL_WINDOWS
 	// Sigh, this shouldn't be a static method, then we wouldn't have to
 	// reload this data separately from refresh()
 	LLSD statsMap(loadStatsMap());
 
-	avail_physical_mem_kb = statsMap["Avail Physical KB"].asInteger();
-	avail_virtual_mem_kb  = statsMap["Avail Virtual KB"].asInteger();
+	avail_physical_mem_kb = (U32Kilobytes)statsMap["Avail Physical KB"].asInteger();
+	avail_virtual_mem_kb  = (U32Kilobytes)statsMap["Avail Virtual KB"].asInteger();
 
 #elif LL_DARWIN
 	// mStatsMap is derived from vm_stat, look for (e.g.) "kb free":
@@ -795,8 +793,8 @@ void LLMemoryInfo::getAvailableMemoryKB(U32& avail_physical_mem_kb, U32& avail_v
 	// Pageins:                     2097212.
 	// Pageouts:                      41759.
 	// Object cache: 841598 hits of 7629869 lookups (11% hit rate)
-	avail_physical_mem_kb = -1 ;
-	avail_virtual_mem_kb = -1 ;
+	avail_physical_mem_kb = (U32Kilobytes)-1 ;
+	avail_virtual_mem_kb = (U32Kilobytes)-1 ;
 
 #elif LL_LINUX
 	// mStatsMap is derived from MEMINFO_FILE:
@@ -847,15 +845,15 @@ void LLMemoryInfo::getAvailableMemoryKB(U32& avail_physical_mem_kb, U32& avail_v
 	// DirectMap4k:      434168 kB
 	// DirectMap2M:      477184 kB
 	// (could also run 'free', but easier to read a file than run a program)
-	avail_physical_mem_kb = -1 ;
-	avail_virtual_mem_kb = -1 ;
+	avail_physical_mem_kb = (U32Kilobytes)-1 ;
+	avail_virtual_mem_kb = (U32Kilobytes)-1 ;
 
 #else
 	//do not know how to collect available memory info for other systems.
 	//leave it blank here for now.
 
-	avail_physical_mem_kb = -1 ;
-	avail_virtual_mem_kb = -1 ;
+	avail_physical_mem_kb = (U32Kilobytes)-1 ;
+	avail_virtual_mem_kb = (U32Kilobytes)-1 ;
 #endif
 }
 

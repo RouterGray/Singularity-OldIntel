@@ -72,7 +72,7 @@
 
 void (*LLViewerTextureList::sUUIDCallback)(void **, const LLUUID&) = NULL;
 
-U32 LLViewerTextureList::sTextureBits = 0;
+U32Bits LLViewerTextureList::sTextureBits(0);
 U32 LLViewerTextureList::sTexturePackets = 0;
 S32 LLViewerTextureList::sNumImages = 0;
 
@@ -95,8 +95,8 @@ void LLViewerTextureList::init()
 	mInitialized = TRUE ;
 	sNumImages = 0;
 	mUpdateStats = TRUE;
-	mMaxResidentTexMemInMegaBytes = 0;
-	mMaxTotalTextureMemInMegaBytes = 0 ;
+	mMaxResidentTexMemInMegaBytes = (U32Bytes)0;
+	mMaxTotalTextureMemInMegaBytes = (U32Bytes)0;
 	if (gNoRender)
 	{
 		// Don't initialize GL stuff if we're not rendering.
@@ -104,7 +104,7 @@ void LLViewerTextureList::init()
 	}
 	
 	// Update how much texture RAM we're allowed to use.
-	updateMaxResidentTexMem(0); // 0 = use current
+	updateMaxResidentTexMem(S32Megabytes(0)); // 0 = use current
 	
 	doPreloadImages();
 }
@@ -706,8 +706,8 @@ void LLViewerTextureList::updateImages(F32 max_time)
 	}
 	LLViewerStats::getInstance()->mNumImagesStat.addValue(sNumImages);
 	LLViewerStats::getInstance()->mNumRawImagesStat.addValue(LLImageRaw::sRawImageCount);
-	LLViewerStats::getInstance()->mGLTexMemStat.addValue((F32)BYTES_TO_MEGA_BYTES(LLImageGL::sGlobalTextureMemoryInBytes));
-	LLViewerStats::getInstance()->mGLBoundMemStat.addValue((F32)BYTES_TO_MEGA_BYTES(LLImageGL::sBoundTextureMemoryInBytes));
+	LLViewerStats::getInstance()->mGLTexMemStat.addValue((F32)LLImageGL::sGlobalTextureMemory.valueInUnits<LLUnits::Megabytes>());
+	LLViewerStats::getInstance()->mGLBoundMemStat.addValue((F32)LLImageGL::sBoundTextureMemory.valueInUnits<LLUnits::Megabytes>());
 	LLViewerStats::getInstance()->mRawMemStat.addValue((F32)BYTES_TO_MEGA_BYTES(global_raw_memory));
 	LLViewerStats::getInstance()->mFormattedMemStat.addValue((F32)BYTES_TO_MEGA_BYTES(LLImageFormatted::sGlobalFormattedMemory));
 
@@ -960,12 +960,10 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 	static const bool SKIP_LOW_PRIO = gSavedSettings.getBOOL("TextureFetchUpdateSkipLowPriority");          // default: false
 
 	size_t max_priority_count = llmin((S32) (MAX_HIGH_PRIO_COUNT*MAX_HIGH_PRIO_COUNT*gFrameIntervalSeconds)+1, MAX_HIGH_PRIO_COUNT);
-	//Old: size_t max_priority_count = llmin((S32) (MAX_HIGH_PRIO_COUNT*40.f*gFrameIntervalSeconds)+1, MAX_HIGH_PRIO_COUNT);
 	max_priority_count = llmin(max_priority_count, mImageList.size());
 	
 	size_t total_update_count = mUUIDMap.size();
 	size_t max_update_count = llmin((S32) (MAX_UPDATE_COUNT*MAX_UPDATE_COUNT*gFrameIntervalSeconds)+1, MAX_UPDATE_COUNT);
-	//Old: size_t max_priority_count = llmin((S32) (MAX_UPDATE_COUNT*40.f*gFrameIntervalSeconds)+1, MAX_UPDATE_COUNT);
 	max_update_count = llmin(max_update_count, total_update_count);	
 	
 	// MAX_HIGH_PRIO_COUNT high priority entries
@@ -1218,20 +1216,16 @@ LLPointer<LLImageJ2C> LLViewerTextureList::convertToUploadFile(LLPointer<LLImage
 }
 
 // Returns min setting for TextureMemory (in MB)
-S32 LLViewerTextureList::getMinVideoRamSetting()
+S32Megabytes LLViewerTextureList::getMinVideoRamSetting()
 {
-	S32 system_ram = (S32)BYTES_TO_MEGA_BYTES(gSysMemory.getPhysicalMemoryClamped());
-	if (system_ram > 2000)
-		return 128;
-	else if (system_ram > 1000)
-		return 64;
-	else
-		return MIN_VIDEO_RAM_IN_MEGA_BYTES;
+	S32Megabytes system_ram = gSysMemory.getPhysicalMemoryClamped();
+	//min texture mem sets to 64M if total physical mem is more than 1.5GB
+	return (system_ram > S32Megabytes(1500)) ? S32Megabytes(64) : gMinVideoRam ;
 }
 
 //static
 // Returns max setting for TextureMemory (in MB)
-S32 LLViewerTextureList::getMaxVideoRamSetting(bool get_recommended)
+S32Megabytes LLViewerTextureList::getMaxVideoRamSetting(bool get_recommended, float mem_multiplier)
 {
 #if LL_LINUX
 	if (gGLManager.mIsIntel && gGLManager.mGLVersion >= 3.f && !gGLManager.mVRAM)
@@ -1239,12 +1233,12 @@ S32 LLViewerTextureList::getMaxVideoRamSetting(bool get_recommended)
 		gGLManager.mVRAM = 512;
 	}
 #endif
-	S32 max_texmem;
+	S32Megabytes max_texmem;
 	if (gGLManager.mVRAM != 0)
 	{
 		// Treat any card with < 32 MB (shudder) as having 32 MB
 		//  - it's going to be swapping constantly regardless
-		S32 max_vram = gGLManager.mVRAM;
+		S32Megabytes max_vram(gGLManager.mVRAM);
 		max_vram = llmax(max_vram, getMinVideoRamSetting());
 		max_texmem = max_vram;
 		if (!get_recommended)
@@ -1252,72 +1246,81 @@ S32 LLViewerTextureList::getMaxVideoRamSetting(bool get_recommended)
 	}
 	else
 	{
-		if (get_recommended)
-			max_texmem = 128;
+		if (!get_recommended)
+		{
+			max_texmem = (S32Megabytes)512;
+		}
+		else if (gSavedSettings.getBOOL("NoHardwareProbe")) //did not do hardware detection at startup
+		{
+			max_texmem = (S32Megabytes)512;
+		}
 		else
-			max_texmem = 512;
+		{
+			max_texmem = (S32Megabytes)128;
+		}
+
 		LL_WARNS() << "VRAM amount not detected, defaulting to " << max_texmem << " MB" << LL_ENDL;
 	}
 
-	S32 system_ram = (S32)BYTES_TO_MEGA_BYTES(gSysMemory.getPhysicalMemoryClamped()); // In MB
+	S32Megabytes system_ram = gSysMemory.getPhysicalMemoryClamped(); // In MB
 	//LL_INFOS() << "*** DETECTED " << system_ram << " MB of system memory." << LL_ENDL;
 	if (get_recommended)
-		max_texmem = llmin(max_texmem, (S32)(system_ram/2));
+		max_texmem = llmin(max_texmem, system_ram/2);
 	else
-		max_texmem = llmin(max_texmem, (S32)(system_ram));
+		max_texmem = llmin(max_texmem, system_ram);
 		
-	max_texmem = llclamp(max_texmem, getMinVideoRamSetting(), MAX_VIDEO_RAM_IN_MEGA_BYTES); 
+    // limit the texture memory to a multiple of the default if we've found some cards to behave poorly otherwise
+	max_texmem = llmin(max_texmem, (S32Megabytes) (mem_multiplier * max_texmem));
+
+	max_texmem = llclamp(max_texmem, getMinVideoRamSetting(), gMaxVideoRam); 
 	
 	return max_texmem;
 }
 
-const S32 VIDEO_CARD_FRAMEBUFFER_MEM = 12; // MB
-const S32 MIN_MEM_FOR_NON_TEXTURE = 512 ; //MB
-void LLViewerTextureList::updateMaxResidentTexMem(S32 mem)
+const S32Megabytes VIDEO_CARD_FRAMEBUFFER_MEM(12);
+const S32Megabytes MIN_MEM_FOR_NON_TEXTURE(512);
+void LLViewerTextureList::updateMaxResidentTexMem(S32Megabytes mem)
 {
 	// Initialize the image pipeline VRAM settings
-	S32 cur_mem = gSavedSettings.getS32("TextureMemory");
+	S32Megabytes cur_mem(gSavedSettings.getS32("TextureMemory"));
 	F32 mem_multiplier = gSavedSettings.getF32("RenderTextureMemoryMultiple");
-	S32 default_mem = getMaxVideoRamSetting(true); // recommended default
-	if (mem == 0)
+	S32Megabytes default_mem = getMaxVideoRamSetting(true, mem_multiplier); // recommended default
+	if (mem == (S32Bytes)0)
 	{
-		mem = cur_mem > 0 ? cur_mem : default_mem;
+		mem = cur_mem > (S32Bytes)0 ? cur_mem : default_mem;
 	}
-	else if (mem < 0)
+	else if (mem < (S32Bytes)0)
 	{
 		mem = default_mem;
 	}
 
-	// limit the texture memory to a multiple of the default if we've found some cards to behave poorly otherwise
-	mem = llmin(mem, (S32) (mem_multiplier * (F32) default_mem));
-
-	mem = llclamp(mem, getMinVideoRamSetting(), getMaxVideoRamSetting());
+	mem = llclamp(mem, getMinVideoRamSetting(), getMaxVideoRamSetting(false, mem_multiplier));
 	if (mem != cur_mem)
 	{
-		gSavedSettings.setS32("TextureMemory", mem);
+		gSavedSettings.setS32("TextureMemory", mem.value());
 		return; //listener will re-enter this function
 	}
 
 	// TODO: set available resident texture mem based on use by other subsystems
 	// currently max(12MB, VRAM/4) assumed...
 	
-	S32 vb_mem = mem;
-	S32 fb_mem = llmax(VIDEO_CARD_FRAMEBUFFER_MEM, vb_mem/4);
+	S32Megabytes vb_mem = mem;
+	S32Megabytes fb_mem = llmax(VIDEO_CARD_FRAMEBUFFER_MEM, vb_mem/4);
 	mMaxResidentTexMemInMegaBytes = (vb_mem - fb_mem) ; //in MB
 	
 	mMaxTotalTextureMemInMegaBytes = mMaxResidentTexMemInMegaBytes * 2;
-	if (mMaxResidentTexMemInMegaBytes > 640)
+	if (mMaxResidentTexMemInMegaBytes > (S32Megabytes)640)
 	{
-		mMaxTotalTextureMemInMegaBytes -= (mMaxResidentTexMemInMegaBytes >> 2);
+		mMaxTotalTextureMemInMegaBytes -= (mMaxResidentTexMemInMegaBytes / 4);
 	}
 
 	//system mem
-	S32 system_ram = (S32)BYTES_TO_MEGA_BYTES(gSysMemory.getPhysicalMemoryClamped()); // In MB
+	S32Megabytes system_ram = gSysMemory.getPhysicalMemoryClamped();
 
 	//minimum memory reserved for non-texture use.
 	//if system_raw >= 1GB, reserve at least 512MB for non-texture use;
 	//otherwise reserve half of the system_ram for non-texture use.
-	S32 min_non_texture_mem = llmin(system_ram / 2, MIN_MEM_FOR_NON_TEXTURE) ; 
+	S32Megabytes min_non_texture_mem = llmin(system_ram / 2, MIN_MEM_FOR_NON_TEXTURE) ; 
 
 	if (mMaxTotalTextureMemInMegaBytes > system_ram - min_non_texture_mem)
 	{
@@ -1345,17 +1348,17 @@ void LLViewerTextureList::receiveImageHeader(LLMessageSystem *msg, void **user_d
 	char ip_string[256];
 	u32_to_ip_string(msg->getSenderIP(),ip_string);
 	
-	U32 received_size ;
+	U32Bytes received_size ;
 	if (msg->getReceiveCompressedSize())
 	{
-		received_size = msg->getReceiveCompressedSize() ;		
+		received_size = (U32Bytes)msg->getReceiveCompressedSize() ;		
 	}
 	else
 	{
-		received_size = msg->getReceiveSize() ;		
+		received_size = (U32Bytes)msg->getReceiveSize() ;		
 	}
 	// Only used for statistics and texture console.
-	gTextureList.sTextureBits += received_size * 8;
+	gTextureList.sTextureBits += received_size;
 	gTextureList.sTexturePackets++;
 	
 	U8 codec;
@@ -1419,16 +1422,16 @@ void LLViewerTextureList::receiveImagePacket(LLMessageSystem *msg, void **user_d
 	char ip_string[256];
 	u32_to_ip_string(msg->getSenderIP(),ip_string);
 	
-	U32 received_size ;
+	U32Bytes received_size ;
 	if (msg->getReceiveCompressedSize())
 	{
-		received_size = msg->getReceiveCompressedSize() ;
+		received_size = (U32Bytes)msg->getReceiveCompressedSize() ;
 	}
 	else
 	{
-		received_size = msg->getReceiveSize() ;		
+		received_size = (U32Bytes)msg->getReceiveSize() ;		
 	}
-	gTextureList.sTextureBits += received_size * 8;
+	gTextureList.sTextureBits += received_size;
 	gTextureList.sTexturePackets++;
 	
 	//llprintline("Start decode, image header...");
@@ -1490,24 +1493,6 @@ void LLViewerTextureList::processImageNotInDatabase(LLMessageSystem *msg,void **
 		LL_WARNS() << "not in db" << LL_ENDL;
 		image->setIsMissingAsset();
 	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-//static
-const U32 SIXTEEN_MEG = 0x1000000;
-S32 LLViewerTextureList::calcMaxTextureRAM()
-{
-	// Decide the maximum amount of RAM we should allow the user to allocate to texture cache
-	LLMemoryInfo memory_info;
-	U32 available_memory = memory_info.getPhysicalMemoryClamped();
-	
-	clamp_rescale((F32)available_memory,
-				  (F32)(SIXTEEN_MEG * 16),
-				  (F32)U32_MAX,
-				  (F32)(SIXTEEN_MEG * 4),
-				  (F32)(U32_MAX >> 1));
-	return available_memory;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

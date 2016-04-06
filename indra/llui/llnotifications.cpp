@@ -415,7 +415,7 @@ LLNotification::LLNotification(const LLNotification::Params& p) :
 	mTimestamp(p.timestamp), 
 	mSubstitutions(p.substitutions),
 	mPayload(p.payload),
-	mExpiresAt(0),
+	mExpiresAt(F64SecondsImplicit()),
 	mResponseFunctorName(p.functor_name),
 	mTemporaryResponder(p.mTemporaryResponder),
 	mRespondedTo(false),

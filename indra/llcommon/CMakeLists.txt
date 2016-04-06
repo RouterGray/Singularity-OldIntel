@@ -230,9 +230,13 @@ set(llcommon_HEADER_FILES
     llthreadsafequeue.h
     lltimer.h
     lltreeiterators.h
+    llunits.h
+    llunittype.h
     lltypeinfolookup.h
     lluri.h
     lluuid.h
+    llwin32headers.h
+    llwin32headerslean.h
     llworkerthread.h
     metaclass.h
     metaclasst.h

@@ -4699,7 +4699,7 @@ LLVolumeFace::~LLVolumeFace()
 
 void LLVolumeFace::freeData()
 {
-	ll_aligned_free(mPositions);
+	ll_aligned_free<64>(mPositions);
 	mPositions = NULL;
 
 	//normals and texture coordinates are part of the same buffer as mPositions, do not free them separately
@@ -5273,7 +5273,7 @@ void LLVolumeFace::cacheOptimize()
 	//allocate space for new buffer
 	S32 num_verts = mNumVertices;
 	S32 size = ((num_verts*sizeof(LLVector2)) + 0xF) & ~0xF;
-	LLVector4a* pos = (LLVector4a*) ll_aligned_malloc(sizeof(LLVector4a)*2*num_verts+size, 64);
+	LLVector4a* pos = (LLVector4a*) ll_aligned_malloc<64>(sizeof(LLVector4a)*2*num_verts+size);
 	LLVector4a* norm = pos + num_verts;
 	LLVector2* tc = (LLVector2*) (norm + num_verts);
 
@@ -5323,7 +5323,7 @@ void LLVolumeFace::cacheOptimize()
 		mIndices[i] = new_idx[mIndices[i]];
 	}
 	
-	ll_aligned_free(mPositions);
+	ll_aligned_free<64>(mPositions);
 	// DO NOT free mNormals and mTexCoords as they are part of mPositions buffer
 	ll_aligned_free_16(mWeights);
 	ll_aligned_free_16(mTangents);
@@ -6041,7 +6041,7 @@ void LLVolumeFace::createTangents()
 
 void LLVolumeFace::resizeVertices(S32 num_verts)
 {
-	ll_aligned_free(mPositions);
+	ll_aligned_free<64>(mPositions);
 	//DO NOT free mNormals and mTexCoords as they are part of mPositions buffer
 	ll_aligned_free_16(mTangents);
 
@@ -6052,7 +6052,7 @@ void LLVolumeFace::resizeVertices(S32 num_verts)
 		//pad texture coordinate block end to allow for QWORD reads
 		S32 size = ((num_verts*sizeof(LLVector2)) + 0xF) & ~0xF;
 
-		mPositions = (LLVector4a*) ll_aligned_malloc(sizeof(LLVector4a)*2*num_verts+size, 64);
+		mPositions = (LLVector4a*) ll_aligned_malloc<64>(sizeof(LLVector4a)*2*num_verts+size);
 		mNormals = mPositions+num_verts;
 		mTexCoords = (LLVector2*) (mNormals+num_verts);
 
@@ -6092,7 +6092,7 @@ void LLVolumeFace::pushVertex(const LLVector4a& pos, const LLVector4a& norm, con
 
 		LLVector4a* old_buf = mPositions;
 
-		mPositions = (LLVector4a*) ll_aligned_malloc(new_size, 64);
+		mPositions = (LLVector4a*) ll_aligned_malloc<64>(new_size);
 		mNormals = mPositions+new_verts;
 		mTexCoords = (LLVector2*) (mNormals+new_verts);
 
@@ -6111,7 +6111,7 @@ void LLVolumeFace::pushVertex(const LLVector4a& pos, const LLVector4a& norm, con
 			//tex coords
 			LLVector4a::memcpyNonAliased16((F32*) mTexCoords, (F32*) (old_buf+mNumVertices*2), old_tc_size);
 
-			ll_aligned_free(old_buf);
+			ll_aligned_free<64>(old_buf);
 
 		//<singu>
 		}
@@ -6120,6 +6120,7 @@ void LLVolumeFace::pushVertex(const LLVector4a& pos, const LLVector4a& norm, con
 		//just clear tangents
 		ll_aligned_free_16(mTangents);
 		mTangents = NULL;
+		ll_aligned_free<64>(old_buf);
 
 		mNumAllocatedVertices = new_verts;
 
@@ -6220,7 +6221,7 @@ void LLVolumeFace::appendFace(const LLVolumeFace& face, LLMatrix4& mat_in, LLMat
 
 	//allocate new buffer space
 	LLVector4a* old_buf = mPositions;
-	mPositions = (LLVector4a*) ll_aligned_malloc(new_size, 64);
+	mPositions = (LLVector4a*) ll_aligned_malloc<64>(new_size);
 	mNormals = mPositions + new_count;
 	mTexCoords = (LLVector2*) (mNormals+new_count);
 

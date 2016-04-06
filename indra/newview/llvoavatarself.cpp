@@ -157,7 +157,7 @@ typedef LLHTTPClient::ResponderIgnore LLHoverHeightResponder;
 //-----------------------------------------------------------------------------
 // Static Data
 //-----------------------------------------------------------------------------
-S32 LLVOAvatarSelf::sScratchTexBytes = 0;
+S32Bytes LLVOAvatarSelf::sScratchTexBytes(0);
 LLMap< LLGLenum, LLGLuint*> LLVOAvatarSelf::sScratchTexNames;
 LLMap< LLGLenum, F32*> LLVOAvatarSelf::sScratchTexLastBindTime;
 
@@ -3215,8 +3215,8 @@ void LLVOAvatarSelf::deleteScratchTextures()
 {
 	if(gAuditTexture)
 	{
-		S32 total_tex_size = sScratchTexBytes ;
-		S32 tex_size = SCRATCH_TEX_WIDTH * SCRATCH_TEX_HEIGHT ;
+		S32Bytes total_tex_size = sScratchTexBytes ;
+		S32Bytes tex_size(SCRATCH_TEX_WIDTH * SCRATCH_TEX_HEIGHT) ;
 
 		if( sScratchTexNames.checkData( GL_LUMINANCE ) )
 		{
@@ -3249,7 +3249,7 @@ void LLVOAvatarSelf::deleteScratchTextures()
 			total_tex_size -= 4 * tex_size ;
 		}
 		//others
-		while(total_tex_size > 0)
+		while(total_tex_size > S32Bytes(0))
 		{
 			LLImageGL::decTextureCounter(tex_size, 4, LLViewerTexture::AVATAR_SCRATCH_TEX) ;
 			total_tex_size -= 4 * tex_size ;
@@ -3264,14 +3264,14 @@ void LLVOAvatarSelf::deleteScratchTextures()
 		stop_glerror();
 	}
 
-	if( sScratchTexBytes )
+	if( sScratchTexBytes.value() )
 	{
-		LL_DEBUGS() << "Clearing Scratch Textures " << (sScratchTexBytes/1024) << "KB" << LL_ENDL;
+		LL_DEBUGS() << "Clearing Scratch Textures " << (S32Kilobytes)sScratchTexBytes << "KB" << LL_ENDL;
 
 		sScratchTexNames.deleteAllData();
 		sScratchTexLastBindTime.deleteAllData();
-		LLImageGL::sGlobalTextureMemoryInBytes -= sScratchTexBytes;
-		sScratchTexBytes = 0;
+		LLImageGL::sGlobalTextureMemory -= sScratchTexBytes;
+		sScratchTexBytes = S32Bytes(0);
 	}
 }
 

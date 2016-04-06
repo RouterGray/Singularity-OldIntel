@@ -129,8 +129,8 @@ public:
 	// debug
 	S32 getNumReads() { return mReaders.size(); }
 	S32 getNumWrites() { return mWriters.size(); }
-	S64 getUsage() { return mTexturesSizeTotal; }
-	S64 getMaxUsage() { return sCacheMaxTexturesSize; }
+	S64Bytes getUsage() { return S64Bytes(mTexturesSizeTotal); }
+	S64Bytes getMaxUsage() { return S64Bytes(sCacheMaxTexturesSize); }
 	U32 getEntries() { return mHeaderEntriesInfo.mEntries; }
 	U32 getMaxEntries() { return sCacheMaxEntries; };
 	BOOL isInCache(const LLUUID& id) ;
@@ -202,7 +202,7 @@ private:
 	typedef std::map<LLUUID,S32> size_map_t;
 	size_map_t mTexturesSizeMap;
 	S64 mTexturesSizeTotal;
-	LLAtomic32<BOOL> mDoPurge;
+	LLAtomic32<bool> mDoPurge;
 
 	typedef std::map<S32, Entry> idx_entry_map_t;
 	idx_entry_map_t mUpdatedEntryMap;

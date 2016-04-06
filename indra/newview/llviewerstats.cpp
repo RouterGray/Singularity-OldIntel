@@ -451,8 +451,8 @@ void output_statistics(void*)
 	LL_INFOS() << "Number of orphans: " << gObjectList.getOrphanCount() << LL_ENDL;
 	LL_INFOS() << "Number of dead objects: " << gObjectList.mNumDeadObjects << LL_ENDL;
 	LL_INFOS() << "Num images: " << gTextureList.getNumImages() << LL_ENDL;
-	LL_INFOS() << "Texture usage: " << LLImageGL::sGlobalTextureMemoryInBytes << LL_ENDL;
-	LL_INFOS() << "Texture working set: " << LLImageGL::sBoundTextureMemoryInBytes << LL_ENDL;
+	LL_INFOS() << "Texture usage: " << LLImageGL::sGlobalTextureMemory.value() << LL_ENDL;
+	LL_INFOS() << "Texture working set: " << LLImageGL::sBoundTextureMemory.value() << LL_ENDL;
 	LL_INFOS() << "Raw usage: " << global_raw_memory << LL_ENDL;
 	LL_INFOS() << "Formatted usage: " << LLImageFormatted::sGlobalFormattedMemory << LL_ENDL;
 	LL_INFOS() << "Zombie Viewer Objects: " << LLViewerObject::getNumZombieObjects() << LL_ENDL;
@@ -570,19 +570,25 @@ void output_statistics(void*)
 }
 
 
-U32		gTotalLandIn = 0, gTotalLandOut = 0;
-U32		gTotalWaterIn = 0, gTotalWaterOut = 0;
+U32		gTotalLandIn = 0, 
+		gTotalLandOut = 0,
+		gTotalWaterIn = 0, 
+		gTotalWaterOut = 0;
 
-F32		gAveLandCompression = 0.f, gAveWaterCompression = 0.f;
-F32		gBestLandCompression = 1.f, gBestWaterCompression = 1.f;
-F32		gWorstLandCompression = 0.f, gWorstWaterCompression = 0.f;
+F32		gAveLandCompression = 0.f, 
+		gAveWaterCompression = 0.f,
+		gBestLandCompression = 1.f,
+		gBestWaterCompression = 1.f,
+		gWorstLandCompression = 0.f, 
+		gWorstWaterCompression = 0.f;
 
-
-
-U32		gTotalWorldBytes = 0, gTotalObjectBytes = 0, gTotalTextureBytes = 0, gSimPingCount = 0;
-U32		gObjectBits = 0;
-F32		gAvgSimPing = 0.f;
-U32     gTotalTextureBytesPerBoostLevel[LLGLTexture::MAX_GL_IMAGE_CATEGORY] = {0};
+U32Bytes				gTotalWorldData, 
+								gTotalObjectData, 
+								gTotalTextureData;
+U32								gSimPingCount = 0;
+U32Bits				gObjectData;
+F32Milliseconds		gAvgSimPing(0.f);
+U32Bytes     gTotalTextureBytesPerBoostLevel[LLGLTexture::MAX_GL_IMAGE_CATEGORY] = {U32Bytes(0)};
 
 extern U32  gVisCompared;
 extern U32  gVisTested;
@@ -591,8 +597,8 @@ LLFrameTimer gTextureTimer;
 
 void update_statistics()
 {
-	gTotalWorldBytes += gVLManager.getTotalBytes();
-	gTotalObjectBytes += gObjectBits / 8;
+	gTotalWorldData += U32Bytes(gVLManager.getTotalBytes());
+	gTotalObjectData += gObjectData;
 
 	LLViewerStats& stats = LLViewerStats::instance();
 
@@ -634,7 +640,7 @@ void update_statistics()
 	if (cdp)
 	{
 		stats.mSimPingStat.addValue(cdp->getPingDelay());
-		gAvgSimPing = ((gAvgSimPing * (F32)gSimPingCount) + (F32)(cdp->getPingDelay())) / ((F32)gSimPingCount + 1);
+		gAvgSimPing = F32Milliseconds(((gAvgSimPing.value() * (F32)gSimPingCount) + (F32)(cdp->getPingDelay())) / ((F32)gSimPingCount + 1));
 		gSimPingCount++;
 	}
 	else
@@ -643,11 +649,11 @@ void update_statistics()
 	}
 
 	stats.mFPSStat.addValue(1);
-	F32 layer_bits = (F32)(gVLManager.getLandBits() + gVLManager.getWindBits() + gVLManager.getCloudBits());
-	stats.mLayersKBitStat.addValue(layer_bits/1024.f);
-	stats.mObjectKBitStat.addValue(gObjectBits/1024.f);
+	F64Bits layer_bits = F64Bits(gVLManager.getLandBits() + gVLManager.getWindBits() + gVLManager.getCloudBits());
+	stats.mLayersKBitStat.addValue((F32)layer_bits.valueInUnits<LLUnits::Kilobits>());
+	stats.mObjectKBitStat.addValue(gObjectData.valueInUnits<LLUnits::Kilobits>());
 	stats.mVFSPendingOperations.addValue(LLVFile::getVFSThread()->getPending());
-	stats.mAssetKBitStat.addValue(gTransferManager.getTransferBitsIn(LLTCT_ASSET)/1024.f);
+	stats.mAssetKBitStat.addValue(gTransferManager.getTransferBitsIn(LLTCT_ASSET) / 1024);
 	gTransferManager.resetTransferBitsIn(LLTCT_ASSET);
 
 	if (LLAppViewer::getTextureFetch()->getNumRequests() == 0)
@@ -675,7 +681,7 @@ void update_statistics()
 	
 	// Reset all of these values.
 	gVLManager.resetBitCounts();
-	gObjectBits = 0;
+	gObjectData = (U32Bytes)0;
 //	gDecodedBits = 0;
 
 	// Only update texture stats periodically so that they are less noisy
@@ -685,10 +691,10 @@ void update_statistics()
 		if (texture_stats_timer.getElapsedTimeF32() >= texture_stats_freq)
 		{
 			stats.mHTTPTextureKBitStat.addValue(AICurlInterface::getHTTPBandwidth()/125.f);
-			stats.mUDPTextureKBitStat.addValue(LLViewerTextureList::sTextureBits/1024.f);
+			stats.mUDPTextureKBitStat.addValue(LLViewerTextureList::sTextureBits.valueInUnits<LLUnits::Kilobits>());
 			stats.mTexturePacketsStat.addValue(LLViewerTextureList::sTexturePackets);
-			gTotalTextureBytes += LLViewerTextureList::sTextureBits / 8;
-			LLViewerTextureList::sTextureBits = 0;
+			gTotalTextureData += U32Bits(LLViewerTextureList::sTextureBits);
+			LLViewerTextureList::sTextureBits = U32Bits(0);
 			LLViewerTextureList::sTexturePackets = 0;
 			texture_stats_timer.reset();
 		}
@@ -792,14 +798,14 @@ void send_stats()
 	gSimFrames   = (F32) gFrameCount;
 
 	agent["agents_in_view"] = LLVOAvatar::sNumVisibleAvatars;
-	agent["ping"] = gAvgSimPing;
+	agent["ping"] = gAvgSimPing.value();
 	agent["meters_traveled"] = gAgent.getDistanceTraveled();
 	agent["regions_visited"] = gAgent.getRegionsVisited();
 	agent["mem_use"] = LLMemory::getCurrentRSS() / 1024.0;
 
 	LLSD &system = body["system"];
 	
-	system["ram"] = (S32) gSysMemory.getPhysicalMemoryKB();
+	system["ram"] = (S32) gSysMemory.getPhysicalMemoryKB().value();
 	system["os"] = LLAppViewer::instance()->getOSInfo().getOSStringSimple();
 	system["cpu"] = gSysCPU.getCPUString();
 	unsigned char MACAddress[MAC_ADDRESS_BYTES];
@@ -823,9 +829,9 @@ void send_stats()
 
 	LLSD &download = body["downloads"];
 
-	download["world_kbytes"] = gTotalWorldBytes / 1024.0;
-	download["object_kbytes"] = gTotalObjectBytes / 1024.0;
-	download["texture_kbytes"] = gTotalTextureBytes / 1024.0;
+	download["world_kbytes"] = F64Kilobytes(gTotalWorldData).value();
+	download["object_kbytes"] = F64Kilobytes(gTotalObjectData).value();
+	download["texture_kbytes"] = F64Kilobytes(gTotalTextureData).value();
 	download["mesh_kbytes"] = LLMeshRepository::sBytesReceived/1024.0;
 
 	LLSD &in = body["stats"]["net"]["in"];
@@ -886,7 +892,10 @@ void send_stats()
 	body["MinimalSkin"] = false;
 	
 	LLViewerStats::getInstance()->addToMessage(body);
-	LLHTTPClient::post(url, body, new ViewerStatsResponder);
+
+	LL_INFOS("LogViewerStatsPacket") << "Sending viewer statistics: " << body << LL_ENDL;
+	LLHTTPClient::post(url, body, new ViewerStatsResponder());
+
 }
 
 LLViewerStats::PhaseMap::PhaseMap()

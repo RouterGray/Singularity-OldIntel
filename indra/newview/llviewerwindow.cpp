@@ -5356,7 +5356,7 @@ void LLViewerWindow::stopGL(BOOL save_state)
 
 		gGL.resetVertexBuffers();
 		
-		LL_INFOS() << "Remaining allocated texture memory: " << LLImageGL::sGlobalTextureMemoryInBytes << " bytes" << LL_ENDL;
+		LL_INFOS() << "Remaining allocated texture memory: " << LLImageGL::sGlobalTextureMemory << " bytes" << LL_ENDL;
 	}
 }
 

@@ -333,7 +333,7 @@ extern BOOL		gUseWireframe;
 extern LLVFS	*gStaticVFS;
 
 extern LLMemoryInfo gSysMemory;
-extern U64 gMemoryAllocated;
+extern U64Bytes gMemoryAllocated;
 
 extern std::string gLastVersionChannel;
 
