@@ -639,8 +639,8 @@ void update_statistics()
 	LLCircuitData *cdp = gMessageSystem->mCircuitInfo.findCircuit(gAgent.getRegion()->getHost());
 	if (cdp)
 	{
-		stats.mSimPingStat.addValue(cdp->getPingDelay());
-		gAvgSimPing = F32Milliseconds(((gAvgSimPing.value() * (F32)gSimPingCount) + (F32)(cdp->getPingDelay())) / ((F32)gSimPingCount + 1));
+		stats.mSimPingStat.addValue(cdp->getPingDelay().value());
+		gAvgSimPing = ((gAvgSimPing * gSimPingCount) + cdp->getPingDelay()) / (gSimPingCount + 1);
 		gSimPingCount++;
 	}
 	else

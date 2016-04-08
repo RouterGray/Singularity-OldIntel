@@ -1083,7 +1083,7 @@ void LLParcel::startSale(const LLUUID& buyer_id, BOOL is_buyer_group)
 		mGroupID.setNull();
 	}
 	mSaleTimerExpires.start();
-	mSaleTimerExpires.setTimerExpirySec(DEFAULT_USEC_SALE_TIMEOUT / SEC_TO_MICROSEC);
+	mSaleTimerExpires.setTimerExpirySec(U64Microseconds(DEFAULT_USEC_SALE_TIMEOUT));
 	mStatus = OS_LEASE_PENDING;
 	mClaimDate = time(NULL);
 	setAuctionID(0);

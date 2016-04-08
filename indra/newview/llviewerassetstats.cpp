@@ -110,7 +110,7 @@ LLViewerAssetStats::PerRegionStats::reset()
 	}
 	mFPS.reset();
 	
-	mTotalTime = 0;
+	mTotalTime = U64Microseconds(0);
 	mStartTimestamp = LLViewerAssetStatsFF::get_timestamp();
 }
 
@@ -315,9 +315,9 @@ LLViewerAssetStats::asLLSD(bool compact_output)
 				slot[enq_tag] = LLSD(S32(stats.mRequests[i].mEnqueued.getCount()));
 				slot[deq_tag] = LLSD(S32(stats.mRequests[i].mDequeued.getCount()));
 				slot[rcnt_tag] = LLSD(S32(stats.mRequests[i].mResponse.getCount()));
-				slot[rmin_tag] = LLSD(F64(stats.mRequests[i].mResponse.getMin() * 1.0e-6));
-				slot[rmax_tag] = LLSD(F64(stats.mRequests[i].mResponse.getMax() * 1.0e-6));
-				slot[rmean_tag] = LLSD(F64(stats.mRequests[i].mResponse.getMean() * 1.0e-6));
+				slot[rmin_tag] = LLSD(F64(stats.mRequests[i].mResponse.getMin().valueInUnits<LLUnits::Seconds>()));
+				slot[rmax_tag] = LLSD(F64(stats.mRequests[i].mResponse.getMax().valueInUnits<LLUnits::Seconds>()));
+				slot[rmean_tag] = LLSD(F64(stats.mRequests[i].mResponse.getMean().valueInUnits<LLUnits::Seconds>()));
 			}
 		}
 
@@ -334,13 +334,13 @@ LLViewerAssetStats::asLLSD(bool compact_output)
 		grid_from_region_handle(it->first, &grid_x, &grid_y);
 		reg_stat["grid_x"] = LLSD::Integer(grid_x);
 		reg_stat["grid_y"] = LLSD::Integer(grid_y);
-		reg_stat["duration"] = LLSD::Real(stats.mTotalTime * 1.0e-6);		
+		reg_stat["duration"] = LLSD::Real(stats.mTotalTime.valueInUnits<LLUnits::Seconds>());		
 		regions.append(reg_stat);
 	}
 
 	LLSD ret = LLSD::emptyMap();
 	ret["regions"] = regions;
-	ret["duration"] = LLSD::Real((now - mResetTimestamp) * 1.0e-6);
+	ret["duration"] = LLSD::Real((now - mResetTimestamp).valueInUnits<LLUnits::Seconds>());
 	
 	return ret;
 }

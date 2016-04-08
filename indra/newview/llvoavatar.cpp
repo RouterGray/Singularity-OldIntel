@@ -6089,7 +6089,7 @@ void LLVOAvatar::getGround(const LLVector3 &in_pos_agent, LLVector3 &out_pos_age
 //-----------------------------------------------------------------------------
 F32 LLVOAvatar::getTimeDilation()
 {
-	return mTimeDilation;
+	return mRegionp ? mRegionp->getTimeDilation() : 1.f;
 }
 
 

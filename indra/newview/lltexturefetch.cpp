@@ -266,23 +266,23 @@ private:
 	F32 mImagePriority;
 	U32 mWorkPriority;
 	F32 mRequestedPriority;
-	S32 mDesiredDiscard;
-	S32 mSimRequestedDiscard;
-	S32 mRequestedDiscard;
-	S32 mLoadedDiscard;
-	S32 mDecodedDiscard;
-	LLFrameTimer mRequestedTimer;
-	LLFrameTimer mFetchTimer;
+	S32                         mDesiredDiscard,
+								mSimRequestedDiscard,
+								mRequestedDiscard,
+								mLoadedDiscard,
+								mDecodedDiscard;
+	LLFrameTimer                mRequestedTimer,
+								mFetchTimer;
 	LLTimer			mCacheReadTimer;
 	F32				mCacheReadTime;
-	LLTextureCache::handle_t mCacheReadHandle;
-	LLTextureCache::handle_t mCacheWriteHandle;
+	LLTextureCache::handle_t    mCacheReadHandle,
+								mCacheWriteHandle;
 	std::vector<U8> mHttpBuffer;
-	S32 mRequestedSize;
-	S32 mRequestedOffset;
-	S32 mDesiredSize;
-	S32 mFileSize;
-	S32 mCachedSize;	
+	S32                         mRequestedSize,
+								mRequestedOffset,
+								mDesiredSize,
+								mFileSize,
+								mCachedSize;
 	e_request_state mSentRequest;
 	handle_t mDecodeHandle;
 	BOOL mLoaded;
@@ -303,9 +303,12 @@ private:
 	LLMutex mWorkMutex;
 	struct PacketData
 	{
-		PacketData(U8* data, S32 size) { mData = data; mSize = size; }
+		PacketData(U8* data, S32 size) 
+		:	mData(data), mSize(size) 
+		{}
 		~PacketData() { clearData(); }
 		void clearData() { delete[] mData; mData = NULL; }
+
 		U8* mData;
 		U32 mSize;
 	};
@@ -397,7 +400,7 @@ public:
 		if (log_to_viewer_log || log_to_sim)
 		{
 			
-			U64 timeNow = LLTimer::getTotalTime();
+			U64Microseconds timeNow = LLTimer::getTotalTime();
 			mFetcher->mTextureInfo.setRequestStartTime(mID, mMetricsStartTime);
 			mFetcher->mTextureInfo.setRequestType(mID, LLTextureInfoDetails::REQUEST_TYPE_HTTP);
 			mFetcher->mTextureInfo.setRequestSize(mID, mRequestedSize);
@@ -2234,7 +2237,7 @@ bool LLTextureFetchWorker::writeToCacheComplete()
 // Threads:  Ttf
 void LLTextureFetchWorker::recordTextureStart(bool is_http)
 {
-	if (! mMetricsStartTime)
+	if (! mMetricsStartTime.value())
 	{
 		mMetricsStartTime = LLViewerAssetStatsFF::get_timestamp();
 	}
@@ -2247,13 +2250,13 @@ void LLTextureFetchWorker::recordTextureStart(bool is_http)
 // Threads:  Ttf
 void LLTextureFetchWorker::recordTextureDone(bool is_http)
 {
-	if (mMetricsStartTime)
+	if (mMetricsStartTime.value())
 	{
 		LLViewerAssetStatsFF::record_response_thread1(LLViewerAssetType::AT_TEXTURE,
 													  is_http,
 													  LLImageBase::TYPE_AVATAR_BAKE == mType,
 													  LLViewerAssetStatsFF::get_timestamp() - mMetricsStartTime);
-		mMetricsStartTime = 0;
+		mMetricsStartTime = (U32Seconds)0;
 	}
 	LLViewerAssetStatsFF::record_dequeue_thread1(LLViewerAssetType::AT_TEXTURE,
 												 is_http,
@@ -2277,7 +2280,7 @@ LLTextureFetch::LLTextureFetch(LLTextureCache* cache, LLImageDecodeThread* image
 	  mTotalCacheReadCount(0U),
 	  mTotalCacheWriteCount(0U)
 {
-	mTextureInfo.setUpLogging(gSavedSettings.getBOOL("LogTextureDownloadsToViewerLog"), gSavedSettings.getBOOL("LogTextureDownloadsToSimulator"), gSavedSettings.getU32("TextureLoggingThreshold"));
+	mTextureInfo.setUpLogging(gSavedSettings.getBOOL("LogTextureDownloadsToViewerLog"), gSavedSettings.getBOOL("LogTextureDownloadsToSimulator"), (U32Bytes)gSavedSettings.getU32("TextureLoggingThreshold"));
 }
 
 LLTextureFetch::~LLTextureFetch()
@@ -3118,7 +3121,7 @@ bool LLTextureFetch::receiveImagePacket(const LLHost& host, const LLUUID& id, U1
 
 		if (log_to_viewer_log || log_to_sim)
 		{
-			U64 timeNow = LLTimer::getTotalTime();
+			U64Microseconds timeNow = LLTimer::getTotalTime();
 			mTextureInfo.setRequestSize(id, worker->mFileSize);
 			mTextureInfo.setRequestCompleteTimeAndLog(id, timeNow);
 		}

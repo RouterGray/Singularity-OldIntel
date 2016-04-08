@@ -1968,7 +1968,7 @@ bool idle_startup()
 			gFirstSim,
 			MAX_TIMEOUT_COUNT,
 			FALSE,
-			TIMEOUT_SECONDS,
+			F32Seconds(TIMEOUT_SECONDS),
 			use_circuit_callback,
 			NULL);
 
