@@ -1370,7 +1370,7 @@ void LLObjectBackup::xmlToPrim(LLSD prim_llsd, LLViewerObject* object)
 		LLUUID t_id = sculpt.getSculptTexture();
 		if (mAssetMap.count(t_id))
 		{
-			sculpt.setSculptTexture(mAssetMap[t_id]);
+			sculpt.setSculptTexture(mAssetMap[t_id], sculpt.getSculptType());
 		}
 
 		object->setParameterEntry(LLNetworkData::PARAMS_SCULPT, sculpt, true);

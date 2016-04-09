@@ -1539,10 +1539,7 @@ LLModel* LLModel::loadModelFromDomMesh(domMesh *mesh)
 
 std::string LLModel::getName() const
 {
-	if (!mRequestedLabel.empty())
-		return mRequestedLabel;
-	else
-		return mLabel;
+    return mRequestedLabel.empty() ? mLabel : mRequestedLabel;
 }
 
 //static
