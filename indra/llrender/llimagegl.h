@@ -177,6 +177,9 @@ public:
 	mutable F32  mLastBindTime;	// last time this was bound, by discard level
 	
 private:
+	U32 createPickMask(S32 pWidth, S32 pHeight);
+	void freePickMask();
+
 	LLPointer<LLImageRaw> mSaveData; // used for destroyGL/restoreGL
 	S32	mSaveDiscardLevel;
 	U8* mPickMask;  //downsampled bitmap approximation of alpha channel.  NULL if no alpha channel

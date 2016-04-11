@@ -38,10 +38,10 @@
     <text bottom_delta="0" height="12" left_delta="47" name="ShadersPrefText4">Ultra</text>
     <text bottom_delta="16"  height="12" left_delta="23" name="QualityText2">Higher Quality</text>
 <!-- Are these icons really necessary? 
-    <icon bottom="-89" height="14" image_name="rounded_square.tga" left="173" name="LowDivet" width="2"/>
-    <icon bottom="-89" height="14" image_name="rounded_square.tga" left_delta="44" name="MidDivet" width="2"/>
-    <icon bottom="-89" height="14" image_name="rounded_square.tga" left_delta="44" name="HighDivet" width="2"/>
-    <icon bottom="-89" height="14" image_name="rounded_square.tga" left_delta="44" name="UltraDivet" width="2"/>
+    <icon bottom="-89" height="14" image_name="Rounded_Square" left="173" name="LowDivet" width="2"/>
+    <icon bottom="-89" height="14" image_name="Rounded_Square" left_delta="44" name="MidDivet" width="2"/>
+    <icon bottom="-89" height="14" image_name="Rounded_Square" left_delta="44" name="HighDivet" width="2"/>
+    <icon bottom="-89" height="14" image_name="Rounded_Square" left_delta="44" name="UltraDivet" width="2"/>
 -->
     <slider bottom_delta="0" control_name="RenderQualityPerformance" increment="1" initial_val="0" left="165" max_val="3" min_val="0" name="QualityPerformanceSelection" show_text="false" width="150" />
     <check_box bottom_delta="-10" control_name="RenderCustomSettings" label="Custom" left="410" name="CustomSettings"/>

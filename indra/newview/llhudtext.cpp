@@ -158,7 +158,7 @@ void LLHUDText::renderText()
 	mOffsetY = lltrunc(mHeight * ((mVertAlignment == ALIGN_VERT_CENTER) ? 0.5f : 1.f));
 
 	// *TODO: cache this image
-	LLUIImagePtr imagep = LLUI::getUIImage("rounded_square.tga");
+	LLUIImagePtr imagep = LLUI::getUIImage("Rounded_Square");
 
 	// *TODO: make this a per-text setting
 	static const LLCachedControl<LLColor4> background_chat_color("BackgroundChatColor", LLColor4(0,0,0,1.f));

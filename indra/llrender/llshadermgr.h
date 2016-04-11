@@ -232,6 +232,8 @@ DISPLAY_GAMMA,
 	BOOL	linkProgramObject(GLhandleARB obj, BOOL suppress_errors = FALSE);
 	BOOL	validateProgramObject(GLhandleARB obj);
 	GLhandleARB loadShaderFile(const std::string& filename, S32 & shader_level, GLenum type, std::map<std::string, std::string>* defines = NULL, S32 texture_index_channels = -1);
+	void unloadShaders();
+	void unloadShaderObjects();
 
 	// Implemented in the application to actually point to the shader directory.
 	virtual std::string getShaderDirPrefix(void) = 0; // Pure Virtual
@@ -252,6 +254,9 @@ public:
 	// Map of shader names to compiled
 	std::multimap<std::string, CachedObjectInfo > mShaderObjects;	//Singu Note: Packing more info here. Doing such provides capability to skip unneeded duplicate loading..
 
+	// Map of program names linked
+	std::map<std::string, GLuint> mProgramObjects;
+
 	//global (reserved slot) shader parameters
 	std::vector<std::string> mReservedAttribs;
 
@@ -261,6 +266,7 @@ public:
 	std::map<std::string, std::string> mDefinitions;
 
 protected:
+	void cleanupShaderSources();
 
 	// our parameter manager singleton instance
 	static LLShaderMgr * sInstance;

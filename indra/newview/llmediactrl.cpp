@@ -595,15 +595,9 @@ void LLMediaCtrl::navigateTo( std::string url_in, std::string mime_type)
 //
 void LLMediaCtrl::navigateToLocalPage( const std::string& subdir, const std::string& filename_in )
 {
-	std::string language = LLUI::getLanguage();
 	std::string filename(gDirUtilp->add(subdir, filename_in));
+	std::string expanded_filename = gDirUtilp->findSkinnedFilename("html", filename);
 
-	std::string expanded_filename = gDirUtilp->findSkinnedFilename("html", language, filename);
-
-	if (expanded_filename.empty() && language != "en-us")
-	{
-		expanded_filename = gDirUtilp->findSkinnedFilename("html", "en-us", filename);
-	}
 	if(expanded_filename.empty())
 	{
 		LL_WARNS() << "File " << filename << "not found" << LL_ENDL;

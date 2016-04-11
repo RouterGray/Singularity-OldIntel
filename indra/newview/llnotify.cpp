@@ -497,7 +497,7 @@ void LLNotifyBox::draw()
 
 void LLNotifyBox::drawBackground() const
 {
-	if (LLUIImagePtr imagep = LLUI::getUIImage("rounded_square.tga"))
+	if (LLUIImagePtr imagep = LLUI::getUIImage("Rounded_Square"))
 	{
 		gGL.getTexUnit(0)->bind(imagep->getImage());
 		// set proper background color depending on whether notify box is a caution or not

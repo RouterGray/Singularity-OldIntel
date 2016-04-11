@@ -38,11 +38,9 @@ LLUIImage::LLUIImage(const std::string& name, LLPointer<LLTexture> image)
 	mImage(image),
 	mScaleRegion(0.f, 1.f, 1.f, 0.f),
 	mClipRegion(0.f, 1.f, 1.f, 0.f),
-	mUniformScaling(TRUE),
-	mNoClip(TRUE),
-	mImageLoaded(NULL)
-{
-}
+	mImageLoaded(NULL),
+	mScaleStyle(SCALE_INNER)
+{}
 
 LLUIImage::~LLUIImage()
 {
@@ -52,44 +50,35 @@ LLUIImage::~LLUIImage()
 void LLUIImage::setClipRegion(const LLRectf& region) 
 { 
 	mClipRegion = region; 
-	mNoClip = mClipRegion.mLeft == 0.f
-				&& mClipRegion.mRight == 1.f
-				&& mClipRegion.mBottom == 0.f
-				&& mClipRegion.mTop == 1.f;
 }
 
 void LLUIImage::setScaleRegion(const LLRectf& region) 
 { 
 	mScaleRegion = region; 
-	mUniformScaling = mScaleRegion.mLeft == 0.f
-					&& mScaleRegion.mRight == 1.f
-					&& mScaleRegion.mBottom == 0.f
-					&& mScaleRegion.mTop == 1.f;
+}
+
+void LLUIImage::setScaleStyle(LLUIImage::EScaleStyle style)
+{
+	mScaleStyle = style;
 }
 
 //TODO: move drawing implementation inside class
 void LLUIImage::draw(S32 x, S32 y, const LLColor4& color) const
 {
-	gl_draw_scaled_image(x, y, getWidth(), getHeight(), mImage, color, mClipRegion);
+	draw(x, y, getWidth(), getHeight(), color);
 }
 
 void LLUIImage::draw(S32 x, S32 y, S32 width, S32 height, const LLColor4& color) const
 {
-	if (mUniformScaling)
-	{
-		gl_draw_scaled_image(x, y, width, height, mImage, color, mClipRegion);
-	}
-	else
-	{
-		gl_draw_scaled_image_with_border(
-			x, y, 
-			width, height, 
-			mImage, 
-			color,
-			FALSE,
-			mClipRegion,
-			mScaleRegion);
-	}
+	gl_draw_scaled_image_with_border(
+		x, y, 
+		width, height, 
+		mImage, 
+		color,
+		FALSE,
+		mClipRegion,
+		mScaleRegion,
+		mScaleStyle == SCALE_INNER);
 }
 
 void LLUIImage::drawSolid(S32 x, S32 y, S32 width, S32 height, const LLColor4& color) const
@@ -101,7 +90,8 @@ void LLUIImage::drawSolid(S32 x, S32 y, S32 width, S32 height, const LLColor4& c
 		color, 
 		TRUE,
 		mClipRegion,
-		mScaleRegion);
+		mScaleRegion,
+		mScaleStyle == SCALE_INNER);
 }
 
 void LLUIImage::drawBorder(S32 x, S32 y, S32 width, S32 height, const LLColor4& color, S32 border_width) const
@@ -111,6 +101,50 @@ void LLUIImage::drawBorder(S32 x, S32 y, S32 width, S32 height, const LLColor4& 
 	border_rect.stretch(border_width, border_width);
 	drawSolid(border_rect, color);
 }
+
+void LLUIImage::draw3D(const LLVector3& origin_agent, const LLVector3& x_axis, const LLVector3& y_axis, 
+						const LLRect& rect, const LLColor4& color)
+{
+	F32 border_scale = 1.f;
+	F32 border_height = (1.f - mScaleRegion.getHeight()) * getHeight();
+	F32 border_width = (1.f - mScaleRegion.getWidth()) * getWidth();
+	if (rect.getHeight() < border_height || rect.getWidth() < border_width)
+	{
+		 if(border_height - rect.getHeight() > border_width - rect.getWidth())
+		 {
+			 border_scale = (F32)rect.getHeight() / border_height;
+		 }
+		 else
+		 {
+			border_scale = (F32)rect.getWidth() / border_width;
+		 }
+	}
+
+	LLRender2D::pushMatrix();
+	{ 
+		LLVector3 rect_origin = origin_agent + (rect.mLeft * x_axis) + (rect.mBottom * y_axis); 
+		LLRender2D::translate(rect_origin.mV[VX],
+						rect_origin.mV[VY], 
+						rect_origin.mV[VZ]);
+		gGL.getTexUnit(0)->bind(getImage());
+		gGL.color4fv(color.mV);
+
+		LLRectf center_uv_rect(mClipRegion.mLeft + mScaleRegion.mLeft * mClipRegion.getWidth(),
+							mClipRegion.mBottom + mScaleRegion.mTop * mClipRegion.getHeight(),
+							mClipRegion.mLeft + mScaleRegion.mRight * mClipRegion.getWidth(),
+							mClipRegion.mBottom + mScaleRegion.mBottom * mClipRegion.getHeight());
+		gl_segmented_rect_3d_tex(mClipRegion,
+								center_uv_rect,
+								LLRectf(border_width * border_scale * 0.5f / (F32)rect.getWidth(),
+										(rect.getHeight() - (border_height * border_scale * 0.5f)) / (F32)rect.getHeight(),
+										(rect.getWidth() - (border_width * border_scale * 0.5f)) / (F32)rect.getWidth(),
+										(border_height * border_scale * 0.5f) / (F32)rect.getHeight()),
+								rect.getWidth() * x_axis, 
+								rect.getHeight() * y_axis);
+		
+	} LLRender2D::popMatrix();
+}
+
 
 S32 LLUIImage::getWidth() const
 { 

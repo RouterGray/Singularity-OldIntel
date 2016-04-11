@@ -36,6 +36,7 @@
 #include "llfontregistry.h"
 #include "llgl.h"
 #include "llrender.h"
+#include "lltexture.h"
 #include "v4color.h"
 #include "llstl.h"
 #include "llfasttimer.h"
@@ -68,20 +69,6 @@ const F32 PIXEL_CORRECTION_DISTANCE = 0.01f;
 
 const F32 PAD_UVY = 0.5f; // half of vertical padding between glyphs in the glyph texture
 const F32 DROP_SHADOW_SOFT_STRENGTH = 0.3f;
-
-F32 llfont_round_x(F32 x)
-{
-	//return llfloor((x-LLFontGL::sCurOrigin.mX)/LLFontGL::sScaleX+0.5f)*LLFontGL::sScaleX+LLFontGL::sCurOrigin.mX;
-	//return llfloor(x/LLFontGL::sScaleX+0.5f)*LLFontGL::sScaleY;
-	return x;
-}
-
-F32 llfont_round_y(F32 y)
-{
-	//return llfloor((y-LLFontGL::sCurOrigin.mY)/LLFontGL::sScaleY+0.5f)*LLFontGL::sScaleY+LLFontGL::sCurOrigin.mY;
-	//return llfloor(y+0.5f);
-	return y;
-}
 
 LLFontGL::LLFontGL()
 {
@@ -166,8 +153,9 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
 
 	S32 scaled_max_pixels = max_pixels == S32_MAX ? S32_MAX : llceil((F32)max_pixels * sScaleX);
 
-	// Strip off any style bits that are already accounted for by the font.
-	style = style & (~getFontDesc().getStyle());
+	// determine which style flags need to be added programmatically by stripping off the
+	// style bits that are drawn by the underlying Freetype font
+	U8 style_to_add = (style | mFontDescriptor.getStyle()) & ~mFontFreetype->getStyle();
 
 	F32 drop_shadow_strength = 0.f;
 	if (shadow != NO_SHADOW)
@@ -412,7 +400,7 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
 				glyph_count = 0;
 			}
 
-			drawGlyph(glyph_count, vertices, uvs, colors, screen_rect, uv_rect, text_color, style, shadow, drop_shadow_strength);
+			drawGlyph(glyph_count, vertices, uvs, colors, screen_rect, uv_rect, text_color, style_to_add, shadow, drop_shadow_strength);
 
 			chars_drawn++;
 			cur_x += fgi->mXAdvance;
@@ -453,7 +441,8 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
 		*right_x = (cur_x - origin.mV[VX]) / sScaleX;
 	}
 
-	if (style & UNDERLINE)
+	//FIXME: add underline as glyph?
+	if (style_to_add & UNDERLINE)
 	{
 		F32 descender = (F32)llfloor(mFontFreetype->getDescenderHeight());
 
@@ -475,7 +464,7 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, cons
 				(cur_x - origin.mV[VX]) / sScaleX, (F32)y,
 				color,
 				LEFT, valign,
-				style,
+				style_to_add,
 				shadow,
 				S32_MAX, max_pixels,
 				right_x,
@@ -940,7 +929,7 @@ void LLFontGL::removeEmbeddedChar( llwchar wc ) const
 }
 
 // static
-void LLFontGL::initClass(F32 screen_dpi, F32 x_scale, F32 y_scale, const std::string& app_dir, const std::vector<std::string>& xui_paths, bool create_gl_textures)
+void LLFontGL::initClass(F32 screen_dpi, F32 x_scale, F32 y_scale, const std::string& app_dir, bool create_gl_textures)
 {
 	sVertDPI = (F32)llfloor(screen_dpi * y_scale);
 	sHorizDPI = (F32)llfloor(screen_dpi * x_scale);
@@ -951,7 +940,7 @@ void LLFontGL::initClass(F32 screen_dpi, F32 x_scale, F32 y_scale, const std::st
 	// Font registry init
 	if (!sFontRegistry)
 	{
-		sFontRegistry = new LLFontRegistry(xui_paths,create_gl_textures);
+		sFontRegistry = new LLFontRegistry(create_gl_textures);
 		sFontRegistry->parseFontInfo("fonts.xml");
 	}
 	else

@@ -495,6 +495,7 @@ void LLViewerShaderMgr::setShaders()
 		//Flag base shader objects for deletion
 		//Don't worry-- they won't be deleted until no programs refrence them.
 		unloadShaderObjects();
+		cleanupShaderSources();
 	}
 
 	if (gViewerWindow)
@@ -513,11 +514,7 @@ void LLViewerShaderMgr::setShaders()
 
 void LLViewerShaderMgr::unloadShaders()
 {
-	//Instead of manually unloading, shaders are now automatically accumulated in a list.
-	//Simply iterate and unload.
-	std::vector<LLGLSLShader *> &shader_list = LLShaderMgr::getGlobalShaderList();
-	for(std::vector<LLGLSLShader *>::iterator it=shader_list.begin();it!=shader_list.end();++it)
-		(*it)->unload();
+	LLShaderMgr::unloadShaders();
 
 	for (S32 i = 0; i < SHADER_COUNT; i++)
 		mVertexShaderLevel[i] = 0;
@@ -528,15 +525,6 @@ void LLViewerShaderMgr::unloadShaders()
 	LLPipeline::sRenderDeferred = false;
 	LLPipeline::sWaterReflections = FALSE;
 	LLPipeline::sRenderGlow = FALSE;
-}
-
-void LLViewerShaderMgr::unloadShaderObjects()
-{
-	std::multimap<std::string, LLShaderMgr::CachedObjectInfo >::iterator it = mShaderObjects.begin();
-	for (; it != mShaderObjects.end(); ++it)
-		if (it->second.mHandle)
-			glDeleteObjectARB(it->second.mHandle);
-	mShaderObjects.clear();
 }
 
 BOOL LLViewerShaderMgr::loadBasicShaders()

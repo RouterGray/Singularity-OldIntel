@@ -511,7 +511,7 @@ void LLScrollbar::draw()
 
 
 	// Draw background and thumb.
-	LLUIImage* rounded_rect_imagep = LLUI::getUIImage("rounded_square.tga");
+	LLUIImage* rounded_rect_imagep = LLUI::getUIImage("Rounded_Square");
 
 	if (!rounded_rect_imagep)
 	{

@@ -421,7 +421,7 @@ void LLFastTimerView::draw()
 	S32 left, top, right, bottom;
 	S32 x, y, barw, barh, dx, dy;
 	S32 texth;
-	LLPointer<LLUIImage> box_imagep = LLUI::getUIImage("rounded_square.tga");
+	LLPointer<LLUIImage> box_imagep = LLUI::getUIImage("Rounded_Square");
 
 	// Draw the window background
 	gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
@@ -884,7 +884,8 @@ void LLFastTimerView::draw()
 					gGL.color4fv(color.mV);
 					F32 start_fragment = llclamp((F32)(left - sublevel_left[level]) / (F32)sublevel_dx[level], 0.f, 1.f);
 					F32 end_fragment = llclamp((F32)(right - sublevel_left[level]) / (F32)sublevel_dx[level], 0.f, 1.f);
-					gl_segmented_rect_2d_fragment_tex(sublevel_left[level], top - level + scale_offset, sublevel_right[level], bottom + level - scale_offset, box_imagep->getTextureWidth(), box_imagep->getTextureHeight(), 16, start_fragment, end_fragment);
+					LLRect rect(sublevel_left[level], top - level + scale_offset, sublevel_right[level], bottom + level - scale_offset);
+					gl_segmented_rect_2d_fragment_tex(rect, box_imagep->getTextureWidth(), box_imagep->getTextureHeight(), 16, start_fragment, end_fragment);
 
 				}
 

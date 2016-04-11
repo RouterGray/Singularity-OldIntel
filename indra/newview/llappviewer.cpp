@@ -652,7 +652,7 @@ bool LLAppViewer::init()
 
 	// set skin search path to default, will be overridden later
 	// this allows simple skinned file lookups to work
-	gDirUtilp->setSkinFolder("default");
+	gDirUtilp->setSkinFolder("default", "en-us");
 
 	initLogging();
 
@@ -725,16 +725,20 @@ bool LLAppViewer::init()
 	LL_INFOS("InitInfo") << "Threads initialized." << LL_ENDL ;
 
 	// Load art UUID information, don't require these strings to be declared in code.
-	std::string colors_base_filename = gDirUtilp->findSkinnedFilename("colors_base.xml");
-	LL_DEBUGS("InitInfo") << "Loading base colors from " << colors_base_filename << LL_ENDL;
-	gColors.loadFromFileLegacy(colors_base_filename, FALSE, TYPE_COL4U);
-
-	// Load overrides from user colors file
-	std::string user_colors_filename = gDirUtilp->findSkinnedFilename("colors.xml");
-	LL_DEBUGS("InitInfo") << "Loading user colors from " << user_colors_filename << LL_ENDL;
-	if (gColors.loadFromFileLegacy(user_colors_filename, FALSE, TYPE_COL4U) == 0)
+	for(auto& colors_base_filename : gDirUtilp->findSkinnedFilenames(LLDir::SKINBASE, "colors_base.xml", LLDir::ALL_SKINS))
 	{
-		LL_DEBUGS("InitInfo") << "Cannot load user colors from " << user_colors_filename << LL_ENDL;
+		LL_DEBUGS("InitInfo") << "Loading colors from " << colors_base_filename << LL_ENDL;
+		gColors.loadFromFileLegacy(colors_base_filename, FALSE, TYPE_COL4U);
+	}
+	// Load overrides from user colors file
+	for (auto& colors_base_filename : gDirUtilp->findSkinnedFilenames(LLDir::SKINBASE, "colors.xml", LLDir::ALL_SKINS))
+	{
+		gColors.loadFromFileLegacy(colors_base_filename, FALSE, TYPE_COL4U);
+		LL_DEBUGS("InitInfo") << "Loading user colors from " << colors_base_filename << LL_ENDL;
+		if (gColors.loadFromFileLegacy(colors_base_filename, FALSE, TYPE_COL4U) == 0)
+		{
+			LL_DEBUGS("InitInfo") << "Cannot load user colors from " << colors_base_filename << LL_ENDL;
+		}
 	}
 
 	// Widget construction depends on LLUI being initialized
@@ -747,6 +751,11 @@ bool LLAppViewer::init()
 		&LLUI::getScaleFactor());
 	LL_INFOS("InitInfo") << "UI initialized." << LL_ENDL ;
 
+	// NOW LLUI::getLanguage() should work. gDirUtilp must know the language
+	// for this session ASAP so all the file-loading commands that follow,
+	// that use findSkinnedFilenames(), will include the localized files.
+	gDirUtilp->setSkinFolder(gDirUtilp->getSkinFolder(), LLUI::getLanguage());
+	
 	LLUICtrlFactory::getInstance()->setupPaths(); // update paths with correct language set
 
 	// Setup LLTrans after LLUI::initClass has been called.
@@ -2411,7 +2420,11 @@ bool LLAppViewer::initConfiguration()
 	const LLControlVariable* skinfolder = gSavedSettings.getControl("SkinCurrent");
 	if(skinfolder && LLStringUtil::null != skinfolder->getValue().asString())
 	{   
-		gDirUtilp->setSkinFolder(skinfolder->getValue().asString());
+		// Examining "Language" may not suffice -- see LLUI::getLanguage()
+		// logic. Unfortunately LLUI::getLanguage() doesn't yet do us much
+		// good because we haven't yet called LLUI::initClass().
+		gDirUtilp->setSkinFolder(skinfolder->getValue().asString(),
+								 gSavedSettings.getString("Language"));
 	}
 
 	// XUI:translate

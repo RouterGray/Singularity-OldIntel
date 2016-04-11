@@ -75,7 +75,7 @@ LLFontGL* LLFolderViewItem::getLabelFontForStyle(U8 style)
 void LLFolderViewItem::initClass()
 {
 	sArrowImage = LLUI::getUIImage("folder_arrow.tga"); 
-	sBoxImage = LLUI::getUIImage("rounded_square.tga");
+	sBoxImage = LLUI::getUIImage("Rounded_Square");
 }
 
 //static

@@ -112,7 +112,7 @@ public:
 	BOOL mHasARBEnvCombine;
 	BOOL mHasCubeMap;
 	BOOL mHasDebugOutput;
-
+	BOOL mHasGpuShader5;
 	BOOL mHasAdaptiveVsync;
 	BOOL mHasTextureSwizzle;
 

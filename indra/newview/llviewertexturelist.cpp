@@ -64,6 +64,7 @@
 #include "llviewerstats.h"
 #include "pipeline.h"
 #include "llappviewer.h"
+#include "llxuiparser.h"
 #include "llagent.h"
 #include "llviewerdisplay.h"
 #include "llflexibleobject.h"
@@ -200,7 +201,7 @@ void LLViewerTextureList::doPreloadImages()
 
 static std::string get_texture_list_name()
 {
-	return std::string("texture_list_") + gSavedSettings.getString("LoginLocation") + ".xml";
+	return gDirUtilp->getExpandedFilename(LL_PATH_PER_SL_ACCOUNT, "texture_list_" + gSavedSettings.getString("LoginLocation") + ".xml");
 }
 
 void LLViewerTextureList::doPrefetchImages()
@@ -213,13 +214,22 @@ void LLViewerTextureList::doPrefetchImages()
 	
 	// Pre-fetch textures from last logout
 	LLSD imagelist;
-	std::string filename = gDirUtilp->getExpandedFilename(LL_PATH_PER_SL_ACCOUNT, get_texture_list_name());
+	std::string filename = get_texture_list_name();
 	llifstream file;
-	file.open(filename);
+	file.open(filename.c_str());
 	if (file.is_open())
 	{
-		LLSDSerialize::fromXML(imagelist, file);
+		if ( ! LLSDSerialize::fromXML(imagelist, file) )
+        {
+            file.close();
+            LL_WARNS() << "XML parse error reading texture list '" << filename << "'" << LL_ENDL;
+            LL_WARNS() << "Removing invalid texture list '" << filename << "'" << LL_ENDL;
+            LLFile::remove(filename);
+            return;
+        }
+        file.close();
 	}
+    S32 texture_count = 0;
 	for (LLSD::array_iterator iter = imagelist.beginArray();
 		 iter != imagelist.endArray(); ++iter)
 	{
@@ -233,10 +243,12 @@ void LLViewerTextureList::doPrefetchImages()
 			LLViewerFetchedTexture* image = LLViewerTextureManager::getFetchedTexture(uuid, MIPMAP_TRUE, LLGLTexture::BOOST_NONE, texture_type);
 			if (image)
 			{
+                texture_count += 1;
 				image->addTextureStats((F32)pixel_area);
 			}
 		}
 	}
+    LL_DEBUGS() << "fetched " << texture_count << " images from " << filename << LL_ENDL;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -597,22 +609,44 @@ void LLViewerTextureList::removeImageFromList(LLViewerFetchedTexture *image)
 	assert_main_thread();
 	llassert_always(mInitialized) ;
 	llassert(image);
-	if (!image->isInImageList())
-	{
-		LL_INFOS() << "RefCount: " << image->getNumRefs() << LL_ENDL ;
-		uuid_map_t::iterator iter = mUUIDMap.find(image->getID());
-		if(iter == mUUIDMap.end() || iter->second != image)
-		{
-			LL_INFOS() << "Image is not in mUUIDMap!" << LL_ENDL ;
-		}
-		LL_ERRS() << "LLViewerTextureList::removeImageFromList - Image not in list" << LL_ENDL;
-	}
 
-	S32 count = mImageList.erase(image) ;
-	if(count != 1) 
+	S32 count = 0;
+	if (image->isInImageList())
 	{
-		LL_INFOS() << image->getID() << LL_ENDL ;
-		LL_ERRS() << "Error happens when remove image from mImageList: " << count << LL_ENDL ;
+		count = mImageList.erase(image) ;
+		if(count != 1) 
+	{
+			LL_INFOS() << "Image  " << image->getID() 
+				<< " had mInImageList set but mImageList.erase() returned " << count
+				<< LL_ENDL;
+		}
+	}
+	else
+	{	// Something is wrong, image is expected in list or callers should check first
+		LL_INFOS() << "Calling removeImageFromList() for " << image->getID() 
+			<< " but doesn't have mInImageList set"
+			<< " ref count is " << image->getNumRefs()
+			<< LL_ENDL;
+		uuid_map_t::iterator iter = mUUIDMap.find(image->getID());
+		if(iter == mUUIDMap.end())
+		{
+			LL_INFOS() << "Image  " << image->getID() << " is also not in mUUIDMap!" << LL_ENDL ;
+		}
+		else if (iter->second != image)
+		{
+			LL_INFOS() << "Image  " << image->getID() << " was in mUUIDMap but with different pointer" << LL_ENDL ;
+	}
+		else
+	{
+			LL_INFOS() << "Image  " << image->getID() << " was in mUUIDMap with same pointer" << LL_ENDL ;
+		}
+		count = mImageList.erase(image) ;
+		if(count != 0) 
+		{	// it was in the list already?
+			LL_WARNS() << "Image  " << image->getID() 
+				<< " had mInImageList false but mImageList.erase() returned " << count
+				<< LL_ENDL;
+		}
 	}
       
 	image->setInImageList(FALSE) ;
@@ -1540,28 +1574,31 @@ LLUIImagePtr LLUIImageList::getUIImage(const std::string& image_name, S32 priori
 }
 
 LLUIImagePtr LLUIImageList::loadUIImageByName(const std::string& name, const std::string& filename,
-											  BOOL use_mips, const LLRect& scale_rect, const LLRect& clip_rect, LLViewerTexture::EBoostLevel boost_priority )
+											  BOOL use_mips, const LLRect& scale_rect, const LLRect& clip_rect, LLViewerTexture::EBoostLevel boost_priority,
+											  LLUIImage::EScaleStyle scale_style)
 {
 	if (boost_priority == LLGLTexture::BOOST_NONE)
 	{
 		boost_priority = LLGLTexture::BOOST_UI;
 	}
 	LLViewerFetchedTexture* imagep = LLViewerTextureManager::getFetchedTextureFromFile(filename, MIPMAP_NO, boost_priority);
-	return loadUIImage(imagep, name, use_mips, scale_rect, clip_rect);
+	return loadUIImage(imagep, name, use_mips, scale_rect, clip_rect, scale_style);
 }
 
 LLUIImagePtr LLUIImageList::loadUIImageByID(const LLUUID& id,
-											BOOL use_mips, const LLRect& scale_rect, const LLRect& clip_rect, LLViewerTexture::EBoostLevel boost_priority)
+											BOOL use_mips, const LLRect& scale_rect, const LLRect& clip_rect, LLViewerTexture::EBoostLevel boost_priority,
+											LLUIImage::EScaleStyle scale_style)
 {
 	if (boost_priority == LLGLTexture::BOOST_NONE)
 	{
 		boost_priority = LLGLTexture::BOOST_UI;
 	}
 	LLViewerFetchedTexture* imagep = LLViewerTextureManager::getFetchedTexture(id, MIPMAP_NO, boost_priority);
-	return loadUIImage(imagep, id.asString(), use_mips, scale_rect, clip_rect);
+	return loadUIImage(imagep, id.asString(), use_mips, scale_rect, clip_rect, scale_style);
 }
 
-LLUIImagePtr LLUIImageList::loadUIImage(LLViewerFetchedTexture* imagep, const std::string& name, BOOL use_mips, const LLRect& scale_rect, const LLRect& clip_rect)
+LLUIImagePtr LLUIImageList::loadUIImage(LLViewerFetchedTexture* imagep, const std::string& name, BOOL use_mips, const LLRect& scale_rect, const LLRect& clip_rect,
+										LLUIImage::EScaleStyle scale_style)
 {
 	if (!imagep) return NULL;
 
@@ -1574,6 +1611,7 @@ LLUIImagePtr LLUIImageList::loadUIImage(LLViewerFetchedTexture* imagep, const st
 	imagep->setNoDelete();
 
 	LLUIImagePtr new_imagep = new LLUIImage(name, imagep);
+	new_imagep->setScaleStyle(scale_style);
 	mUIImages.insert(std::make_pair(name, new_imagep));
 	mUITextureList.push_back(imagep);
 
@@ -1592,7 +1630,7 @@ LLUIImagePtr LLUIImageList::loadUIImage(LLViewerFetchedTexture* imagep, const st
 	return new_imagep;
 }
 
-LLUIImagePtr LLUIImageList::preloadUIImage(const std::string& name, const std::string& filename, BOOL use_mips, const LLRect& scale_rect, const LLRect& clip_rect)
+LLUIImagePtr LLUIImageList::preloadUIImage(const std::string& name, const std::string& filename, BOOL use_mips, const LLRect& scale_rect, const LLRect& clip_rect, LLUIImage::EScaleStyle scale_style)
 {
 	// look for existing image
 	uuid_ui_image_map_t::iterator found_it = mUIImages.find(name);
@@ -1602,7 +1640,7 @@ LLUIImagePtr LLUIImageList::preloadUIImage(const std::string& name, const std::s
 		LL_ERRS() << "UI Image " << name << " already loaded." << LL_ENDL;
 	}
 
-	return loadUIImageByName(name, filename, use_mips, scale_rect, clip_rect);
+	return loadUIImageByName(name, filename, use_mips, scale_rect, clip_rect, LLGLTexture::BOOST_UI, scale_style);
 }
 
 //static 
@@ -1662,20 +1700,37 @@ void LLUIImageList::onUIImageLoaded( BOOL success, LLViewerFetchedTexture *src_v
 	}
 }
 
-/*struct UIImageDeclaration : public LLInitParam::Block<UIImageDeclaration>
+namespace LLInitParam
 {
-	Mandatory<std::string>	name;
-	Optional<std::string>	file_name;
-	Optional<bool>			preload;
-	Optional<LLRect>		scale;
-	Optional<bool>			use_mips;
+	template<>
+	struct TypeValues<LLUIImage::EScaleStyle> : public TypeValuesHelper<LLUIImage::EScaleStyle>
+	{
+		static void declareValues()
+		{
+			declare("scale_inner",	LLUIImage::SCALE_INNER);
+			declare("scale_outer",	LLUIImage::SCALE_OUTER);
+		}
+	};
+}
+
+struct UIImageDeclaration : public LLInitParam::Block<UIImageDeclaration>
+{
+	Mandatory<std::string>		name;
+	Optional<std::string>		file_name;
+	Optional<bool>				preload;
+	Optional<LLRect>			scale;
+	Optional<LLRect>			clip;
+	Optional<bool>				use_mips;
+	Optional<LLUIImage::EScaleStyle> scale_type;
 
 	UIImageDeclaration()
 	:	name("name"),
 		file_name("file_name"),
 		preload("preload", false),
 		scale("scale"),
-		use_mips("use_mips", false)
+		clip("clip"),
+		use_mips("use_mips", false),
+		scale_type("scale_type", LLUIImage::SCALE_INNER)
 	{}
 };
 
@@ -1692,49 +1747,43 @@ struct UIImageDeclarations : public LLInitParam::Block<UIImageDeclarations>
 
 bool LLUIImageList::initFromFile()
 {
-	// construct path to canonical textures.xml in default skin dir
-	std::string base_file_path = gDirUtilp->getExpandedFilename(LL_PATH_SKINS, "default", "textures", "textures.xml");
-
-	LLXMLNodePtr root;
-
-	if (!LLXMLNode::parseFile(base_file_path, root, NULL))
+	// Look for textures.xml in all the right places. Pass
+	// constraint=LLDir::ALL_SKINS because we want to overlay textures.xml
+	// from all the skins directories.
+	std::vector<std::string> textures_paths =
+		gDirUtilp->findSkinnedFilenames(LLDir::TEXTURES, "textures.xml", LLDir::ALL_SKINS);
+	std::vector<std::string>::const_iterator pi(textures_paths.begin()), pend(textures_paths.end());
+	if (pi == pend)
 	{
-		LL_WARNS() << "Unable to parse UI image list file " << base_file_path << LL_ENDL;
+		LL_WARNS() << "No textures.xml found in skins directories" << LL_ENDL;
+		return false;
+	}
+
+	// The first (most generic) file gets special validations
+	LLXMLNodePtr root;
+	if (!LLXMLNode::parseFile(*pi, root, NULL))
+	{
+		LL_WARNS() << "Unable to parse UI image list file " << *pi << LL_ENDL;
 		return false;
 	}
 	if (!root->hasAttribute("version"))
 	{
-		LL_WARNS() << "No valid version number in UI image list file " << base_file_path << LL_ENDL;
+		LL_WARNS() << "No valid version number in UI image list file " << *pi << LL_ENDL;
 		return false;
 	}
 
 	UIImageDeclarations images;
 	LLXUIParser parser;
-	parser.readXUI(root, images, base_file_path);
+	parser.readXUI(root, images, *pi);
 
-	// add components defined in current skin
-	std::string skin_update_path = gDirUtilp->getSkinDir() 
-									+ gDirUtilp->getDirDelimiter() 
-									+ "textures"
-									+ gDirUtilp->getDirDelimiter()
-									+ "textures.xml";
-	LLXMLNodePtr update_root;
-	if (skin_update_path != base_file_path
-		&& LLXMLNode::parseFile(skin_update_path, update_root, NULL))
+	// add components defined in the rest of the skin paths
+	while (++pi != pend)
 	{
-		parser.readXUI(update_root, images, skin_update_path);
-	}
-
-	// add components defined in user override of current skin
-	skin_update_path = gDirUtilp->getUserSkinDir() 
-						+ gDirUtilp->getDirDelimiter() 
-						+ "textures"
-						+ gDirUtilp->getDirDelimiter()
-						+ "textures.xml";
-	if (skin_update_path != base_file_path
-		&& LLXMLNode::parseFile(skin_update_path, update_root, NULL))
-	{
-		parser.readXUI(update_root, images, skin_update_path);
+		LLXMLNodePtr update_root;
+		if (LLXMLNode::parseFile(*pi, update_root, NULL))
+		{
+			parser.readXUI(update_root, images, *pi);
+		}
 	}
 
 	if (!images.validateBlock()) return false;
@@ -1769,119 +1818,10 @@ bool LLUIImageList::initFromFile()
 			{
 				continue;
 			}
-			preloadUIImage(image.name, file_name, image.use_mips, image.scale);
+			preloadUIImage(image.name, file_name, image.use_mips, image.scale, image.clip, image.scale_type);
 		}
 
 		if (cur_pass == PASS_DECODE_NOW && !gSavedSettings.getBOOL("NoPreload"))
-		{
-			gTextureList.decodeAllImages(10.f); // decode preloaded images
-		}
-	}
-	return true;
-}*/
-bool LLUIImageList::initFromFile()
-{
-	// construct path to canonical textures.xml in default skin dir
-	std::string base_file_path = gDirUtilp->getExpandedFilename(LL_PATH_SKINS, "default", "textures", "textures.xml");
-
-	LLXMLNodePtr root;
-
-	if (!LLXMLNode::parseFile(base_file_path, root, NULL))
-	{
-		LL_WARNS() << "Unable to parse UI image list file " << base_file_path << LL_ENDL;
-		return false;
-	}
-
-	if (!root->hasAttribute("version"))
-	{
-		LL_WARNS() << "No valid version number in UI image list file " << base_file_path << LL_ENDL;
-		return false;
-	}
-
-	std::vector<std::string> paths;
-	// path to current selected skin
-	paths.push_back(gDirUtilp->getSkinDir() 
-			+ gDirUtilp->getDirDelimiter() 
-			+ "textures"
-			+ gDirUtilp->getDirDelimiter()
-			+ "textures.xml");
-	// path to user overrides on current skin
-	paths.push_back(gDirUtilp->getUserSkinDir() 
-			+ gDirUtilp->getDirDelimiter() 
-			+ "textures"
-			+ gDirUtilp->getDirDelimiter()
-			+ "textures.xml");
-
-	// apply skinned xml files incrementally
-	for(std::vector<std::string>::iterator path_it = paths.begin();
-		path_it != paths.end();
-		++path_it)
-	{
-		// don't reapply base file to itself
-		if (!path_it->empty() && (*path_it) != base_file_path)
-		{
-			LLXMLNodePtr update_root;
-			if (LLXMLNode::parseFile(*path_it, update_root, NULL))
-			{
-				LLXMLNode::updateNode(root, update_root);
-			}
-		}
-	}
-
-	enum
-	{
-		PASS_DECODE_NOW,
-		PASS_DECODE_LATER,
-		NUM_PASSES
-	};
-
-	for (S32 pass = PASS_DECODE_NOW; pass < NUM_PASSES; pass++)
-	{
-		LLXMLNodePtr child_nodep = root->getFirstChild();
-		while(child_nodep.notNull())
-		{
-			std::string image_name;
-			child_nodep->getAttributeString("name", image_name);
-
-			std::string file_name = image_name;
-			LLRect scale_rect;
-			BOOL use_mip_maps = FALSE;
-
-			BOOL preload = FALSE;
-			child_nodep->getAttributeBOOL("preload", preload);
-
-			// load high priority textures on first pass (to kick off decode)
-			if (preload)
-			{
-				if (pass == PASS_DECODE_LATER) 
-				{
-					child_nodep = child_nodep->getNextSibling();
-					continue;
-				}
-			}
-			else
-			{
-				if (pass == PASS_DECODE_NOW)
-				{
-					child_nodep = child_nodep->getNextSibling();
-					continue;
-				}
-			}
-
-			child_nodep->getAttributeString("file_name", file_name);
-			child_nodep->getAttributeBOOL("use_mips", use_mip_maps);
-
-			child_nodep->getAttributeS32("scale_left", scale_rect.mLeft);
-			child_nodep->getAttributeS32("scale_right", scale_rect.mRight);
-			child_nodep->getAttributeS32("scale_bottom", scale_rect.mBottom);
-			child_nodep->getAttributeS32("scale_top", scale_rect.mTop);
-			
-			preloadUIImage(image_name, file_name, use_mip_maps, scale_rect, LLRectBase<S32>::null);
-			
-			child_nodep = child_nodep->getNextSibling();
-		}
-
-		if (pass == PASS_DECODE_NOW && !gSavedSettings.getBOOL("NoPreload"))
 		{
 			gTextureList.decodeAllImages(10.f); // decode preloaded images
 		}

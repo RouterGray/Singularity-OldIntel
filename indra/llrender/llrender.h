@@ -38,12 +38,13 @@
 #include "v3math.h"
 #include "v4coloru.h"
 #include "v4math.h"
-#include "llmatrix4a.h"
-#include "llalignedarray.h"
 #include "llstrider.h"
 #include "llpointer.h"
 #include "llglheaders.h"
+#include "llmatrix4a.h"
 #include "llrect.h"
+#include "llvector4a.h"
+#include <boost/align/aligned_allocator.hpp>
 
 class LLVertexBuffer;
 class LLCubeMap;
@@ -200,7 +201,7 @@ public:
 	void setHasMipMaps(bool hasMips) { mHasMipMaps = hasMips; }
 
 protected:
-	S32					mIndex;
+	const S32			mIndex;
 	U32					mCurrTexture;
 	eTextureType		mCurrTexType;
 	eTextureBlendType	mCurrBlendType;
@@ -493,8 +494,8 @@ private:
 
 	F32				mMaxAnisotropy;
 
-	LLAlignedArray<LLVector4a, 64> mUIOffset;
-	LLAlignedArray<LLVector4a, 64> mUIScale;
+	std::vector<LLVector4a, boost::alignment::aligned_allocator<LLVector4a, 64> > mUIOffset;
+	std::vector<LLVector4a, boost::alignment::aligned_allocator<LLVector4a, 64> > mUIScale;
 } LL_ALIGN_POSTFIX(16);
 
 
