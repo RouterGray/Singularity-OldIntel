@@ -1763,6 +1763,17 @@ This should be as low as possible, but too low may break functionality</string>
       <key>Value</key>
       <integer>0</integer>
     </map>
+    <key>AntiSpamItemOffersLandmarks</key>
+    <map>
+      <key>Comment</key>
+      <string>When AntiSpamItemOffers is false but this is true, dialogs from inventory item offers of landmarks will be blocked.</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>Boolean</string>
+      <key>Value</key>
+      <integer>0</integer>
+    </map>
     <key>AntiSpamNotFriend</key>
     <map>
       <key>Comment</key>

@@ -1806,10 +1806,13 @@ bool is_spam_filtered(const EInstantMessage& dialog, bool is_friend, bool is_own
 	return true;
 }
 
-void inventory_offer_handler(LLOfferInfo* info)
+void inventory_offer_handler(LLOfferInfo* info, bool is_friend, bool is_owned_by_me)
 {
+	static const LLCachedControl<bool> no_landmarks(gSavedSettings, "AntiSpamItemOffersLandmarks");
 	// NaCl - Antispam Registry
-	if (NACLAntiSpamRegistry::checkQueue((U32)NACLAntiSpamRegistry::QUEUE_INVENTORY,info->mFromID))
+	if (NACLAntiSpamRegistry::checkQueue((U32)NACLAntiSpamRegistry::QUEUE_INVENTORY,info->mFromID)
+		|| (!has_spam_bypass(is_friend, is_owned_by_me)
+			&& (no_landmarks && info->mType == LLAssetType::AT_LANDMARK)))
 	{
 		delete info;
 		return;
@@ -2941,7 +2944,7 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 			*/
 			else
 			{
-				inventory_offer_handler(info);
+				inventory_offer_handler(info, is_friend, is_owned_by_me);
 			}
 		}
 		break;
