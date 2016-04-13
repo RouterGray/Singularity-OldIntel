@@ -428,8 +428,10 @@ public:
 	// positions stored in the first array so they're maintained separately until 
 	// we stop supporting the old CoarseLocationUpdate message.
 	std::vector<U32> mMapAvatars;
-	std::vector<LLUUID> mMapAvatarIDs;
+	uuid_vec_t mMapAvatarIDs;
 
+
+	LLFrameTimer &	getRenderInfoRequestTimer()			{ return mRenderInfoRequestTimer;		};
 private:
 	LLViewerRegionImpl * mImpl;
 
@@ -472,7 +474,7 @@ private:
 	std::string mColoName;
 	std::string mProductSKU;
 	std::string mProductName;
-	std::string mHttpUrl ;
+	std::string mHttpUrl;
 	
 	// Maps local ids to cache entries.
 	// Regions can have order 10,000 objects, so assume
@@ -499,7 +501,7 @@ private:
 	U32 mGamingFlags;
 	// the materials capability throttle
 	LLFrameTimer mMaterialsCapThrottleTimer;
-LLFrameTimer	mRenderInfoRequestTimer;
+	LLFrameTimer	mRenderInfoRequestTimer;
 };
 
 inline BOOL LLViewerRegion::getRegionProtocol(U64 protocol) const

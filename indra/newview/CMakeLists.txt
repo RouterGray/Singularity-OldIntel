@@ -123,6 +123,7 @@ set(viewer_SOURCE_FILES
     llautoreplace.cpp
     llavataractions.cpp
     llavatarpropertiesprocessor.cpp
+    llavatarrenderinfoaccountant.cpp
     llbox.cpp
     llcallbacklist.cpp
     llcallingcard.cpp
@@ -654,6 +655,7 @@ set(viewer_HEADER_FILES
     llautoreplace.h
     llavataractions.h
     llavatarpropertiesprocessor.h
+    llavatarrenderinfoaccountant.h
     llbox.h
     llcallbacklist.h
     llcallingcard.h

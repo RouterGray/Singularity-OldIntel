@@ -1053,8 +1053,9 @@ LLVOAvatar::LLVOAvatar(const LLUUID& id,
 	LLAvatarAppearance(&gAgentWearables),
 	LLViewerObject(id, pcode, regionp),
 	mSpecialRenderMode(0),
-	mAttachmentGeometryBytes(0),
-	mAttachmentSurfaceArea(0.f),
+	mAttachmentGeometryBytes(-1),
+	mAttachmentSurfaceArea(-1.f),
+	mReportedVisualComplexity(-1),
 	mTurning(FALSE),
 	mFreezeTimeLangolier(false),
 	mFreezeTimeDead(false),
@@ -1090,13 +1091,15 @@ LLVOAvatar::LLVOAvatar(const LLUUID& id,
 	mFullyLoaded(FALSE),
 	mPreviousFullyLoaded(FALSE),
 	mFullyLoadedInitialized(FALSE),
+	mVisualComplexity(0),
+	mVisualComplexityStale(TRUE),
 	mSupportsAlphaLayers(FALSE),
 	mLoadedCallbacksPaused(FALSE),
 	mHasPelvisOffset( FALSE ),
 	mLastRezzedStatus(-1),
 	mIsEditingAppearance(FALSE),
 	mUseLocalAppearance(FALSE),
-	mUseServerBakes(FALSE), // FIXME DRANO consider using boost::optional, defaulting to unknown.
+	mUseServerBakes(FALSE),
 	mLastUpdateRequestCOFVersion(-1),
 	mLastUpdateReceivedCOFVersion(-1),
 	// <edit>
@@ -1117,7 +1120,7 @@ LLVOAvatar::LLVOAvatar(const LLUUID& id,
 	const bool needsSendToSim = false; // currently, this HUD effect doesn't need to pack and unpack data to do its job
 	mVoiceVisualizer = ( LLVoiceVisualizer *)LLHUDManager::getInstance()->createViewerEffect( LLHUDObject::LL_HUD_EFFECT_VOICE_VISUALIZER, needsSendToSim );
 
-	LL_DEBUGS() << "LLVOAvatar Constructor (0x" << this << ") id:" << mID << LL_ENDL;
+	LL_DEBUGS("Avatar","Message") << "LLVOAvatar Constructor (0x" << this << ") id:" << mID << LL_ENDL;
 
 	mPelvisp = NULL;
 
@@ -1219,10 +1222,12 @@ LLVOAvatar::~LLVOAvatar()
 
 	//logPendingPhases();
 	
-	LL_DEBUGS() << "LLVOAvatar Destructor (0x" << this << ") id:" << mID << LL_ENDL;
+	LL_DEBUGS("Avatar") << "LLVOAvatar Destructor (0x" << this << ") id:" << mID << LL_ENDL;
 
 	std::for_each(mAttachmentPoints.begin(), mAttachmentPoints.end(), DeletePairedPointer());
-	//mAttachmentPoints.clear();
+#if USE_LL_APPEARANCE_CODE
+	mAttachmentPoints.clear();
+#endif
 	
 	mDead = TRUE;
 	
@@ -1382,10 +1387,11 @@ void LLVOAvatar::getNearbyRezzedStats(std::vector<S32>& counts)
 		 iter != LLCharacter::sInstances.end(); ++iter)
 	{
 		LLVOAvatar* inst = (LLVOAvatar*) *iter;
-		if (!inst)
-			continue;
-		S32 rez_status = inst->getRezzedStatus();
-		counts[rez_status]++;
+		if (inst)
+		{
+			S32 rez_status = inst->getRezzedStatus();
+			counts[rez_status]++;
+		}
 	}
 }
 
@@ -1619,11 +1625,6 @@ void LLVOAvatar::initInstance(void)
 
 	LLAvatarAppearance::initInstance();
 
-	if (gNoRender)
-	{
-		return;
-	}
-
 	// preload specific motions here
 	createMotion( ANIM_AGENT_CUSTOMIZE);
 	createMotion( ANIM_AGENT_CUSTOMIZE_DONE);
@@ -1659,22 +1660,23 @@ LLTexLayerSet* LLVOAvatar::createTexLayerSet()
 
 const LLVector3 LLVOAvatar::getRenderPosition() const
 {
+
 	if (mDrawable.isNull() || mDrawable->getGeneration() < 0)
 	{
 		return getPositionAgent();
 	}
 	else if (isRoot() || !mDrawable->getParent())
 	{
-		if ( !mHasPelvisOffset )
-		{
-			return mDrawable->getPositionAgent();
-		}
-		else
+		if ( mHasPelvisOffset )
 		{
 			//Apply a pelvis fixup (as defined by the avs skin)
 			LLVector3 pos = mDrawable->getPositionAgent();
 			pos[VZ] += mPelvisFixup;
 			return pos;
+		}
+		else
+		{
+			return mDrawable->getPositionAgent();
 		}
 	}
 	else
@@ -1828,7 +1830,7 @@ void LLVOAvatar::renderCollisionVolumes()
 {
 	std::ostringstream ostr;
 	LLGLDepthTest gls_depth(GL_FALSE);
-	for (S32 i = 0; i < (S32)mCollisionVolumes.size(); i++)
+	for (size_t i = 0; i < mCollisionVolumes.size(); i++)
 	{
 		mCollisionVolumes[i]->renderCollision();
 		ostr << mCollisionVolumes[i]->getName() << ", ";
@@ -2018,6 +2020,7 @@ BOOL LLVOAvatar::lineSegmentIntersect(const LLVector4a& start, const LLVector4a&
 	}
 	
 	
+
 	LLVector4a position;
 	if (mNameText.notNull() && mNameText->lineSegmentIntersect(start, end, position))
 	{
@@ -6559,6 +6562,8 @@ const LLViewerJointAttachment *LLVOAvatar::attachObject(LLViewerObject *viewer_o
 		return 0;
 	}
 
+	mVisualComplexityStale = TRUE;
+
 	if (viewer_object->isSelected())
 	{
 		LLSelectMgr::getInstance()->updateSelectionCenter();
@@ -6725,6 +6730,7 @@ BOOL LLVOAvatar::detachObject(LLViewerObject *viewer_object)
 		
 		if (attachment->isObjectAttached(viewer_object))
 		{
+			mVisualComplexityStale = TRUE;
 			vector_replace_with_last(mAttachedObjectsVector,std::make_pair(viewer_object,attachment));
 
 			cleanupAttachedMesh( viewer_object );
@@ -9068,6 +9074,7 @@ void LLVOAvatar::updateSoftwareSkinnedVertices(const LLMeshSkinInfo* skin, const
 		}
 	}
 }
+
 U32 LLVOAvatar::getPartitionType() const
 { 
 	// Avatars merely exist as drawables in the bridge partition
@@ -9140,69 +9147,70 @@ void LLVOAvatar::getImpostorValues(LLVector4a* extents, LLVector3& angle, F32& d
 
 void LLVOAvatar::idleUpdateRenderCost()
 {
+	static const LLCachedControl<U32> ARC_LIMIT("LiruNewARCLimit", 20000);
+
+	if (gPipeline.hasRenderDebugMask(LLPipeline::RENDER_DEBUG_ATTACHMENT_BYTES))
+	{ //set debug text to attachment geometry bytes here so render cost will override
+		setDebugText(llformat("%.1f KB, %.2f m^2", mAttachmentGeometryBytes/1024.f, mAttachmentSurfaceArea));
+	}
+
 	if (!gPipeline.hasRenderDebugMask(LLPipeline::RENDER_DEBUG_SHAME))
 	{
 		return;
 	}
 
-	F32 red, green;
+	calculateUpdateRenderCost();				// Update mVisualComplexity if needed
 
-	static LLCachedControl<bool> UseOldARC(gSavedSettings, "LiruSensibleARC", true);
-	if(UseOldARC)
+	if (gPipeline.hasRenderDebugMask(LLPipeline::RENDER_DEBUG_SHAME))
 	{
-		U32 shame = 1;
-
-		std::set<LLUUID> textures;
-
-		/*attachment_map_t::const_iterator iter;
-		for (iter = mAttachmentPoints.begin();
-				iter != mAttachmentPoints.end();
-				++iter)
+		static LLCachedControl<bool> UseOldARC(gSavedSettings, "LiruSensibleARC", true);
+		if (UseOldARC)
 		{
-			LLViewerJointAttachment* attachment = iter->second;
-			for (LLViewerJointAttachment::attachedobjs_vec_t::iterator attachment_iter = attachment->mAttachedObjects.begin();
-					attachment_iter != attachment->mAttachedObjects.end();
-					++attachment_iter)
+			U32 shame = 1;
+			std::set<LLUUID> textures;
+			for(auto it = mAttachedObjectsVector.begin();it !=mAttachedObjectsVector.end();++it)
 			{
-				const LLViewerObject* object = (*attachment_iter);*/
-		std::vector<std::pair<LLViewerObject*,LLViewerJointAttachment*> >::iterator attachment_iter = mAttachedObjectsVector.begin();
-		for(;attachment_iter!=mAttachedObjectsVector.end();++attachment_iter)
-		{{
-				const LLViewerObject* object = attachment_iter->first;
+				const LLViewerObject* object = it->first;
 				if (object && !object->isHUDAttachment())
 				{
-					LLDrawable* drawable = object->mDrawable;
-					if (drawable)
+					if (LLDrawable* drawable = object->mDrawable)
 					{
 						shame += 10;
-						LLVOVolume* volume = drawable->getVOVolume();
-						if (volume)
-						{
+						if (LLVOVolume* volume = drawable->getVOVolume())
 							shame += calc_shame(volume, textures);
-						}
 					}
 				}
 			}
+			shame += textures.size() * 5;
+
+			setDebugText(llformat("%d", shame));
+			F32 green = 1.f-llclamp(((F32) shame-1024.f)/1024.f, 0.f, 1.f);
+			F32 red = llmin((F32) shame/1024.f, 1.f);
+			mText->setColor(LLColor4(red,green,0,1));
 		}
-
-		shame += textures.size() * 5;
-
-		setDebugText(llformat("%d", shame));
-		green = 1.f-llclamp(((F32) shame-1024.f)/1024.f, 0.f, 1.f);
-		red = llmin((F32) shame/1024.f, 1.f);
+		else
+		{
+		std::string viz_string = LLVOAvatar::rezStatusToString(getRezzedStatus());
+		setDebugText(llformat("%s %d", viz_string.c_str(), mVisualComplexity));
+		F32 green = 1.f-llclamp(((F32) mVisualComplexity-(F32)ARC_LIMIT)/(F32)ARC_LIMIT, 0.f, 1.f);
+		F32 red = llmin((F32) mVisualComplexity/(F32)ARC_LIMIT, 1.f);
+		mText->setColor(LLColor4(red,green,0,1));
+		}
 	}
-	else
+}
+
+
+// Calculations for mVisualComplexity value
+void LLVOAvatar::calculateUpdateRenderCost()
+{
+	static const U32 ARC_BODY_PART_COST = 200;
+
+	// Diagnostic list of all textures on our avatar
+	static std::set<LLUUID> all_textures;
+
+	if (mVisualComplexityStale)
 	{
-		static const U32 ARC_BODY_PART_COST = 200;
-		static const LLCachedControl<U32> ARC_LIMIT("LiruNewARCLimit", 20000);
-
-		static std::set<LLUUID> all_textures;
-
-		if (gPipeline.hasRenderDebugMask(LLPipeline::RENDER_DEBUG_ATTACHMENT_BYTES))
-		{ //set debug text to attachment geometry bytes here so render cost will override
-			setDebugText(llformat("%.1f KB, %.2f m^2", mAttachmentGeometryBytes/1024.f, mAttachmentSurfaceArea));
-		}
-
+		mVisualComplexityStale = FALSE;
 		U32 cost = 0;
 		LLVOVolume::texture_cost_t textures;
 
@@ -9219,7 +9227,6 @@ void LLVOAvatar::idleUpdateRenderCost()
 			}
 		}
 
-
 		/*for (attachment_map_t::const_iterator iter = mAttachmentPoints.begin();
 				iter != mAttachmentPoints.end();
 				++iter)
@@ -9230,7 +9237,7 @@ void LLVOAvatar::idleUpdateRenderCost()
 					++attachment_iter)
 			{
 				const LLViewerObject* attached_object = (*attachment_iter);*/
-		std::vector<std::pair<LLViewerObject*,LLViewerJointAttachment*> >::iterator attachment_iter = mAttachedObjectsVector.begin();
+		auto attachment_iter = mAttachedObjectsVector.begin();
 		for(;attachment_iter!=mAttachedObjectsVector.end();++attachment_iter)
 		{{
 				const LLViewerObject* attached_object = attachment_iter->first;
@@ -9310,27 +9317,25 @@ void LLVOAvatar::idleUpdateRenderCost()
 			}
 		}
 
-		std::string viz_string = LLVOAvatar::rezStatusToString(getRezzedStatus());
-		setDebugText(llformat("%s %d", viz_string.c_str(), cost));
 		mVisualComplexity = cost;
-		green = 1.f-llclamp(((F32) cost-(F32)ARC_LIMIT)/(F32)ARC_LIMIT, 0.f, 1.f);
-		red = llmin((F32) cost/(F32)ARC_LIMIT, 1.f);
 	}
-	mText->setColor(LLColor4(red,green,0,1));
+
 }
 
 // static
 BOOL LLVOAvatar::isIndexLocalTexture(ETextureIndex index)
 {
-	if (index < 0 || index >= TEX_NUM_INDICES) return false;
-	return LLAvatarAppearanceDictionary::getInstance()->getTexture(index)->mIsLocalTexture;
+	return (index < 0 || index >= TEX_NUM_INDICES)
+		? false
+		: LLAvatarAppearanceDictionary::getInstance()->getTexture(index)->mIsLocalTexture;
 }
 
 // static
 BOOL LLVOAvatar::isIndexBakedTexture(ETextureIndex index)
 {
-	if (index < 0 || index >= TEX_NUM_INDICES) return false;
-	return LLAvatarAppearanceDictionary::getInstance()->getTexture(index)->mIsBakedTexture;
+	return (index < 0 || index >= TEX_NUM_INDICES)
+		? false
+		: LLAvatarAppearanceDictionary::getInstance()->getTexture(index)->mIsBakedTexture;
 }
 
 const std::string LLVOAvatar::getBakedStatusForPrintout() const
@@ -9416,104 +9421,57 @@ BOOL LLVOAvatar::isTextureVisible(LLAvatarAppearanceDefines::ETextureIndex type,
 
 U32 calc_shame(LLVOVolume* volume, std::set<LLUUID> &textures)
 {
-	if (!volume)
-	{
-		return 0;
-	}
+	if (!volume) return 0;
 
 	U32 shame = 0;
-
 	U32 invisi = 0;
 	U32 shiny = 0;
 	U32 glow = 0;
 	U32 alpha = 0;
-	U32 flexi = 0;
+	U32 flexi = volume->isFlexible() ? 1 : 0;
 	U32 animtex = 0;
-	U32 particles = 0;
-	U32 scale = 0;
+	U32 particles = volume->isParticleSource() ? 1 : 0;
+	const LLVector3& sc = volume->getScale();
+	U32 scale = U32(sc.mV[0] + sc.mV[1] + sc.mV[2]);
 	U32 bump = 0;
 	U32 planar = 0;
-	
-	const LLVector3& sc = volume->getScale();
-	scale += (U32) sc.mV[0] + (U32) sc.mV[1] + (U32) sc.mV[2];
-
-	if (volume->isFlexible())
-	{
-		flexi = 1;
-	}
-	if (volume->isParticleSource())
-	{
-		particles = 1;
-	}
 
 	LLDrawable* drawablep = volume->mDrawable;
 
 	if (volume->isSculpted())
-	{
-		LLSculptParams *sculpt_params = (LLSculptParams *) volume->getParameterEntry(LLNetworkData::PARAMS_SCULPT);
-		LLUUID sculpt_id = sculpt_params->getSculptTexture();
-		textures.insert(sculpt_id);
-	}
+		textures.insert(static_cast<LLSculptParams*>(volume->getParameterEntry(LLNetworkData::PARAMS_SCULPT))->getSculptTexture());
 
 	for (S32 i = 0; i < drawablep->getNumFaces(); ++i)
 	{
 		LLFace* face = drawablep->getFace(i);
-		const LLTextureEntry* te = face->getTextureEntry();
 		LLViewerTexture* img = face->getTexture();
-
 		textures.insert(img->getID());
 
 		if (face->getPoolType() == LLDrawPool::POOL_ALPHA)
-		{
-			alpha++;
-		}
-		else if (img->getPrimaryFormat() == GL_ALPHA)
-		{
+			++alpha;
+		else if (!invisi && img->getPrimaryFormat() == GL_ALPHA)
 			invisi = 1;
-		}
 
-		if (te)
+		if (const LLTextureEntry* te = face->getTextureEntry())
 		{
-			if (te->getBumpmap())
-			{
+			if (!bump && te->getBumpmap())
 				bump = 1;
-			}
-			if (te->getShiny())
-			{
+			if (!shiny && te->getShiny())
 				shiny = 1;
-			}
-			if (te->getGlow() > 0.f)
-			{
+			if (!glow && te->getGlow() > 0.f)
 				glow = 1;
-			}
-			if (face->mTextureMatrix != NULL)
-			{
-				animtex++;
-			}
+			if (face->mTextureMatrix)
+				++animtex;
 			if (te->getTexGen())
-			{
-				planar++;
-			}
+				++planar;
 		}
 	}
-
 	shame += invisi + shiny + glow + alpha*4 + flexi*8 + animtex*4 + particles*16+bump*4+scale+planar;
 
-	LLViewerObject::const_child_list_t& child_list = volume->getChildren();
-	for (LLViewerObject::child_list_t::const_iterator iter = child_list.begin();
-		 iter != child_list.end(); iter++)
-	{
-		LLViewerObject* child_objectp = *iter;
-		LLDrawable* child_drawablep = child_objectp->mDrawable;
-		if (child_drawablep)
-		{
-			LLVOVolume* child_volumep = child_drawablep->getVOVolume();
-			if (child_volumep)
-			{
+	for (LLViewerObject* child_objectp : volume->getChildren())
+		if (LLDrawable* child_drawablep = child_objectp->mDrawable)
+			if (LLVOVolume* child_volumep = child_drawablep->getVOVolume())
 				shame += calc_shame(child_volumep, textures);
-			}
-		}
-	}
 
 	return shame;
 }

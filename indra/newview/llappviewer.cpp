@@ -89,6 +89,7 @@
 #include "llcrashlogger.h"
 #include "llweb.h"
 #include "llsecondlifeurls.h"
+#include "llavatarrenderinfoaccountant.h"
 
 // Linden library includes
 #include "llavatarnamecache.h"
@@ -4191,6 +4192,9 @@ void LLAppViewer::idle()
 		LLFastTimer t(FTM_LOD_UPDATE);
 		gObjectList.updateApparentAngles(gAgent);
 	}
+
+	// Update AV render info
+	LLAvatarRenderInfoAccountant::idle();
 
 	// Execute deferred tasks.
 	{
