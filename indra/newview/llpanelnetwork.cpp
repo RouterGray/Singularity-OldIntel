@@ -161,8 +161,11 @@ void LLPanelNetwork::cancel()
 void LLPanelNetwork::onClickClearCache(void*)
 {
 	// flag client cache for clearing next time the client runs
-	gSavedSettings.setBOOL("PurgeCacheOnNextStartup", TRUE);
-	LLNotificationsUtil::add("CacheWillClear");
+	if (!gSavedSettings.getBOOL("PurgeCacheOnNextStartup"))
+	{
+		gSavedSettings.setBOOL("PurgeCacheOnNextStartup", TRUE);
+		LLNotificationsUtil::add("CacheWillClear");
+	}
 }
 
 // static
