@@ -335,7 +335,7 @@ void show_log_browser(const LLUUID& id)
 	void show_log_browser(const std::string& name, const std::string& id);
 	LLAvatarName av_name;
 	LLAvatarNameCache::get(id, &av_name);
-	show_log_browser(av_name->getLegacyName(), id.asString());
+	show_log_browser(av_name.getLegacyName(), id.asString());
 }
 BOOL LLPanelAvatarSecondLife::postBuild()
 {

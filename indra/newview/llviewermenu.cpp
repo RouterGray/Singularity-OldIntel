@@ -9062,7 +9062,7 @@ class ListShowLog : public view_listener_t
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 	{
-		void show_log_browser(const LLUUID& id)
+		void show_log_browser(const LLUUID& id);
 		for (const LLUUID& id : get_focused_list_ids_selected())
 			show_log_browser(id);
 		return true;
