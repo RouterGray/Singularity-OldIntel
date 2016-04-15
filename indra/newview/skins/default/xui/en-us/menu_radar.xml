@@ -61,6 +61,10 @@
       <on_click function="List.Share"/>
       <on_visible function="List.EnableSingleSelected"/>
     </menu_item_call>
+    <menu_item_call label="Chat History" name="Chat History">
+      <on_click function="List.ShowLog"/>
+      <on_enable function="List.EnableAnySelected"/>
+    </menu_item_call>
     <menu_item_call label="Track/Untrack" name="Track/Untrack">
       <on_click function="Radar.Track"/>
       <on_enable function="List.EnableSingleSelected"/>

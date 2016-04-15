@@ -146,11 +146,12 @@
 			     label_selected="Find on Map" left="24" mouse_opaque="true"
 			     name="Find on Map" width="100" />
 			<button bottom="-452" font="SansSerif" halign="center" height="20"
-			     label="Offer Teleport..." label_selected="Offer Teleport..."
-			     left_delta="102" mouse_opaque="true" name="Offer Teleport..." width="140" />
+			     label="Teleport..." label_selected="Teleport..."
+			     left_delta="102" mouse_opaque="true" name="Offer Teleport..." width="80" />
 			<button bottom="-452" font="SansSerif" halign="center" height="20"
-			     label="Add Friend..." label_selected="Add Friend..." left_delta="142"
+			     label="Add Friend..." label_selected="Add Friend..." left_delta="82"
 			     mouse_opaque="true" name="Add Friend..." width="130" />
+			<button label="Log" name="Log" bottom="-452" left_delta="132" height="20" width="56"/>
 			<button bottom="-470" font="SansSerif" halign="center" height="20" label="Pay..."
 			     label_selected="Pay..." left="24" mouse_opaque="true" name="Pay..."
 			     width="70" />

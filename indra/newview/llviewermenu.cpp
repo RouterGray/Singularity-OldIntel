@@ -9058,6 +9058,17 @@ class ListShare : public view_listener_t
 	}
 };
 
+class ListShowLog : public view_listener_t
+{
+	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
+	{
+		void show_log_browser(const LLUUID& id)
+		for (const LLUUID& id : get_focused_list_ids_selected())
+			show_log_browser(id);
+		return true;
+	}
+};
+
 class ListShowProfile : public view_listener_t
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
@@ -9514,6 +9525,7 @@ void initialize_menus()
 	addMenu(new ListRequestFriendship(), "List.RequestFriendship");
 	addMenu(new ListRequestTeleport(), "List.RequestTeleport");
 	addMenu(new ListShare(), "List.Share");
+	addMenu(new ListShowLog(), "List.ListShowLog");
 	addMenu(new ListShowProfile(), "List.ShowProfile");
 	addMenu(new ListShowWebProfile(), "List.ShowWebProfile");
 	addMenu(new ListStartAdhocCall(), "List.StartAdhocCall");
