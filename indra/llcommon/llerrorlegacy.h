@@ -35,7 +35,6 @@
 */
 
 // Specific error codes
-const int LL_ERR_NOERR = 0;
 const int LL_ERR_ASSET_REQUEST_FAILED = -1;
 //const int LL_ERR_ASSET_REQUEST_INVALID = -2;
 const int LL_ERR_ASSET_REQUEST_NONEXISTENT_FILE = -3;
@@ -108,7 +107,7 @@ const int LL_ERR_PRICE_MISMATCH = -23018;
 		: liru_slashpos2 == std::string::npos ? std::string(__FILE__)/*Apparently, we're in / or perhaps the top of the drive, print as is*/\
 			: std::string(__FILE__).substr(1+liru_slashpos2))/*print foo/bar.cpp or perhaps foo\bar.cpp*/
 
-#define llassert_always(func)	do { if (LL_UNLIKELY(!(func))) LL_ERRS() << "\nASSERT(" #func ")\nfile:" << liru_assert_strip << " line:" << std::dec << __LINE__ << LL_ENDL; } while(0)
+//#define llassert_always(func)	do { if (LL_UNLIKELY(!(func))) LL_ERRS() << "\nASSERT(" #func ")\nfile:" << liru_assert_strip << " line:" << std::dec << __LINE__ << LL_ENDL; } while(0)
 
 #ifdef SHOW_ASSERT
 #define llassert(func)			llassert_always(func)

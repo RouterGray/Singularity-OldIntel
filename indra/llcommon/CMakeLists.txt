@@ -36,6 +36,7 @@ set(llcommon_SOURCE_FILES
     llassettype.cpp
     llbase32.cpp
     llbase64.cpp
+    llcallbacklist.cpp
     llcommon.cpp
     llcommonutils.cpp
     llcoros.cpp
@@ -138,6 +139,7 @@ set(llcommon_HEADER_FILES
     llbase32.h
     llbase64.h
     llboost.h
+    llcallbacklist.h
     llchat.h
     llclickaction.h
     llcommon.h

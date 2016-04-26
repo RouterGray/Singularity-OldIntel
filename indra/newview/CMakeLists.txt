@@ -655,7 +655,6 @@ set(viewer_HEADER_FILES
     llavataractions.h
     llavatarpropertiesprocessor.h
     llbox.h
-    llcallbacklist.h
     llcallingcard.h
     llcapabilitylistener.h
     llcaphttpsender.h

@@ -37,7 +37,11 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
+#include <list>
+#include <set>
+#include <map>
 #include <typeinfo>
+#include "stdtypes.h"
 
 // Use to compare the first element only of a pair
 // e.g. typedef std::set<std::pair<int, Data*>, compare_pair<int, Data*> > some_pair_set_t; 

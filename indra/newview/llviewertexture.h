@@ -132,9 +132,10 @@ public:
 	
 	/*virtual*/ bool bindDefaultImage(const S32 stage = 0) ;
 	/*virtual*/ void forceImmediateUpdate() ;
+	/*virtual*/ bool isActiveFetching();
 	
 	/*virtual*/ const LLUUID& getID() const { return mID; }
-	//void setBoostLevel(S32 level);
+	void setBoostLevel(S32 level);
 	S32  getBoostLevel() { return mBoostLevel; }
 
 	void addTextureStats(F32 virtual_size, BOOL needs_gltexture = TRUE) const;
@@ -147,6 +148,8 @@ public:
 
 	LLFrameTimer* getLastReferencedTimer() {return &mLastReferencedTimer ;}
 	
+	S32 getFullWidth() const { return mFullWidth; }
+	S32 getFullHeight() const { return mFullHeight; }	
 	/*virtual*/ void setKnownDrawSize(S32 width, S32 height);
 
 	virtual void addFace(U32 channel, LLFace* facep) ;
@@ -174,6 +177,10 @@ protected:
 	void init(bool firstinit) ;	
 	void reorganizeFaceList() ;
 	void reorganizeVolumeList() ;
+
+	void notifyAboutMissingAsset();
+	void notifyAboutCreatingTexture();
+
 private:
 	friend class LLBumpImageList;
 	friend class LLUIImageList;
@@ -184,7 +191,7 @@ private:
 	static bool isMemoryForTextureLow() ;
 protected:
 	LLUUID mID;
-
+	F32 mSelectedTime;				// time texture was last selected
 	mutable F32 mMaxVirtualSize;	// The largest virtual size of the image, in pixels - how much data to we need?	
 	mutable S32  mMaxVirtualSizeResetCounter ;
 	mutable S32  mMaxVirtualSizeResetInterval;
@@ -325,13 +332,17 @@ public:
 	void setMinDiscardLevel(S32 discard) 	{ mMinDesiredDiscardLevel = llmin(mMinDesiredDiscardLevel,(S8)discard); }
 
 	bool updateFetch();
+	bool setDebugFetching(S32 debug_level);
+	bool isInDebug() {return mInDebug;}
 	
+	void clearFetchedResults(); //clear all fetched results, for debug use.
+
 	// Override the computation of discard levels if we know the exact output
 	// size of the image.  Used for UI textures to not decode, even if we have
 	// more data.
 	/*virtual*/ void setKnownDrawSize(S32 width, S32 height);
 
-	void setIsMissingAsset();
+	void setIsMissingAsset(BOOL is_missing = true);
 	/*virtual*/ BOOL isMissingAsset()	const		{ return mIsMissingAsset; }
 
 	// returns dimensions of original image for local files (before power of two scaling)
@@ -374,6 +385,7 @@ public:
 	BOOL        isCachedRawImageReady() const {return mCachedRawImageReady ;}
 	BOOL        isRawImageValid()const { return mIsRawImageValid ; }	
 	void        forceToSaveRawImage(S32 desired_discard = 0, F32 kept_time = 0.f) ;
+	void        forceToRefetchTexture(S32 desired_discard = 0, F32 kept_time = 60.f);
 	/*virtual*/ void setCachedRawImage(S32 discard_level, LLImageRaw* imageraw) ;
 	void        destroySavedRawImage() ;
 	LLImageRaw* getSavedRawImage() ;
@@ -386,6 +398,7 @@ public:
 
 	void        forceToDeleteRequest();
 	void		forceRefetch();
+	/*virtual*/bool  isActiveFetching(); //is actively in fetching by the fetching pipeline.
 
 protected:
 	/*virtual*/ void switchToCachedImage();
@@ -406,6 +419,8 @@ private:
 
 private:
 	BOOL  mFullyLoaded;
+	BOOL  mInDebug;
+	BOOL  mForceCallbackFetch;
 
 protected:		
 	std::string mLocalFileName;
@@ -433,6 +448,7 @@ protected:
 	S8  mMinDesiredDiscardLevel;	// The minimum discard level we'd like to have
 
 	S8  mNeedsAux;					// We need to decode the auxiliary channels
+	S8  mHasAux;                    // We have aux channels
 	S8  mDecodingAux;				// Are we decoding high components
 	S8  mIsRawImageValid;
 	S8  mHasFetcher;				// We've made a fecth request

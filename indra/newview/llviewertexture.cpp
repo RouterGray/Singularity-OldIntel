@@ -614,6 +614,7 @@ LLViewerTexture::~LLViewerTexture()
 // virtual
 void LLViewerTexture::init(bool firstinit)
 {
+	mSelectedTime = 0.f;
 	mMaxVirtualSize = 0.f;
 	mNeedsGLTexture = FALSE ;
 	mMaxVirtualSizeResetInterval = 1;
@@ -639,12 +640,37 @@ S8 LLViewerTexture::getType() const
 
 void LLViewerTexture::cleanup()
 {
-	mFaceList[LLRender::DIFFUSE_MAP].clear() ;
-	mFaceList[LLRender::NORMAL_MAP].clear() ;
+	notifyAboutMissingAsset();
+
+	mFaceList[LLRender::DIFFUSE_MAP].clear();
+	mFaceList[LLRender::NORMAL_MAP].clear();
 	mFaceList[LLRender::SPECULAR_MAP].clear() ;
 	mVolumeList.clear();
 }
 
+void LLViewerTexture::notifyAboutCreatingTexture()
+{
+	for(U32 ch = 0; ch < LLRender::NUM_TEXTURE_CHANNELS; ++ch)
+	{
+		for(U32 f = 0; f < mNumFaces[ch]; f++)
+		{
+			mFaceList[ch][f]->notifyAboutCreatingTexture(this);
+		}
+	}
+}
+
+void LLViewerTexture::notifyAboutMissingAsset()
+{
+	for(U32 ch = 0; ch < LLRender::NUM_TEXTURE_CHANNELS; ++ch)
+	{
+		for(U32 f = 0; f < mNumFaces[ch]; f++)
+		{
+			mFaceList[ch][f]->notifyAboutMissingAsset(this);
+		}
+	}
+}
+
+// virtual
 void LLViewerTexture::dump()
 {
 	LLGLTexture::dump();
@@ -652,6 +678,30 @@ void LLViewerTexture::dump()
 	LL_INFOS() << "LLViewerTexture"
 			<< " mID " << mID
 			<< LL_ENDL;
+}
+
+void LLViewerTexture::setBoostLevel(S32 level)
+{
+	if(mBoostLevel != level)
+	{
+		mBoostLevel = level;
+		if(mBoostLevel != LLViewerTexture::BOOST_NONE && 
+			mBoostLevel != LLViewerTexture::BOOST_SELECTED)
+		{
+			setNoDelete();		
+		}
+	}
+
+	if (mBoostLevel == LLViewerTexture::BOOST_SELECTED)
+	{
+		mSelectedTime = gFrameTimeSeconds;
+	}
+
+}
+
+bool LLViewerTexture::isActiveFetching()
+{
+	return false;
 }
 
 bool LLViewerTexture::bindDefaultImage(S32 stage) 
@@ -945,6 +995,7 @@ void LLViewerFetchedTexture::init(bool firstinit)
 {
 	mOrigWidth = 0;
 	mOrigHeight = 0;
+	mHasAux = FALSE;
 	mNeedsAux = FALSE;
 	mRequestedDiscardLevel = -1;
 	mRequestedDownloadPriority = 0.f;
@@ -1002,6 +1053,7 @@ void LLViewerFetchedTexture::init(bool firstinit)
 	mLastReferencedSavedRawImageTime = 0.0f ;
 	mKeptSavedRawImageTime = 0.f ;
 	mLastCallBackActiveTime = 0.f;
+	mForceCallbackFetch = FALSE;
 }
 
 LLViewerFetchedTexture::~LLViewerFetchedTexture()
@@ -1348,6 +1400,7 @@ BOOL LLViewerFetchedTexture::createTexture(S32 usename/*= 0*/)
 		//{
 			res = mGLTexturep->createGLTexture(mRawDiscardLevel, mRawImage, usename, TRUE, mBoostLevel);
 			//resetFaceAtlas() ;
+		notifyAboutCreatingTexture();
 		//}
 		setActive() ;
 	}
@@ -1666,6 +1719,14 @@ void LLViewerFetchedTexture::updateVirtualSize()
 			}
 		}
 	}
+	//reset whether or not a face was selected after 10 seconds
+	const F32 SELECTION_RESET_TIME = 10.f;
+
+	if (getBoostLevel() ==  LLViewerTexture::BOOST_SELECTED && 
+		gFrameTimeSeconds - mSelectedTime > SELECTION_RESET_TIME)
+	{
+		setBoostLevel(LLViewerTexture::BOOST_NONE);
+	}
 
 	if(mMaxVirtualSizeResetCounter > 0)
 	{
@@ -1691,6 +1752,27 @@ S32 LLViewerFetchedTexture::getCurrentDiscardLevelForFetching()
 	}
 
 	return current_discard ;
+}
+
+bool LLViewerFetchedTexture::setDebugFetching(S32 debug_level)
+{
+	if(debug_level < 0)
+	{
+		mInDebug = FALSE;
+		return false;
+	}
+	mInDebug = TRUE;
+
+	mDesiredDiscardLevel = debug_level;	
+
+	return true;
+}
+
+bool LLViewerFetchedTexture::isActiveFetching()
+{
+	static LLCachedControl<bool> monitor_enabled(gSavedSettings,"DebugShowTextureInfo");
+
+	return mFetchState > 7 && mFetchState < 10 && monitor_enabled; //in state of WAIT_HTTP_REQ or DECODE_IMAGE.
 }
 
 bool LLViewerFetchedTexture::updateFetch()
@@ -1745,7 +1827,11 @@ bool LLViewerFetchedTexture::updateFetch()
 		if (mAuxRawImage.notNull()) sAuxCount--;
 		bool finished = LLAppViewer::getTextureFetch()->getRequestFinished(getID(), fetch_discard, mRawImage, mAuxRawImage);
 		if (mRawImage.notNull()) sRawCount++;
-		if (mAuxRawImage.notNull()) sAuxCount++;
+		if (mAuxRawImage.notNull())
+		{
+			mHasAux = TRUE;
+			sAuxCount++;
+		}
 		if (finished)
 		{
 			mIsFetching = FALSE;
@@ -1808,7 +1894,7 @@ bool LLViewerFetchedTexture::updateFetch()
 			if ((decode_priority > 0) && (mRawDiscardLevel < 0 || mRawDiscardLevel == INVALID_DISCARD_LEVEL))
 			{
 				// We finished but received no data
-				if (current_discard < 0)
+				if (getDiscardLevel() < 0)
 				{
 					LL_WARNS() << "!mIsFetching, setting as missing, decode_priority " << decode_priority
 							<< " mRawDiscardLevel " << mRawDiscardLevel
@@ -1820,8 +1906,17 @@ bool LLViewerFetchedTexture::updateFetch()
 				else
 				{
 					//LL_WARNS() << mID << ": Setting min discard to " << current_discard << LL_ENDL;
-					mMinDiscardLevel = current_discard;
-					desired_discard = current_discard;
+					if(current_discard >= 0)
+					{
+						mMinDiscardLevel = current_discard;
+						desired_discard = current_discard;
+					}
+					else
+					{
+						S32 dis_level = getDiscardLevel();
+						mMinDiscardLevel = dis_level;
+						desired_discard = dis_level;
+					}
 				}
 				destroyRawImage();
 			}
@@ -1959,6 +2054,22 @@ bool LLViewerFetchedTexture::updateFetch()
 	return mIsFetching ? true : false;
 }
 
+void LLViewerFetchedTexture::clearFetchedResults()
+{
+	if(mNeedsCreateTexture || mIsFetching)
+	{
+		return;
+	}
+	
+	cleanup();
+	destroyGLTexture();
+
+	if(getDiscardLevel() >= 0) //sculpty texture, force to invalidate
+	{
+		mGLTexturep->forceToInvalidateGLTexture();
+	}
+}
+
 void LLViewerFetchedTexture::forceToDeleteRequest()
 {
 	if (mHasFetcher)
@@ -1973,26 +2084,42 @@ void LLViewerFetchedTexture::forceToDeleteRequest()
 	mDesiredDiscardLevel = getMaxDiscardLevel() + 1; //defer LLAppViewer::getTextureFetch()->deleteRequest to updateFetch?
 }
 
-void LLViewerFetchedTexture::setIsMissingAsset()
+void LLViewerFetchedTexture::setIsMissingAsset(BOOL is_missing)
 {
-	if (mUrl.empty())
+	if (is_missing == mIsMissingAsset)
 	{
-		LL_WARNS() << mID << ": Marking image as missing" << LL_ENDL;
+		return;
+	}
+	if (is_missing)
+	{
+		notifyAboutMissingAsset();
+
+		if (mUrl.empty())
+		{
+			LL_WARNS() << mID << ": Marking image as missing" << LL_ENDL;
+		}
+		else
+		{
+			// This may or may not be an error - it is normal to have no
+			// map tile on an empty region, but bad if we're failing on a
+			// server bake texture.
+				LL_WARNS() << mUrl << ": Marking image as missing" << LL_ENDL;
+		}
+		if (mHasFetcher)
+		{
+			LLAppViewer::getTextureFetch()->deleteRequest(getID(), true);
+			mHasFetcher = FALSE;
+			mIsFetching = FALSE;
+			mLastPacketTimer.reset();
+			mFetchState = 0;
+			mFetchPriority = 0;
+		}
 	}
 	else
 	{
-		LL_WARNS() << mUrl << ": Marking image as missing" << LL_ENDL;
+		LL_INFOS() << mID << ": un-flagging missing asset" << LL_ENDL;
 	}
-	if (mHasFetcher)
-	{
-		LLAppViewer::getTextureFetch()->deleteRequest(getID(), true);
-		mHasFetcher = FALSE;
-		mIsFetching = FALSE;
-		mLastPacketTimer.reset();
-		mFetchState = 0;
-		mFetchPriority = 0;
-	}
-	mIsMissingAsset = TRUE;
+	mIsMissingAsset = is_missing;
 }
 
 void LLViewerFetchedTexture::setLoadedCallback( loaded_callback_func loaded_callback,
@@ -2035,10 +2162,19 @@ void LLViewerFetchedTexture::setLoadedCallback( loaded_callback_func loaded_call
 	}
 	if (mNeedsAux && mAuxRawImage.isNull() && getDiscardLevel() >= 0)
 	{
-		// We need aux data, but we've already loaded the image, and it didn't have any
-		LL_WARNS() << "No aux data available for callback for image:" << getID() << LL_ENDL;
+		if(mHasAux)
+		{
+			//trigger a refetch
+			forceToRefetchTexture();
+		}
+		else
+		{
+			// We need aux data, but we've already loaded the image, and it didn't have any
+			LL_WARNS() << "No aux data available for callback for image:" << getID() << LL_ENDL;
+		}
 	}
 	mLastCallBackActiveTime = sCurrentTime ;
+        mLastReferencedSavedRawImageTime = sCurrentTime;
 }
 
 void LLViewerFetchedTexture::clearCallbackEntryList()
@@ -2151,6 +2287,7 @@ void LLViewerFetchedTexture::unpauseLoadedCallbacks(const LLLoadedCallbackEntry:
 	}
 	mPauseLoadedCallBacks = FALSE ;
 	mLastCallBackActiveTime = sCurrentTime ;
+	mForceCallbackFetch = TRUE;
 	if(need_raw)
 	{
 		mSaveRawImage = TRUE ;
@@ -2191,6 +2328,7 @@ void LLViewerFetchedTexture::pauseLoadedCallbacks(const LLLoadedCallbackEntry::s
 bool LLViewerFetchedTexture::doLoadedCallbacks()
 {
 	static const F32 MAX_INACTIVE_TIME = 120.f ; //seconds
+	static const F32 MAX_IDLE_WAIT_TIME = 5.f ; //seconds
 
 	if (mNeedsCreateTexture)
 	{
@@ -2395,6 +2533,9 @@ bool LLViewerFetchedTexture::doLoadedCallbacks()
 		}
 	}
 
+	// Done with any raw image data at this point (will be re-created if we still have callbacks)
+	destroyRawImage();
+
 	//
 	// If we have no callbacks, take us off of the image callback list.
 	//
@@ -2402,10 +2543,12 @@ bool LLViewerFetchedTexture::doLoadedCallbacks()
 	{
 		gTextureList.mCallbackList.erase(this);
 	}
-
-	// Done with any raw image data at this point (will be re-created if we still have callbacks)
-	destroyRawImage();
-	
+	else if(!res && mForceCallbackFetch && sCurrentTime - mLastCallBackActiveTime > MAX_IDLE_WAIT_TIME && !mIsFetching)
+	{
+		//wait for long enough but no fetching request issued, force one.
+		forceToRefetchTexture(mLoadedCallbackDesiredDiscardLevel, 5.f);
+		mForceCallbackFetch = FALSE; //fire once.
+	}
 	return res;
 }
 
@@ -2487,7 +2630,7 @@ bool LLViewerFetchedTexture::needsToSaveRawImage()
 
 void LLViewerFetchedTexture::destroyRawImage()
 {	
-	if (mAuxRawImage.notNull())
+	if (mAuxRawImage.notNull() && !needsToSaveRawImage())
 	{
 		sAuxCount--;
 		mAuxRawImage = NULL;
@@ -2660,7 +2803,25 @@ void LLViewerFetchedTexture::saveRawImage()
 		mForceToSaveRawImage = FALSE ;
 	}
 
+	mLastReferencedSavedRawImageTime = sCurrentTime;
+}
+
+//force to refetch the texture to the discard level 
+void LLViewerFetchedTexture::forceToRefetchTexture(S32 desired_discard, F32 kept_time)
+{
+	if(mForceToSaveRawImage)
+	{
+		desired_discard = llmin(desired_discard, mDesiredSavedRawDiscardLevel);
+		kept_time = llmax(kept_time, mKeptSavedRawImageTime);
+	}
+
+	//trigger a new fetch.
+	mForceToSaveRawImage = TRUE ;
+	mDesiredSavedRawDiscardLevel = desired_discard ;
+	mKeptSavedRawImageTime = kept_time ;
 	mLastReferencedSavedRawImageTime = sCurrentTime ;
+	mSavedRawImage = NULL ;
+	mSavedRawDiscardLevel = -1 ;
 }
 
 void LLViewerFetchedTexture::forceToSaveRawImage(S32 desired_discard, F32 kept_time) 
@@ -2710,6 +2871,12 @@ void LLViewerFetchedTexture::destroySavedRawImage()
 	mDesiredSavedRawDiscardLevel = -1 ;
 	mLastReferencedSavedRawImageTime = 0.0f ;
 	mKeptSavedRawImageTime = 0.f ;
+	
+	if(mAuxRawImage.notNull())
+	{
+		sAuxCount--;
+		mAuxRawImage = NULL;
+	}
 }
 
 LLImageRaw* LLViewerFetchedTexture::getSavedRawImage() 

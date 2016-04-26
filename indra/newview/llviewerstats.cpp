@@ -536,7 +536,6 @@ void output_statistics(void*)
 	LL_INFOS() << "--------------------------------" << LL_ENDL;
 	LL_INFOS() << "Avatar Memory (partly overlaps with above stats):" << LL_ENDL;
 	LLTexLayerStaticImageList::getInstance()->dumpByteCount();
-	LLVOAvatarSelf::dumpScratchTextureByteCount();
 	LLViewerTexLayerSetBuffer::dumpTotalByteCount();
 	LLVOAvatarSelf::dumpTotalLocalTextureByteCount();
 	LLTexLayerParamAlpha::dumpCacheByteCount();

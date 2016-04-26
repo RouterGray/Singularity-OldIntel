@@ -358,6 +358,10 @@ protected:
 	void cleanUpMediaImpls();
 	void addMediaImpl(LLViewerMediaImpl* media_impl, S32 texture_index) ;
 	void removeMediaImpl(S32 texture_index) ;
+
+private:
+	bool lodOrSculptChanged(LLDrawable *drawable);
+
 public:
 
 	static S32 getRenderComplexityMax() {return mRenderComplexity_last;}
@@ -402,6 +406,26 @@ protected:
 	static S32 sNumLODChanges;
 	
 	friend class LLVolumeImplFlexible;
+
+public:
+	bool notifyAboutCreatingTexture(LLViewerTexture *texture);
+	bool notifyAboutMissingAsset(LLViewerTexture *texture);
+
+private:
+	struct material_info 
+	{
+		LLRender::eTexIndex map;
+		U8 te;
+
+		material_info(LLRender::eTexIndex map_, U8 te_)
+			: map(map_)
+			, te(te_)
+		{}
+	};
+
+	typedef std::multimap<LLUUID, material_info> mmap_UUID_MAP_t;
+	mmap_UUID_MAP_t	mWaitingTextureInfo;
+
 };
 
 #endif // LL_LLVOVOLUME_H

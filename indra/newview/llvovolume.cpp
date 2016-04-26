@@ -93,6 +93,7 @@
 const S32 MIN_QUIET_FRAMES_COALESCE = 30;
 const F32 FORCE_SIMPLE_RENDER_AREA = 512.f;
 const F32 FORCE_CULL_AREA = 8.f;
+U32 JOINT_COUNT_REQUIRED_FOR_FULLRIG = 20;
 
 BOOL gAnimateTextures = TRUE;
 //extern BOOL gHideSelectedObjects;
@@ -1564,6 +1565,65 @@ static LLFastTimer::DeclareTimer FTM_GEN_FLEX("Generate Flexies");
 static LLFastTimer::DeclareTimer FTM_UPDATE_PRIMITIVES("Update Primitives");
 static LLFastTimer::DeclareTimer FTM_UPDATE_RIGGED_VOLUME("Update Rigged");
 
+bool LLVOVolume::lodOrSculptChanged(LLDrawable *drawable)
+{
+	bool regen_faces = false;
+
+	LLVolume *old_volumep, *new_volumep;
+		F32 old_lod, new_lod;
+		S32 old_num_faces, new_num_faces ;
+
+		old_volumep = getVolume();
+		old_lod = old_volumep->getDetail();
+		old_num_faces = old_volumep->getNumFaces() ;
+		old_volumep = NULL ;
+
+		{
+			LLFastTimer ftm(FTM_GEN_VOLUME);
+			const LLVolumeParams &volume_params = getVolume()->getParams();
+			setVolume(volume_params, 0);
+		}
+
+		new_volumep = getVolume();
+		new_lod = new_volumep->getDetail();
+		new_num_faces = new_volumep->getNumFaces() ;
+		new_volumep = NULL ;
+
+		if ((new_lod != old_lod) || mSculptChanged)
+		{
+			sNumLODChanges += new_num_faces ;
+	
+			if((S32)getNumTEs() != getVolume()->getNumFaces())
+			{
+				setNumTEs(getVolume()->getNumFaces()); //mesh loading may change number of faces.
+			}
+
+			drawable->setState(LLDrawable::REBUILD_VOLUME); // for face->genVolumeTriangles()
+
+			{
+				LLFastTimer t(FTM_GEN_TRIANGLES);
+				regen_faces = new_num_faces != old_num_faces || mNumFaces != (S32)getNumTEs();
+				if (regen_faces)
+				{
+					regenFaces();
+				}
+
+				if (mSculptChanged)
+				{ //changes in sculpt maps can thrash an object bounding box without 
+				  //triggering a spatial group bounding box update -- force spatial group
+				  //to update bounding boxes
+					LLSpatialGroup* group = mDrawable->getSpatialGroup();
+					if (group)
+					{
+						group->unbound();
+					}
+				}
+			}
+	}
+
+	return regen_faces;
+}
+
 BOOL LLVOVolume::updateGeometry(LLDrawable *drawable)
 {
 	LLFastTimer t(FTM_UPDATE_PRIMITIVES);
@@ -1595,8 +1655,6 @@ BOOL LLVOVolume::updateGeometry(LLDrawable *drawable)
 		group->dirtyMesh();
 	}
 
-	BOOL compiled = FALSE;
-			
 	updateRelativeXform();
 	
 	if (mDrawable.isNull()) // Not sure why this is happening, but it is...
@@ -1608,83 +1666,35 @@ BOOL LLVOVolume::updateGeometry(LLDrawable *drawable)
 	{
 		dirtySpatialGroup(drawable->isState(LLDrawable::IN_REBUILD_Q1));
 
-		compiled = TRUE;
+		bool was_regen_faces = false;
 
 		if (mVolumeChanged)
 		{
-			LLFastTimer ftm(FTM_GEN_VOLUME);
-			LLVolumeParams volume_params = getVolume()->getParams();
-			setVolume(volume_params, 0);
+			was_regen_faces = lodOrSculptChanged(drawable);
 			drawable->setState(LLDrawable::REBUILD_VOLUME);
 		}
-
+		else if (mSculptChanged || mLODChanged)
 		{
+			was_regen_faces = lodOrSculptChanged(drawable);
+		}
+		
+		if (!was_regen_faces) {
 			LLFastTimer t(FTM_GEN_TRIANGLES);
 			regenFaces();
-			genBBoxes(FALSE);
 		}
+
+		genBBoxes(FALSE);
 	}
-	else if ((mLODChanged) || (mSculptChanged))
+	else if (mLODChanged || mSculptChanged)
 	{
 		dirtySpatialGroup(drawable->isState(LLDrawable::IN_REBUILD_Q1));
+		lodOrSculptChanged(drawable);
+		genBBoxes(FALSE);
 
-		LLVolume *old_volumep, *new_volumep;
-		F32 old_lod, new_lod;
-		S32 old_num_faces, new_num_faces ;
-
-		old_volumep = getVolume();
-		old_lod = old_volumep->getDetail();
-		old_num_faces = old_volumep->getNumFaces() ;
-		old_volumep = NULL ;
-
-		{
-			LLFastTimer ftm(FTM_GEN_VOLUME);
-			LLVolumeParams volume_params = getVolume()->getParams();
-			setVolume(volume_params, 0);
-		}
-
-		new_volumep = getVolume();
-		new_lod = new_volumep->getDetail();
-		new_num_faces = new_volumep->getNumFaces() ;
-		new_volumep = NULL ;
-
-		if ((new_lod != old_lod) || mSculptChanged)
-		{
-			compiled = TRUE;
-			sNumLODChanges += new_num_faces ;
-	
-			if((S32)getNumTEs() != getVolume()->getNumFaces())
-			{
-				setNumTEs(getVolume()->getNumFaces()); //mesh loading may change number of faces.
-			}
-
-			drawable->setState(LLDrawable::REBUILD_VOLUME); // for face->genVolumeTriangles()
-
-			{
-				LLFastTimer t(FTM_GEN_TRIANGLES);
-				if (new_num_faces != old_num_faces || mNumFaces != (S32)getNumTEs())
-				{
-					regenFaces();
-				}
-				genBBoxes(FALSE);
-
-				if (mSculptChanged)
-				{ //changes in sculpt maps can thrash an object bounding box without 
-				  //triggering a spatial group bounding box update -- force spatial group
-				  //to update bounding boxes
-					LLSpatialGroup* group = mDrawable->getSpatialGroup();
-					if (group)
-					{
-						group->unbound();
-					}
-				}
-			}
-		}
 	}
 	// it has its own drawable (it's moved) or it has changed UVs or it has changed xforms from global<->local
 	else
 	{
-		compiled = TRUE;
 		// All it did was move or we changed the texture coordinate offset
 		LLFastTimer t(FTM_GEN_TRIANGLES);
 		genBBoxes(FALSE);
@@ -1692,7 +1702,7 @@ BOOL LLVOVolume::updateGeometry(LLDrawable *drawable)
 
 	// Update face flags
 	updateFaceFlags();
-	
+		
 	mVolumeChanged = FALSE;
 	mLODChanged = FALSE;
 	mSculptChanged = FALSE;
@@ -1819,7 +1829,7 @@ S32 LLVOVolume::setTEColor(const U8 te, const LLColor4& color)
 	const LLTextureEntry *tep = getTE(te);
 	if (!tep)
 	{
-		LL_WARNS() << "No texture entry for te " << (S32)te << ", object " << mID << LL_ENDL;
+		LL_WARNS("MaterialTEs") << "No texture entry for te " << (S32)te << ", object " << mID << LL_ENDL;
 	}
 	else if (color != tep->getColor())
 	{
@@ -1971,10 +1981,237 @@ S32 LLVOVolume::setTEMaterialID(const U8 te, const LLMaterialID& pMaterialID)
 	return res;
 }
 
+bool LLVOVolume::notifyAboutCreatingTexture(LLViewerTexture *texture)
+{ //Ok, here we have confirmation about texture creation, check our wait-list
+  //and make changes, or return false
+
+	std::pair<mmap_UUID_MAP_t::iterator, mmap_UUID_MAP_t::iterator> range = mWaitingTextureInfo.equal_range(texture->getID());
+
+	typedef std::map<U8, LLMaterialPtr> map_te_material;
+	map_te_material new_material;
+
+	for(mmap_UUID_MAP_t::iterator range_it = range.first; range_it != range.second; ++range_it)
+	{
+		LLMaterialPtr cur_material = getTEMaterialParams(range_it->second.te);
+
+		//here we just interesting in DIFFUSE_MAP only!
+		if(cur_material.notNull() && LLRender::DIFFUSE_MAP == range_it->second.map && GL_RGBA != texture->getPrimaryFormat())
+		{ //ok let's check the diffuse mode
+			switch(cur_material->getDiffuseAlphaMode())
+			{
+			case LLMaterial::DIFFUSE_ALPHA_MODE_BLEND:
+			case LLMaterial::DIFFUSE_ALPHA_MODE_EMISSIVE:
+			case LLMaterial::DIFFUSE_ALPHA_MODE_MASK:
+				{ //uups... we have non 32 bit texture with LLMaterial::DIFFUSE_ALPHA_MODE_* => LLMaterial::DIFFUSE_ALPHA_MODE_NONE
+
+					LLMaterialPtr mat = NULL;
+					map_te_material::iterator it = new_material.find(range_it->second.te);
+					if(new_material.end() == it) {
+						mat = new LLMaterial(cur_material->asLLSD());
+						new_material.insert(map_te_material::value_type(range_it->second.te, mat));
+					} else {
+						mat = it->second;
+					}
+
+					mat->setDiffuseAlphaMode(LLMaterial::DIFFUSE_ALPHA_MODE_NONE);
+
+				} break;
+			} //switch
+		} //if
+	} //for
+
+	//setup new materials
+	for(map_te_material::const_iterator it = new_material.begin(), end = new_material.end(); it != end; ++it)
+	{
+		LLMaterialMgr::getInstance()->put(getID(), it->first, *it->second);
+		LLViewerObject::setTEMaterialParams(it->first, it->second);
+	}
+
+	//clear wait-list
+	mWaitingTextureInfo.erase(range.first, range.second);
+
+	return 0 != new_material.size();
+}
+
+bool LLVOVolume::notifyAboutMissingAsset(LLViewerTexture *texture)
+{ //Ok, here if we wait information about texture and it's missing
+  //then depending from the texture map (diffuse, normal, or specular)
+  //make changes in material and confirm it. If not return false.
+	std::pair<mmap_UUID_MAP_t::iterator, mmap_UUID_MAP_t::iterator> range = mWaitingTextureInfo.equal_range(texture->getID());
+	if(range.first == range.second) return false;
+
+	typedef std::map<U8, LLMaterialPtr> map_te_material;
+	map_te_material new_material;
+	
+	for(mmap_UUID_MAP_t::iterator range_it = range.first; range_it != range.second; ++range_it)
+	{
+		LLMaterialPtr cur_material = getTEMaterialParams(range_it->second.te);
+		if (cur_material.isNull())
+			continue;
+
+		switch(range_it->second.map)
+		{
+		case LLRender::DIFFUSE_MAP:
+			{
+				if(LLMaterial::DIFFUSE_ALPHA_MODE_NONE != cur_material->getDiffuseAlphaMode())
+				{ //missing texture + !LLMaterial::DIFFUSE_ALPHA_MODE_NONE => LLMaterial::DIFFUSE_ALPHA_MODE_NONE
+					LLMaterialPtr mat = NULL;
+					map_te_material::iterator it = new_material.find(range_it->second.te);
+					if(new_material.end() == it) {
+						mat = new LLMaterial(cur_material->asLLSD());
+						new_material.insert(map_te_material::value_type(range_it->second.te, mat));
+					} else {
+						mat = it->second;
+					}
+
+					mat->setDiffuseAlphaMode(LLMaterial::DIFFUSE_ALPHA_MODE_NONE);
+				}
+			} break;
+		case LLRender::NORMAL_MAP:
+			{ //missing texture => reset material texture id
+				LLMaterialPtr mat = NULL;
+				map_te_material::iterator it = new_material.find(range_it->second.te);
+				if(new_material.end() == it) {
+					mat = new LLMaterial(cur_material->asLLSD());
+					new_material.insert(map_te_material::value_type(range_it->second.te, mat));
+				} else {
+					mat = it->second;
+				}
+
+				mat->setNormalID(LLUUID::null);
+			} break;
+		case LLRender::SPECULAR_MAP:
+			{ //missing texture => reset material texture id
+				LLMaterialPtr mat = NULL;
+				map_te_material::iterator it = new_material.find(range_it->second.te);
+				if(new_material.end() == it) {
+					mat = new LLMaterial(cur_material->asLLSD());
+					new_material.insert(map_te_material::value_type(range_it->second.te, mat));
+				} else {
+					mat = it->second;
+				}
+
+				mat->setSpecularID(LLUUID::null);
+			} break;
+		case LLRender::NUM_TEXTURE_CHANNELS:
+				//nothing to do, make compiler happy
+			break;
+		} //switch
+	} //for
+
+	//setup new materials
+	for(map_te_material::const_iterator it = new_material.begin(), end = new_material.end(); it != end; ++it)
+	{
+		LLMaterialMgr::getInstance()->put(getID(), it->first, *it->second);
+		LLViewerObject::setTEMaterialParams(it->first, it->second);
+	}
+
+	//clear wait-list
+	mWaitingTextureInfo.erase(range.first, range.second);
+
+	return 0 != new_material.size();
+}
+
 S32 LLVOVolume::setTEMaterialParams(const U8 te, const LLMaterialPtr pMaterialParams)
 {
-	S32 res = LLViewerObject::setTEMaterialParams(te, pMaterialParams);
-	LL_DEBUGS("MaterialTEs") << "te " << (S32)te << " material " << ((pMaterialParams) ? pMaterialParams->asLLSD() : LLSD("null")) << " res " << res
+	LLMaterialPtr pMaterial = const_cast<LLMaterialPtr&>(pMaterialParams);
+
+	if(pMaterialParams)
+	{ //check all of them according to material settings
+
+		LLViewerTexture *img_diffuse = getTEImage(te);
+		LLViewerTexture *img_normal = getTENormalMap(te);
+		LLViewerTexture *img_specular = getTESpecularMap(te);
+
+		llassert(NULL != img_diffuse);
+
+		LLMaterialPtr new_material = NULL;
+
+		//diffuse
+		if(NULL != img_diffuse)
+		{ //guard
+			if(0 == img_diffuse->getPrimaryFormat() && !img_diffuse->isMissingAsset())
+			{ //ok here we don't have information about texture, let's belief and leave material settings
+			  //but we remember this case
+				mWaitingTextureInfo.insert(mmap_UUID_MAP_t::value_type(img_diffuse->getID(), material_info(LLRender::DIFFUSE_MAP, te)));
+			}
+			else
+			{
+				bool bSetDiffuseNone = false;
+				if(img_diffuse->isMissingAsset())
+				{
+					bSetDiffuseNone = true;
+				}
+				else
+				{
+					switch(pMaterialParams->getDiffuseAlphaMode())
+					{
+					case LLMaterial::DIFFUSE_ALPHA_MODE_BLEND:
+					case LLMaterial::DIFFUSE_ALPHA_MODE_EMISSIVE:
+					case LLMaterial::DIFFUSE_ALPHA_MODE_MASK:
+						{ //all of them modes available only for 32 bit textures
+							if(GL_RGBA != img_diffuse->getPrimaryFormat())
+							{
+								bSetDiffuseNone = true;
+							}
+						} break;
+					}
+				} //else
+
+
+				if(bSetDiffuseNone)
+				{ //upps... we should substitute this material with LLMaterial::DIFFUSE_ALPHA_MODE_NONE
+					new_material = new LLMaterial(pMaterialParams->asLLSD());
+					new_material->setDiffuseAlphaMode(LLMaterial::DIFFUSE_ALPHA_MODE_NONE);
+				}
+			}
+		}
+
+		//normal
+		if(LLUUID::null != pMaterialParams->getNormalID())
+		{
+			if(img_normal && img_normal->isMissingAsset() && img_normal->getID() == pMaterialParams->getNormalID())
+			{
+				if(!new_material) {
+					new_material = new LLMaterial(pMaterialParams->asLLSD());
+				}
+				new_material->setNormalID(LLUUID::null);
+			}
+			else if(NULL == img_normal || 0 == img_normal->getPrimaryFormat())
+			{ //ok here we don't have information about texture, let's belief and leave material settings
+				//but we remember this case
+				mWaitingTextureInfo.insert(mmap_UUID_MAP_t::value_type(pMaterialParams->getNormalID(), material_info(LLRender::NORMAL_MAP,te)));
+			}
+
+		}
+
+
+		//specular
+		if(LLUUID::null != pMaterialParams->getSpecularID())
+		{
+			if(img_specular && img_specular->isMissingAsset() && img_specular->getID() == pMaterialParams->getSpecularID())
+			{
+				if(!new_material) {
+					new_material = new LLMaterial(pMaterialParams->asLLSD());
+				}
+				new_material->setSpecularID(LLUUID::null);
+			}
+			else if(NULL == img_specular || 0 == img_specular->getPrimaryFormat())
+			{ //ok here we don't have information about texture, let's belief and leave material settings
+				//but we remember this case
+				mWaitingTextureInfo.insert(mmap_UUID_MAP_t::value_type(pMaterialParams->getSpecularID(), material_info(LLRender::SPECULAR_MAP, te)));
+			}
+		}
+
+		if(new_material) {
+			pMaterial = new_material;
+			LLMaterialMgr::getInstance()->put(getID(),te,*pMaterial);
+		}
+	}
+
+	S32 res = LLViewerObject::setTEMaterialParams(te, pMaterial);
+
+	LL_DEBUGS("MaterialTEs") << "te " << (S32)te << " material " << ((pMaterial) ? pMaterial->asLLSD() : LLSD("null")) << " res " << res
 							 << ( LLSelectMgr::getInstance()->getSelection()->contains(const_cast<LLVOVolume*>(this), te) ? " selected" : " not selected" )
 							 << LL_ENDL;
 	setChanged(ALL_CHANGED);
@@ -4597,60 +4834,12 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
 				
 					//get drawpool of avatar with rigged face
 					LLDrawPoolAvatar* pool = get_avatar_drawpool(vobj);
-				
-					//Determine if we've received skininfo that contains an
-					//alternate bind matrix - if it does then apply the translational component
-					//to the joints of the avatar.
-					bool pelvisGotSet = false;
-
+					
+					// FIXME should this be inside the face loop?
+					// doesn't seem to depend on any per-face state.
 					if ( pAvatarVO )
 					{
-						LLUUID currentId = vobj->getVolume()->getParams().getSculptID();
-						const LLMeshSkinInfo*  pSkinData = gMeshRepo.getSkinInfo( currentId, vobj );
-					
-						if ( pSkinData )
-						{
-							const int bindCnt = pSkinData->mAlternateBindMatrix.size();								
-							if ( bindCnt > 0 )
-							{					
-								const int jointCnt = pSkinData->mJointNames.size();
-								const F32 pelvisZOffset = pSkinData->mPelvisOffset;
-								bool fullRig = (jointCnt>=20) ? true : false;
-								if ( fullRig )
-								{
-									for ( int i=0; i<jointCnt; ++i )
-									{
-										std::string lookingForJoint = pSkinData->mJointNames[i].c_str();
-										//LL_INFOS() <<"joint name "<<lookingForJoint.c_str()<<LL_ENDL;
-										LLJoint* pJoint = pAvatarVO->getJoint( lookingForJoint );
-										if ( pJoint && pJoint->getId() != currentId )
-										{   									
-											pJoint->setId( currentId );
-											const LLVector3& jointPos = pSkinData->mAlternateBindMatrix[i].getTranslation();									
-											//Set the joint position
-											pJoint->storeCurrentXform( jointPos );																																
-											//If joint is a pelvis then handle old/new pelvis to foot values
-											if ( lookingForJoint == "mPelvis" )
-											{	
-												pJoint->storeCurrentXform( jointPos );																																
-												if ( !pAvatarVO->hasPelvisOffset() )
-												{										
-													pAvatarVO->setPelvisOffset( true, jointPos, pelvisZOffset );
-													//Trigger to rebuild viewer AV
-													pelvisGotSet = true;											
-												}										
-											}										
-										}
-									}
-								}							
-							}
-						}
-					}
-					//If we've set the pelvis to a new position we need to also rebuild some information that the
-					//viewer does at launch (e.g. body size etc.)
-					if ( pelvisGotSet )
-					{
-						pAvatarVO->postPelvisSetRecalc();
+						pAvatarVO->addAttachmentPosOverridesForObject(vobj);
 					}
 
 					if (pool)
@@ -5407,6 +5596,10 @@ void LLVolumeGeometryManager::rebuildMesh(LLSpatialGroup* group)
 			for (LLSpatialGroup::element_iter drawable_iter = group->getDataBegin(); drawable_iter != group->getDataEnd(); ++drawable_iter)
 			{
 				LLDrawable* drawablep = (LLDrawable*)(*drawable_iter)->getDrawable();
+				if(!drawablep)
+				{
+					continue;
+				}
 				for (S32 i = 0; i < drawablep->getNumFaces(); ++i)
 				{
 					LLFace* face = drawablep->getFace(i);
