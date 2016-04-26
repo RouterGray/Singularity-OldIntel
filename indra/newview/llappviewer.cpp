@@ -1332,7 +1332,7 @@ bool LLAppViewer::mainLoop()
 				// yield cooperatively when not running as foreground window
 				if (   gNoRender
 					   || (gViewerWindow && !gViewerWindow->getWindow()->getVisible())
-						|| !gFocusMgr.getAppHasFocus())
+						|| (!gFocusMgr.getAppHasFocus() && !AIFilePicker::activePicker) )
 				{
 					// Sleep if we're not rendering, or the window is minimized.
 					S32 milliseconds_to_sleep = llclamp(gSavedSettings.getS32("BackgroundYieldTime"), 0, 1000);
