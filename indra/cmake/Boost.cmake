@@ -36,6 +36,9 @@ else (STANDALONE)
     set(Boost_THREAD_LIBRARY 
         optimized libboost_thread-mt
         debug libboost_thread-mt-gd)
+	set(Boost_CHRONO_LIBRARY 
+        optimized libboost_chrono-mt
+        debug libboost_chrono-mt-gd)
   elseif (LINUX)
     set(Boost_CONTEXT_LIBRARY
         optimized boost_context-mt
@@ -58,6 +61,9 @@ else (STANDALONE)
     set(Boost_THREAD_LIBRARY
         optimized boost_thread-mt
         debug boost_thread-mt-d)
+	set(Boost_CHRONO_LIBRARY 
+        optimized libboost_chrono-mt
+        debug libboost_chrono-mt-d)
   elseif (DARWIN)
     set(Boost_CONTEXT_LIBRARY
         optimized boost_context-mt
@@ -80,5 +86,8 @@ else (STANDALONE)
     set(Boost_THREAD_LIBRARY
         optimized boost_thread-mt
         debug boost_thread-mt-d)
+	set(Boost_CHRONO_LIBRARY 
+        optimized libboost_chrono-mt
+        debug libboost_chrono-mt-d)
   endif (WINDOWS)
 endif (STANDALONE)
