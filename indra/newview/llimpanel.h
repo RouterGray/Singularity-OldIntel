@@ -141,6 +141,11 @@ public:
 	bool getSessionInitialized() const { return mSessionInitialized; }
 	bool mStartCallOnInitialize;
 
+protected:
+	friend class LLViewerObjectList;
+	void addDynamicFocus();
+	void removeDynamicFocus();
+
 private:
 	// Called by UI methods.
 	void onSendMsg();

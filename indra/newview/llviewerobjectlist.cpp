@@ -101,6 +101,15 @@ class AIHTTPTimeoutPolicy;
 extern AIHTTPTimeoutPolicy objectCostResponder_timeout;
 extern AIHTTPTimeoutPolicy physicsFlagsResponder_timeout;
 
+// <singu>
+#include "llimpanel.h"
+#include "llimview.h"
+LLFloaterIMPanel* find_im_floater(const LLUUID& id)
+{
+	return gIMMgr->findFloaterBySession(id ^ gAgentID);
+}
+// </singu>
+
 #define CULL_VIS
 //#define ORPHAN_SPAM
 //#define IGNORE_DEAD
@@ -1256,7 +1265,11 @@ void LLViewerObjectList::cleanupReferences(LLViewerObject *objectp)
 	// Remove from object map so noone can look it up.
 
 	mUUIDObjectMap.erase(objectp->mID);
-	mUUIDAvatarMap.erase(objectp->mID);//No need to be careful here.
+	// <singu> Use the return value (number of erased elements) to determine if we were an avatar.
+	if (mUUIDAvatarMap.erase(objectp->mID)) //No need to be careful here.
+		if (LLFloaterIMPanel* im = find_im_floater(objectp->mID))
+			im->removeDynamicFocus();
+	// </singu>
 	
 	//if (objectp->getRegion())
 	//{
@@ -1978,7 +1991,13 @@ LLViewerObject *LLViewerObjectList::createObjectViewer(const LLPCode pcode, LLVi
 	{
 		LLVOAvatar *pAvatar = dynamic_cast<LLVOAvatar*>(objectp);
 		if(pAvatar)
+		{
 			mUUIDAvatarMap[fullid] = pAvatar;
+			// <singu>
+			if (LLFloaterIMPanel* im = find_im_floater(fullid))
+				im->addDynamicFocus();
+			// </singu>
+		}
 	}
 
 	mObjects.push_back(objectp);
@@ -2018,7 +2037,13 @@ LLViewerObject *LLViewerObjectList::createObject(const LLPCode pcode, LLViewerRe
 	{
 		LLVOAvatar *pAvatar = dynamic_cast<LLVOAvatar*>(objectp);
 		if(pAvatar)
+		{
 			mUUIDAvatarMap[fullid] = pAvatar;
+			// <singu>
+			if (LLFloaterIMPanel* im = find_im_floater(fullid))
+				im->addDynamicFocus();
+			// </singu>
+		}
 	}
 	setUUIDAndLocal(fullid,
 					local_id,

@@ -35,6 +35,7 @@
 
 #include "ascentkeyword.h"
 #include "llagent.h"
+#include "llagentcamera.h"
 #include "llautoreplace.h"
 #include "llavataractions.h"
 #include "llavatarnamecache.h"
@@ -523,6 +524,8 @@ BOOL LLFloaterIMPanel::postBuild()
 			if (is_agent_mappable(mOtherParticipantUUID))
 				flyout->add(getString("find on map"), -2);
 			addDynamics(flyout);
+			if (gObjectList.findAvatar(mOtherParticipantUUID))
+				flyout->add(getString("focus"), -3);
 		}
 		if (LLUICtrl* ctrl = findChild<LLUICtrl>("tp_btn"))
 			ctrl->setCommitCallback(boost::bind(static_cast<void(*)(const LLUUID&)>(LLAvatarActions::offerTeleport), mOtherParticipantUUID));
@@ -991,6 +994,16 @@ void LLFloaterIMPanel::addDynamics(LLComboBox* flyout)
 	flyout->add(LLAvatarActions::isBlocked(mOtherParticipantUUID) ? getString("unmute") : getString("mute"), 9);
 }
 
+void LLFloaterIMPanel::addDynamicFocus()
+{
+	findChild<LLComboBox>("instant_message_flyout")->add(getString("focus"), -3);
+}
+
+void LLFloaterIMPanel::removeDynamicFocus()
+{
+	findChild<LLComboBox>("instant_message_flyout")->remove(getString("focus"));
+}
+
 void copy_profile_uri(const LLUUID& id, bool group = false);
 
 void LLFloaterIMPanel::onFlyoutCommit(LLComboBox* flyout, const LLSD& value)
@@ -1009,8 +1022,10 @@ void LLFloaterIMPanel::onFlyoutCommit(LLComboBox* flyout, const LLSD& value)
 	else if (option == 5) LLAvatarActions::inviteToGroup(mOtherParticipantUUID);
 	else if (option == -1) copy_profile_uri(mOtherParticipantUUID);
 	else if (option == -2) LLAvatarActions::showOnMap(mOtherParticipantUUID);
+	else if (option == -3) gAgentCamera.lookAtObject(mOtherParticipantUUID);
 	else if (option >= 6) // Options that use dynamic items
 	{
+
 		// First remove them all
 		removeDynamics(flyout);
 
@@ -1022,6 +1037,10 @@ void LLFloaterIMPanel::onFlyoutCommit(LLComboBox* flyout, const LLSD& value)
 
 		// Last add them back
 		addDynamics(flyout);
+		// Always have Focus last
+		const std::string focus(getString("focus"));
+		if (flyout->remove(focus)) // If present, reorder to bottom.
+			flyout->add(focus, -3);
 	}
 }
 
