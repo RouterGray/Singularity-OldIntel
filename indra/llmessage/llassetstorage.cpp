@@ -190,8 +190,8 @@ LLSD LLAssetRequest::getTerseDetails() const
 	sd["asset_id"] = getUUID();
 	sd["type_long"] = LLAssetType::lookupHumanReadable(getType());
 	sd["type"] = LLAssetType::lookup(getType());
-	sd["time"] = mTime;
-	time_t timestamp = (time_t) mTime;
+	sd["time"] = mTime.value();
+	time_t timestamp = (time_t) mTime.value();
 	std::ostringstream time_string;
 	time_string << ctime(&timestamp);
 	sd["time_string"] = time_string.str();
@@ -337,7 +337,7 @@ void LLAssetStorage::checkForTimeouts()
 
 void LLAssetStorage::_cleanupRequests(BOOL all, S32 error)
 {
-	F64 mt_secs = LLMessageSystem::getMessageTimeSeconds();
+	F64Seconds mt_secs = LLMessageSystem::getMessageTimeSeconds();
 
 	request_list_t timed_out;
 	S32 rt;
@@ -638,6 +638,10 @@ void LLAssetStorage::downloadCompleteCallback(
 			vfile.remove();
 		}
 	}
+
+	// we will be deleting elements of mPendingDownloads which req might be part of, save id and type for reference
+	LLUUID callback_id = req->getUUID();
+	LLAssetType::EType callback_type = req->getType();
 	
 	// find and callback ALL pending requests for this UUID
 	// SJB: We process the callbacks in reverse order, I do not know if this is important,
@@ -661,7 +665,7 @@ void LLAssetStorage::downloadCompleteCallback(
 		LLAssetRequest* tmp = *curiter;
 		if (tmp->mDownCallback)
 		{
-			tmp->mDownCallback(gAssetStorage->mVFS, req->getUUID(), req->getType(), tmp->mUserData, result, ext_status);
+			tmp->mDownCallback(gAssetStorage->mVFS, callback_id, callback_type, tmp->mUserData, result, ext_status);
 		}
 		delete tmp;
 	}
@@ -1390,7 +1394,7 @@ void LLAssetStorage::storeAssetData(
 	bool is_priority,
 	bool store_local,
 	bool user_waiting,
-	F64 timeout)
+	F64Seconds timeout)
 {
 	LL_WARNS() << "storeAssetData: wrong version called" << LL_ENDL;
 	// LLAssetStorage metric: Virtual base call
@@ -1409,7 +1413,7 @@ void LLAssetStorage::storeAssetData(
 	bool store_local,
 	const LLUUID& requesting_agent_id,
 	bool user_waiting,
-	F64 timeout)
+	F64Seconds timeout)
 {
 	LL_WARNS() << "storeAssetData: wrong version called" << LL_ENDL;
 	// LLAssetStorage metric: Virtual base call
@@ -1427,7 +1431,7 @@ void LLAssetStorage::storeAssetData(
 	bool temp_file,
 	bool is_priority,
 	bool user_waiting,
-	F64 timeout)
+	F64Seconds timeout)
 {
 	LL_WARNS() << "storeAssetData: wrong version called" << LL_ENDL;
 	// LLAssetStorage metric: Virtual base call
@@ -1445,7 +1449,7 @@ void LLAssetStorage::storeAssetData(
 	bool temp_file,
 	bool is_priority,
 	bool user_waiting,
-	F64 timeout)
+	F64Seconds timeout)
 {
 	LL_WARNS() << "storeAssetData: wrong version called" << LL_ENDL;
 	// LLAssetStorage metric: Virtual base call

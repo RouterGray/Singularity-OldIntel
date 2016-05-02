@@ -455,6 +455,7 @@ LLViewerOctreeGroup::~LLViewerOctreeGroup()
 
 LLViewerOctreeGroup::LLViewerOctreeGroup(OctreeNode* node) :
 	mOctreeNode(node),
+	mAnyVisible(0),
 	mState(CLEAN)
 {
 	LLVector4a tmp;
@@ -760,6 +761,11 @@ BOOL LLViewerOctreeGroup::isRecentlyVisible() const
 void LLViewerOctreeGroup::setVisible()
 {
 	mVisible[LLViewerCamera::sCurCameraID] = LLViewerOctreeEntryData::getCurrentFrame();
+	
+	if(LLViewerCamera::sCurCameraID < LLViewerCamera::CAMERA_WATER0)
+	{
+		mAnyVisible = LLViewerOctreeEntryData::getCurrentFrame();
+	}
 }
 
 void LLViewerOctreeGroup::checkStates()
@@ -880,6 +886,12 @@ BOOL LLOcclusionCullingGroup::isRecentlyVisible() const
 {
 	const S32 MIN_VIS_FRAME_RANGE = 2;
 	return (LLDrawable::getCurrentFrame() - mVisible[LLViewerCamera::sCurCameraID]) < MIN_VIS_FRAME_RANGE ;
+}
+
+BOOL LLOcclusionCullingGroup::isAnyRecentlyVisible() const
+{
+	const S32 MIN_VIS_FRAME_RANGE = 2;
+	return (LLDrawable::getCurrentFrame() - mAnyVisible) < MIN_VIS_FRAME_RANGE ;
 }
 
 //virtual 
@@ -1293,7 +1305,8 @@ void LLOcclusionCullingGroup::doOcclusion(LLCamera* camera, const LLVector4a* sh
 //-----------------------------------------------------------------------------------
 //class LLViewerOctreePartition definitions
 //-----------------------------------------------------------------------------------
-LLViewerOctreePartition::LLViewerOctreePartition() :  
+LLViewerOctreePartition::LLViewerOctreePartition() : 
+	mRegionp(NULL), 
 	mOcclusionEnabled(TRUE), 
 	mDrawableType(0),
 	mLODSeed(0),
@@ -1453,21 +1466,21 @@ bool LLViewerOctreeCull::checkProjectionArea(const LLVector4a& center, const LLV
 //virtual 
 bool LLViewerOctreeCull::checkObjects(const OctreeNode* branch, const LLViewerOctreeGroup* group)
 {
-		if (branch->getElementCount() == 0) //no elements
-		{
-			return false;
-		}
-		else if (branch->getChildCount() == 0) //leaf state, already checked tightest bounding box
-		{
-			return true;
-		}
-		else if (mRes == 1 && !frustumCheckObjects(group)) //no objects in frustum
-		{
-			return false;
-		}
-		
+	if (branch->getElementCount() == 0) //no elements
+	{
+		return false;
+	}
+	else if (branch->getChildCount() == 0) //leaf state, already checked tightest bounding box
+	{
 		return true;
 	}
+	else if (mRes == 1 && !frustumCheckObjects(group)) //no objects in frustum
+	{
+		return false;
+	}
+		
+	return true;
+}
 
 //virtual 
 void LLViewerOctreeCull::preprocess(LLViewerOctreeGroup* group)

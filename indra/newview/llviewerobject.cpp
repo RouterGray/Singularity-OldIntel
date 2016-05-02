@@ -119,8 +119,8 @@ BOOL		LLViewerObject::sPulseEnabled(FALSE);
 BOOL		LLViewerObject::sUseSharedDrawables(FALSE); // TRUE
 
 // sMaxUpdateInterpolationTime must be greater than sPhaseOutUpdateInterpolationTime
-F64			LLViewerObject::sMaxUpdateInterpolationTime = 3.0;		// For motion interpolation: after X seconds with no updates, don't predict object motion
-F64			LLViewerObject::sPhaseOutUpdateInterpolationTime = 2.0;	// For motion interpolation: after Y seconds with no updates, taper off motion prediction
+F64Seconds	LLViewerObject::sMaxUpdateInterpolationTime(3.0);		// For motion interpolation: after X seconds with no updates, don't predict object motion
+F64Seconds	LLViewerObject::sPhaseOutUpdateInterpolationTime(2.0);	// For motion interpolation: after Y seconds with no updates, taper off motion prediction
 
 
 static LLFastTimer::DeclareTimer FTM_CREATE_OBJECT("Create Object");
@@ -244,7 +244,6 @@ LLViewerObject::LLViewerObject(const LLUUID &id, const LLPCode pcode, LLViewerRe
 	mOnMap(FALSE),
 	mStatic(FALSE),
 	mNumFaces(0),
-	mTimeDilation(1.f),
 	mRotTime(0.f),
 	mAngularVelocityRot(),
 	mPreviousRotation(),
@@ -373,9 +372,16 @@ void LLViewerObject::markDead()
 		//</singu>
 
 		// Root object of this hierarchy unlinks itself.
+		LLVOAvatar *av = getAvatarAncestor();
 		if (getParent())
 		{
 			((LLViewerObject *)getParent())->removeChild(this);
+		}
+		LLUUID mesh_id;
+		if (av && LLVOAvatar::getRiggedMeshID(this,mesh_id))
+		{
+			// This case is needed for indirectly attached mesh objects.
+			av->resetJointPositionsOnDetach(mesh_id);
 		}
 
 		// Mark itself as dead
@@ -975,11 +981,14 @@ U32 LLViewerObject::processUpdateMessage(LLMessageSystem *mesgsys,
 		return retval;
 	}
 
+	F32 time_dilation = 1.f;
+	if(mesgsys != NULL)
+	{
 	U16 time_dilation16;
 	mesgsys->getU16Fast(_PREHASH_RegionData, _PREHASH_TimeDilation, time_dilation16);
-	F32 time_dilation = ((F32) time_dilation16) / 65535.f;
-	mTimeDilation = time_dilation;
+	time_dilation = ((F32) time_dilation16) / 65535.f;
 	mRegionp->setTimeDilation(time_dilation);
+	}
 
 	// this will be used to determine if we've really changed position
 	// Use getPosition, not getPositionRegion, since this is what we're comparing directly against.
@@ -1770,7 +1779,7 @@ U32 LLViewerObject::processUpdateMessage(LLMessageSystem *mesgsys,
 		LLCircuitData *cdp = gMessageSystem->mCircuitInfo.findCircuit(mesgsys->getSender());
 		if (cdp)
 		{
-			F32 ping_delay = 0.5f * mTimeDilation * ( ((F32)cdp->getPingDelay()) * 0.001f + gFrameDTClamped);
+			F32 ping_delay = 0.5f * time_dilation * ( ((F32)cdp->getPingDelay().valueInUnits<LLUnits::Seconds>()) + gFrameDTClamped);
 			LLVector3 diff = getVelocity() * ping_delay; 
 			new_pos_parent += diff;
 		}
@@ -2168,39 +2177,38 @@ BOOL LLViewerObject::isActive() const
 
 void LLViewerObject::idleUpdate(LLAgent &agent, LLWorld &world, const F64 &time)
 {
-	//static LLFastTimer::DeclareTimer ftm("Viewer Object");
-	//LLFastTimer t(ftm);
+	//static LLTrace::BlockTimerStatHandle ftm("Viewer Object");
+	//LL_RECORD_BLOCK_TIME(ftm);
 
 	if (!mDead)
 	{
-	// CRO - don't velocity interp linked objects!
-	// Leviathan - but DO velocity interp joints
-	if (!mStatic && sVelocityInterpolate && !isSelected())
-	{
-		// calculate dt from last update
-		F32 dt_raw = (F32)(time - mLastInterpUpdateSecs);
-		F32 dt = mTimeDilation * dt_raw;
+		if (!mStatic && sVelocityInterpolate && !isSelected())
+		{
+			// calculate dt from last update
+			F32 time_dilation = mRegionp ? mRegionp->getTimeDilation() : 1.0f;
+			F32 dt_raw = ((F64Seconds)time - mLastInterpUpdateSecs).value();
+			F32 dt = time_dilation * dt_raw;
 
 			applyAngularVelocity(dt);
 
 			if (isAttachment())
-				{
-					mLastInterpUpdateSecs = time;
+			{
+				mLastInterpUpdateSecs = (F64Seconds)time;
 				return;
+			}
+			else
+			{	// Move object based on it's velocity and rotation
+				interpolateLinearMotion(time, dt);
+			}
 		}
-		else
-		{	// Move object based on it's velocity and rotation
-			interpolateLinearMotion(time, dt);
-		}
+
+		updateDrawable(FALSE);
 	}
-
-	updateDrawable(FALSE);
-}
 }
 
 
-// Move an object due to idle-time viewer side updates by iterpolating motion
-void LLViewerObject::interpolateLinearMotion(const F64 & time, const F32 & dt)
+// Move an object due to idle-time viewer side updates by interpolating motion
+void LLViewerObject::interpolateLinearMotion(const F64SecondsImplicit& time, const F32SecondsImplicit& dt_seconds)
 {
 	// linear motion
 	// PHYSICS_TIMESTEP is used below to correct for the fact that the velocity in object
@@ -2211,8 +2219,9 @@ void LLViewerObject::interpolateLinearMotion(const F64 & time, const F32 & dt)
 	// to see if object is selected, instead of explicitly
 	// zeroing it out	
 
-	F64 time_since_last_update = time - mLastMessageUpdateSecs;
-	if (time_since_last_update <= 0.0 || dt <= 0.f)
+	F32 dt = dt_seconds;
+	F64Seconds time_since_last_update = time - mLastMessageUpdateSecs;
+	if (time_since_last_update <= (F64Seconds)0.0 || dt <= 0.f)
 	{
 		return;
 	}
@@ -2220,7 +2229,7 @@ void LLViewerObject::interpolateLinearMotion(const F64 & time, const F32 & dt)
 	LLVector3 accel = getAcceleration();
 	LLVector3 vel 	= getVelocity();
 	
-	if (sMaxUpdateInterpolationTime <= 0.0)
+	if (sMaxUpdateInterpolationTime <= (F64Seconds)0.0)
 	{	// Old code path ... unbounded, simple interpolation
 		if (!(accel.isExactlyZero() && vel.isExactlyZero()))
 		{
@@ -2242,8 +2251,8 @@ void LLViewerObject::interpolateLinearMotion(const F64 & time, const F32 & dt)
 		LLVector3 new_v = accel * dt;
 
 		if (time_since_last_update > sPhaseOutUpdateInterpolationTime &&
-			sPhaseOutUpdateInterpolationTime > 0.0)
-		{	// Haven't seen a viewer update in a while, check to see if the ciruit is still active
+			sPhaseOutUpdateInterpolationTime > (F64Seconds)0.0)
+		{	// Haven't seen a viewer update in a while, check to see if the circuit is still active
 			if (mRegionp)
 			{	// The simulator will NOT send updates if the object continues normally on the path
 				// predicted by the velocity and the acceleration (often gravity) sent to the viewer
@@ -2252,14 +2261,14 @@ void LLViewerObject::interpolateLinearMotion(const F64 & time, const F32 & dt)
 				if (cdp)
 				{
 					// Find out how many seconds since last packet arrived on the circuit
-					F64 time_since_last_packet = LLMessageSystem::getMessageTimeSeconds() - cdp->getLastPacketInTime();
+					F64Seconds time_since_last_packet = LLMessageSystem::getMessageTimeSeconds() - cdp->getLastPacketInTime();
 
 					if (!cdp->isAlive() ||		// Circuit is dead or blocked
 						 cdp->isBlocked() ||	// or doesn't seem to be getting any packets
 						 (time_since_last_packet > sPhaseOutUpdateInterpolationTime))
 					{
 						// Start to reduce motion interpolation since we haven't seen a server update in a while
-						F64 time_since_last_interpolation = time - mLastInterpUpdateSecs;
+						F64Seconds time_since_last_interpolation = time - mLastInterpUpdateSecs;
 						F64 phase_out = 1.0;
 						if (time_since_last_update > sMaxUpdateInterpolationTime)
 						{	// Past the time limit, so stop the object
@@ -3305,7 +3314,7 @@ void LLViewerObject::boostTexturePriority(BOOL boost_children /* = TRUE */)
 	{
 		LLSculptParams *sculpt_params = (LLSculptParams *)getParameterEntry(LLNetworkData::PARAMS_SCULPT);
 		LLUUID sculpt_id = sculpt_params->getSculptTexture();
-		LLViewerTextureManager::getFetchedTexture(sculpt_id, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE)->setBoostLevel(LLGLTexture::BOOST_SELECTED);
+		LLViewerTextureManager::getFetchedTexture(sculpt_id, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE)->setBoostLevel(LLGLTexture::BOOST_SELECTED);
 	}
 	
 	if (boost_children)
@@ -4072,15 +4081,15 @@ void LLViewerObject::setTE(const U8 te, const LLTextureEntry &texture_entry)
 	LLPrimitive::setTE(te, texture_entry);
 
 	const LLUUID& image_id = getTE(te)->getID();
-		mTEImages[te] = LLViewerTextureManager::getFetchedTexture(image_id, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
+		mTEImages[te] = LLViewerTextureManager::getFetchedTexture(image_id, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
 	
 	if (getTE(te)->getMaterialParams().notNull())
 	{
 		const LLUUID& norm_id = getTE(te)->getMaterialParams()->getNormalID();
-		mTENormalMaps[te] = LLViewerTextureManager::getFetchedTexture(norm_id, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
+		mTENormalMaps[te] = LLViewerTextureManager::getFetchedTexture(norm_id, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
 		
 		const LLUUID& spec_id = getTE(te)->getMaterialParams()->getSpecularID();
-		mTESpecularMaps[te] = LLViewerTextureManager::getFetchedTexture(spec_id, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
+		mTESpecularMaps[te] = LLViewerTextureManager::getFetchedTexture(spec_id, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
 	}
 }
 
@@ -4195,21 +4204,21 @@ S32 LLViewerObject::setTETexture(const U8 te, const LLUUID& uuid)
 {
 	// Invalid host == get from the agent's sim
 	LLViewerFetchedTexture *image = LLViewerTextureManager::getFetchedTexture(
-		uuid, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost::invalid);
+		uuid, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost::invalid);
 	return setTETextureCore(te,image);
 }
 
 S32 LLViewerObject::setTENormalMap(const U8 te, const LLUUID& uuid)
 {
 	LLViewerFetchedTexture *image = (uuid == LLUUID::null) ? NULL : LLViewerTextureManager::getFetchedTexture(
-		uuid, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost::invalid);
+		uuid, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost::invalid);
 	return setTENormalMapCore(te, image);
 }
 
 S32 LLViewerObject::setTESpecularMap(const U8 te, const LLUUID& uuid)
 {
 	LLViewerFetchedTexture *image = (uuid == LLUUID::null) ? NULL : LLViewerTextureManager::getFetchedTexture(
-		uuid, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost::invalid);
+		uuid, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost::invalid);
 	return setTESpecularMapCore(te, image);
 }
 
@@ -4793,6 +4802,22 @@ void LLViewerObject::updateText()
 
 LLVOAvatar* LLViewerObject::asAvatar()
 {
+	return NULL;
+}
+
+// If this object is directly or indirectly parented by an avatar, return it.
+LLVOAvatar* LLViewerObject::getAvatarAncestor()
+{
+	LLViewerObject *pobj = (LLViewerObject*) getParent();
+	while (pobj)
+	{
+		LLVOAvatar *av = pobj->asAvatar();
+		if (av)
+		{
+			return av;
+		}
+		pobj =  (LLViewerObject*) pobj->getParent();
+	}
 	return NULL;
 }
 

@@ -472,9 +472,13 @@ void LLPanelDisplay::refreshEnabledState()
 	mWindowSizeLabel->setVisible(!isFullScreen);
 	mCtrlWindowSize->setVisible(!isFullScreen);
 
+	F32 mem_multiplier = gSavedSettings.getF32("RenderTextureMemoryMultiple");
+	S32Megabytes min_tex_mem = LLViewerTextureList::getMinVideoRamSetting();
+	S32Megabytes max_tex_mem = LLViewerTextureList::getMaxVideoRamSetting(false, mem_multiplier);
+
 	// Hardware tab
-	getChild<LLUICtrl>("GrapicsCardTextureMemory")->setMinValue(LLViewerTextureList::getMinVideoRamSetting());
-	getChild<LLUICtrl>("GrapicsCardTextureMemory")->setMaxValue(LLViewerTextureList::getMaxVideoRamSetting());
+	getChild<LLUICtrl>("GrapicsCardTextureMemory")->setMinValue(min_tex_mem.value());
+	getChild<LLUICtrl>("GrapicsCardTextureMemory")->setMaxValue(max_tex_mem.value());
 
 	if (!LLFeatureManager::getInstance()->isFeatureAvailable("RenderVBOEnable") ||
 		!gGLManager.mHasVertexBufferObject)

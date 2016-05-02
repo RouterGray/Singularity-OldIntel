@@ -233,7 +233,7 @@ LLFloaterAbout::LLFloaterAbout()
 	else
 		support.append(" None\n"); */
 
-	U32 memory = gSysMemory.getPhysicalMemoryKB() / 1024;
+	U32Megabytes memory = gSysMemory.getPhysicalMemoryKB();
 	// Moved hack adjustment to Windows memory size into llsys.cpp
 
 	std::string mem_text = llformat("Memory: %u MB\n", memory );

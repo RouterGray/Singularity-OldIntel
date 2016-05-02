@@ -131,7 +131,7 @@ LocalBitmap::LocalBitmap(std::string fullpath)
 		if (decodeSelf(raw_image))
 		{
 			/* creating a shell LLViewerTexture and fusing raw image into it */
-			LLViewerFetchedTexture* viewer_image = new LLViewerFetchedTexture( "file://"+filename, id, LOCAL_USE_MIPMAPS );
+			LLViewerFetchedTexture* viewer_image = new LLViewerFetchedTexture( "file://"+filename, FTT_LOCAL_FILE, id, LOCAL_USE_MIPMAPS );
 			viewer_image->createGLTexture( LOCAL_DISCARD_LEVEL, raw_image );
 			viewer_image->setCachedRawImage(-1,raw_image);
 

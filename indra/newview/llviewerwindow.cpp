@@ -1777,8 +1777,7 @@ LLViewerWindow::LLViewerWindow(
 	LLFontGL::initClass( gSavedSettings.getF32("FontScreenDPI"),
 								mDisplayScale.mV[VX],
 								mDisplayScale.mV[VY],
-								gDirUtilp->getAppRODataDir(),
-								LLUICtrlFactory::getXUIPaths());
+								gDirUtilp->getAppRODataDir());
 	}
 	// Create container for all sub-views
 	LLView::Params rvp;
@@ -5356,7 +5355,7 @@ void LLViewerWindow::stopGL(BOOL save_state)
 
 		gGL.resetVertexBuffers();
 		
-		LL_INFOS() << "Remaining allocated texture memory: " << LLImageGL::sGlobalTextureMemoryInBytes << " bytes" << LL_ENDL;
+		LL_INFOS() << "Remaining allocated texture memory: " << LLImageGL::sGlobalTextureMemory << " bytes" << LL_ENDL;
 	}
 }
 
@@ -5425,8 +5424,7 @@ void LLViewerWindow::initFonts(F32 zoom_factor)
 	LLFontGL::initClass( gSavedSettings.getF32("FontScreenDPI"),
 								mDisplayScale.mV[VX] * zoom_factor,
 								mDisplayScale.mV[VY] * zoom_factor,
-								gDirUtilp->getAppRODataDir(),
-								LLUICtrlFactory::getXUIPaths());
+								gDirUtilp->getAppRODataDir());
 	LLFontGL::loadDefaultFonts();
 }
 void LLViewerWindow::toggleFullscreen(BOOL show_progress)

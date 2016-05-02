@@ -223,6 +223,7 @@ PFNGLENDQUERYARBPROC glEndQueryARB = NULL;
 PFNGLGETQUERYIVARBPROC glGetQueryivARB = NULL;
 PFNGLGETQUERYOBJECTIVARBPROC glGetQueryObjectivARB = NULL;
 PFNGLGETQUERYOBJECTUIVARBPROC glGetQueryObjectuivARB = NULL;
+PFNGLGETQUERYOBJECTUI64VEXTPROC glGetQueryObjectui64vEXT = NULL;
 
 // GL_ARB_point_parameters
 PFNGLPOINTPARAMETERFARBPROC glPointParameterfARB = NULL;
@@ -443,6 +444,7 @@ LLGLManager::LLGLManager() :
 	mHasCubeMap(FALSE),
 	mHasDebugOutput(FALSE),
 
+	mHasGpuShader5(FALSE),
 	mHasAdaptiveVsync(FALSE),
 	mHasTextureSwizzle(FALSE),
 
@@ -938,6 +940,9 @@ void LLGLManager::initExtensions()
 	mHasVertexShader = FALSE;
 	mHasFragmentShader = FALSE;
 	mHasTextureRectangle = FALSE;
+#ifdef GL_ARB_gpu_shader5
+	mHasGpuShader5 = FALSE;
+#endif
 #else // LL_MESA_HEADLESS //important, gGLHExts.mSysExts is uninitialized until after glh_init_extensions is called
 	mHasMultitexture = glh_init_extensions("GL_ARB_multitexture");
 	mHasATIMemInfo = ExtensionExists("GL_ATI_meminfo", gGLHExts.mSysExts);
@@ -982,7 +987,9 @@ void LLGLManager::initExtensions()
 		&& (LLRender::sGLCoreProfile || ExtensionExists("GL_ARB_shading_language_100", gGLHExts.mSysExts));
 	mHasFragmentShader = ExtensionExists("GL_ARB_fragment_shader", gGLHExts.mSysExts) && (LLRender::sGLCoreProfile || ExtensionExists("GL_ARB_shading_language_100", gGLHExts.mSysExts));
 #endif
-
+#ifdef GL_ARB_gpu_shader5
+	mHasGpuShader5 = ExtensionExists("GL_ARB_gpu_shader5", gGLHExts.mSysExts);;
+#endif
 #if LL_WINDOWS
 	mHasAdaptiveVsync = ExtensionExists("WGL_EXT_swap_control_tear", gGLHExts.mSysExts);
 #elif LL_LINUX
@@ -1262,6 +1269,9 @@ void LLGLManager::initExtensions()
 		glGetQueryObjectivARB = (PFNGLGETQUERYOBJECTIVARBPROC)GLH_EXT_GET_PROC_ADDRESS("glGetQueryObjectivARB");
 		glGetQueryObjectuivARB = (PFNGLGETQUERYOBJECTUIVARBPROC)GLH_EXT_GET_PROC_ADDRESS("glGetQueryObjectuivARB");
 	}
+#if !LL_DARWIN
+	glGetQueryObjectui64vEXT = (PFNGLGETQUERYOBJECTUI64VEXTPROC)GLH_EXT_GET_PROC_ADDRESS("glGetQueryObjectui64vEXT");
+#endif
 	if (mHasPointParameters)
 	{
 		LL_INFOS() << "initExtensions() PointParameters-related procs..." << LL_ENDL;

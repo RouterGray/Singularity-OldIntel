@@ -85,8 +85,6 @@ LLSkinJoint::~LLSkinJoint()
 //-----------------------------------------------------------------------------
 void LLSkinJoint::setupSkinJoint( LLJoint *joint)
 {
-	mRootToJointSkinOffset.clearVec();
-	mRootToParentJointSkinOffset.clearVec();
 	
 	// find the named joint
 	if (!(mJoint = joint))
@@ -96,6 +94,9 @@ void LLSkinJoint::setupSkinJoint( LLJoint *joint)
 	}
 
 	// compute the inverse root skin matrix
+	mRootToJointSkinOffset.clearVec();
+	mRootToParentJointSkinOffset.clearVec();
+
 	do
 	{
 		mRootToJointSkinOffset -= joint->getSkinOffset();

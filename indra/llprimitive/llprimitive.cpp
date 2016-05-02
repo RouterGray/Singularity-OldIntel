@@ -40,6 +40,7 @@
 #include "llprimtexturelist.h"
 #include "imageids.h"
 #include "llmaterialid.h"
+#include "llvolume.h"
 
 /**
  * exported constants
@@ -319,6 +320,11 @@ S32 LLPrimitive::setTEMaterialID(const U8 index, const LLMaterialID& pMaterialID
 S32 LLPrimitive::setTEMaterialParams(const U8 index, const LLMaterialPtr pMaterialParams)
 {
 	return mTextureList.setMaterialParams(index, pMaterialParams);
+}
+
+LLMaterialPtr LLPrimitive::getTEMaterialParams(const U8 index)
+{
+	return mTextureList.getMaterialParams(index);
 }
 
 //===============================================================
@@ -987,8 +993,6 @@ BOOL LLPrimitive::setMaterial(U8 material)
 	}
 }
 
-const F32 LL_MAX_SCALE_S = 100.0f;
-const F32 LL_MAX_SCALE_T = 100.0f;
 S32 LLPrimitive::packTEField(U8 *cur_ptr, U8 *data_ptr, U8 data_size, U8 last_face_index, EMsgVariableType type) const
 {
 	S32 face_index;
@@ -1843,9 +1847,12 @@ BOOL LLSculptParams::pack(LLDataPacker &dp) const
 
 BOOL LLSculptParams::unpack(LLDataPacker &dp)
 {
-	dp.unpackUUID(mSculptTexture, "texture");
-	dp.unpackU8(mSculptType, "type");
-	
+	U8 type;
+	LLUUID id;
+	dp.unpackUUID(id, "texture");
+	dp.unpackU8(type, "type");
+
+	setSculptTexture(id, type);
 	return TRUE;
 }
 
@@ -1870,8 +1877,7 @@ bool LLSculptParams::operator==(const LLNetworkData& data) const
 void LLSculptParams::copy(const LLNetworkData& data)
 {
 	const LLSculptParams *param = (LLSculptParams*)&data;
-	mSculptTexture = param->mSculptTexture;
-	mSculptType = param->mSculptType;
+	setSculptTexture(param->mSculptTexture, param->mSculptType);
 }
 
 
@@ -1889,20 +1895,38 @@ LLSD LLSculptParams::asLLSD() const
 bool LLSculptParams::fromLLSD(LLSD& sd)
 {
 	const char *w;
-	w = "texture";
-	if (sd.has(w))
-	{
-		setSculptTexture( sd[w] );
-	} else goto fail;
+	U8 type;
 	w = "type";
 	if (sd.has(w))
 	{
-		setSculptType( (U8)sd[w].asInteger() );
-	} else goto fail;
-	
+		type = sd[w].asInteger();
+	}
+	else return false;
+
+	w = "texture";
+	if (sd.has(w))
+	{
+		setSculptTexture(sd[w], type);
+	}
+	else return false;
+
 	return true;
- fail:
-	return false;
+}
+
+void LLSculptParams::setSculptTexture(const LLUUID& texture_id, U8 sculpt_type)
+{
+	U8 type = sculpt_type & LL_SCULPT_TYPE_MASK;
+	U8 flags = sculpt_type & LL_SCULPT_FLAG_MASK;
+	if (sculpt_type != (type | flags) || type > LL_SCULPT_TYPE_MAX)
+	{
+		mSculptTexture.set(SCULPT_DEFAULT_TEXTURE);
+		mSculptType = LL_SCULPT_TYPE_SPHERE;
+	}
+	else
+	{
+		mSculptTexture = texture_id;
+		mSculptType = sculpt_type;
+	}
 }
 
 //============================================================================

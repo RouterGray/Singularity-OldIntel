@@ -815,9 +815,10 @@ void LLSpatialGroup::destroyGL(bool keep_occlusion)
 
 //==============================================
 
-LLSpatialPartition::LLSpatialPartition(U32 data_mask, BOOL render_by_group, U32 buffer_usage)
+LLSpatialPartition::LLSpatialPartition(U32 data_mask, BOOL render_by_group, U32 buffer_usage, LLViewerRegion* regionp)
 : mRenderByGroup(render_by_group), mBridge(NULL)
 {
+	mRegionp = regionp;		
 	mPartitionType = LLViewerRegion::PARTITION_NONE;
 	mVertexDataMask = data_mask;
 	mBufferUsage = buffer_usage;

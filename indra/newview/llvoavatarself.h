@@ -30,6 +30,7 @@
 
 #include "llviewertexture.h"
 #include "llvoavatar.h"
+#include <map>
 
 struct LocalTextureData;
 class LLInventoryCallback;
@@ -266,17 +267,6 @@ public:
 	const LLUUID&		grabBakedTexture(LLAvatarAppearanceDefines::EBakedTextureIndex baked_index) const;
 	BOOL				canGrabBakedTexture(LLAvatarAppearanceDefines::EBakedTextureIndex baked_index) const;
 
-
-	//--------------------------------------------------------------------
-	// Scratch textures (used for compositing)
-	//--------------------------------------------------------------------
-public:
-	static void		deleteScratchTextures();
-private:
-	static S32 		sScratchTexBytes;
-	static LLMap< LLGLenum, LLGLuint*> sScratchTexNames;
-	static LLMap< LLGLenum, F32*> sScratchTexLastBindTime;
-
 /**                    Textures
  **                                                                            **
  *******************************************************************************/
@@ -383,7 +373,6 @@ public:
 public:	
 	static void		dumpTotalLocalTextureByteCount();
 	void			dumpLocalTextures() const;
-	static void		dumpScratchTextureByteCount();
 	void			dumpWearableInfo(LLAPRFile& outfile);
 
 	//--------------------------------------------------------------------

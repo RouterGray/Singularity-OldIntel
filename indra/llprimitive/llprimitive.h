@@ -259,9 +259,8 @@ public:
 	operator LLSD() const { return asLLSD(); }
 	bool fromLLSD(LLSD& sd);
 
-	void setSculptTexture(const LLUUID& id) { mSculptTexture = id; }
+	void setSculptTexture(const LLUUID& texture_id, U8 sculpt_type);
 	LLUUID getSculptTexture() const         { return mSculptTexture; }
-	void setSculptType(U8 type)             { mSculptType = type; }
 	U8 getSculptType() const                { return mSculptType; }
 };
 
@@ -388,6 +387,8 @@ public:
 	virtual S32 setTEMaterialParams(const U8 index, const LLMaterialPtr pMaterialParams);
 	virtual BOOL setMaterial(const U8 material); // returns TRUE if material changed
 	virtual void setTESelected(const U8 te, bool sel);
+
+	LLMaterialPtr getTEMaterialParams(const U8 index);
 
 	void copyTEs(const LLPrimitive *primitive);
 	S32 packTEField(U8 *cur_ptr, U8 *data_ptr, U8 data_size, U8 last_face_index, EMsgVariableType type) const;

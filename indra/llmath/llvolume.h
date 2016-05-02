@@ -194,8 +194,12 @@ const U8 LL_SCULPT_TYPE_MESH      = 5;
 const U8 LL_SCULPT_TYPE_MASK      = LL_SCULPT_TYPE_SPHERE | LL_SCULPT_TYPE_TORUS | LL_SCULPT_TYPE_PLANE |
 	LL_SCULPT_TYPE_CYLINDER | LL_SCULPT_TYPE_MESH;
 
+// for value checks, assign new value after adding new types
+const U8 LL_SCULPT_TYPE_MAX = LL_SCULPT_TYPE_MESH;
+
 const U8 LL_SCULPT_FLAG_INVERT    = 64;
 const U8 LL_SCULPT_FLAG_MIRROR    = 128;
+const U8 LL_SCULPT_FLAG_MASK = LL_SCULPT_FLAG_INVERT | LL_SCULPT_FLAG_MIRROR;
 
 const S32 LL_SCULPT_MESH_MAX_FACES = 8;
 
@@ -872,6 +876,8 @@ public:
 	void resizeVertices(S32 num_verts);
 	void allocateTangents(S32 num_verts);
 	void allocateWeights(S32 num_verts);
+	void allocateVertices(S32 num_verts, bool copy = false);
+	void allocateIndices(S32 num_indices, bool copy = false);
 	void resizeIndices(S32 num_indices);
 	void fillFromLegacyData(std::vector<LLVolumeFace::VertexData>& v, std::vector<U16>& idx);
 
@@ -972,6 +978,7 @@ protected:
 	~LLVolume(); // use unref
 
 public:
+	typedef std::vector<LLVolumeFace> face_list_t;
 		
 	struct FaceParams
 	{
@@ -1044,11 +1051,16 @@ public:
 																				// conversion if *(LLVolume*) to LLVolume&
 	const LLVolumeFace &getVolumeFace(const S32 f) const {return mVolumeFaces[f];} // DO NOT DELETE VOLUME WHILE USING THIS REFERENCE, OR HOLD A POINTER TO THIS VOLUMEFACE
 	
+	LLVolumeFace &getVolumeFace(const S32 f) {return mVolumeFaces[f];} // DO NOT DELETE VOLUME WHILE USING THIS REFERENCE, OR HOLD A POINTER TO THIS VOLUMEFACE
+
+	face_list_t& getVolumeFaces() { return mVolumeFaces; }
 	U32					mFaceMask;			// bit array of which faces exist in this volume
 	LLVector3			mLODScaleBias;		// vector for biasing LOD based on scale
 	
 	void sculpt(U16 sculpt_width, U16 sculpt_height, S8 sculpt_components, const U8* sculpt_data, S32 sculpt_level);
 	void copyVolumeFaces(const LLVolume* volume);
+	void copyFacesTo(std::vector<LLVolumeFace> &faces) const;
+	void copyFacesFrom(const std::vector<LLVolumeFace> &faces);
 	void cacheOptimize();
 
 private:

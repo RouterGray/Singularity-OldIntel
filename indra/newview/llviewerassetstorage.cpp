@@ -69,7 +69,7 @@ public:
 protected:
 	void recordMetrics()
 		{
-			if (mMetricsStartTime)
+			if (mMetricsStartTime.value())
 			{
 				// Okay, it appears this request was used for useful things.  Record
 				// the expected dequeue and duration of request processing.
@@ -77,7 +77,7 @@ protected:
 				LLViewerAssetStatsFF::record_response_main(mType, false, false,
 														   (LLViewerAssetStatsFF::get_timestamp()
 															- mMetricsStartTime));
-				mMetricsStartTime = 0;
+				mMetricsStartTime = (U32Seconds)0;
 			}
 		}
 	
@@ -113,7 +113,7 @@ void LLViewerAssetStorage::storeAssetData(
 	bool is_priority,
 	bool store_local,
 	bool user_waiting,
-	F64 timeout)
+	F64Seconds timeout)
 {
 	LLAssetID asset_id = tid.makeAssetID(gAgent.getSecureSessionID());
 	LL_DEBUGS("AssetStorage") << "LLViewerAssetStorage::storeAssetData (legacy) " << tid << ":" << LLAssetType::lookup(asset_type)
@@ -238,7 +238,7 @@ void LLViewerAssetStorage::storeAssetData(
 	bool temp_file,
 	bool is_priority,
 	bool user_waiting,
-	F64 timeout)
+	F64Seconds timeout)
 {
 	if(filename.empty())
 	{
@@ -302,6 +302,7 @@ void LLViewerAssetStorage::storeAssetData(
 		{
 			// LLAssetStorage metric: Zero size
 			reportMetric( asset_id, asset_type, filename, LLUUID::null, 0, MR_ZERO_SIZE, __FILE__, __LINE__, "The file was zero length" );
+			fclose(fp);
 		}
 		else
 		{

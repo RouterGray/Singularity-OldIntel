@@ -149,10 +149,10 @@ void LLWorldMapView::initClass()
 	sHomeImage =			LLUI::getUIImage("map_home.tga");
 	sTelehubImage = 		LLUI::getUIImage("map_telehub.tga");
 	sInfohubImage = 		LLUI::getUIImage("map_infohub.tga");
-	sEventImage =			LLUI::getUIImage("map_event.tga");
-	sEventMatureImage =		LLUI::getUIImage("map_event_mature.tga");
+	sEventImage =			LLUI::getUIImage("Parcel_PG_Light");
+	sEventMatureImage =		LLUI::getUIImage("Parcel_M_Light");
 	// To Do: update the image resource for adult events.
-	sEventAdultImage =		LLUI::getUIImage("map_event_adult.tga");
+	sEventAdultImage =		LLUI::getUIImage("Parcel_R_Light");
 
 	sTrackCircleImage =		LLUI::getUIImage("map_track_16.tga");
 	sTrackArrowImage =		LLUI::getUIImage("direction_arrow.tga");
@@ -890,7 +890,7 @@ F32 LLWorldMapView::drawLegacySimTile(LLSimInfo& sim_info, S32 left, S32 top, S3
 				 (textures_requested_this_tick < MAX_REQUEST_PER_TICK)))
 			{
 				textures_requested_this_tick++;
-				simimage = sim_info.mLayerImage[SIM_LAYER_COMPOSITE] = LLViewerTextureManager::getFetchedTexture(sim_info.mMapImageID[SIM_LAYER_COMPOSITE], MIPMAP_TRUE, LLGLTexture::BOOST_MAP, LLViewerTexture::LOD_TEXTURE);
+				simimage = sim_info.mLayerImage[SIM_LAYER_COMPOSITE] = LLViewerTextureManager::getFetchedTexture(sim_info.mMapImageID[SIM_LAYER_COMPOSITE], FTT_MAP_TILE, MIPMAP_TRUE, LLGLTexture::BOOST_MAP, LLViewerTexture::LOD_TEXTURE);
 	            simimage->setAddressMode(LLTexUnit::TAM_CLAMP);
 			}
 		}

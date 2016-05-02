@@ -1080,20 +1080,27 @@ LLSpatialPartition* LLDrawable::getSpatialPartition()
 		retval = gPipeline.getSpatialPartition((LLViewerObject*) mVObjp);
 	}
 	else if (isRoot())
-	{	//must be an active volume
+	{
+		if (mSpatialBridge && (mSpatialBridge->asPartition()->mPartitionType == LLViewerRegion::PARTITION_HUD) != mVObjp->isHUDAttachment())
+		{
+			// remove obsolete bridge
+			mSpatialBridge->markDead();
+			setSpatialBridge(NULL);
+		}
+		//must be an active volume
 		if (!mSpatialBridge)
 		{
 			if (mVObjp->isHUDAttachment())
 			{
-				setSpatialBridge(new LLHUDBridge(this));
+				setSpatialBridge(new LLHUDBridge(this, getRegion()));
 			}
 			else if (mVObjp->isAttachment())
 			{
-				setSpatialBridge(new LLAttachmentBridge(this));
+				setSpatialBridge(new LLAttachmentBridge(this, getRegion()));
 			}
 			else
 			{
-				setSpatialBridge(new LLVolumeBridge(this));
+				setSpatialBridge(new LLVolumeBridge(this, getRegion()));
 			}
 		}
 		return mSpatialBridge->asPartition();
@@ -1116,9 +1123,9 @@ LLSpatialPartition* LLDrawable::getSpatialPartition()
 // Spatial Partition Bridging Drawable
 //=======================================
 
-LLSpatialBridge::LLSpatialBridge(LLDrawable* root, BOOL render_by_group, U32 data_mask) :
+LLSpatialBridge::LLSpatialBridge(LLDrawable* root, BOOL render_by_group, U32 data_mask, LLViewerRegion* regionp) : 
 	LLDrawable(root->getVObj()),
-	LLSpatialPartition(data_mask, render_by_group, GL_STREAM_DRAW_ARB)
+	LLSpatialPartition(data_mask, render_by_group, GL_STREAM_DRAW_ARB, regionp)
 {
 	mBridge = this;
 	mDrawable = root;
@@ -1627,8 +1634,8 @@ void LLDrawable::updateFaceSize(S32 idx)
 	}
 }
 
-LLBridgePartition::LLBridgePartition()
-: LLSpatialPartition(0, FALSE, 0) 
+LLBridgePartition::LLBridgePartition(LLViewerRegion* regionp)
+: LLSpatialPartition(0, FALSE, 0, regionp) 
 { 
 	mDrawableType = LLPipeline::RENDER_TYPE_VOLUME;
 	mPartitionType = LLViewerRegion::PARTITION_BRIDGE;
@@ -1636,14 +1643,14 @@ LLBridgePartition::LLBridgePartition()
 	mSlopRatio = 0.25f;
 }
 
-LLAttachmentPartition::LLAttachmentPartition()
-: LLBridgePartition()
+LLAttachmentPartition::LLAttachmentPartition(LLViewerRegion* regionp)
+: LLBridgePartition(regionp)
 {
 	mDrawableType = LLPipeline::RENDER_TYPE_AVATAR;
 }
 
-LLHUDBridge::LLHUDBridge(LLDrawable* drawablep)
-: LLVolumeBridge(drawablep)
+LLHUDBridge::LLHUDBridge(LLDrawable* drawablep, LLViewerRegion* regionp)
+: LLVolumeBridge(drawablep, regionp)
 {
 	mDrawableType = LLPipeline::RENDER_TYPE_HUD;
 	mPartitionType = LLViewerRegion::PARTITION_HUD;

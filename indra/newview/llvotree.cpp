@@ -337,7 +337,7 @@ U32 LLVOTree::processUpdateMessage(LLMessageSystem *mesgsys,
 	//  Load Species-Specific data 
 	//
 	static const S32 MAX_TREE_TEXTURE_VIRTUAL_SIZE_RESET_INTERVAL = 32 ; //frames.
-	mTreeImagep = LLViewerTextureManager::getFetchedTexture(sSpeciesTable[mSpecies]->mTextureID, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
+	mTreeImagep = LLViewerTextureManager::getFetchedTexture(sSpeciesTable[mSpecies]->mTextureID, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
 	mTreeImagep->setMaxVirtualSizeResetInterval(MAX_TREE_TEXTURE_VIRTUAL_SIZE_RESET_INTERVAL); //allow to wait for at most 16 frames to reset virtual size.
 
 	mBranchLength = sSpeciesTable[mSpecies]->mBranchLength;
@@ -1260,8 +1260,8 @@ U32 LLVOTree::getPartitionType() const
 	return LLViewerRegion::PARTITION_TREE; 
 }
 
-LLTreePartition::LLTreePartition()
-: LLSpatialPartition(0, FALSE, GL_DYNAMIC_DRAW_ARB)
+LLTreePartition::LLTreePartition(LLViewerRegion* regionp)
+: LLSpatialPartition(0, FALSE, GL_DYNAMIC_DRAW_ARB, regionp)
 {
 	mDrawableType = LLPipeline::RENDER_TYPE_TREE;
 	mPartitionType = LLViewerRegion::PARTITION_TREE;

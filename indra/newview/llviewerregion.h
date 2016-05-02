@@ -447,14 +447,14 @@ private:
 	BOOL mIsEstateManager;
 
 	U32		mPacketsIn;
-	U32		mBitsIn;
-	U32		mLastBitsIn;
+	U32Bits	mBitsIn,
+			mLastBitsIn;
 	U32		mLastPacketsIn;
 	U32		mPacketsOut;
 	U32		mLastPacketsOut;
 	S32		mPacketsLost;
 	S32		mLastPacketsLost;
-	U32		mPingDelay;
+	U32Milliseconds		mPingDelay;
 	F32		mDeltaTime;				// Time since last measurement of lastPackets, Bits, etc
 
 	U64		mRegionFlags;			// includes damage flags

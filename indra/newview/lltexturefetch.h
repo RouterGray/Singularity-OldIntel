@@ -43,6 +43,7 @@
 #include "lltextureinfo.h"
 #include "llapr.h"
 #include "llstat.h"
+#include "llviewertexture.h"
 
 class LLViewerTexture;
 class LLTextureFetchWorker;
@@ -68,7 +69,7 @@ public:
 	void shutDownTextureCacheThread() ; //called in the main thread after the TextureCacheThread shuts down.
 	void shutDownImageDecodeThread() ;  //called in the main thread after the ImageDecodeThread shuts down.
 
-	bool createRequest(const std::string& url, const LLUUID& id, const LLHost& host, F32 priority,
+	bool createRequest(FTType f_type, const std::string& url, const LLUUID& id, const LLHost& host, F32 priority,
 					   S32 w, S32 h, S32 c, S32 discard, bool needs_aux, bool can_use_http);
 	void deleteRequest(const LLUUID& id, bool cancel);
 	void deleteAllRequests();

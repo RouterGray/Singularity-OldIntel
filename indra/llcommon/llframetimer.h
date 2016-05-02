@@ -51,7 +51,7 @@ public:
 	// Atomic reads of static variables.
 
 	// Return the number of seconds since the start of the application.
-	static F64 getElapsedSeconds(void)
+	static F64SecondsImplicit getElapsedSeconds(void)
 	{
 		// Loses msec precision after ~4.5 hours...
 		sGlobalMutex.lock();

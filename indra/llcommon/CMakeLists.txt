@@ -36,6 +36,7 @@ set(llcommon_SOURCE_FILES
     llassettype.cpp
     llbase32.cpp
     llbase64.cpp
+    llcallbacklist.cpp
     llcommon.cpp
     llcommonutils.cpp
     llcoros.cpp
@@ -138,6 +139,7 @@ set(llcommon_HEADER_FILES
     llbase32.h
     llbase64.h
     llboost.h
+    llcallbacklist.h
     llchat.h
     llclickaction.h
     llcommon.h
@@ -230,9 +232,13 @@ set(llcommon_HEADER_FILES
     llthreadsafequeue.h
     lltimer.h
     lltreeiterators.h
+    llunits.h
+    llunittype.h
     lltypeinfolookup.h
     lluri.h
     lluuid.h
+    llwin32headers.h
+    llwin32headerslean.h
     llworkerthread.h
     metaclass.h
     metaclasst.h
@@ -284,6 +290,7 @@ target_link_libraries(
     ${Boost_REGEX_LIBRARY}
     ${Boost_THREAD_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
+	${Boost_CHRONO_LIBRARY}
     ${CORESERVICES_LIBRARY}
     )
 

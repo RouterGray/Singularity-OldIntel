@@ -56,6 +56,7 @@ public:
 	S32 mIndexedTextureChannels;
 	bool disableTextureIndex;
 	bool hasAlphaMask;
+	bool attachNothing;
 
 	// char numLights;
 	
@@ -73,6 +74,9 @@ public:
 		SG_WATER
 	};
 	
+	static std::set<LLGLSLShader*> sInstances;
+	static bool sProfileEnabled;
+
 	LLGLSLShader(S32 shader_class);
 	~LLGLSLShader();
 
@@ -81,7 +85,18 @@ public:
 	static S32 sIndexedTextureChannels;
 	static bool sNoFixedFunction;
 
+	static void initProfile();
+	static void finishProfile(bool emit_report = true);
+
+	static void startProfile();
+	static void stopProfile(U32 count, U32 mode);
+
 	void unload();
+	void clearStats();
+	void dumpStats();
+	void placeProfileQuery();
+	void readProfileQuery(U32 count, U32 mode);
+
 	BOOL createShader(std::vector<LLStaticHashedString> * attributes,
 						std::vector<LLStaticHashedString> * uniforms,
 						U32 varying_count = 0,
@@ -379,6 +394,7 @@ public:
 	U32 mAttributeMask;  //mask of which reserved attributes are set (lines up with LLVertexBuffer::getTypeMask())
 	std::vector<GLint> mUniform;   //lookup table of uniform enum to uniform location
 	LLStaticStringTable<GLint> mUniformMap; //lookup map of uniform name to uniform location
+	std::map<GLint, std::string> mUniformNameMap; //lookup map of uniform location to uniform name
 	//There are less naive ways to do this than just having several vectors for the differing types, but this method is of least complexity and has some inherent type-safety.
 	std::vector<std::pair<GLint, LLVector4> > mValueVec4; //lookup map of uniform location to last known value
 	std::vector<std::pair<GLint, LLMatrix3> > mValueMat3; //lookup map of uniform location to last known value
@@ -395,6 +411,23 @@ public:
 	std::vector< std::pair< std::string, GLenum > > mShaderFiles;
 	std::string mName;
 	std::map<std::string, std::string> mDefines;
+
+	//statistcis for profiling shader performance
+	U32 mTimerQuery;
+	U32 mSamplesQuery;
+	U64 mTimeElapsed;
+	static U64 sTotalTimeElapsed;
+	U32 mTrianglesDrawn;
+	static U32 sTotalTrianglesDrawn;
+	U64 mSamplesDrawn;
+	static U64 sTotalSamplesDrawn;
+	U32 mDrawCalls;
+	static U32 sTotalDrawCalls;
+
+	bool mTextureStateFetched;
+	std::vector<U32> mTextureMagFilter;
+	std::vector<U32> mTextureMinFilter;
+	
 };
 
 //UI shader (declared here so llui_libtest will link properly)

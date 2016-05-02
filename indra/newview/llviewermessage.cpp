@@ -2812,7 +2812,8 @@ void process_improved_im(LLMessageSystem *msg, void **user_data)
 				LLSD args;
 				args["SUBJECT"] = subj;
 				args["MESSAGE"] = mes;
-				LLNotifications::instance().add(LLNotification::Params("GroupNotice").substitutions(args).payload(payload).timestamp(timestamp));
+				LLDate notice_date = LLDate(timestamp).notNull() ? LLDate(timestamp) : LLDate::now();
+				LLNotifications::instance().add(LLNotification::Params("GroupNotice").substitutions(args).payload(payload).timestamp(notice_date));
 			}
 
 			// Also send down the old path for now.
@@ -5165,18 +5166,18 @@ void send_agent_update(BOOL force_send, BOOL send_reliable)
 
 // *TODO: Remove this dependency, or figure out a better way to handle
 // this hack.
-extern U32 gObjectBits;
+extern U32Bits gObjectData;
 
 void process_object_update(LLMessageSystem *mesgsys, void **user_data)
 {	
 	// Update the data counters
 	if (mesgsys->getReceiveCompressedSize())
 	{
-		gObjectBits += mesgsys->getReceiveCompressedSize() * 8;
+		gObjectData += (U32Bytes)mesgsys->getReceiveCompressedSize();
 	}
 	else
 	{
-		gObjectBits += mesgsys->getReceiveSize() * 8;
+		gObjectData += (U32Bytes)mesgsys->getReceiveSize();
 	}
 
 	// Update the object...
@@ -5188,11 +5189,11 @@ void process_compressed_object_update(LLMessageSystem *mesgsys, void **user_data
 	// Update the data counters
 	if (mesgsys->getReceiveCompressedSize())
 	{
-		gObjectBits += mesgsys->getReceiveCompressedSize() * 8;
+		gObjectData += (U32Bytes)mesgsys->getReceiveCompressedSize();
 	}
 	else
 	{
-		gObjectBits += mesgsys->getReceiveSize() * 8;
+		gObjectData += (U32Bytes)mesgsys->getReceiveSize();
 	}
 
 	// Update the object...
@@ -5204,11 +5205,11 @@ void process_cached_object_update(LLMessageSystem *mesgsys, void **user_data)
 	// Update the data counters
 	if (mesgsys->getReceiveCompressedSize())
 	{
-		gObjectBits += mesgsys->getReceiveCompressedSize() * 8;
+		gObjectData += (U32Bytes)mesgsys->getReceiveCompressedSize();
 	}
 	else
 	{
-		gObjectBits += mesgsys->getReceiveSize() * 8;
+		gObjectData += (U32Bytes)mesgsys->getReceiveSize();
 	}
 
 	// Update the object...
@@ -5220,11 +5221,11 @@ void process_terse_object_update_improved(LLMessageSystem *mesgsys, void **user_
 {
 	if (mesgsys->getReceiveCompressedSize())
 	{
-		gObjectBits += mesgsys->getReceiveCompressedSize() * 8;
+		gObjectData += (U32Bytes)mesgsys->getReceiveCompressedSize();
 	}
 	else
 	{
-		gObjectBits += mesgsys->getReceiveSize() * 8;
+		gObjectData += (U32Bytes)mesgsys->getReceiveSize();
 	}
 
 	gObjectList.processCompressedObjectUpdate(mesgsys, user_data, OUT_TERSE_IMPROVED);

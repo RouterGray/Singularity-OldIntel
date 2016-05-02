@@ -56,7 +56,7 @@ bool LLRender::sGLCoreProfile = false;
 static const U32 LL_NUM_TEXTURE_LAYERS = 32; 
 static const U32 LL_NUM_LIGHT_UNITS = 8;
 
-static GLenum sGLTextureType[] =
+static const GLenum sGLTextureType[] =
 {
 	GL_TEXTURE_2D,
 	GL_TEXTURE_RECTANGLE_ARB,
@@ -64,14 +64,14 @@ static GLenum sGLTextureType[] =
 	//,GL_TEXTURE_2D_MULTISAMPLE  Don't use.
 };
 
-static GLint sGLAddressMode[] =
+static const GLint sGLAddressMode[] =
 {	
 	GL_REPEAT,
 	GL_MIRRORED_REPEAT,
 	GL_CLAMP_TO_EDGE
 };
 
-static GLenum sGLCompareFunc[] =
+static const GLenum sGLCompareFunc[] =
 {
 	GL_NEVER,
 	GL_ALWAYS,
@@ -85,7 +85,7 @@ static GLenum sGLCompareFunc[] =
 
 const U32 immediate_mask = LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_COLOR | LLVertexBuffer::MAP_TEXCOORD0;
 
-static GLenum sGLBlendFactor[] =
+static const GLenum sGLBlendFactor[] =
 {
 	GL_ONE,
 	GL_ZERO,
@@ -102,15 +102,15 @@ static GLenum sGLBlendFactor[] =
 };
 
 LLTexUnit::LLTexUnit(S32 index)
-: mCurrTexType(TT_NONE), mCurrBlendType(TB_MULT), 
-mCurrColorOp(TBO_MULT), mCurrAlphaOp(TBO_MULT),
-mCurrColorSrc1(TBS_TEX_COLOR), mCurrColorSrc2(TBS_PREV_COLOR),
-mCurrAlphaSrc1(TBS_TEX_ALPHA), mCurrAlphaSrc2(TBS_PREV_ALPHA),
-mCurrColorScale(1), mCurrAlphaScale(1), mCurrTexture(0),
-mHasMipMaps(false)
+	: mCurrTexType(TT_NONE), mCurrBlendType(TB_MULT), 
+	mCurrColorOp(TBO_MULT), mCurrAlphaOp(TBO_MULT),
+	mCurrColorSrc1(TBS_TEX_COLOR), mCurrColorSrc2(TBS_PREV_COLOR),
+	mCurrAlphaSrc1(TBS_TEX_ALPHA), mCurrAlphaSrc2(TBS_PREV_ALPHA),
+	mCurrColorScale(1), mCurrAlphaScale(1), mCurrTexture(0),
+	mHasMipMaps(false),
+	mIndex(index)
 {
 	llassert_always(index < (S32)LL_NUM_TEXTURE_LAYERS);
-	mIndex = index;
 }
 
 //static
@@ -228,53 +228,66 @@ void LLTexUnit::disable(void)
 bool LLTexUnit::bind(LLTexture* texture, bool for_rendering, bool forceBind)
 {
 	stop_glerror();
-	if (mIndex < 0) return false;
-
-	LLImageGL* gl_tex = NULL ;
-	if (texture == NULL || !(gl_tex = texture->getGLTexture()))
+	if (mIndex >= 0)
 	{
-		LL_WARNS() << "NULL LLTexUnit::bind texture" << LL_ENDL;
+		gGL.flush();
+
+		LLImageGL* gl_tex = NULL ;
+
+		if (texture != NULL && (gl_tex = texture->getGLTexture()))
+		{
+			if (gl_tex->getTexName()) //if texture exists
+			{
+				//in audit, replace the selected texture by the default one.
+				if(gAuditTexture && for_rendering && LLImageGL::sCurTexPickSize > 0)
+				{
+					if(texture->getWidth() * texture->getHeight() == LLImageGL::sCurTexPickSize)
+					{
+						gl_tex->updateBindStats(gl_tex->mTextureMemory);
+						return bind(LLImageGL::sHighlightTexturep.get());
+					}
+				}
+				if ((mCurrTexture != gl_tex->getTexName()) || forceBind)
+				{
+					gGL.flush();
+					activate();
+					enable(gl_tex->getTarget());
+					mCurrTexture = gl_tex->getTexName();
+					glBindTexture(sGLTextureType[gl_tex->getTarget()], mCurrTexture);
+					if(gl_tex->updateBindStats(gl_tex->mTextureMemory))
+					{
+						texture->setActive() ;
+						texture->updateBindStatsForTester() ;
+					}
+					mHasMipMaps = gl_tex->mHasMipMaps;
+					if (gl_tex->mTexOptionsDirty)
+					{
+						gl_tex->mTexOptionsDirty = false;
+						setTextureAddressMode(gl_tex->mAddressMode);
+						setTextureFilteringOption(gl_tex->mFilterOption);
+					}
+				}
+			}
+			else
+			{
+				//if deleted, will re-generate it immediately
+				texture->forceImmediateUpdate() ;
+
+				gl_tex->forceUpdateBindStats() ;
+				return texture->bindDefaultImage(mIndex);
+			}
+		}
+		else
+		{
+			LL_WARNS() << "NULL LLTexUnit::bind texture" << LL_ENDL;
+			return false;
+		}
+	}
+	else
+	{ // mIndex < 0
 		return false;
 	}
 
-	if (!gl_tex->getTexName()) //if texture does not exist
-	{
-		//if deleted, will re-generate it immediately
-		texture->forceImmediateUpdate() ;
-
-		gl_tex->forceUpdateBindStats() ;
-		return texture->bindDefaultImage(mIndex);
-	}
-
-	//in audit, replace the selected texture by the default one.
-	if(gAuditTexture && for_rendering && LLImageGL::sCurTexPickSize > 0)
-	{
-		if(texture->getWidth() * texture->getHeight() == LLImageGL::sCurTexPickSize)
-		{
-			gl_tex->updateBindStats(gl_tex->mTextureMemory);
-			return bind(LLImageGL::sHighlightTexturep.get());
-		}
-	}
-	if ((mCurrTexture != gl_tex->getTexName()) || forceBind)
-	{
-		gGL.flush();
-		activate();
-		enable(gl_tex->getTarget());
-		mCurrTexture = gl_tex->getTexName();
-		glBindTexture(sGLTextureType[gl_tex->getTarget()], mCurrTexture);
-		if(gl_tex->updateBindStats(gl_tex->mTextureMemory))
-		{
-			texture->setActive() ;
-			texture->updateBindStatsForTester() ;
-		}
-		mHasMipMaps = gl_tex->mHasMipMaps;
-		if (gl_tex->mTexOptionsDirty)
-		{
-			gl_tex->mTexOptionsDirty = false;
-			setTextureAddressMode(gl_tex->mAddressMode);
-			setTextureFilteringOption(gl_tex->mFilterOption);
-		}
-	}
 	return true;
 }
 
@@ -1763,7 +1776,7 @@ void LLRender::pushUIMatrix()
 {
 	if (mUIOffset.empty())
 	{
-		mUIOffset.push_back(LLVector4a(0.f));
+		mUIOffset.emplace_back(LLVector4a(0.f));
 	}
 	else
 	{
@@ -1772,7 +1785,7 @@ void LLRender::pushUIMatrix()
 	
 	if (mUIScale.empty())
 	{
-		mUIScale.push_back(LLVector4a(1.f));
+		mUIScale.emplace_back(LLVector4a(1.f));
 	}
 	else
 	{
@@ -1782,9 +1795,9 @@ void LLRender::pushUIMatrix()
 
 void LLRender::popUIMatrix()
 {
-	if (mUIOffset.empty())
+	if (mUIOffset.empty() || mUIScale.empty())
 	{
-		LL_ERRS() << "UI offset stack blown." << LL_ENDL;
+		LL_ERRS() << "UI offset or scale stack blown." << LL_ENDL;
 	}
 	mUIOffset.pop_back();
 	mUIScale.pop_back();

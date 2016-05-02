@@ -42,6 +42,7 @@
 #include "llvfile.h"
 #include "m3math.h"
 #include "message.h"
+#include <memory>
 
 //-----------------------------------------------------------------------------
 // Static Definitions
@@ -700,7 +701,8 @@ BOOL LLKeyframeMotion::onActivate()
 //-----------------------------------------------------------------------------
 BOOL LLKeyframeMotion::onUpdate(F32 time, U8* joint_mask)
 {
-	llassert(time >= 0.f);
+	// llassert(time >= 0.f);		// This will fire
+	time = llmax(0.f, time);
 
 	if (mJointMotionList->mLoop)
 	{
@@ -965,7 +967,7 @@ void LLKeyframeMotion::deactivateConstraint(JointConstraint *constraintp)
 		constraintp->mSourceVolume->mUpdateXform = FALSE;
 	}
 
-	if (!constraintp->mSharedData->mConstraintTargetType == CONSTRAINT_TARGET_TYPE_GROUND)
+	if (constraintp->mSharedData->mConstraintTargetType != CONSTRAINT_TARGET_TYPE_GROUND)
 	{
 		if (constraintp->mTargetVolume)
 		{
@@ -1284,16 +1286,6 @@ void LLKeyframeMotion::applyConstraint(JointConstraint* constraint, F32 time, U8
 	}
 }
 
-// Helper class.
-template<typename T>
-struct AIAutoDestruct
-{
-  T* mPtr;
-  AIAutoDestruct() : mPtr(NULL) { }
-  ~AIAutoDestruct() { delete mPtr; }
-  void add(T* ptr) { mPtr = ptr; }
-};
-
 //-----------------------------------------------------------------------------
 // deserialize()
 //-----------------------------------------------------------------------------
@@ -1495,18 +1487,12 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 
 	for(U32 i=0; i<num_motions; ++i)
 	{
-		AIAutoDestruct<JointMotion> watcher;
-
-		JointMotion* joint_motion = new JointMotion;		
+		JointMotion* joint_motion = new JointMotion;
+		std::unique_ptr<JointMotion> watcher(joint_motion);
 		if (singu_new_joint_motion_list)
 		{
 			// Pass ownership to mJointMotionList.
-			mJointMotionList->mJointMotionArray.push_back(joint_motion);
-		}
-		else
-		{
-			// Just delete this at the end.
-			watcher.add(joint_motion);
+			mJointMotionList->mJointMotionArray.push_back(watcher.release());
 		}
 		
 		std::string joint_name;
@@ -1785,6 +1771,7 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 		{
 			// read in constraint data
 			JointConstraintSharedData* constraintp = new JointConstraintSharedData;
+			std::unique_ptr<JointConstraintSharedData> watcher(constraintp);
 			U8 byte = 0;
 
 			if (!dp.unpackU8(byte, "chain_length"))
@@ -1842,21 +1829,18 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 			if (!dp.unpackVector3(constraintp->mSourceConstraintOffset, "source_offset"))
 			{
 				LL_WARNS() << "can't read constraint source offset" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 			
 			if( !(constraintp->mSourceConstraintOffset.isFinite()) )
 			{
 				LL_WARNS() << "non-finite constraint source offset" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 			
 			if (!dp.unpackBinaryDataFixed(bin_data, BIN_DATA_LENGTH, "target_volume"))
 			{
 				LL_WARNS() << "can't read target volume name" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 
@@ -1876,28 +1860,24 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 			if (!dp.unpackVector3(constraintp->mTargetConstraintOffset, "target_offset"))
 			{
 				LL_WARNS() << "can't read constraint target offset" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 
 			if( !(constraintp->mTargetConstraintOffset.isFinite()) )
 			{
 				LL_WARNS() << "non-finite constraint target offset" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 			
 			if (!dp.unpackVector3(constraintp->mTargetConstraintDir, "target_dir"))
 			{
 				LL_WARNS() << "can't read constraint target direction" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 
 			if( !(constraintp->mTargetConstraintDir.isFinite()) )
 			{
 				LL_WARNS() << "non-finite constraint target direction" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 
@@ -1910,39 +1890,30 @@ BOOL LLKeyframeMotion::deserialize(LLDataPacker& dp)
 			if (!dp.unpackF32(constraintp->mEaseInStartTime, "ease_in_start") || !std::isfinite(constraintp->mEaseInStartTime))
 			{
 				LL_WARNS() << "can't read constraint ease in start time" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 
 			if (!dp.unpackF32(constraintp->mEaseInStopTime, "ease_in_stop") || !std::isfinite(constraintp->mEaseInStopTime))
 			{
 				LL_WARNS() << "can't read constraint ease in stop time" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 
 			if (!dp.unpackF32(constraintp->mEaseOutStartTime, "ease_out_start") || !std::isfinite(constraintp->mEaseOutStartTime))
 			{
 				LL_WARNS() << "can't read constraint ease out start time" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 
 			if (!dp.unpackF32(constraintp->mEaseOutStopTime, "ease_out_stop") || !std::isfinite(constraintp->mEaseOutStopTime))
 			{
 				LL_WARNS() << "can't read constraint ease out stop time" << LL_ENDL;
-				delete constraintp;
 				return FALSE;
 			}
 
-			AIAutoDestruct<JointConstraintSharedData> watcher;
 			if (singu_new_joint_motion_list)
 			{
-				mJointMotionList->mConstraints.push_front(constraintp);
-			}
-			else
-			{
-				watcher.add(constraintp);
+				mJointMotionList->mConstraints.push_front(watcher.release());
 			}
 
 			constraintp->mJointStateIndices = new S32[constraintp->mChainLength + 1]; // note: mChainLength is size-limited - comes from a byte

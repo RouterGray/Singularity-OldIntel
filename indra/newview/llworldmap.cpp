@@ -104,7 +104,7 @@ void LLSimInfo::setLandForSaleImage (LLUUID image_id)
 	// Fetch the image
 	if (mMapImageID[SIM_LAYER_OVERLAY].notNull())
 	{
-		mLayerImage[SIM_LAYER_OVERLAY] = LLViewerTextureManager::getFetchedTexture(mMapImageID[SIM_LAYER_OVERLAY], MIPMAP_TRUE, LLGLTexture::BOOST_MAP, LLViewerTexture::LOD_TEXTURE);
+		mLayerImage[SIM_LAYER_OVERLAY] = LLViewerTextureManager::getFetchedTexture(mMapImageID[SIM_LAYER_OVERLAY], FTT_DEFAULT, MIPMAP_TRUE, LLGLTexture::BOOST_MAP, LLViewerTexture::LOD_TEXTURE);
 		if (is_aurora) mLayerImage[SIM_LAYER_OVERLAY]->forceImmediateUpdate();
 		mLayerImage[SIM_LAYER_OVERLAY]->setAddressMode(LLTexUnit::TAM_CLAMP);
 	}
@@ -119,7 +119,7 @@ LLPointer<LLViewerFetchedTexture> LLSimInfo::getLandForSaleImage ()
 	if (mLayerImage[SIM_LAYER_OVERLAY].isNull() && mMapImageID[SIM_LAYER_OVERLAY].notNull())
 	{
 		// Fetch the image if it hasn't been done yet (unlikely but...)
-		mLayerImage[SIM_LAYER_OVERLAY] = LLViewerTextureManager::getFetchedTexture(mMapImageID[SIM_LAYER_OVERLAY], MIPMAP_TRUE, LLGLTexture::BOOST_MAP, LLViewerTexture::LOD_TEXTURE);
+		mLayerImage[SIM_LAYER_OVERLAY] = LLViewerTextureManager::getFetchedTexture(mMapImageID[SIM_LAYER_OVERLAY], FTT_DEFAULT, MIPMAP_TRUE, LLGLTexture::BOOST_MAP, LLViewerTexture::LOD_TEXTURE);
 		mLayerImage[SIM_LAYER_OVERLAY]->setAddressMode(LLTexUnit::TAM_CLAMP);
 	}
 	if (!mLayerImage[SIM_LAYER_OVERLAY].isNull())
@@ -517,7 +517,7 @@ void LLWorldMap::processMapLayerReply(LLMessageSystem* msg, void**)
 		msg->getU32Fast(_PREHASH_LayerData, _PREHASH_Top, top, block);
 		msg->getU32Fast(_PREHASH_LayerData, _PREHASH_Bottom, bottom, block);
 
-		new_layer.LayerImage = LLViewerTextureManager::getFetchedTexture(new_layer.LayerImageID, MIPMAP_TRUE, LLGLTexture::BOOST_MAP, LLViewerTexture::LOD_TEXTURE);
+		new_layer.LayerImage = LLViewerTextureManager::getFetchedTexture(new_layer.LayerImageID, FTT_MAP_TILE, MIPMAP_TRUE, LLGLTexture::BOOST_MAP, LLViewerTexture::LOD_TEXTURE);
 
 		gGL.getTexUnit(0)->bind(new_layer.LayerImage.get());
 		new_layer.LayerImage->setAddressMode(LLTexUnit::TAM_CLAMP);

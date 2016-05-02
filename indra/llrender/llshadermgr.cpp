@@ -80,7 +80,11 @@ BOOL LLShaderMgr::attachShaderFeatures(LLGLSLShader * shader)
 {
 	llassert_always(shader != NULL);
 	LLShaderFeatures *features = & shader->mFeatures;
-	
+
+	if (features->attachNothing)
+	{
+		return TRUE;
+	}
 	//////////////////////////////////////
 	// Attach Vertex Shader Features First
 	//////////////////////////////////////
@@ -640,11 +644,14 @@ GLhandleARB LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shade
 			// before any non-preprocessor directives (per spec)
 			text[count++] = strdup("#extension GL_ARB_texture_rectangle : enable\n");
 			text[count++] = strdup("#extension GL_ARB_shader_texture_lod : enable\n");
-			
-
+			if (minor_version == 50 && gGLManager.mHasGpuShader5)
+			{
+				text[count++] = strdup("#extension GL_ARB_gpu_shader5 : enable\n");
+			}
 			//some implementations of GLSL 1.30 require integer precision be explicitly declared
 			text[count++] = strdup("precision mediump int;\n");
 			text[count++] = strdup("precision highp float;\n");
+			text[count++] = strdup("#define FXAA_GLSL_130 1\n");
 		}
 		else
 		{ //set version to 400
@@ -653,11 +660,11 @@ GLhandleARB LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shade
 			// before any non-preprocessor directives (per spec)
 			text[count++] = strdup("#extension GL_ARB_texture_rectangle : enable\n");
 			text[count++] = strdup("#extension GL_ARB_shader_texture_lod : enable\n");
+			text[count++] = strdup("#define FXAA_GLSL_400 1\n");
 		}
 		
 
 		text[count++] = strdup("#define DEFINE_GL_FRAGCOLOR 1\n");
-		text[count++] = strdup("#define FXAA_GLSL_130 1\n");
 
 		text[count++] = strdup("#define ATTRIBUTE in\n");
 
@@ -875,8 +882,7 @@ GLhandleARB LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shade
 					{ //dump every 128 lines
 
 						LL_WARNS("ShaderLoading") << "\n" << ostr.str() << LL_ENDL;
-						ostr.clear();
-						ostr.str(LLStringUtil::null);
+						ostr = std::stringstream();
 					}
 
 				}
@@ -941,6 +947,63 @@ GLhandleARB LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shade
 		LL_WARNS("ShaderLoading") << "Failed to load " << filename << LL_ENDL;	
 	}
 	return ret;
+}
+
+void LLShaderMgr::unloadShaders()
+{
+	//Instead of manually unloading, shaders are now automatically accumulated in a list.
+	//Simply iterate and unload.
+	std::vector<LLGLSLShader *> &shader_list = LLShaderMgr::getGlobalShaderList();
+	for (std::vector<LLGLSLShader *>::iterator it = shader_list.begin(); it != shader_list.end(); ++it)
+		(*it)->unload();
+	mShaderObjects.clear();
+	mProgramObjects.clear();
+}
+
+void LLShaderMgr::unloadShaderObjects()
+{
+	std::multimap<std::string, LLShaderMgr::CachedObjectInfo >::iterator it = mShaderObjects.begin();
+	for (; it != mShaderObjects.end(); ++it)
+		if (it->second.mHandle)
+			glDeleteObjectARB(it->second.mHandle);
+	mShaderObjects.clear();
+	cleanupShaderSources();
+}
+
+void LLShaderMgr::cleanupShaderSources()
+{
+	if (!mProgramObjects.empty())
+	{
+		for (auto iter = mProgramObjects.cbegin(),
+			iter_end = mProgramObjects.cend(); iter != iter_end; ++iter)
+		{
+			GLuint program = iter->second;
+			if (program > 0)
+			{
+				GLhandleARB shaders[1024] = {};
+				GLsizei count = -1;
+				glGetAttachedObjectsARB(program, 1024, &count, shaders);
+				if (count > 0)
+				{
+					for (GLsizei i = 0; i < count; ++i)
+					{
+						std::multimap<std::string, LLShaderMgr::CachedObjectInfo>::iterator it = mShaderObjects.begin();
+						for (; it != LLShaderMgr::instance()->mShaderObjects.end(); it++)
+						{
+							if ((*it).second.mHandle == shaders[i])
+							{
+								glDetachObjectARB(program, shaders[i]);
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Clear the linked program list as its no longer needed
+		mProgramObjects.clear();
+	}
 }
 
 BOOL LLShaderMgr::linkProgramObject(GLhandleARB obj, BOOL suppress_errors) 

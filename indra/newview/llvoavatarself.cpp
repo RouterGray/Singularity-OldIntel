@@ -153,15 +153,6 @@ typedef LLHTTPClient::ResponderIgnore LLHoverHeightResponder;
  **                                                                             **
  *********************************************************************************/
 
-
-//-----------------------------------------------------------------------------
-// Static Data
-//-----------------------------------------------------------------------------
-S32 LLVOAvatarSelf::sScratchTexBytes = 0;
-LLMap< LLGLenum, LLGLuint*> LLVOAvatarSelf::sScratchTexNames;
-LLMap< LLGLenum, F32*> LLVOAvatarSelf::sScratchTexLastBindTime;
-
-
 /*********************************************************************************
  **                                                                             **
  ** Begin LLVOAvatarSelf Constructor routines
@@ -2685,13 +2676,9 @@ void LLVOAvatarSelf::addLocalTextureStats( ETextureIndex type, LLViewerFetchedTe
 			{
 				F32 desired_pixels;
 				desired_pixels = llmin(mPixelArea, (F32)getTexImageArea());
-	
-				// DRANO what priority should wearable-based textures have?
-				if (isUsingLocalAppearance())
-				{
-					imagep->setBoostLevel(getAvatarBoostLevel());
-					imagep->setAdditionalDecodePriority(SELF_ADDITIONAL_PRI) ;
-				}
+
+				imagep->setBoostLevel(getAvatarBoostLevel());
+				imagep->setAdditionalDecodePriority(SELF_ADDITIONAL_PRI) ;
 				imagep->resetTextureStats();
 				imagep->setMaxVirtualSizeResetInterval(MAX_TEXTURE_VIRTUAL_SIZE_RESET_INTERVAL);
 				imagep->addTextureStats( desired_pixels / texel_area_ratio );
@@ -2755,7 +2742,7 @@ void LLVOAvatarSelf::setNewBakedTexture( ETextureIndex te, const LLUUID& uuid )
 {
 	// Baked textures live on other sims.
 	LLHost target_host = getObjectHost();	
-	setTEImage( te, LLViewerTextureManager::getFetchedTextureFromHost( uuid, target_host ) );
+	setTEImage( te, LLViewerTextureManager::getFetchedTextureFromHost( uuid, FTT_HOST_BAKE, target_host ) );
 	updateMeshTextures();
 	dirtyMesh();
 
@@ -3208,77 +3195,6 @@ BOOL LLVOAvatarSelf::needsRenderBeam()
 		is_touching_or_grabbing = FALSE;
 	}
 	return is_touching_or_grabbing || (mState & AGENT_STATE_EDITING && LLSelectMgr::getInstance()->shouldShowSelection());
-}
-
-// static
-void LLVOAvatarSelf::deleteScratchTextures()
-{
-	if(gAuditTexture)
-	{
-		S32 total_tex_size = sScratchTexBytes ;
-		S32 tex_size = SCRATCH_TEX_WIDTH * SCRATCH_TEX_HEIGHT ;
-
-		if( sScratchTexNames.checkData( GL_LUMINANCE ) )
-		{
-			LLImageGL::decTextureCounter(tex_size, 1, LLViewerTexture::AVATAR_SCRATCH_TEX) ;
-			total_tex_size -= tex_size ;
-		}
-		if( sScratchTexNames.checkData( GL_ALPHA ) )
-		{
-			LLImageGL::decTextureCounter(tex_size, 1, LLViewerTexture::AVATAR_SCRATCH_TEX) ;
-			total_tex_size -= tex_size ;
-		}
-		if( sScratchTexNames.checkData( GL_COLOR_INDEX ) )
-		{
-			LLImageGL::decTextureCounter(tex_size, 1, LLViewerTexture::AVATAR_SCRATCH_TEX) ;
-			total_tex_size -= tex_size ;
-		}
-		if( sScratchTexNames.checkData( LLRender::sGLCoreProfile ? GL_RG : GL_LUMINANCE_ALPHA ) )
-		{
-			LLImageGL::decTextureCounter(tex_size, 2, LLViewerTexture::AVATAR_SCRATCH_TEX) ;
-			total_tex_size -= 2 * tex_size ;
-		}
-		if( sScratchTexNames.checkData( GL_RGB ) )
-		{
-			LLImageGL::decTextureCounter(tex_size, 3, LLViewerTexture::AVATAR_SCRATCH_TEX) ;
-			total_tex_size -= 3 * tex_size ;
-		}
-		if( sScratchTexNames.checkData( GL_RGBA ) )
-		{
-			LLImageGL::decTextureCounter(tex_size, 4, LLViewerTexture::AVATAR_SCRATCH_TEX) ;
-			total_tex_size -= 4 * tex_size ;
-		}
-		//others
-		while(total_tex_size > 0)
-		{
-			LLImageGL::decTextureCounter(tex_size, 4, LLViewerTexture::AVATAR_SCRATCH_TEX) ;
-			total_tex_size -= 4 * tex_size ;
-		}
-	}
-
-	for( LLGLuint* namep = sScratchTexNames.getFirstData(); 
-		 namep; 
-		 namep = sScratchTexNames.getNextData() )
-	{
-		LLImageGL::deleteTextures(1, (U32 *)namep );
-		stop_glerror();
-	}
-
-	if( sScratchTexBytes )
-	{
-		LL_DEBUGS() << "Clearing Scratch Textures " << (sScratchTexBytes/1024) << "KB" << LL_ENDL;
-
-		sScratchTexNames.deleteAllData();
-		sScratchTexLastBindTime.deleteAllData();
-		LLImageGL::sGlobalTextureMemoryInBytes -= sScratchTexBytes;
-		sScratchTexBytes = 0;
-	}
-}
-
-// static 
-void LLVOAvatarSelf::dumpScratchTextureByteCount()
-{
-	LL_INFOS() << "Scratch Texture GL: " << (sScratchTexBytes/1024) << "KB" << LL_ENDL;
 }
 
 void dump_visual_param(LLAPRFile& file, LLVisualParam const* viewer_param, F32 value);

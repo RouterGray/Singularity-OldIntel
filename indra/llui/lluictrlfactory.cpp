@@ -174,7 +174,7 @@ const std::vector<std::string>& LLUICtrlFactory::getXUIPaths()
 //-----------------------------------------------------------------------------
 bool LLUICtrlFactory::getLayeredXMLNode(const std::string &xui_filename, LLXMLNodePtr& root)
 {
-	std::string full_filename = gDirUtilp->findSkinnedFilename(sXUIPaths.front(), xui_filename);
+	std::string full_filename = gDirUtilp->findSkinnedFilenameBaseLang(LLDir::XUI, xui_filename);
 	if (full_filename.empty())
 	{
 		// try filename as passed in since sometimes we load an xml file from a user-supplied path
@@ -194,29 +194,21 @@ bool LLUICtrlFactory::getLayeredXMLNode(const std::string &xui_filename, LLXMLNo
 		LL_WARNS() << "Problem reading UI description file: " << full_filename << LL_ENDL;
 		return false;
 	}
+	
+	std::vector<std::string> paths =
+	gDirUtilp->findSkinnedFilenames(LLDir::XUI, xui_filename);
 
-	LLXMLNodePtr updateRoot;
-
-	std::vector<std::string>::const_iterator itor;
-
-	for (itor = sXUIPaths.begin(), ++itor; itor != sXUIPaths.end(); ++itor)
+	for ( auto& layer_filename : paths )
 	{
-		std::string nodeName;
-		std::string updateName;
-
-		std::string layer_filename = gDirUtilp->findSkinnedFilename((*itor), xui_filename);
-		if(layer_filename.empty())
-		{
-			// no localized version of this file, that's ok, keep looking
-			continue;
-		}
-
+		LLXMLNodePtr updateRoot;
 		if (!LLXMLNode::parseFile(layer_filename, updateRoot, NULL))
 		{
-			LL_WARNS() << "Problem reading localized UI description file: " << (*itor) + gDirUtilp->getDirDelimiter() + xui_filename << LL_ENDL;
+			LL_WARNS() << "Problem reading localized UI description file: " << layer_filename << LL_ENDL;
 			return false;
 		}
 
+		std::string updateName;
+		std::string nodeName;
 		updateRoot->getAttributeString("name", updateName);
 		root->getAttributeString("name", nodeName);
 

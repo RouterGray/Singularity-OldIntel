@@ -280,7 +280,7 @@ BOOL				gUseWireframe = FALSE;
 LLVFS* gStaticVFS = NULL;
 
 LLMemoryInfo gSysMemory;
-U64 gMemoryAllocated = 0; // updated in display_stats() in llviewerdisplay.cpp
+U64Bytes gMemoryAllocated(0); // updated in display_stats() in llviewerdisplay.cpp
 
 std::string gLastVersionChannel;
 
@@ -653,7 +653,7 @@ bool LLAppViewer::init()
 
 	// set skin search path to default, will be overridden later
 	// this allows simple skinned file lookups to work
-	gDirUtilp->setSkinFolder("default");
+	gDirUtilp->setSkinFolder("default", "en-us");
 
 	initLogging();
 
@@ -726,16 +726,20 @@ bool LLAppViewer::init()
 	LL_INFOS("InitInfo") << "Threads initialized." << LL_ENDL ;
 
 	// Load art UUID information, don't require these strings to be declared in code.
-	std::string colors_base_filename = gDirUtilp->findSkinnedFilename("colors_base.xml");
-	LL_DEBUGS("InitInfo") << "Loading base colors from " << colors_base_filename << LL_ENDL;
-	gColors.loadFromFileLegacy(colors_base_filename, FALSE, TYPE_COL4U);
-
-	// Load overrides from user colors file
-	std::string user_colors_filename = gDirUtilp->findSkinnedFilename("colors.xml");
-	LL_DEBUGS("InitInfo") << "Loading user colors from " << user_colors_filename << LL_ENDL;
-	if (gColors.loadFromFileLegacy(user_colors_filename, FALSE, TYPE_COL4U) == 0)
+	for(auto& colors_base_filename : gDirUtilp->findSkinnedFilenames(LLDir::SKINBASE, "colors_base.xml", LLDir::ALL_SKINS))
 	{
-		LL_DEBUGS("InitInfo") << "Cannot load user colors from " << user_colors_filename << LL_ENDL;
+		LL_DEBUGS("InitInfo") << "Loading colors from " << colors_base_filename << LL_ENDL;
+		gColors.loadFromFileLegacy(colors_base_filename, FALSE, TYPE_COL4U);
+	}
+	// Load overrides from user colors file
+	for (auto& colors_base_filename : gDirUtilp->findSkinnedFilenames(LLDir::SKINBASE, "colors.xml", LLDir::ALL_SKINS))
+	{
+		gColors.loadFromFileLegacy(colors_base_filename, FALSE, TYPE_COL4U);
+		LL_DEBUGS("InitInfo") << "Loading user colors from " << colors_base_filename << LL_ENDL;
+		if (gColors.loadFromFileLegacy(colors_base_filename, FALSE, TYPE_COL4U) == 0)
+		{
+			LL_DEBUGS("InitInfo") << "Cannot load user colors from " << colors_base_filename << LL_ENDL;
+		}
 	}
 
 	// Widget construction depends on LLUI being initialized
@@ -748,6 +752,11 @@ bool LLAppViewer::init()
 		&LLUI::getScaleFactor());
 	LL_INFOS("InitInfo") << "UI initialized." << LL_ENDL ;
 
+	// NOW LLUI::getLanguage() should work. gDirUtilp must know the language
+	// for this session ASAP so all the file-loading commands that follow,
+	// that use findSkinnedFilenames(), will include the localized files.
+	gDirUtilp->setSkinFolder(gDirUtilp->getSkinFolder(), LLUI::getLanguage());
+	
 	LLUICtrlFactory::getInstance()->setupPaths(); // update paths with correct language set
 
 	// Setup LLTrans after LLUI::initClass has been called.
@@ -956,9 +965,8 @@ bool LLAppViewer::init()
 
 		// get RAM data from XML
 		std::stringstream minRAMString(LLNotificationTemplates::instance().getGlobalString("UnsupportedRAMAmount"));
-		U64 minRAM = 0;
+		U64Bytes minRAM;
 		minRAMString >> minRAM;
-		minRAM = minRAM * 1024 * 1024;
 
 		if(!LLFeatureManager::getInstance()->isGPUSupported() && LLFeatureManager::getInstance()->getGPUClass() != GPU_CLASS_UNKNOWN)
 		{
@@ -1038,7 +1046,7 @@ void LLAppViewer::initMaxHeapSize()
 
 	//F32 max_heap_size_gb = llmin(1.6f, (F32)gSavedSettings.getF32("MaxHeapSize")) ;
 	
-	F32 max_heap_size_gb = gSavedSettings.getF32("MaxHeapSize") ;
+	F32Gigabytes max_heap_size_gb = (F32Gigabytes)gSavedSettings.getF32("MaxHeapSize") ;
 	
 	//This is all a bunch of CRAP. We run LAA on windows. 64bit windows supports LAA out of the box. 32bit does not, unless PAE is on.
 #if LL_WINDOWS
@@ -1052,7 +1060,7 @@ void LLAppViewer::initMaxHeapSize()
 	 
 	if(fnIsWow64Process && fnIsWow64Process(GetCurrentProcess(), &bWow64Process) && bWow64Process)
 	{
-		max_heap_size_gb = 3.7f;
+		max_heap_size_gb = F32Gigabytes(3.7f);
 	}
 	else if(ERROR_SUCCESS == RegOpenKey(HKEY_LOCAL_MACHINE, TEXT("SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management"), &hKey))
 	{
@@ -1061,7 +1069,7 @@ void LLAppViewer::initMaxHeapSize()
 		if(ERROR_SUCCESS == RegQueryValueEx(hKey, TEXT("PhysicalAddressExtension"), NULL, NULL, (LPBYTE)&dwResult, &dwSize))
 		{
 			if(dwResult)
-				max_heap_size_gb = 3.7f;
+				max_heap_size_gb = F32Gigabytes(3.7f);
 		}
 		RegCloseKey(hKey);
 	}
@@ -1325,7 +1333,7 @@ bool LLAppViewer::mainLoop()
 				// yield cooperatively when not running as foreground window
 				if (   gNoRender
 					   || (gViewerWindow && !gViewerWindow->getWindow()->getVisible())
-						|| !gFocusMgr.getAppHasFocus())
+						|| (!gFocusMgr.getAppHasFocus() && !AIFilePicker::activePicker) )
 				{
 					// Sleep if we're not rendering, or the window is minimized.
 					S32 milliseconds_to_sleep = llclamp(gSavedSettings.getS32("BackgroundYieldTime"), 0, 1000);
@@ -2413,7 +2421,11 @@ bool LLAppViewer::initConfiguration()
 	const LLControlVariable* skinfolder = gSavedSettings.getControl("SkinCurrent");
 	if(skinfolder && LLStringUtil::null != skinfolder->getValue().asString())
 	{   
-		gDirUtilp->setSkinFolder(skinfolder->getValue().asString());
+		// Examining "Language" may not suffice -- see LLUI::getLanguage()
+		// logic. Unfortunately LLUI::getLanguage() doesn't yet do us much
+		// good because we haven't yet called LLUI::initClass().
+		gDirUtilp->setSkinFolder(skinfolder->getValue().asString(),
+								 gSavedSettings.getString("Language"));
 	}
 
 	// XUI:translate
@@ -2695,8 +2707,8 @@ void LLAppViewer::writeSystemInfo()
 	gDebugInfo["CPUInfo"]["CPUSSE"] = gSysCPU.hasSSE();
 	gDebugInfo["CPUInfo"]["CPUSSE2"] = gSysCPU.hasSSE2();
 	
-	gDebugInfo["RAMInfo"]["Physical"] = (LLSD::Integer)(gSysMemory.getPhysicalMemoryKB());
-	gDebugInfo["RAMInfo"]["Allocated"] = (LLSD::Integer)(gMemoryAllocated>>10); // MB -> KB
+	gDebugInfo["RAMInfo"]["Physical"] = (LLSD::Integer)(gSysMemory.getPhysicalMemoryKB().value());
+	gDebugInfo["RAMInfo"]["Allocated"] = (LLSD::Integer)(gMemoryAllocated.valueInUnits<LLUnits::Kilobytes>());
 	gDebugInfo["OSInfo"] = getOSInfo().getOSStringSimple();
 
 	// The user is not logged on yet, but record the current grid choice login url

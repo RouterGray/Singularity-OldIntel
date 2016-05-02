@@ -57,7 +57,6 @@ public:
 	void initAttribsAndUniforms(void);
 	void setShaders();
 	void unloadShaders();
-	void unloadShaderObjects();
 	S32 getVertexShaderLevel(S32 type);
 	BOOL loadBasicShaders();
 	BOOL loadShadersEffects();

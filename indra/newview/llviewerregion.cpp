@@ -476,20 +476,20 @@ void LLViewerRegion::initPartitions()
 {
 	//create object partitions
 	//MUST MATCH declaration of eObjectPartitions
-	mImpl->mObjectPartition.push_back(new LLHUDPartition());		//PARTITION_HUD
-	mImpl->mObjectPartition.push_back(new LLTerrainPartition());	//PARTITION_TERRAIN
-	mImpl->mObjectPartition.push_back(new LLVoidWaterPartition());	//PARTITION_VOIDWATER
-	mImpl->mObjectPartition.push_back(new LLWaterPartition());		//PARTITION_WATER
-	mImpl->mObjectPartition.push_back(new LLTreePartition());		//PARTITION_TREE
-	mImpl->mObjectPartition.push_back(new LLParticlePartition());	//PARTITION_PARTICLE
+	mImpl->mObjectPartition.push_back(new LLHUDPartition(this));		//PARTITION_HUD
+	mImpl->mObjectPartition.push_back(new LLTerrainPartition(this));	//PARTITION_TERRAIN
+	mImpl->mObjectPartition.push_back(new LLVoidWaterPartition(this));	//PARTITION_VOIDWATER
+	mImpl->mObjectPartition.push_back(new LLWaterPartition(this));		//PARTITION_WATER
+	mImpl->mObjectPartition.push_back(new LLTreePartition(this));		//PARTITION_TREE
+	mImpl->mObjectPartition.push_back(new LLParticlePartition(this));	//PARTITION_PARTICLE
 #if ENABLE_CLASSIC_CLOUDS
-	mImpl->mObjectPartition.push_back(new LLCloudPartition());		//PARTITION_CLOUD
+	mImpl->mObjectPartition.push_back(new LLCloudPartition(this));		//PARTITION_CLOUD
 #endif
-	mImpl->mObjectPartition.push_back(new LLGrassPartition());		//PARTITION_GRASS
-	mImpl->mObjectPartition.push_back(new LLVolumePartition());	//PARTITION_VOLUME
-	mImpl->mObjectPartition.push_back(new LLBridgePartition());	//PARTITION_BRIDGE
-	mImpl->mObjectPartition.push_back(new LLAttachmentPartition());	//PARTITION_ATTACHMENT
-	mImpl->mObjectPartition.push_back(new LLHUDParticlePartition());//PARTITION_HUD_PARTICLE
+	mImpl->mObjectPartition.push_back(new LLGrassPartition(this));		//PARTITION_GRASS
+	mImpl->mObjectPartition.push_back(new LLVolumePartition(this));	//PARTITION_VOLUME
+	mImpl->mObjectPartition.push_back(new LLBridgePartition(this));	//PARTITION_BRIDGE
+	mImpl->mObjectPartition.push_back(new LLAttachmentPartition(this));	//PARTITION_ATTACHMENT
+	mImpl->mObjectPartition.push_back(new LLHUDParticlePartition(this));//PARTITION_HUD_PARTICLE
 	mImpl->mObjectPartition.push_back(NULL);						//PARTITION_NONE
 
 	mRenderInfoRequestTimer.resetWithExpiry(0.f);		// Set timer to be expired
@@ -507,14 +507,14 @@ void LLViewerRegion::initStats()
 {
 	mImpl->mLastNetUpdate.reset();
 	mPacketsIn = 0;
-	mBitsIn = 0;
-	mLastBitsIn = 0;
+	mBitsIn = (U32Bits)0;
+	mLastBitsIn = (U32Bits)0;
 	mLastPacketsIn = 0;
 	mPacketsOut = 0;
 	mLastPacketsOut = 0;
 	mPacketsLost = 0;
 	mLastPacketsLost = 0;
-	mPingDelay = 0;
+	mPingDelay = (U32Seconds)0;
 	mAlive = false;					// can become false if circuit disconnects
 }
 
@@ -1134,7 +1134,7 @@ void LLViewerRegion::updateNetStats()
 	mPacketsLost =				cdp->getPacketsLost();
 	mPingDelay =				cdp->getPingDelay();
 
-	mBitStat.addValue(mBitsIn - mLastBitsIn);
+	mBitStat.addValue((mBitsIn - mLastBitsIn).value());
 	mPacketsStat.addValue(mPacketsIn - mLastPacketsIn);
 	mPacketsLostStat.addValue(mPacketsLost);
 }
@@ -1234,7 +1234,7 @@ const LLViewerRegion::tex_matrix_t& LLViewerRegion::getWorldMapTiles() const
 		for (U32 x = 0; x != totalX; ++x)
 			for (U32 y = 0; y != totalY; ++y)
 			{
-				LLPointer<LLViewerTexture> tex(LLViewerTextureManager::getFetchedTextureFromUrl(strImgURL+llformat("%d-%d-objects.jpg", gridX + x, gridY + y), TRUE, LLViewerTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE));
+				LLPointer<LLViewerTexture> tex(LLViewerTextureManager::getFetchedTextureFromUrl(strImgURL+llformat("%d-%d-objects.jpg", gridX + x, gridY + y), FTT_MAP_TILE, TRUE, LLViewerTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE));
 				mWorldMapTiles.push_back(tex);
 				tex->setBoostLevel(LLViewerTexture::BOOST_MAP);
 			}

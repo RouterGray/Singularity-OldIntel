@@ -803,8 +803,8 @@ void LLHoverView::draw()
 		return;
 	}
 
-	LLUIImagePtr box_imagep = LLUI::getUIImage("rounded_square.tga");
-	LLUIImagePtr shadow_imagep = LLUI::getUIImage("rounded_square_soft.tga");
+	LLUIImagePtr box_imagep = LLUI::getUIImage("Rounded_Square");
+	LLUIImagePtr shadow_imagep = LLUI::getUIImage("Rounded_Square_Soft");
 
 	const LLFontGL* fontp = LLResMgr::getInstance()->getRes(LLFONT_SANSSERIF_SMALL);
 

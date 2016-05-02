@@ -141,6 +141,8 @@ public:
 
 	virtual LLVOAvatar* asAvatar();
 
+	LLVOAvatar* getAvatarAncestor();
+
 	static void initVOClasses();
 	static void cleanupVOClasses();
 
@@ -591,7 +593,7 @@ private:
     U32 checkMediaURL(const std::string &media_url);
 	
 	// Motion prediction between updates
-	void interpolateLinearMotion(const F64 & time, const F32 & dt);
+	void interpolateLinearMotion(const F64SecondsImplicit & time, const F32SecondsImplicit & dt);
 
 public:
 	//
@@ -710,8 +712,6 @@ protected:
 	void deleteParticleSource();
 	void setParticleSource(const LLPartSysData& particle_parameters, const LLUUID& owner_id);
 
-public:
-
 private:
 	void setNameValueList(const std::string& list);		// clears nv pairs and then individually adds \n separated NV pairs from \0 terminated string
 	void deleteTEImages(); // correctly deletes list of images
@@ -722,8 +722,8 @@ protected:
 
 	child_list_t	mChildList;
 	
-	F64				mLastInterpUpdateSecs;			// Last update for purposes of interpolation
-	F64				mLastMessageUpdateSecs;			// Last update from a message from the simulator
+	F64Seconds		mLastInterpUpdateSecs;			// Last update for purposes of interpolation
+	F64Seconds		mLastMessageUpdateSecs;			// Last update from a message from the simulator
 	TPACKETID		mLatestRecvPacketID;			// Latest time stamp on message from simulator
 
 	// extra data sent from the sim...currently only used for tree species info
@@ -765,7 +765,6 @@ protected:
 	BOOL			mStatic;					// Object doesn't move.
 	S32				mNumFaces;
 
-	F32				mTimeDilation;				// Time dilation sent with the object.
 	F32				mRotTime;					// Amount (in seconds) that object has rotated according to angular velocity (llSetTargetOmega)
 	LLQuaternion	mAngularVelocityRot;		// accumulated rotation from the angular velocity computations
 	LLQuaternion	mPreviousRotation;
@@ -791,12 +790,13 @@ protected:
 
 	static			S32			sAxisArrowLength;
 
+
 	// These two caches are only correct for non-parented objects right now!
 	mutable LLVector3		mPositionRegion;
 	mutable LLVector3		mPositionAgent;
 
-	static void setPhaseOutUpdateInterpolationTime(F32 value)	{ sPhaseOutUpdateInterpolationTime = (F64) value;	}
-	static void setMaxUpdateInterpolationTime(F32 value)		{ sMaxUpdateInterpolationTime = (F64) value;	}
+	static void setPhaseOutUpdateInterpolationTime(F32 value)	{ sPhaseOutUpdateInterpolationTime = (F64Seconds) value;	}
+	static void setMaxUpdateInterpolationTime(F32 value)		{ sMaxUpdateInterpolationTime = (F64Seconds) value;	}
 
 	static void	setVelocityInterpolate(BOOL value)		{ sVelocityInterpolate = value;	}
 	static void	setPingInterpolate(BOOL value)			{ sPingInterpolate = value;	}
@@ -804,8 +804,8 @@ protected:
 private:	
 	static S32 sNumObjects;
 
-	static F64 sPhaseOutUpdateInterpolationTime;	// For motion interpolation
-	static F64 sMaxUpdateInterpolationTime;			// For motion interpolation
+	static F64Seconds sPhaseOutUpdateInterpolationTime;	// For motion interpolation
+	static F64Seconds sMaxUpdateInterpolationTime;		// For motion interpolation
 
 	static BOOL sVelocityInterpolate;
 	static BOOL sPingInterpolate;
