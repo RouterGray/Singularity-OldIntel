@@ -902,12 +902,12 @@ std::string LLDir::getForbiddenFileChars()
 // static
 std::string LLDir::getGridSpecificDir( const std::string& in, const std::string& grid )
 {
-	std::string ret;
+	std::string ret = in;
 	if (!grid.empty())
 	{
 		std::string gridlower(grid);
 		LLStringUtil::toLower(gridlower);
-		ret = in + "@" + gridlower;
+		ret += '@' + gridlower;
 	}
 	return ret;
 }
