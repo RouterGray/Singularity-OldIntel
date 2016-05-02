@@ -172,6 +172,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set(CMAKE_OSX_ARCHITECTURES i386)
   set(ARCH i386)
   set(WORD_SIZE 32)
+  set(AUTOBUILD_PLATFORM_NAME "darwin")
 
   set(LL_ARCH ${ARCH}_darwin)
   set(LL_ARCH_DIR universal-darwin)

@@ -14,6 +14,9 @@ set(ROOT_PROJECT_NAME "Singularity" CACHE STRING
     "The root project/makefile/solution name. Defaults to Singularity.")
 project(${ROOT_PROJECT_NAME})
 
+string(REPLACE " " "" VIEWER_CHANNEL_NOSPACE ${VIEWER_CHANNEL})
+set(VIEWER_CHANNEL_NOSPACE ${VIEWER_CHANNEL_NOSPACE} CACHE STRING "Prefix used for resulting artifacts.")
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 include(Variables)
