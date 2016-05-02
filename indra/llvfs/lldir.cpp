@@ -376,7 +376,7 @@ const std::string  LLDir::getCacheDir(bool get_default) const
 #if (defined(_WIN64) || defined(__amd64__) || defined(__x86_64__))
 #define OS_CACHE_DIR "SingularityViewer64"
 #else
-#define OS_CACHE_DIR "Obsidian"
+#define OS_CACHE_DIR "SingularityViewer"
 #endif
 
 // Return the default cache directory
