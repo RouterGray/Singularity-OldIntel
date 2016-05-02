@@ -76,6 +76,7 @@ LLDrawPoolTerrain::LLDrawPoolTerrain(LLViewerTexture *texturep) :
 	sDetailMode = gSavedSettings.getS32("RenderTerrainDetail");
 
 	m2DAlphaRampImagep = LLViewerTextureManager::getFetchedTextureFromFile("alpha_gradient_2d.j2c", 
+													FTT_LOCAL_FILE,
 													TRUE, LLGLTexture::BOOST_UI, 
 													LLViewerTexture::FETCHED_TEXTURE,
 													int_format, format);

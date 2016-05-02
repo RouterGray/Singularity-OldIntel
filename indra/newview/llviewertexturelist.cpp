@@ -67,6 +67,8 @@
 #include "llxuiparser.h"
 #include "llagent.h"
 #include "llviewerdisplay.h"
+#include "llviewerwindow.h"
+#include "llprogressview.h"
 #include "llflexibleobject.h"
 
 ////////////////////////////////////////////////////////////////////////////
@@ -120,14 +122,14 @@ void LLViewerTextureList::doPreloadImages()
 	llassert_always(mUUIDMap.empty()) ;
 
 	// Set the "missing asset" image
-	LLViewerFetchedTexture::sMissingAssetImagep = LLViewerTextureManager::getFetchedTextureFromFile("missing_asset.tga", MIPMAP_NO, LLViewerFetchedTexture::BOOST_UI);
+	LLViewerFetchedTexture::sMissingAssetImagep = LLViewerTextureManager::getFetchedTextureFromFile("missing_asset.tga", FTT_LOCAL_FILE, MIPMAP_NO, LLViewerFetchedTexture::BOOST_UI);
 	
 	// Set the "white" image
-	LLViewerFetchedTexture::sWhiteImagep = LLViewerTextureManager::getFetchedTextureFromFile("white.tga", MIPMAP_NO, LLViewerFetchedTexture::BOOST_UI);
+	LLViewerFetchedTexture::sWhiteImagep = LLViewerTextureManager::getFetchedTextureFromFile("white.tga", FTT_LOCAL_FILE, MIPMAP_NO, LLViewerFetchedTexture::BOOST_UI);
 	LLTexUnit::sWhiteTexture = LLViewerFetchedTexture::sWhiteImagep->getTexName();
 	LLUIImageList* image_list = LLUIImageList::getInstance();
 
-	LLViewerFetchedTexture::sFlatNormalImagep = LLViewerTextureManager::getFetchedTextureFromFile("flatnormal.tga", MIPMAP_NO, LLViewerFetchedTexture::BOOST_BUMP);
+	LLViewerFetchedTexture::sFlatNormalImagep = LLViewerTextureManager::getFetchedTextureFromFile("flatnormal.tga", FTT_LOCAL_FILE, MIPMAP_NO, LLViewerFetchedTexture::BOOST_BUMP);
 	image_list->initFromFile();
 	
 	// turn off clamping and bilinear filtering for uv picking images
@@ -139,47 +141,47 @@ void LLViewerTextureList::doPreloadImages()
 	//uv_test->setMipFilterNearest(TRUE, TRUE);
 
 	// prefetch specific UUIDs
-	LLViewerTextureManager::getFetchedTexture(IMG_SHOT, TRUE);
-	LLViewerTextureManager::getFetchedTexture(IMG_SMOKE_POOF, TRUE);
-	LLViewerFetchedTexture* image = LLViewerTextureManager::getFetchedTextureFromFile("silhouette.j2c", MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI);
+	LLViewerTextureManager::getFetchedTexture(IMG_SHOT);
+	LLViewerTextureManager::getFetchedTexture(IMG_SMOKE_POOF);
+	LLViewerFetchedTexture* image = LLViewerTextureManager::getFetchedTextureFromFile("silhouette.j2c", FTT_LOCAL_FILE, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI);
 	if (image) 
 	{
 		image->setAddressMode(LLTexUnit::TAM_WRAP);
 		mImagePreloads.insert(image);
 	}
-	image = LLViewerTextureManager::getFetchedTextureFromFile("noentrylines.j2c"/*"world/NoEntryLines.png"*/, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI);
+	image = LLViewerTextureManager::getFetchedTextureFromFile("world/NoEntryLines.png", FTT_LOCAL_FILE, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI);
 	if (image) 
 	{
 		image->setAddressMode(LLTexUnit::TAM_WRAP);	
 		mImagePreloads.insert(image);
 	}
-	image = LLViewerTextureManager::getFetchedTextureFromFile("noentrypasslines.j2c"/*"world/NoEntryPassLines.png"*/, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI);
+	image = LLViewerTextureManager::getFetchedTextureFromFile("world/NoEntryPassLines.png", FTT_LOCAL_FILE, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI);
 	if (image) 
 	{
 		image->setAddressMode(LLTexUnit::TAM_WRAP);
 		mImagePreloads.insert(image);
 	}
-	image = LLViewerTextureManager::getFetchedTexture(DEFAULT_WATER_NORMAL, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI);
+	image = LLViewerTextureManager::getFetchedTexture(DEFAULT_WATER_NORMAL, FTT_DEFAULT, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI);
 	if (image) 
 	{
 		image->setAddressMode(LLTexUnit::TAM_WRAP);	
 		mImagePreloads.insert(image);
 	}
-	image = LLViewerTextureManager::getFetchedTextureFromFile("transparent.j2c", MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI, LLViewerTexture::FETCHED_TEXTURE,
+	image = LLViewerTextureManager::getFetchedTextureFromFile("transparent.j2c", FTT_LOCAL_FILE, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI, LLViewerTexture::FETCHED_TEXTURE,
 		0,0,LLUUID("8dcd4a48-2d37-4909-9f78-f7a9eb4ef903"));
 	if (image) 
 	{
 		image->setAddressMode(LLTexUnit::TAM_WRAP);
 		mImagePreloads.insert(image);
 	}
-	image = LLViewerTextureManager::getFetchedTextureFromFile("transparent.j2c", MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI, LLViewerTexture::FETCHED_TEXTURE,
+	image = LLViewerTextureManager::getFetchedTextureFromFile("transparent.j2c", FTT_LOCAL_FILE, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI, LLViewerTexture::FETCHED_TEXTURE,
 		0,0,LLUUID("e97cf410-8e61-7005-ec06-629eba4cd1fb"));
 	if (image)
 	{
 		image->setAddressMode(LLTexUnit::TAM_WRAP);
 		mImagePreloads.insert(image);
 	}
-	image = LLViewerTextureManager::getFetchedTextureFromFile("transparent.j2c", MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI, LLViewerTexture::FETCHED_TEXTURE,
+	image = LLViewerTextureManager::getFetchedTextureFromFile("transparent.j2c", FTT_LOCAL_FILE, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI, LLViewerTexture::FETCHED_TEXTURE,
 		0,0,LLUUID("38b86f85-2575-52a9-a531-23108d8da837"));
 	if (image)
 	{
@@ -188,7 +190,7 @@ void LLViewerTextureList::doPreloadImages()
 	}
 	//Hideous hack to set filtering and address modes without messing with our texture classes.
 	{
-		LLPointer<LLUIImage> temp_image = image_list->getUIImage("checkerboard.tga",LLViewerFetchedTexture::BOOST_UI);
+		LLPointer<LLUIImage> temp_image = image_list->getUIImage("checkerboard.tga", LLViewerFetchedTexture::BOOST_UI);
 		if(temp_image.notNull() && temp_image->getImage().notNull())
 		{
 			LLViewerTexture *tex = (LLViewerTexture*)temp_image->getImage().get();
@@ -240,7 +242,7 @@ void LLViewerTextureList::doPrefetchImages()
 
 		if(LLViewerTexture::FETCHED_TEXTURE == texture_type || LLViewerTexture::LOD_TEXTURE == texture_type)
 		{
-			LLViewerFetchedTexture* image = LLViewerTextureManager::getFetchedTexture(uuid, MIPMAP_TRUE, LLGLTexture::BOOST_NONE, texture_type);
+			LLViewerFetchedTexture* image = LLViewerTextureManager::getFetchedTexture(uuid, FTT_DEFAULT, MIPMAP_TRUE, LLGLTexture::BOOST_NONE, texture_type);
 			if (image)
 			{
                 texture_count += 1;
@@ -368,6 +370,7 @@ void LLViewerTextureList::restoreGL()
 ///////////////////////////////////////////////////////////////////////////////
 
 LLViewerFetchedTexture* LLViewerTextureList::getImageFromFile(const std::string& filename,												   
+												   FTType f_type,
 												   BOOL usemipmaps,
 												   LLViewerTexture::EBoostLevel boost_priority,
 												   S8 texture_type,
@@ -384,15 +387,16 @@ LLViewerFetchedTexture* LLViewerTextureList::getImageFromFile(const std::string&
 	if (full_path.empty())
 	{
 		LL_WARNS() << "Failed to find local image file: " << filename << LL_ENDL;
-		return LLViewerTextureManager::getFetchedTexture(IMG_DEFAULT, TRUE, LLGLTexture::BOOST_UI);
+		return LLViewerTextureManager::getFetchedTexture(IMG_DEFAULT, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_UI);
 	}
 
 	std::string url = "file://" + full_path;
 
-	return getImageFromUrl(url, usemipmaps, boost_priority, texture_type, internal_format, primary_format, force_id);
+	return getImageFromUrl(url, f_type, usemipmaps, boost_priority, texture_type, internal_format, primary_format, force_id);
 }
 
 LLViewerFetchedTexture* LLViewerTextureList::getImageFromUrl(const std::string& url,
+												   FTType f_type,
 												   BOOL usemipmaps,
 												   LLViewerTexture::EBoostLevel boost_priority,
 												   S8 texture_type,
@@ -409,7 +413,7 @@ LLViewerFetchedTexture* LLViewerTextureList::getImageFromUrl(const std::string& 
 	{
 		// Never mind that this ignores image_set_id;
 		// getImage() will handle that later.
-		return LLViewerTextureManager::getFetchedTexture(IMG_DEFAULT, TRUE, LLGLTexture::BOOST_UI);
+		return LLViewerTextureManager::getFetchedTexture(IMG_DEFAULT, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_UI);
 	}
 
 	// generate UUID based on hash of filename
@@ -447,10 +451,10 @@ LLViewerFetchedTexture* LLViewerTextureList::getImageFromUrl(const std::string& 
 		switch(texture_type)
 		{
 		case LLViewerTexture::FETCHED_TEXTURE:
-			imagep = new LLViewerFetchedTexture(url, new_id, usemipmaps);
+			imagep = new LLViewerFetchedTexture(url, f_type, new_id, usemipmaps);
 			break ;
 		case LLViewerTexture::LOD_TEXTURE:
-			imagep = new LLViewerLODTexture(url, new_id, usemipmaps);
+			imagep = new LLViewerLODTexture(url, f_type, new_id, usemipmaps);
 			break ;
 		default:
 			LL_ERRS() << "Invalid texture type " << texture_type << LL_ENDL ;
@@ -480,7 +484,8 @@ LLViewerFetchedTexture* LLViewerTextureList::getImageFromUrl(const std::string& 
 }
 
 
-LLViewerFetchedTexture* LLViewerTextureList::getImage(const LLUUID &image_id,											       
+LLViewerFetchedTexture* LLViewerTextureList::getImage(const LLUUID &image_id,
+												   FTType f_type,
 												   BOOL usemipmaps,
 												   LLViewerTexture::EBoostLevel boost_priority,
 												   S8 texture_type,
@@ -499,7 +504,7 @@ LLViewerFetchedTexture* LLViewerTextureList::getImage(const LLUUID &image_id,
 	
 	if ((&image_id == NULL) || image_id.isNull())
 	{
-		return (LLViewerTextureManager::getFetchedTexture(IMG_DEFAULT, TRUE, LLGLTexture::BOOST_UI));
+		return (LLViewerTextureManager::getFetchedTexture(IMG_DEFAULT, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_UI));
 	}
 	
 	LLPointer<LLViewerFetchedTexture> imagep = findImage(image_id);
@@ -518,11 +523,15 @@ LLViewerFetchedTexture* LLViewerTextureList::getImage(const LLUUID &image_id,
 			LL_WARNS() << "Requested texture " << image_id << " already exists with a different target host, requested: " 
 					<< request_from_host << " current: " << texture->getTargetHost() << LL_ENDL;
 		}
+		if (f_type != FTT_DEFAULT && imagep->getFTType() != f_type)
+		{
+			LL_WARNS() << "FTType mismatch: requested " << f_type << " image has " << imagep->getFTType() << LL_ENDL;
+		}
 		
 	}
 	if (imagep.isNull())
 	{
-		imagep = createImage(image_id, usemipmaps, boost_priority, texture_type, internal_format, primary_format, request_from_host) ;
+		imagep = createImage(image_id, f_type, usemipmaps, boost_priority, texture_type, internal_format, primary_format, request_from_host) ;
 	}
 
 	imagep->setGLTextureCreated(true);
@@ -532,6 +541,7 @@ LLViewerFetchedTexture* LLViewerTextureList::getImage(const LLUUID &image_id,
 
 //when this function is called, there is no such texture in the gTextureList with image_id.
 LLViewerFetchedTexture* LLViewerTextureList::createImage(const LLUUID &image_id,											       
+												   FTType f_type,
 												   BOOL usemipmaps,
 												   LLViewerTexture::EBoostLevel boost_priority,
 												   S8 texture_type,
@@ -543,10 +553,10 @@ LLViewerFetchedTexture* LLViewerTextureList::createImage(const LLUUID &image_id,
 	switch(texture_type)
 	{
 	case LLViewerTexture::FETCHED_TEXTURE:
-		imagep = new LLViewerFetchedTexture(image_id, request_from_host, usemipmaps);
+		imagep = new LLViewerFetchedTexture(image_id, f_type, request_from_host, usemipmaps);
 		break ;
 	case LLViewerTexture::LOD_TEXTURE:
-		imagep = new LLViewerLODTexture(image_id, request_from_host, usemipmaps);
+		imagep = new LLViewerLODTexture(image_id, f_type, request_from_host, usemipmaps);
 		break ;
 	default:
 		LL_ERRS() << "Invalid texture type " << texture_type << LL_ENDL ;
@@ -593,15 +603,17 @@ void LLViewerTextureList::addImageToList(LLViewerFetchedTexture *image)
 	llassert_always(mInitialized) ;
 	llassert(image);
 	if (image->isInImageList())
-	{
-		LL_ERRS() << "LLViewerTextureList::addImageToList - Image already in list" << LL_ENDL;
+	{	// Flag is already set?
+		LL_WARNS() << "LLViewerTextureList::addImageToList - image " << image->getID()  << " already in list" << LL_ENDL;
 	}
+	else
+	{
 	if((mImageList.insert(image)).second != true) 
 	{
-		LL_ERRS() << "Error happens when insert image to mImageList!" << LL_ENDL ;
+			LL_WARNS() << "Error happens when insert image " << image->getID()  << " into mImageList!" << LL_ENDL ;
 	}
-	
 	image->setInImageList(TRUE) ;
+}
 }
 
 void LLViewerTextureList::removeImageFromList(LLViewerFetchedTexture *image)
@@ -664,7 +676,7 @@ void LLViewerTextureList::addImage(LLViewerFetchedTexture *new_image)
 	LLViewerFetchedTexture *image = findImage(image_id);
 	if (image)
 	{
-		LL_WARNS() << "Image with ID " << image_id << " already in list" << LL_ENDL;
+		LL_INFOS() << "Image with ID " << image_id << " already in list" << LL_ENDL;
 	}
 	sNumImages++;
 	
@@ -819,6 +831,13 @@ void LLViewerTextureList::updateImagesDecodePriorities()
 {
 	// Update the decode priority for N images each frame
 	{
+		F32 lazy_flush_timeout = 30.f; // stop decoding
+		F32 max_inactive_time  = 20.f; // actually delete
+		S32 min_refs = 3; // 1 for mImageList, 1 for mUUIDMap, 1 for local reference
+
+		//reset imagep->getLastReferencedTimer() when screen is showing the progress view to avoid removing pre-fetched textures too soon.
+		bool reset_timer = gViewerWindow->getProgressView()->getVisible();
+        
         static const S32 MAX_PRIO_UPDATES = gSavedSettings.getS32("TextureFetchUpdatePriorities");         // default: 32
 		const size_t max_update_count = llmin((S32) (MAX_PRIO_UPDATES*MAX_PRIO_UPDATES*gFrameIntervalSeconds) + 1, MAX_PRIO_UPDATES);
 		S32 update_counter = llmin(max_update_count, mUUIDMap.size());
@@ -836,14 +855,14 @@ void LLViewerTextureList::updateImagesDecodePriorities()
 			//
 			// Flush formatted images using a lazy flush
 			//
-			const F32 LAZY_FLUSH_TIMEOUT = 30.f; // stop decoding
-			const F32 MAX_INACTIVE_TIME  = 50.f; // actually delete
-			S32 min_refs = 3; // 1 for mImageList, 1 for mUUIDMap, 1 for local reference
-			
 			S32 num_refs = imagep->getNumRefs();
 			if (num_refs == min_refs)
 			{
-				if (imagep->getLastReferencedTimer()->getElapsedTimeF32() > LAZY_FLUSH_TIMEOUT)
+				if(reset_timer)
+				{
+					imagep->getLastReferencedTimer()->reset();
+				}
+				else if (imagep->getLastReferencedTimer()->getElapsedTimeF32() > lazy_flush_timeout)
 				{
 					// Remove the unused image from the image list
 					deleteImage(imagep);
@@ -855,7 +874,7 @@ void LLViewerTextureList::updateImagesDecodePriorities()
 			{
 				if(imagep->hasSavedRawImage())
 				{
-					if(imagep->getElapsedLastReferencedSavedRawImageTime() > MAX_INACTIVE_TIME)
+					if(imagep->getElapsedLastReferencedSavedRawImageTime() > max_inactive_time)
 					{
 						imagep->destroySavedRawImage() ;
 					}
@@ -872,7 +891,11 @@ void LLViewerTextureList::updateImagesDecodePriorities()
 				}
 				else if(imagep->isInactive())
 				{
-					if (imagep->getLastReferencedTimer()->getElapsedTimeF32() > MAX_INACTIVE_TIME)
+					if(reset_timer)
+					{
+						imagep->getLastReferencedTimer()->reset();
+					}
+					else if (imagep->getLastReferencedTimer()->getElapsedTimeF32() > max_inactive_time)
 					{
 						imagep->setDeletionCandidate() ;
 					}
@@ -1421,7 +1444,7 @@ void LLViewerTextureList::receiveImageHeader(LLMessageSystem *msg, void **user_d
 	U8 *data = new U8[data_size];
 	msg->getBinaryDataFast(_PREHASH_ImageData, _PREHASH_Data, data, data_size);
 	
-	LLViewerFetchedTexture *image = LLViewerTextureManager::getFetchedTexture(id, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
+	LLViewerFetchedTexture *image = LLViewerTextureManager::getFetchedTexture(id, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
 	if (!image)
 	{
 		delete [] data;
@@ -1493,7 +1516,7 @@ void LLViewerTextureList::receiveImagePacket(LLMessageSystem *msg, void **user_d
 	U8 *data = new U8[data_size];
 	msg->getBinaryDataFast(_PREHASH_ImageData, _PREHASH_Data, data, data_size);
 	
-	LLViewerFetchedTexture *image = LLViewerTextureManager::getFetchedTexture(id, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
+	LLViewerFetchedTexture *image = LLViewerTextureManager::getFetchedTexture(id, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
 	if (!image)
 	{
 		delete [] data;
@@ -1581,7 +1604,7 @@ LLUIImagePtr LLUIImageList::loadUIImageByName(const std::string& name, const std
 	{
 		boost_priority = LLGLTexture::BOOST_UI;
 	}
-	LLViewerFetchedTexture* imagep = LLViewerTextureManager::getFetchedTextureFromFile(filename, MIPMAP_NO, boost_priority);
+	LLViewerFetchedTexture* imagep = LLViewerTextureManager::getFetchedTextureFromFile(filename, FTT_LOCAL_FILE, MIPMAP_NO, boost_priority);
 	return loadUIImage(imagep, name, use_mips, scale_rect, clip_rect, scale_style);
 }
 
@@ -1593,7 +1616,7 @@ LLUIImagePtr LLUIImageList::loadUIImageByID(const LLUUID& id,
 	{
 		boost_priority = LLGLTexture::BOOST_UI;
 	}
-	LLViewerFetchedTexture* imagep = LLViewerTextureManager::getFetchedTexture(id, MIPMAP_NO, boost_priority);
+	LLViewerFetchedTexture* imagep = LLViewerTextureManager::getFetchedTexture(id, FTT_DEFAULT, MIPMAP_NO, boost_priority);
 	return loadUIImage(imagep, id.asString(), use_mips, scale_rect, clip_rect, scale_style);
 }
 
