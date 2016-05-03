@@ -87,20 +87,6 @@ extern "C" {
 
 const std::string LLAppViewerWin32::sWindowClass = "Second Life";
 
-/*
-    This function is used to print to the command line a text message 
-    describing the nvapi error and quits
-*/
-void nvapi_error(NvAPI_Status status)
-{
-    NvAPI_ShortString szDesc = {0};
-	NvAPI_GetErrorMessage(status, szDesc);
-	LL_WARNS() << szDesc << LL_ENDL;
-
-	//should always trigger when asserts are enabled
-	//llassert(status == NVAPI_OK);
-}
-
 // Create app mutex creates a unique global windows object. 
 // If the object can be created it returns true, otherwise
 // it returns false. The false result can be used to determine 

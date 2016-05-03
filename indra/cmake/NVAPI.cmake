@@ -2,8 +2,6 @@
 include(Prebuilt)
 include(Variables)
 
-set(NVAPI ON CACHE BOOL "Use NVAPI.")
-
 if (NVAPI)
   if (WINDOWS)
     use_prebuilt_binary(nvapi)
