@@ -921,7 +921,7 @@ void LLDir::setLindenUserDir(const std::string &grid, const std::string &first, 
 		// utterly consistent with our firstname/lastname case.
 		std::string userlower(first+"_"+last);
 		LLStringUtil::toLower(userlower);
-		mLindenUserDir = getGridSpecificDir(grid, add(getOSUserAppDir(), userlower));
+		mLindenUserDir = getGridSpecificDir(add(getOSUserAppDir(), userlower), grid);
 	}
 	else
 	{
@@ -972,7 +972,7 @@ void LLDir::setChatLogsDir( const std::string& path)
 
 void LLDir::updatePerAccountChatLogsDir(const std::string &grid)
 {
-	mPerAccountChatLogsDir = getGridSpecificDir(grid, add(getChatLogsDir(), mUserName));
+	mPerAccountChatLogsDir = getGridSpecificDir(add(getChatLogsDir(), mUserName), grid);
 }
 		
 void LLDir::setPerAccountChatLogsDir(const std::string &grid, const std::string &first, const std::string &last)
