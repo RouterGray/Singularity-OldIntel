@@ -59,7 +59,7 @@ class ViewerManifest(LLManifest):
         return 'package' in self.args['actions']
 
     def package_skin(self, xml, skin_dir):
-        self.path(xml + "xml")
+        self.path(xml)
         self.path(skin_dir + "/*")
         # include the entire textures directory recursively
         if self.prefix(src=skin_dir+"/textures"):
