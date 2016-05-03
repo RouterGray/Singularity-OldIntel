@@ -122,7 +122,22 @@ bool create_app_mutex()
 	return result;
 }
 
+#ifdef USE_NVAPI
 #define NVAPI_APPNAME L"Second Life"
+
+/*
+This function is used to print to the command line a text message
+describing the nvapi error and quits
+*/
+void nvapi_error(NvAPI_Status status)
+{
+	NvAPI_ShortString szDesc = { 0 };
+	NvAPI_GetErrorMessage(status, szDesc);
+	LL_WARNS() << szDesc << LL_ENDL;
+
+	//should always trigger when asserts are enabled
+	//llassert(status == NVAPI_OK);
+}
 
 void ll_nvapi_init(NvDRSSessionHandle hSession)
 {
@@ -193,6 +208,7 @@ void ll_nvapi_init(NvDRSSessionHandle hSession)
 		return;
 	}
 }
+#endif
 
 //#define DEBUGGING_SEH_FILTER 1
 #if DEBUGGING_SEH_FILTER
@@ -250,6 +266,7 @@ int APIENTRY WINMAIN(HINSTANCE hInstance,
 		return -1;
 	}
 	
+#ifdef USE_NVAPI
 	NvAPI_Status status;
     
 	// Initialize NVAPI
@@ -270,6 +287,7 @@ int APIENTRY WINMAIN(HINSTANCE hInstance,
 			ll_nvapi_init(hSession);
 		}
 	}
+#endif
 
 	// Have to wait until after logging is initialized to display LFH info
 	if (num_heaps > 0)
@@ -338,14 +356,14 @@ int APIENTRY WINMAIN(HINSTANCE hInstance,
 		LLAppViewer::sUpdaterInfo = NULL ;
 	}
 
-
-
+#ifdef USE_NVAPI
 	// (NVAPI) (6) We clean up. This is analogous to doing a free()
 	if (hSession)
 	{
 		NvAPI_DRS_DestroySession(hSession);
 		hSession = 0;
 	}
+#endif
 	
 	return 0;
 }
