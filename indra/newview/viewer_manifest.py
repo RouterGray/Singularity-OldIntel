@@ -58,6 +58,18 @@ class ViewerManifest(LLManifest):
         # and copy_l_viewer_manifest targets)
         return 'package' in self.args['actions']
 
+    def package_skin(self, xml, skin_dir):
+        self.path(xml + "xml")
+        self.path(skin_dir + "/*")
+        # include the entire textures directory recursively
+        if self.prefix(src=skin_dir+"/textures"):
+            self.path("*.tga")
+            self.path("*.j2c")
+            self.path("*.jpg")
+            self.path("*.png")
+            self.path("textures.xml")
+            self.end_prefix(skin_dir+"/textures")
+
     def construct(self):
         super(ViewerManifest, self).construct()
         self.path(src="../../scripts/messages/message_template.msg", dst="app_settings/message_template.msg")
@@ -103,28 +115,9 @@ class ViewerManifest(LLManifest):
             if self.prefix(src="skins"):
                 self.path("paths.xml")
                 self.path("default/xui/*/*.xml")
-                self.path("Default.xml")
-                self.path("default/*.xml")
-                self.path("dark.xml")
-                self.path("dark/*.xml")
-                self.path("Gemini.xml")
-                self.path("gemini/*")
-                # include the entire textures directory recursively
-                if self.prefix(src="default/textures"):
-                    self.path("*.tga")
-                    self.path("*.j2c")
-                    self.path("*.jpg")
-                    self.path("*.png")
-                    self.path("textures.xml")
-                    self.end_prefix("default/textures")
-                if self.prefix(src="dark/textures"):
-                    self.path("*.tga")
-                    self.path("*.j2c")
-                    self.path("*.jpg")
-                    self.path("*.png")
-                    self.path("textures.xml")
-                    self.end_prefix("dark/textures")
-
+		self.package_skin("Default.xml", "default")
+		self.package_skin("dark.xml", "dark")
+		self.package_skin("Gemini.xml", "gemini")
 
                 # Local HTML files (e.g. loading screen)
                 if self.prefix(src="*/html"):
