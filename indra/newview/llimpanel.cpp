@@ -57,6 +57,7 @@
 #include "llstylemap.h"
 #include "lltrans.h"
 #include "lluictrlfactory.h"
+#include "llviewerobjectlist.h"
 #include "llviewertexteditor.h"
 #include "llviewerstats.h"
 #include "llviewerwindow.h"
