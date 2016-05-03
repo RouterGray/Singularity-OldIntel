@@ -882,7 +882,8 @@ GLhandleARB LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shade
 					{ //dump every 128 lines
 
 						LL_WARNS("ShaderLoading") << "\n" << ostr.str() << LL_ENDL;
-						ostr = std::stringstream();
+						ostr.clear();
+						ostr.str(LLStringUtil::null);
 					}
 
 				}

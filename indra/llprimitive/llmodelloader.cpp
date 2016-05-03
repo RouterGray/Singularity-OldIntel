@@ -31,7 +31,7 @@
 
 #include "llmatrix4a.h"
 #include <boost/bind.hpp>
-#include <boost/thread/thread.hpp> 
+#include <thread>
 
 std::list<LLModelLoader*> LLModelLoader::sActiveLoaderList;
 
@@ -459,7 +459,7 @@ void LLModelLoader::loadModelCallback()
 
 	while (!isStopped())
 	{ //wait until this thread is stopped before deleting self
-		boost::this_thread::sleep_for(boost::chrono::microseconds(100));
+		std::this_thread::sleep_for(std::chrono::microseconds(100));
 	}
 
 	//double check if "this" is valid before deleting it, in case it is aborted during running.

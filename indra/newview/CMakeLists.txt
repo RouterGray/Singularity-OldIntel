@@ -1643,7 +1643,6 @@ target_link_libraries(${VIEWER_BINARY_NAME}
     ${Boost_REGEX_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_DATE_TIME_LIBRARY}
-    ${Boost_CHRONO_LIBRARY}
     ${DBUSGLIB_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${FMOD_LIBRARY} # must come after LLAudio
