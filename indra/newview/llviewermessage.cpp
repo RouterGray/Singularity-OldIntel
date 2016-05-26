@@ -1254,7 +1254,7 @@ void open_inventory_offer(const uuid_vec_t& objects, const std::string& from_nam
 		//highlight item, if it's not in the trash or lost+found
 		
 		// Don't auto-open the inventory floater
-		LLInventoryView* view = LLInventoryView::getActiveInventory();
+		LLPanelMainInventory* view = LLPanelMainInventory::getActiveInventory();
 		if(!view)
 		{
 			return;
@@ -1274,7 +1274,7 @@ void open_inventory_offer(const uuid_vec_t& objects, const std::string& from_nam
 		   item->getInventoryType() != LLInventoryType::IT_ATTACHMENT &&
 		   !from_name.empty())
 		{
-			LLInventoryView::showAgentInventory(TRUE);
+			LLPanelMainInventory::showAgentInventory(TRUE);
 		}
 
 		if (!gSavedSettings.getBOOL("LiruHighlightNewInventory")) return;

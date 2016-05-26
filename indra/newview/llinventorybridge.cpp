@@ -1036,6 +1036,12 @@ LLInventoryModel* LLInvFVBridge::getInventoryModel() const
 	return panel ? panel->getModel() : NULL;
 }
 
+LLInventoryFilter* LLInvFVBridge::getInventoryFilter() const
+{
+	LLInventoryPanel* panel = mInventoryPanel.get();
+	return panel ? panel->getFilter() : NULL;
+}
+
 BOOL LLInvFVBridge::isItemInTrash() const
 {
 	LLInventoryModel* model = getInventoryModel();
@@ -6305,7 +6311,7 @@ void LLLinkFolderBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 	else
 	{
 		getClipboardEntries(false, items, disabled_items, flags);
-		if (LLInventoryView::getActiveInventory() && !isOutboxFolder() && isAgentInventory())
+		if (LLPanelMainInventory::getActiveInventory() && !isOutboxFolder() && isAgentInventory())
 			build_context_menu_folder_options(getInventoryModel(), getFolderID(), items, disabled_items);
 		addDeleteContextMenuOptions(items, disabled_items);
 	}
@@ -6339,7 +6345,7 @@ void LLLinkFolderBridge::performAction(LLInventoryModel* model, std::string acti
 		copyToClipboard();
 		return;
 	}
-	if (LLInventoryView* iv = LLInventoryView::getActiveInventory())
+	if (LLPanelMainInventory* iv = LLPanelMainInventory::getActiveInventory())
 	{
 		if (LLFolderViewItem* folder_item = iv->getActivePanel()->getRootFolder()->getItemByID(getFolderID()))
 		{
@@ -6508,7 +6514,7 @@ public:
 	virtual void doIt()
 	{
 		LLViewerInventoryItem* item = getItem();
-		if (item)
+		if (item && item->getCreatorUUID().notNull())
 		{
 			LLAvatarActions::showProfile(item->getCreatorUUID());
 		}
