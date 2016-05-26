@@ -2557,6 +2557,8 @@ void LLMeshRepository::notifyLoadedMeshes()
 
 		S32 push_count = LLMeshRepoThread::sMaxConcurrentRequests-(LLMeshRepoThread::sActiveHeaderRequests+LLMeshRepoThread::sActiveLODRequests);
 
+		push_count = llmin(push_count, (S32)mPendingRequests.size());
+
 		if (push_count > 0)
 		{
 			//calculate "score" for pending requests
