@@ -300,7 +300,7 @@ BOOL get_can_item_be_worn(const LLUUID& id)
 	if (!item)
 		return FALSE;
 
-	if (LLAppearanceMgr::isLinkedInCOF(item->getLinkedUUID()))
+	if (LLAppearanceMgr::instance().isLinkedInCOF(item->getLinkedUUID()))
 	{
 		// an item having links in COF (i.e. a worn item)
 		return FALSE;

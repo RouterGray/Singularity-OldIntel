@@ -96,7 +96,7 @@ bool RlvCommand::parseCommand(const std::string& strCommand, std::string& strBeh
 	strOption = strParam = "";
 
 	// If <param> is missing it's an improperly formatted command
-	if ( (-1 == idxParam) || ((int)strCommand.length() - 1 == idxParam) )
+	if ( (-1 == idxParam) || (static_cast<int>(strCommand.length()) - 1 == idxParam) )
 	{
 		// Unless "<behaviour> == "clear" AND (idxOption == 0)" 
 		// OR <behaviour> == "clear" AND (idxParam != 0) [see table above]
@@ -187,12 +187,12 @@ void RlvCommand::initLookupTable()
 //
 
 // Checked: 2010-09-28 (RLVa-1.2.1c) | Added: RLVa-1.2.1c
-RlvCommandOptionGeneric::RlvCommandOptionGeneric(const std::string& strOption)
+RlvCommandOptionGeneric::RlvCommandOptionGeneric(const std::string& strOption): m_fEmpty(false)
 {
 	LLWearableType::EType wtType(LLWearableType::WT_INVALID); LLUUID idOption; ERlvAttachGroupType eAttachGroup(RLV_ATTACHGROUP_INVALID);
 	LLViewerJointAttachment* pAttachPt = NULL; LLViewerInventoryCategory* pFolder = NULL;
 
-	if (!(m_fEmpty = strOption.empty()))														// <option> could be an empty string
+	if (!(m_fEmpty == strOption.empty()))														// <option> could be an empty string
 	{
 		if ( ((wtType = LLWearableType::typeNameToType(strOption)) != LLWearableType::WT_INVALID) && (wtType != LLWearableType::WT_NONE) )
 			m_varOption = wtType;																// ... or specify a (valid) clothing layer
@@ -229,7 +229,7 @@ public:
 		gIdleCallbacks.deleteFunction(&onIdle, this);
 	}
 
-	void onAttachment(LLViewerObject* pAttachObj, LLVOAvatarSelf::EAttachAction eAction)
+	void onAttachment(LLViewerObject* pAttachObj, LLVOAvatarSelf::EAttachAction eAction) const
 	{
 		if ( (LLVOAvatarSelf::ACTION_ATTACH == eAction) && (pAttachObj->getID() == mObjectId) )
 		{
@@ -359,7 +359,7 @@ RlvCommandOptionTpTo::RlvCommandOptionTpTo(const RlvCommand &rlvCmd)
 
 	m_fValid = (3 == cmdTokens.size());
 	for (int idxAxis = 0; (idxAxis < 3) && (m_fValid); idxAxis++)
-		m_fValid &= (bool)LLStringUtil::convertToF64(cmdTokens[idxAxis], m_posGlobal[idxAxis]);
+		m_fValid &= static_cast<bool>(LLStringUtil::convertToF64(cmdTokens[idxAxis], m_posGlobal[idxAxis]));
 }
 
 // =========================================================================
@@ -805,7 +805,7 @@ void RlvForceWear::addAttachment(const LLViewerInventoryItem* pItem, EWearAction
 				m_addAttachments.insert(addattachment_pair_t(idxAttachPt, LLInventoryModel::item_array_t()));
 				itAddAttachments = m_addAttachments.find(idxAttachPt);
 			}
-			itAddAttachments->second.push_back((LLViewerInventoryItem*)pItem);
+			itAddAttachments->second.push_back(const_cast<LLViewerInventoryItem*>(pItem));
 		}
 	}
 	else if (ACTION_WEAR_REPLACE == eAction)
@@ -824,7 +824,7 @@ void RlvForceWear::addAttachment(const LLViewerInventoryItem* pItem, EWearAction
 
 		if (0 != idxAttachPt)
 			itAddAttachments->second.clear();
-		itAddAttachments->second.push_back((LLViewerInventoryItem*)pItem);
+		itAddAttachments->second.push_back(const_cast<LLViewerInventoryItem*>(pItem));
 	}
 }
 
@@ -877,12 +877,12 @@ void RlvForceWear::addWearable(const LLViewerInventoryItem* pItem, EWearAction e
 	if (ACTION_WEAR_ADD == eAction)				// Add it at the back if it's not already there
 	{
 		if (!isAddWearable(pItem))
-			itAddWearables->second.push_back((LLViewerInventoryItem*)pItem);
+			itAddWearables->second.push_back(const_cast<LLViewerInventoryItem*>(pItem));
 	}
 	else if (ACTION_WEAR_REPLACE == eAction)	// Replace all pending wearables of this type with the specified item
 	{
 		itAddWearables->second.clear();
-		itAddWearables->second.push_back((LLViewerInventoryItem*)pItem);
+		itAddWearables->second.push_back(const_cast<LLViewerInventoryItem*>(pItem));
 	}
 }
 
@@ -913,7 +913,7 @@ void RlvForceWear::updatePendingAttachments()
 	{
 		RlvForceWear* pThis = RlvForceWear::getInstance();
 		for (const auto& itAttach : pThis->m_pendingAttachments)
-			LLAttachmentsMgr::instance().addAttachment(itAttach.first, itAttach.second & ~ATTACHMENT_ADD, itAttach.second & ATTACHMENT_ADD);
+			LLAttachmentsMgr::instance().addAttachmentRequest(itAttach.first, itAttach.second & ~ATTACHMENT_ADD, itAttach.second & ATTACHMENT_ADD);
 		pThis->m_pendingAttachments.clear();
 	}
 }
@@ -921,7 +921,7 @@ void RlvForceWear::updatePendingAttachments()
 // Checked: 2015-05-05 (RLVa-1.4.12)
 void RlvForceWear::addPendingAttachment(const LLUUID& idItem, U8 idxPoint)
 {
-	pendingattachments_map_t::iterator itAttach = m_pendingAttachments.find(idItem);
+	auto itAttach = m_pendingAttachments.find(idItem);
 	if (m_pendingAttachments.end() == itAttach)
 		m_pendingAttachments.insert(std::make_pair(idItem, idxPoint));
 	else
@@ -982,7 +982,7 @@ void RlvForceWear::done()
 
 	// Wearables need to be split into AT_BODYPART and AT_CLOTHING for COF
 	LLInventoryModel::item_array_t addBodyParts, addClothing;
-	for (addwearables_map_t::const_iterator itAddWearables = m_addWearables.begin(); itAddWearables != m_addWearables.end(); ++itAddWearables)
+	for (addwearables_map_t::const_iterator itAddWearables = m_addWearables.cbegin(); itAddWearables != m_addWearables.cend(); ++itAddWearables)
 	{
 		// NOTE: LLAppearanceMgr will filter our duplicates so no need for us to check here
 		for (LLViewerInventoryItem* pItem : itAddWearables->second)
@@ -996,7 +996,7 @@ void RlvForceWear::done()
 	m_addWearables.clear();
 
 	// Until LL provides a way for updateCOF to selectively attach add/replace we have to deal with attachments ourselves
-	for (addattachments_map_t::const_iterator itAddAttachments = m_addAttachments.begin(); itAddAttachments != m_addAttachments.end(); ++itAddAttachments)
+	for (addattachments_map_t::const_iterator itAddAttachments = m_addAttachments.cbegin(); itAddAttachments != m_addAttachments.cend(); ++itAddAttachments)
 	{
 		for (const LLViewerInventoryItem* pItem : itAddAttachments->second)
 			addPendingAttachment(pItem->getLinkedUUID(), itAddAttachments->first);
@@ -1018,8 +1018,17 @@ void RlvForceWear::done()
 		LLAppearanceMgr::instance().removeItemsFromAvatar(remItems, cb, true);
 	}
 
-	if ( (!addBodyParts.empty()) || (!addClothing.empty()) || (!m_addGestures.empty()) )
+	if ( (addBodyParts.empty()) && (!addClothing.empty()) && (m_addGestures.empty()) )
 	{
+		// Clothing items only
+		uuid_vec_t idClothing;
+		for (const LLViewerInventoryItem* pItem : addClothing)
+			idClothing.push_back(pItem->getUUID());
+		LLAppearanceMgr::instance().wearItemsOnAvatar(idClothing, false, false, cb);
+	}
+	else if ( (!addBodyParts.empty()) || (!addClothing.empty()) || (!m_addGestures.empty()) )
+	{
+		// Mixture of body parts, clothing and/or gestures
 		LLInventoryModel::item_array_t addAttachments;
 		LLAppearanceMgr::instance().updateCOF(addBodyParts, addClothing, addAttachments, m_addGestures, true, LLUUID::null, cb);
 
@@ -1067,7 +1076,7 @@ void RlvForceWear::onWearableArrived(LLWearable* pWearable, void* pParam)
 */
 
 // ============================================================================
-// RlvBehaviourNotifyHandler
+// RlvBehaviourNotifyObserver
 //
 
 // Checked: 2010-03-03 (RLVa-1.2.0a) | Added: RLVa-1.2.0a
@@ -1078,8 +1087,10 @@ RlvBehaviourNotifyHandler::RlvBehaviourNotifyHandler()
 	m_ConnCommand = gRlvHandler.setCommandCallback(boost::bind(&RlvBehaviourNotifyHandler::onCommand, this, _1, _2, _3));
 }
 
+// ReSharper disable once CppMemberFunctionMayBeStatic
+
 // Checked: 2010-03-03 (RLVa-1.2.0a) | Modified: RLVa-1.2.0a
-void RlvBehaviourNotifyHandler::onCommand(const RlvCommand& rlvCmd, ERlvCmdRet eRet, bool fInternal)
+void RlvBehaviourNotifyHandler::onCommand(const RlvCommand& rlvCmd, ERlvCmdRet eRet, bool fInternal) const
 {
 	if (fInternal)
 		return;
@@ -1198,7 +1209,7 @@ ERlvAttachGroupType rlvAttachGroupFromString(const std::string& strGroup)
 {
 	for (int idx = 0; idx < RLV_ATTACHGROUP_COUNT; idx++)
 		if (cstrAttachGroups[idx] == strGroup)
-			return (ERlvAttachGroupType)idx;
+			return static_cast<ERlvAttachGroupType>(idx);
 	return RLV_ATTACHGROUP_INVALID;
 }
 

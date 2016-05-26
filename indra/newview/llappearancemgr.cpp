@@ -1430,7 +1430,7 @@ const LLUUID LLAppearanceMgr::getBaseOutfitUUID()
 	return outfit_cat->getUUID();
 }
 
-void wear_on_avatar_cb(const LLUUID& inv_item, bool do_replace = false)
+void wear_on_avatar_cb(const LLUUID& inv_item, bool do_replace /*= false*/)
 {
 	if (inv_item.isNull())
 		return;
@@ -4441,7 +4441,7 @@ void LLAppearanceMgr::removeItemsFromAvatar(const uuid_vec_t& ids_to_remove, LLP
 			cb = new LLUpdateAppearanceOnDestroy();
 		removeCOFItemLinks(linked_item_id, cb, immediate_delete);
 // [SL:KB] - Patch: Appearance-SyncAttach | Checked: 2015-03-01 (Catznip-3.7)
-		clearPendingAttachment(linked_item_id);
+		LLAttachmentsMgr::instance().clearPendingAttachmentLink(linked_item_id);
 // [/SL:KB]
 		addDoomedTempAttachment(linked_item_id);
 	}

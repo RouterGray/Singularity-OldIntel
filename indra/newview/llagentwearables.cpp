@@ -701,7 +701,7 @@ void LLAgentWearables::wearableUpdated(LLWearable *wearable, BOOL removed)
 			{
 				LL_INFOS() << "forcing wearable type " << wearable->getType() << " to version 22 from 24" << LL_ENDL;
 				wearable->setDefinitionVersion(22);
-				saveWearable(wearable->getType(),index,TRUE);
+				saveWearable(wearable->getType(),index);
 			}
 		}
 

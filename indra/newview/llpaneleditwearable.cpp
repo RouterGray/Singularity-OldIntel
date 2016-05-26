@@ -1284,7 +1284,7 @@ void LLPanelEditWearable::saveChanges(bool force_save_as, std::string new_name)
 
 			remove_inventory_item(link_item, NULL);
 		}
-		gAgentWearables.saveWearable(mType, index, TRUE, new_name);
+		gAgentWearables.saveWearable(mType, index, new_name);
 	}
 }
 
