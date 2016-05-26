@@ -948,7 +948,6 @@ P(productInfoRequestResponder);
 P(regionResponder);
 P(remoteParcelRequestResponder);
 P(requestAgentUpdateAppearance);
-P2(incrementCofVersionResponder_timeouts,		transfer_30s_connect_10s);
 P(responderIgnore);
 P(setDisplayNameResponder);
 P2(baseFeaturesReceived,						transfer_22s_connect_10s);

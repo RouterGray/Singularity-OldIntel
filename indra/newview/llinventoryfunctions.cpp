@@ -253,16 +253,18 @@ BOOL get_is_parent_to_worn_item(const LLUUID& id)
 
 	return FALSE;
 }
+
 BOOL get_is_item_worn(const LLInventoryItem *item)
 {
 	if (!item)
 		return FALSE;
 
 	// Consider the item as worn if it has links in COF.
-	/* if (LLCOFMgr::instance().isLinkInCOF(item->getUUID()))
-	{   REMOVED due to advice from Kitty Barnett, looks like it WILL cause trouble on some grids -SG
-		return TRUE;
-	} */
+// [SL:KB] - The code below causes problems across the board so it really just needs to go
+//	if (LLAppearanceMgr::instance().isLinkedInCOF(id))
+//	{
+//		return TRUE;
+//	}
 
 	switch(item->getType())
 	{
@@ -298,7 +300,7 @@ BOOL get_can_item_be_worn(const LLUUID& id)
 	if (!item)
 		return FALSE;
 
-	if (LLAppearanceMgr::isLinkInCOF(item->getLinkedUUID()))
+	if (LLAppearanceMgr::isLinkedInCOF(item->getLinkedUUID()))
 	{
 		// an item having links in COF (i.e. a worn item)
 		return FALSE;
