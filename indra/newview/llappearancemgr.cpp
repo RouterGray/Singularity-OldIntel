@@ -2588,6 +2588,7 @@ void LLAppearanceMgr::updateAppearanceFromCOF(bool enforce_item_restrictions,
 				<< " descendent_count " << cof->getDescendentCount()
 				<< " viewer desc count " << cof->getViewerDescendentCount() << LL_ENDL;
 	}
+
 // [SL:KB] - Patch: Appearance-SyncAttach | Checked: 2010-09-22 (Catznip-2.2)
 	// Update attachments to match those requested.
 	if (isAgentAvatarValid())

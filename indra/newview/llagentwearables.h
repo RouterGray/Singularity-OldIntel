@@ -170,7 +170,6 @@ public:
 
 protected:
 
-	/*virtual*/ void	invalidateBakedTextureHash(LLMD5& hash) const;
 	void			sendAgentWearablesUpdate();
 	void			sendAgentWearablesRequest();
 	void			queryWearableCache();

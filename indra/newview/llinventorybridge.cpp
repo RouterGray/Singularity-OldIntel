@@ -5545,9 +5545,8 @@ bool confirm_attachment_rez(const LLSD& notification, const LLSD& response)
 			U8 attachment_pt = notification["payload"]["attachment_point"].asInteger();
 			BOOL is_add = notification["payload"]["is_add"].asBoolean();
 
-			LLAttachmentsMgr::instance().addAttachment(item_id,
-													   attachment_pt,
-													   is_add);
+			LL_DEBUGS("Avatar") << "ATT calling addAttachmentRequest " << (itemp ? itemp->getName() : "UNKNOWN") << " id " << item_id << LL_ENDL;
+			LLAttachmentsMgr::instance().addAttachmentRequest(item_id, attachment_pt, is_add);
 		}
 	}
 	return false;
