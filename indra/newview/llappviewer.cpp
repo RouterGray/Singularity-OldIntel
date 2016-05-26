@@ -4618,7 +4618,7 @@ void LLAppViewer::disconnectViewer()
 	saveNameCache();
 
 	// close inventory interface, close all windows
-	LLInventoryView::cleanup();
+	LLPanelMainInventory::cleanup();
 // [SL:KB] - Patch: Appearance-Misc | Checked: 2013-02-12 (Catznip-3.4)
 	// Destroying all objects below will trigger attachment detaching code and attempt to remove the COF links for them
 	LLAppearanceMgr::instance().setAttachmentInvLinkEnable(false);

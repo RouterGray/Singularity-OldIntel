@@ -161,7 +161,7 @@ BOOL LLToolBar::handleDragAndDrop(S32 x, S32 y, MASK mask, BOOL drop,
 	LLButton* inventory_btn = mInventoryBtn;
 	if (!inventory_btn || !inventory_btn->getVisible()) return FALSE;
 
-	LLInventoryView* active_inventory = LLInventoryView::getActiveInventory();
+	LLPanelMainInventory* active_inventory = LLPanelMainInventory::getActiveInventory();
 
 	if (active_inventory && active_inventory->getVisible())
 	{
@@ -174,7 +174,7 @@ BOOL LLToolBar::handleDragAndDrop(S32 x, S32 y, MASK mask, BOOL drop,
 			if (!(active_inventory && active_inventory->getVisible()) && 
 			mInventoryAutoOpenTimer.getElapsedTimeF32() > sInventoryAutoOpenTime)
 			{
-				LLInventoryView::showAgentInventory();
+				LLPanelMainInventory::showAgentInventory();
 			}
 		}
 		else

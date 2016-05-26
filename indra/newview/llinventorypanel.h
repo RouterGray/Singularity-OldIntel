@@ -1,6 +1,6 @@
 /** 
- * @file llinventoryview.h
- * @brief LLInventoryView, LLInventoryFolder, and LLInventoryItem
+ * @file llpanelmaininventory.h
+ * @brief LLPanelMainInventory, LLInventoryFolder, and LLInventoryItem
  * class definition
  *
  * $LicenseInfo:firstyear=2001&license=viewergpl$
@@ -222,7 +222,7 @@ protected:
 	BOOL				mViewsInitialized; // Views have been generated
 };
 
-class LLInventoryView;
+class LLPanelMainInventory;
 
 
 
@@ -234,7 +234,7 @@ class LLInventoryView;
 // useful functions with the inventory view
 // *FIX: move these methods.
 
-void init_inventory_actions(LLInventoryView *floater);
+void init_inventory_actions(LLPanelMainInventory *floater);
 void init_inventory_panel_actions(LLInventoryPanel *panel);
 
 class LLInventoryCategory;

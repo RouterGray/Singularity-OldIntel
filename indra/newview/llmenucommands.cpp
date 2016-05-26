@@ -185,7 +185,7 @@ struct MenuFloaterDict : public LLSingleton<MenuFloaterDict>
 		//Singu TODO: Re-implement f1 help.
 		//registerFloater("help f1", boost::bind(/*gViewerHtmlHelp.show*/));
 		registerFloater("help tutorial", boost::bind(LLFloaterHUD::showHUD));
-		registerFloater("inventory", boost::bind(LLInventoryView::toggleVisibility, (void*)NULL), boost::bind(is_visible_view, static_cast<boost::function<LLView* ()> >(LLInventoryView::getActiveInventory)));
+		registerFloater("inventory", boost::bind(LLPanelMainInventory::toggleVisibility, (void*)NULL), boost::bind(is_visible_view, static_cast<boost::function<LLView* ()> >(LLPanelMainInventory::getActiveInventory)));
 		registerFloater("local assets", boost::bind(FloaterLocalAssetBrowser::show, (void*)0));
 		registerFloater("mean events", boost::bind(LLFloaterBump::show, (void*)NULL));
 		registerFloater("media ticker", boost::bind(handle_ticker_toggle, (void*)NULL), boost::bind(SHFloaterMediaTicker::instanceExists));

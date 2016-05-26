@@ -222,7 +222,6 @@ protected:
 	BOOL				mCanApplyImmediately;
 	BOOL				mNoCopyTextureSelected;
 	F32					mContextConeOpacity;
-	LLSaveFolderState	mSavedFolderState;
 	BOOL				mSelectedItemPinned;
 	LLScrollListCtrl*   mLocalScrollCtrl; // tag: vaa emerald local_asset_browser
 
@@ -273,8 +272,6 @@ LLFloaterTexturePicker::LLFloaterTexturePicker(
 
 
 	setCanMinimize(FALSE);
-
-	mSavedFolderState.setApply(FALSE);
 }
 
 LLFloaterTexturePicker::~LLFloaterTexturePicker()
@@ -1059,36 +1056,14 @@ void LLFloaterTexturePicker::setCanApply(bool can_preview, bool can_apply)
 
 void LLFloaterTexturePicker::onFilterEdit(const std::string& search_string )
 {
-	std::string upper_case_search_string = search_string;
-	LLStringUtil::toUpper(upper_case_search_string);
-
-	if (upper_case_search_string.empty())
+	if (!mInventoryPanel)
 	{
-		if (mInventoryPanel->getFilterSubString().empty())
-		{
-			// current filter and new filter empty, do nothing
-			return;
-		}
-
-		mSavedFolderState.setApply(TRUE);
-		mInventoryPanel->getRootFolder()->applyFunctorRecursively(mSavedFolderState);
-		// add folder with current item to list of previously opened folders
-		LLOpenFoldersWithSelection opener;
-		mInventoryPanel->getRootFolder()->applyFunctorRecursively(opener);
-		mInventoryPanel->getRootFolder()->scrollToShowSelection();
-
-	}
-	else if (mInventoryPanel->getFilterSubString().empty())
-	{
-		// first letter in search term, save existing folder open state
-		if (!mInventoryPanel->getRootFolder()->isFilterModified())
-		{
-			mSavedFolderState.setApply(FALSE);
-			mInventoryPanel->getRootFolder()->applyFunctorRecursively(mSavedFolderState);
-		}
+		return;
 	}
 
-	mInventoryPanel->setFilterSubString(upper_case_search_string);
+	// set new filter string
+	// Internally handles saving/restoring folder states.
+	mInventoryPanel->setFilterSubString(search_string);
 }
 
 void LLFloaterTexturePicker::onTextureSelect( const LLTextureEntry& te )

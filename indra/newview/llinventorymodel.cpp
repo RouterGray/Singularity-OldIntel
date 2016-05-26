@@ -3213,7 +3213,7 @@ void LLInventoryModel::processBulkUpdateInventory(LLMessageSystem* msg, void**)
 		gInventoryCallbacks.fire(cbinfo.mCallback, cbinfo.mInvID);
 	}
 	// Don't show the inventory.  We used to call showAgentInventory here.
-	//LLInventoryView* view = LLInventoryView::getActiveInventory();
+	//LLPanelMainInventory* view = LLPanelMainInventory::getActiveInventory();
 	//if(view)
 	//{
 	//	const BOOL take_keyboard_focus = FALSE;
@@ -3223,10 +3223,10 @@ void LLInventoryModel::processBulkUpdateInventory(LLMessageSystem* msg, void**)
 	//	// HACK to open inventory offers that are accepted.  This information
 	//	// really needs to flow through the instant messages and inventory
 	//	// transfer/update messages.
-	//	if (LLInventoryView::sOpenNextNewItem)
+	//	if (LLPanelMainInventory::sOpenNextNewItem)
 	//	{
 	//		view->openSelected();
-	//		LLInventoryView::sOpenNextNewItem = FALSE;
+	//		LLPanelMainInventory::sOpenNextNewItem = FALSE;
 	//	}
 	//
 	//	// restore keyboard focus

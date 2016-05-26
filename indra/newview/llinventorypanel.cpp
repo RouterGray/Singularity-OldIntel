@@ -404,14 +404,44 @@ void LLInventoryPanel::setFilterWorn(bool worn)
 
 void LLInventoryPanel::setFilterSubString(const std::string& string)
 {
-	getFilter()->setFilterSubString(string);
+	if (!getRootFolder())
+		return;
+
+	std::string uppercase_search_string = string;
+	LLStringUtil::toUpper(uppercase_search_string);
+	const std::string prior_search_string = getFilterSubString();
+
+	if (prior_search_string == uppercase_search_string)
+	{
+		// current filter and new filter match, do nothing
+		return;
+	}
+
+	if (string.empty())
+	{
+		// Unlike v3, do not clear other filters. Text is independent.
+		getFilter()->setFilterSubString(LLStringUtil::null);
+		getRootFolder()->restoreFolderState();
+		LLOpenFoldersWithSelection opener;
+		getRootFolder()->applyFunctorRecursively(opener);
+		getRootFolder()->scrollToShowSelection();
+	}
+	else
+	{
+		if (prior_search_string.empty())
+		{
+			// save current folder open state if no filter currently applied
+			getRootFolder()->saveFolderState();
+		}
+		// set new filter string
+		getFilter()->setFilterSubString(string);
+	}
 }
 
 const std::string LLInventoryPanel::getFilterSubString() 
 { 
 	return mFolderRoot.get()->getFilterSubString();
 }
-
 
 void LLInventoryPanel::setSortOrder(U32 order)
 {
@@ -1081,7 +1111,7 @@ void LLInventoryPanel::dumpSelectionInformation(void* user_data)
 LLInventoryPanel* LLInventoryPanel::getActiveInventoryPanel(BOOL auto_open)
 {
 	LLInventoryPanel* res = NULL;
-	LLInventoryView* floater_inventory = LLInventoryView::getActiveInventory();
+	LLPanelMainInventory* floater_inventory = LLPanelMainInventory::getActiveInventory();
 	if (!floater_inventory)
 	{
 		LL_WARNS() << "Could not find My Inventory floater" << LL_ENDL;

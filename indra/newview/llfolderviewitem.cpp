@@ -210,12 +210,12 @@ BOOL LLFolderViewItem::potentiallyVisible()
 {
 	// we haven't been checked against min required filter
 	// or we have and we passed
-	return getLastFilterGeneration() < getRoot()->getFilter()->getMinRequiredGeneration() || getFiltered();
+	return getLastFilterGeneration() < getRoot()->getFilter()->getFirstSuccessGeneration() || getFiltered();
 }
 
 BOOL LLFolderViewItem::getFiltered() 
 { 
-	return mPassedFilter && mLastFilterGeneration >= getRoot()->getFilter()->getMinRequiredGeneration(); 
+	return mPassedFilter && mLastFilterGeneration >= getRoot()->getFilter()->getFirstSuccessGeneration(); 
 }
 
 BOOL LLFolderViewItem::getFiltered(S32 filter_generation) 
@@ -1158,7 +1158,7 @@ void LLFolderViewFolder::setFilteredFolder(bool filtered, S32 filter_generation)
 
 bool LLFolderViewFolder::getFilteredFolder(S32 filter_generation)
 {
-	return mPassedFolderFilter && mLastFilterGeneration >= getRoot()->getFilter()->getMinRequiredGeneration();
+	return mPassedFolderFilter && mLastFilterGeneration >= getRoot()->getFilter()->getFirstSuccessGeneration();
 }
 
 // addToFolder() returns TRUE if it succeeds. FALSE otherwise
@@ -1355,7 +1355,7 @@ void LLFolderViewFolder::filter( LLInventoryFilter& filter)
 	// if failed to pass filter newer than must_pass_generation
 	// you will automatically fail this time, so we only
 	// check against items that have passed the filter
-	S32 must_pass_generation = filter.getMustPassGeneration();
+	S32 must_pass_generation = filter.getFirstRequiredGeneration();
 	
 	bool autoopen_folders = (filter.hasFilterString());
 
@@ -1408,7 +1408,7 @@ void LLFolderViewFolder::filter( LLInventoryFilter& filter)
 
 	// when applying a filter, matching folders get their contents downloaded first
 	if (filter.isNotDefault()
-		&& getFiltered(filter.getMinRequiredGeneration())
+		&& getFiltered(filter.getFirstSuccessGeneration())
 		&&	(mListener
 			&& !gInventory.isCategoryComplete(mListener->getUUID())))
 	{
@@ -1433,7 +1433,7 @@ void LLFolderViewFolder::filter( LLInventoryFilter& filter)
 		if (folder->getCompletedFilterGeneration() >= filter_generation)
 		{
 			// track latest generation to pass any child items
-			if (folder->getFiltered() || folder->hasFilteredDescendants(filter.getMinRequiredGeneration()))
+			if (folder->getFiltered() || folder->hasFilteredDescendants(filter.getFirstSuccessGeneration()))
 			{
 				mMostFilteredDescendantGeneration = filter_generation;
 				requestArrange();
@@ -1487,7 +1487,7 @@ void LLFolderViewFolder::filter( LLInventoryFilter& filter)
 
 		item->filter( filter );
 
-		if (item->getFiltered(filter.getMinRequiredGeneration()))
+		if (item->getFiltered(filter.getFirstSuccessGeneration()))
 		{
 			mMostFilteredDescendantGeneration = filter_generation;
 			requestArrange();
@@ -1552,7 +1552,7 @@ void LLFolderViewFolder::dirtyFilter()
 
 BOOL LLFolderViewFolder::getFiltered() 
 { 
-	return getFilteredFolder(getRoot()->getFilter()->getMinRequiredGeneration()) 
+	return getFilteredFolder(getRoot()->getFilter()->getFirstSuccessGeneration()) 
 		&& LLFolderViewItem::getFiltered(); 
 }
 
@@ -2572,9 +2572,9 @@ BOOL	LLFolderViewFolder::potentiallyVisible()
 	// folder should be visible by it's own filter status
 	return LLFolderViewItem::potentiallyVisible() 	
 		// or one or more of its descendants have passed the minimum filter requirement
-		|| hasFilteredDescendants(getRoot()->getFilter()->getMinRequiredGeneration())
+		|| hasFilteredDescendants(getRoot()->getFilter()->getFirstSuccessGeneration())
 		// or not all of its descendants have been checked against minimum filter requirement
-		|| getCompletedFilterGeneration() < getRoot()->getFilter()->getMinRequiredGeneration(); 
+		|| getCompletedFilterGeneration() < getRoot()->getFilter()->getFirstSuccessGeneration(); 
 }
 
 // this does prefix traversal, as folders are listed above their contents

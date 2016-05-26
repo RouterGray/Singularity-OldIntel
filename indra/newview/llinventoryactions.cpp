@@ -66,7 +66,7 @@ namespace LLInventoryAction
 }
 
 typedef LLMemberListener<LLPanelObjectInventory> object_inventory_listener_t;
-typedef LLMemberListener<LLInventoryView> inventory_listener_t;
+typedef LLMemberListener<LLPanelMainInventory> inventory_listener_t;
 typedef LLMemberListener<LLInventoryPanel> inventory_panel_listener_t;
 
 bool LLInventoryAction::doToSelected(LLFolderView* folder, std::string action)
@@ -143,7 +143,7 @@ struct LLNewWindow : public inventory_listener_t
 		S32 left = 0 , top = 0;
 		gFloaterView->getNewFloaterPosition(&left, &top);
 		rect.setLeftTopAndSize(left, top, rect.getWidth(), rect.getHeight());
-		LLInventoryView* iv = new LLInventoryView(std::string("Inventory"),
+		LLPanelMainInventory* iv = new LLPanelMainInventory(std::string("Inventory"),
 												rect,
 												mPtr->getActivePanel()->getModel());
 		iv->getActivePanel()->setFilterTypes(mPtr->getActivePanel()->getFilterObjectTypes());
@@ -467,15 +467,15 @@ void init_object_inventory_panel_actions(LLPanelObjectInventory *panel)
 	(new LLBindMemberListener(panel, "Inventory.DoToSelected", boost::bind(&LLInventoryAction::doToSelected, boost::bind(&LLPanelObjectInventory::getRootFolder, panel), _2)));
 }
 
-void init_inventory_actions(LLInventoryView *floater)
+void init_inventory_actions(LLPanelMainInventory *floater)
 {
-	(new LLBindMemberListener(floater, "Inventory.DoToSelected", boost::bind(&LLInventoryAction::doToSelected, boost::bind(&LLInventoryView::getRootFolder, floater), _2)));
-	(new LLBindMemberListener(floater, "Inventory.CloseAllFolders", boost::bind(&LLInventoryPanel::closeAllFolders, boost::bind(&LLInventoryView::getPanel, floater))));
+	(new LLBindMemberListener(floater, "Inventory.DoToSelected", boost::bind(&LLInventoryAction::doToSelected, boost::bind(&LLPanelMainInventory::getRootFolder, floater), _2)));
+	(new LLBindMemberListener(floater, "Inventory.CloseAllFolders", boost::bind(&LLInventoryPanel::closeAllFolders, boost::bind(&LLPanelMainInventory::getPanel, floater))));
 	(new LLBindMemberListener(floater, "Inventory.EmptyTrash", boost::bind(&LLInventoryModel::emptyFolderType, &gInventory, "", LLFolderType::FT_TRASH)));
-	(new LLBindMemberListener(floater, "Inventory.DoCreate", boost::bind(&do_create, &gInventory, boost::bind(&LLInventoryView::getPanel, floater), _2, (LLFolderBridge*)0)));
+	(new LLBindMemberListener(floater, "Inventory.DoCreate", boost::bind(&do_create, &gInventory, boost::bind(&LLPanelMainInventory::getPanel, floater), _2, (LLFolderBridge*)0)));
 	(new LLNewWindow())->registerListener(floater, "Inventory.NewWindow");
-	(new LLBindMemberListener(floater, "Inventory.ShowFilters", boost::bind(&LLInventoryView::toggleFindOptions, floater)));
-	(new LLBindMemberListener(floater, "Inventory.ResetFilter", boost::bind(&LLInventoryView::resetFilters, floater)));
+	(new LLBindMemberListener(floater, "Inventory.ShowFilters", boost::bind(&LLPanelMainInventory::toggleFindOptions, floater)));
+	(new LLBindMemberListener(floater, "Inventory.ResetFilter", boost::bind(&LLPanelMainInventory::resetFilters, floater)));
 	(new LLSetSortBy())->registerListener(floater, "Inventory.SetSortBy");
 	(new LLSetSearchType())->registerListener(floater, "Inventory.SetSearchType");
 }

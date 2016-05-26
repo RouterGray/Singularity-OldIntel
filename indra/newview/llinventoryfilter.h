@@ -36,19 +36,19 @@ class LLFolderViewFolder;
 class LLInventoryFilter
 {
 public:
-	enum EFolderShow
-	{
-		SHOW_ALL_FOLDERS,
-		SHOW_NON_EMPTY_FOLDERS,
-		SHOW_NO_FOLDERS
-	};
-
-	enum EFilterBehavior
+	enum EFilterModified
 	{
 		FILTER_NONE,				// nothing to do, already filtered
 		FILTER_RESTART,				// restart filtering from scratch
 		FILTER_LESS_RESTRICTIVE,	// existing filtered items will certainly pass this filter
 		FILTER_MORE_RESTRICTIVE		// if you didn't pass the previous filter, you definitely won't pass this one
+	};
+	
+	enum EFolderShow
+	{
+		SHOW_ALL_FOLDERS,
+		SHOW_NON_EMPTY_FOLDERS,
+		SHOW_NO_FOLDERS
 	};
 
 	enum EFilterType	{
@@ -76,16 +76,37 @@ public:
 		SO_SYSTEM_FOLDERS_TO_TOP = 0x1 << 2	// Force system folders to be on top
 	};
 
+struct FilterOps
+	{
+		FilterOps();
+		U32 			mFilterTypes;
+		U64				mFilterObjectTypes,   // For _OBJECT
+						mFilterWearableTypes,
+						mFilterLinks,
+						mFilterCategoryTypes; // For _CATEGORY
+		LLUUID      	mFilterUUID; // for UUID
+
+		time_t			mMinDate,
+						mMaxDate;
+		U32				mHoursAgo;
+		EFolderShow		mShowFolderState;
+		PermissionMask	mPermissions;
+
+		bool			mFilterWorn;
+	};
+
 	LLInventoryFilter(const std::string& name);
 	virtual ~LLInventoryFilter();
 
 	// +-------------------------------------------------------------------+
 	// + Parameters
 	// +-------------------------------------------------------------------+
-	void 				setFilterObjectTypes(U64 types);
+	U64 				getFilterTypes() const;
 	U64 				getFilterObjectTypes() const;
 	U64					getFilterCategoryTypes() const;
-	BOOL 				isFilterObjectTypesWith(LLInventoryType::EType t) const;
+	U64					getFilterWearableTypes() const;
+	bool 				isFilterObjectTypesWith(LLInventoryType::EType t) const;
+	void 				setFilterObjectTypes(U64 types);
 	void 				setFilterCategoryTypes(U64 types);
 	void 				setFilterUUID(const LLUUID &object_id);
 	void				setFilterWearableTypes(U64 types);
@@ -95,7 +116,7 @@ public:
 	void 				setFilterSubString(const std::string& string);
 	const std::string& 	getFilterSubString(BOOL trim = FALSE) const;
 	const std::string& 	getFilterSubStringOrig() const { return mFilterSubStringOrig; } 
-	BOOL 				hasFilterString() const;
+	bool 				hasFilterString() const;
 	
 	void setFilterWorn(bool worn) { mFilterOps.mFilterWorn = worn; }
 	bool getFilterWorn() const { return mFilterOps.mFilterWorn; }
@@ -117,15 +138,14 @@ public:
 	// +-------------------------------------------------------------------+
 	// + Execution And Results
 	// +-------------------------------------------------------------------+
-	BOOL 				check(LLFolderViewItem* item);
+	bool 				check(LLFolderViewItem* item);
 	bool				checkFolder(const LLFolderViewFolder* folder) const;
-	BOOL 				checkAgainstFilterType(const LLFolderViewItem* item) const;
-	BOOL 				checkAgainstPermissions(const LLFolderViewItem* item) const;
-	BOOL 				checkAgainstFilterLinks(const LLFolderViewItem* item) const;
-	bool				checkAgainstClipboard(const LLUUID& object_id) const;
+	bool				checkFolder(const LLUUID& folder_id) const;
+
+	bool				showAllResults() const;
 
 	std::string::size_type getStringMatchOffset() const;
-
+	std::string::size_type getFilterStringSize() const;
 	// +-------------------------------------------------------------------+
 	// + Presentation
 	// +-------------------------------------------------------------------+
@@ -135,21 +155,18 @@ public:
 	void 				setSortOrder(U32 order);
 	U32 				getSortOrder() const;
 
-
-
 	// +-------------------------------------------------------------------+
 	// + Status
 	// +-------------------------------------------------------------------+
-	BOOL 				isActive() const;
+	bool 				isActive() const;
 
-	BOOL 				isModified() const;
-	BOOL 				isModifiedAndClear();
-	BOOL				isSinceLogoff() const;
+	bool 				isModified() const;
+	bool				isSinceLogoff() const;
 	void 				clearModified();
-	const std::string& 	getName() const;
+	const std::string& 	getName() const { return mName; }
 	const std::string& 	getFilterText();
 	//RN: this is public to allow system to externally force a global refilter
-	void setModified(EFilterBehavior behavior = FILTER_RESTART);
+	void setModified(EFilterModified behavior = FILTER_RESTART);
 
 	// +-------------------------------------------------------------------+
 	// + Count
@@ -161,7 +178,7 @@ public:
 	// +-------------------------------------------------------------------+
 	// + Default
 	// +-------------------------------------------------------------------+
-	BOOL 				isNotDefault() const;
+	bool 				isNotDefault() const;
 	void 				markDefault();
 	void 				resetDefault();
 
@@ -169,8 +186,8 @@ public:
 	// + Generation
 	// +-------------------------------------------------------------------+
 	S32 				getCurrentGeneration() const;
-	S32 				getMinRequiredGeneration() const;
-	S32 				getMustPassGeneration() const;
+	S32 				getFirstSuccessGeneration() const;
+	S32 				getFirstRequiredGeneration() const;
 
 	// +-------------------------------------------------------------------+
 	// + Conversion
@@ -179,27 +196,13 @@ public:
 	void fromLLSD(LLSD& data);
 
 private:
-	struct FilterOps
-	{
-		FilterOps();
-		U32 			mFilterTypes;
-
-		U64				mFilterObjectTypes; // For _OBJECT
-		U64				mFilterWearableTypes;
-		U64				mFilterCategoryTypes; // For _CATEGORY
-		LLUUID      	mFilterUUID; // for UUID
-
-		time_t			mMinDate;
-		time_t			mMaxDate;
-		U32				mHoursAgo;
-		EFolderShow		mShowFolderState;
-		PermissionMask	mPermissions;
-		U64				mFilterLinks;
-		bool			mFilterWorn;
-	};
+	bool				areDateLimitsSet();
+	bool 				checkAgainstFilterType(const LLFolderViewItem* item) const;
+	bool 				checkAgainstPermissions(const LLFolderViewItem* item) const;
+	bool 				checkAgainstFilterLinks(const LLFolderViewItem* item) const;
+	bool				checkAgainstClipboard(const LLUUID& object_id) const;
 
 	U32						mOrder;
-	U32 					mLastLogoff;
 
 	FilterOps				mFilterOps;
 	FilterOps				mDefaultFilterOps;
@@ -209,16 +212,16 @@ private:
 	std::string				mFilterSubStringOrig;
 	const std::string		mName;
 
-	S32						mFilterGeneration;
-	S32						mMustPassGeneration;
-	S32						mMinRequiredGeneration;
-	S32						mNextFilterGeneration;
+	S32						mCurrentGeneration;
+    // The following makes checking for pass/no pass possible even if the item is not checked against the current generation
+    // Any item that *did not pass* the "required generation" will *not pass* the current one
+    // Any item that *passes* the "success generation" will *pass* the current one
+	S32						mFirstRequiredGeneration;
+	S32						mFirstSuccessGeneration;
 
 	S32						mFilterCount;
-	EFilterBehavior 		mFilterBehavior;
+	EFilterModified 		mFilterModified;
 
-	BOOL 					mModified;
-	BOOL 					mNeedTextRebuild;
 	std::string 			mFilterText;
 };
 

@@ -2280,13 +2280,13 @@ bool idle_startup()
 
 		// Create the inventory views
 		LL_INFOS() << "Creating Inventory Views" << LL_ENDL;
-		LLInventoryView::showAgentInventory();
+		LLPanelMainInventory::showAgentInventory();
 		display_startup();
 		
 		// Hide the inventory if it wasn't shown at exit
 		if(!shown_at_exit)
 		{
-			LLInventoryView::toggleVisibility(NULL);
+			LLPanelMainInventory::toggleVisibility(NULL);
 		}
 		display_startup();
 

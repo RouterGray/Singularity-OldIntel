@@ -572,7 +572,7 @@ void LLAvatarActions::share(const LLUUID& id)
 	LLFloaterSidePanelContainer::showPanel("inventory", key);
 	LLFloaterReg::showInstance("im_container");
 	*/
-	LLInventoryView::getActiveInventory()->setVisible(true);
+	LLPanelMainInventory::getActiveInventory()->setVisible(true);
 
 	LLUUID session_id = gIMMgr->computeSessionID(IM_NOTHING_SPECIAL, id);
 

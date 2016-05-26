@@ -447,7 +447,7 @@ S32 LLFolderView::arrange( S32* unused_width, S32* unused_height, S32 filter_gen
 
 	LLFastTimer t2(FTM_ARRANGE);
 
-	filter_generation = mFilter->getMinRequiredGeneration();
+	filter_generation = mFilter->getFirstSuccessGeneration();
 	mMinWidth = 0;
 
 	mHasVisibleChildren = hasFilteredDescendants(filter_generation);
@@ -908,7 +908,7 @@ void LLFolderView::draw()
 	if (mDebugFilters)
 	{
 		std::string current_filter_string = llformat("Current Filter: %d, Least Filter: %d, Auto-accept Filter: %d",
-										mFilter->getCurrentGeneration(), mFilter->getMinRequiredGeneration(), mFilter->getMustPassGeneration());
+										mFilter->getCurrentGeneration(), mFilter->getFirstSuccessGeneration(), mFilter->getFirstRequiredGeneration());
 		LLFontGL::getFontMonospace()->renderUTF8(current_filter_string, 0, 2, 
 			getRect().getHeight() - LLFontGL::getFontMonospace()->getLineHeight(), LLColor4(0.5f, 0.5f, 0.8f, 1.f), 
 			LLFontGL::LEFT, LLFontGL::BOTTOM, LLFontGL::NORMAL, LLFontGL::NO_SHADOW,  S32_MAX, S32_MAX, NULL, FALSE );
@@ -954,7 +954,7 @@ void LLFolderView::draw()
 	else if (mShowEmptyMessage)
 	{
 		static LLCachedControl<LLColor4> sSearchStatusColor(gColors, "InventorySearchStatusColor", LLColor4::white );
-		if (LLInventoryModelBackgroundFetch::instance().folderFetchActive() || mCompletedFilterGeneration < mFilter->getMinRequiredGeneration())
+		if (LLInventoryModelBackgroundFetch::instance().folderFetchActive() || mCompletedFilterGeneration < mFilter->getFirstSuccessGeneration())
 		{
 			mStatusText = LLTrans::getString("Searching");
 		}
@@ -2382,6 +2382,22 @@ void LLFolderView::updateMenu()
 	{
 		updateMenuOptions(menu);
 		menu->needsArrange(); // update menu height if needed
+	}
+}
+
+void LLFolderView::saveFolderState()
+{
+	mSavedFolderState = std::unique_ptr<LLSaveFolderState>(new LLSaveFolderState());
+	applyFunctorRecursively(*mSavedFolderState);
+}
+
+void LLFolderView::restoreFolderState()
+{
+	if (mSavedFolderState)
+	{
+		mSavedFolderState->setApply(true);
+		applyFunctorRecursively(*mSavedFolderState);
+		mSavedFolderState.reset();
 	}
 }
 

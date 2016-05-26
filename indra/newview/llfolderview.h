@@ -63,6 +63,7 @@ class LLMenuGL;
 class LLScrollContainer;
 class LLUICtrl;
 class LLTextBox;
+class LLSaveFolderState;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Class LLFolderView
@@ -258,6 +259,8 @@ public:
 	
 	bool useLabelSuffix() { return mUseLabelSuffix; }
 	void updateMenu();
+	void saveFolderState();
+	void restoreFolderState();
 
 	// Note: We may eventually have to move that method up the hierarchy to LLFolderViewItem.
 	LLHandle<LLFolderView>	getHandle() const { return getDerivedHandle<LLFolderView>(); }
@@ -279,6 +282,9 @@ protected:
 	bool selectLastItem();
 	
 	BOOL addNoOptions(LLMenuGL* menu) const;
+
+private:
+	std::unique_ptr<LLSaveFolderState> mSavedFolderState;
 protected:
 	LLHandle<LLView>					mPopupMenuHandle;
 	
