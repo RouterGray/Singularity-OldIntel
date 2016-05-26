@@ -3132,9 +3132,6 @@ void register_viewer_callbacks(LLMessageSystem* msg)
 	// msg->setHandlerFuncFast(_PREHASH_ReputationIndividualReply,
 	//					LLFloaterRate::processReputationIndividualReply);
 
-	msg->setHandlerFuncFast(_PREHASH_AgentWearablesUpdate,
-						LLAgentWearables::processAgentInitialWearablesUpdate );
-
 	msg->setHandlerFunc("ScriptControlChange",
 						LLAgent::processScriptControlChange );
 
