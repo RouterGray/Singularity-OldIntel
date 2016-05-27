@@ -153,6 +153,19 @@ const	char	AURORA_WIND_LAYER_CODE			= '9';
 const	char	AURORA_CLOUD_LAYER_CODE			= ':';
 // </FS:CR> Aurora Sim
 
+enum ETerrainBrushType
+{
+	// the valid brush numbers cannot be reordered, because they
+	// are used in the binary LSL format as arguments to llModifyLand()
+	E_LANDBRUSH_LEVEL	= 0,
+	E_LANDBRUSH_RAISE	= 1,
+	E_LANDBRUSH_LOWER	= 2,
+	E_LANDBRUSH_SMOOTH 	= 3,
+	E_LANDBRUSH_NOISE	= 4,
+	E_LANDBRUSH_REVERT 	= 5,
+	E_LANDBRUSH_INVALID = 6
+};
+
 // keys
 // Bit masks for various keyboard modifier keys.
 const MASK MASK_NONE =			0x0000;
@@ -303,14 +316,6 @@ const U32 START_LOCATION_ID_COUNT 		= 6;
 // group constants
 const U32 GROUP_MIN_SIZE = 2;
 
-// gMaxAgentGroups is now sent by login.cgi, which
-// looks it up from globals.xml.
-//
-// For now we need an old default value however,
-// so the viewer can be deployed ahead of login.cgi.
-//
-const S32 DEFAULT_MAX_AGENT_GROUPS = 25;
-
 // radius within which a chat message is fully audible
 const F32 CHAT_WHISPER_RADIUS = 10.f;
 const F32 CHAT_NORMAL_RADIUS = 20.f;
@@ -341,18 +346,7 @@ const S32 SANDBOX_CLEAN_FREQ = 12;
 
 const F32 WIND_SCALE_HACK		= 2.0f;	// hack to make wind speeds more realistic
 
-enum ETerrainBrushType
-{
-	// the valid brush numbers cannot be reordered, because they 
-	// are used in the binary LSL format as arguments to llModifyLand()
-	E_LANDBRUSH_LEVEL	= 0,
-	E_LANDBRUSH_RAISE	= 1,
-	E_LANDBRUSH_LOWER	= 2,
-	E_LANDBRUSH_SMOOTH 	= 3,
-	E_LANDBRUSH_NOISE	= 4,
-	E_LANDBRUSH_REVERT 	= 5,
-	E_LANDBRUSH_INVALID = 6
-};
+
 
 // media commands
 const U32 PARCEL_MEDIA_COMMAND_STOP  = 0;
