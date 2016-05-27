@@ -1280,7 +1280,7 @@ void LLPanelEditWearable::saveChanges(bool force_save_as, std::string new_name)
 			// Create new link
 			LL_DEBUGS("Avatar") << "link refresh, creating new link to " << link_item->getLinkedUUID()
 								<< " removing old link at " << link_item->getUUID()
-								<< " wearable item id " << mWearablePtr->getItemID() << LL_ENDL;
+								<< /*" wearable item id " << mWearablePtr->getItemID() <<*/ LL_ENDL;
 
 			link_inventory_object( LLAppearanceMgr::instance().getCOF(),
 								 link_item,
