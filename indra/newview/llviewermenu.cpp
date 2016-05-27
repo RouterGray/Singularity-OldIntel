@@ -2642,7 +2642,8 @@ class LLSyncAnimations : public view_listener_t
 		resync_anims();
 		return false;
 	}
-}
+};
+
 class LLCanIHasKillEmAll : public view_listener_t
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
