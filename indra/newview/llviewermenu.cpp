@@ -2636,7 +2636,7 @@ class LLObjectData : public view_listener_t
 
 class LLSyncAnimations : public view_listener_t
 {
-	bool handleEvent(const LLSD& userdata)
+	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 	{
 		void resync_anims();
 		resync_anims();
