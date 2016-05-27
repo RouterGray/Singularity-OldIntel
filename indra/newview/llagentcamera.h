@@ -88,10 +88,10 @@ public:
 	void			changeCameraToDefault();
 	void			changeCameraToMouselook(BOOL animate = TRUE);
 	void			changeCameraToThirdPerson(BOOL animate = TRUE);
-	void			changeCameraToCustomizeAvatar();			// trigger transition animation
+	void			changeCameraToCustomizeAvatar(); // Trigger transition animation
 	F32				calcCustomizeAvatarUIOffset( const LLVector3d& camera_pos_global );
 	// Ventrella
-	void			changeCameraToFollow(BOOL animate = TRUE);
+	void			changeCameraToFollow(BOOL animate = TRUE); 	// Ventrella
 	//end Ventrella
 	BOOL			cameraThirdPerson() const		{ return (mCameraMode == CAMERA_MODE_THIRD_PERSON && mLastCameraMode == CAMERA_MODE_THIRD_PERSON); }
 	BOOL			cameraMouselook() const			{ return (mCameraMode == CAMERA_MODE_MOUSELOOK && mLastCameraMode == CAMERA_MODE_MOUSELOOK); }
