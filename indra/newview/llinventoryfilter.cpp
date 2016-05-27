@@ -111,34 +111,6 @@ bool LLInventoryFilter::check(LLFolderViewItem* item)
 						 passed_clipboard &&
 						 passed_wearable &&
 						 (mFilterSubString.size() == 0 || mSubStringMatchOffset != std::string::npos));
-
-	if (!passed)
-	{
-		bool passed_label = (mFilterSubString.size() == 0 || mSubStringMatchOffset != std::string::npos);
-		LL_INFOS() << item->getSearchableLabel() << " filtered." <<
-			" passed_filtertype:" << passed_filtertype <<
-			" passed_permissions:" << passed_permissions <<
-			" passed_filterlink:" << passed_filterlink <<
-			" passed_wearable:" << passed_wearable <<
-			" passed_label:" << passed_label <<
-			" passed:" << passed;
-
-		if ((mFilterOps.mFilterTypes & FILTERTYPE_NONE))
-			LL_CONT << " FILTERTYPE_NONE ";
-		if ((mFilterOps.mFilterTypes & FILTERTYPE_OBJECT) )
-			LL_CONT << " FILTERTYPE_OBJECT ";
-		if ((mFilterOps.mFilterTypes & FILTERTYPE_CATEGORY))
-			LL_CONT << " FILTERTYPE_CATEGORY ";
-		if ((mFilterOps.mFilterTypes & FILTERTYPE_UUID))
-			LL_CONT << " FILTERTYPE_UUID ";
-		if ((mFilterOps.mFilterTypes & FILTERTYPE_DATE))
-			LL_CONT << " FILTERTYPE_DATE ";
-		if ((mFilterOps.mFilterTypes & FILTERTYPE_WEARABLE))
-			LL_CONT << " FILTERTYPE_WEARABLE ";
-		if ((mFilterOps.mFilterTypes & FILTERTYPE_EMPTYFOLDERS))
-			LL_CONT << " FILTERTYPE_EMPTYFOLDERS ";
-		LL_CONT << LL_ENDL;
-	}
 	return passed;
 }
 
