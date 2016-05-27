@@ -36,6 +36,7 @@
 #include "ascentkeyword.h"
 #include "llagent.h"
 #include "llagentcamera.h"
+#include "llagentui.h"
 #include "llautoreplace.h"
 #include "llavataractions.h"
 #include "llavatarnamecache.h"
@@ -111,7 +112,7 @@ void session_starter_helper(
 	msg->addU32Fast(_PREHASH_Timestamp, NO_TIMESTAMP); // no timestamp necessary
 
 	std::string name;
-	gAgent.buildFullname(name);
+	LLAgentUI::buildFullname(name);
 
 	msg->addStringFast(_PREHASH_FromAgentName, name);
 	msg->addStringFast(_PREHASH_Message, LLStringUtil::null);
@@ -1114,7 +1115,7 @@ void deliver_message(const std::string& utf8_text,
 {
 	std::string name;
 	bool sent = false;
-	gAgent.buildFullname(name);
+	LLAgentUI::buildFullname(name);
 
 	const LLRelationship* info = LLAvatarTracker::instance().getBuddyInfo(other_participant_id);
 
@@ -1302,7 +1303,7 @@ void LLFloaterIMPanel::onSendMsg()
 				   (mOtherParticipantUUID.notNull()))
 				{
 					std::string name;
-					gAgent.buildFullname(name);
+					LLAgentUI::buildFullname(name);
 
 					// Look for actions here.
 					if (action)
@@ -1433,7 +1434,7 @@ void LLFloaterIMPanel::sendTypingState(bool typing)
 	if (mSessionType != P2P_SESSION) return;
 
 	std::string name;
-	gAgent.buildFullname(name);
+	LLAgentUI::buildFullname(name);
 
 	pack_instant_message(
 		gMessageSystem,

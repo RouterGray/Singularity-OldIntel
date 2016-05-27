@@ -85,6 +85,9 @@
 #include "llprogressview.h"
 #include "llvocache.h"
 #include "llvopartgroup.h"
+// [SL:KB] - Patch: Appearance-Misc | Checked: 2013-02-12 (Catznip-3.4)
+#include "llappearancemgr.h"
+// [/SL:KB]
 #include "llfloaterteleporthistory.h"
 #include "llcrashlogger.h"
 #include "llweb.h"
@@ -198,9 +201,6 @@
 // [RLVa:KB]
 #include "rlvhandler.h"
 // [/RLVa:KB]
-// [SL:KB] - Patch: Appearance-Misc | Checked: 2013-02-12 (Catznip-3.4)
-#include "llappearancemgr.h"
-// [/SL:KB]
 
 // *FIX: These extern globals should be cleaned up.
 // The globals either represent state/config/resource-storage of either 

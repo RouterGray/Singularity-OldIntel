@@ -2557,17 +2557,17 @@ bool idle_startup()
 			&& !sInitialOutfit.empty()    // registration set up an outfit
 			&& !sInitialOutfitGender.empty() // and a gender
 			&& isAgentAvatarValid()	  // can't wear clothes without object
-			&& !gAgent.isGenderChosen() ) // nothing already loading
+			&& !gAgent.isOutfitChosen()) // nothing already loading
 		{
 			// Start loading the wearables, textures, gestures
 			LLStartUp::loadInitialOutfit( sInitialOutfit, sInitialOutfitGender );
 		}
 		// If not first login, we need to fetch COF contents and
 		// compute appearance from that.
-		if (isAgentAvatarValid() && !gAgent.isFirstLogin() && !gAgent.isGenderChosen())
+		if (isAgentAvatarValid() && !gAgent.isFirstLogin() && !gAgent.isOutfitChosen())
 		{
 			gAgentWearables.notifyLoadingStarted();
-			gAgent.setGenderChosen(TRUE);
+			gAgent.setOutfitChosen(TRUE);
 			gAgentWearables.sendDummyAgentWearablesUpdate();
 			callAfterCategoryFetch(LLAppearanceMgr::instance().getCOF(), set_flags_and_update_appearance);
 		}
@@ -2575,7 +2575,7 @@ bool idle_startup()
 		display_startup();
 
 		// wait precache-delay and for agent's avatar or a lot longer.
-		if((timeout_frac > 1.f) && isAgentAvatarValid())
+		if ((timeout_frac > 1.f) && isAgentAvatarValid())
 		{
 			LLStartUp::setStartupState( STATE_WEARABLES_WAIT );
 		}
@@ -2618,11 +2618,11 @@ bool idle_startup()
 		const F32 wearables_time = wearables_timer.getElapsedTimeF32();
 		const F32 MAX_WEARABLES_TIME = 10.f;
 
-		if (!gAgent.isGenderChosen() && isAgentAvatarValid())
+		if (!gAgent.isOutfitChosen() && isAgentAvatarValid())
 		{
-			// No point in waiting for clothing, we don't even
-			// know what gender we are.  Pop a dialog to ask and
-			// proceed to draw the world. JC
+			// No point in waiting for clothing, we don't even know
+			// what outfit we want.  Pop up a gender chooser dialog to
+			// ask and proceed to draw the world. JC
 			//
 			// *NOTE: We might hit this case even if we have an
 			// initial outfit, but if the load hasn't started
@@ -2650,7 +2650,7 @@ bool idle_startup()
 			if (isAgentAvatarValid()
 				&& gAgentAvatarp->isFullyLoaded())
 			{
-				//LL_INFOS() << "avatar fully loaded" << LL_ENDL;
+				LL_DEBUGS("Avatar") << "avatar fully loaded" << LL_ENDL;
 				LLStartUp::setStartupState( STATE_CLEANUP );
 				return TRUE;
 			}
@@ -2661,7 +2661,7 @@ bool idle_startup()
 			if ( gAgentWearables.areWearablesLoaded() )
 			{
 				// We have our clothing, proceed.
-				//LL_INFOS() << "wearables loaded" << LL_ENDL;
+				LL_DEBUGS("Avatar") << "wearables loaded" << LL_ENDL;
 				LLStartUp::setStartupState( STATE_CLEANUP );
 				return TRUE;
 			}
@@ -2700,7 +2700,7 @@ bool idle_startup()
 		gViewerWindow->getWindow()->resetBusyCount();
 		gViewerWindow->getWindow()->setCursor(UI_CURSOR_ARROW);
 		LL_DEBUGS("AppInit") << "Done releasing bitmap" << LL_ENDL;
-
+		//gViewerWindow->revealIntroPanel();
 		gViewerWindow->setStartupComplete();
 		gViewerWindow->setProgressCancelButtonVisible(FALSE);
 		display_startup();
@@ -3306,9 +3306,8 @@ void LLStartUp::loadInitialOutfit( const std::string& outfit_folder_name,
 		LL_DEBUGS() << "initial outfit category id: " << cat_id << LL_ENDL;
 	}
 
-	// This is really misnamed -- it means we have started loading
-	// an outfit/shape that will give the avatar a gender eventually. JC
-	gAgent.setGenderChosen(TRUE);
+	gAgent.setOutfitChosen(TRUE);
+	gAgentWearables.sendDummyAgentWearablesUpdate();
 }
 
 //static
@@ -3321,10 +3320,10 @@ void LLStartUp::saveInitialOutfit()
 	
 	if (sWearablesLoadedCon.connected())
 	{
-		LL_DEBUGS() << "sWearablesLoadedCon is connected, disconnecting" << LL_ENDL;
+		LL_DEBUGS("Avatar") << "sWearablesLoadedCon is connected, disconnecting" << LL_ENDL;
 		sWearablesLoadedCon.disconnect();
 	}
-	LL_DEBUGS() << "calling makeNewOutfitLinks( \"" << sInitialOutfit << "\" )" << LL_ENDL;
+	LL_DEBUGS("Avatar") << "calling makeNewOutfitLinks( \"" << sInitialOutfit << "\" )" << LL_ENDL;
 	LLAppearanceMgr::getInstance()->makeNewOutfitLinks(sInitialOutfit,false);
 }
 
@@ -3991,17 +3990,6 @@ bool process_login_success_response(std::string& password, U32& first_sim_size_x
 
 		gSavedSettings.setU32("PreferredMaturity", preferredMaturity);
 	}
-	// During the AO transition, this flag will be true. Then the flag will
-	// go away. After the AO transition, this code and all the code that
-	// uses it can be deleted.
-	text = response["ao_transition"].asString();
-	if (!text.empty())
-	{
-		if (text == "1")
-		{
-			gAgent.setAOTransition();
-		}
-	}
 
 	text = response["start_location"].asString();
 	if(!text.empty()) 
@@ -4113,6 +4101,7 @@ bool process_login_success_response(std::string& password, U32& first_sim_size_x
 			// We don't care about this flag anymore; now base whether
 			// outfit is chosen on COF contents, initial outfit
 			// requested and available, etc.
+
 			//gAgent.setGenderChosen(TRUE);
 		}
 		

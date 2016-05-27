@@ -46,10 +46,7 @@
 #include "llinventorymodel.h"
 #include "v3dmath.h"
 
-#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
-#define BOOST_FUNCTION_HPP_INCLUDED
-#endif
 #include <boost/shared_ptr.hpp>
 #include <boost/signals2.hpp>
 
@@ -124,6 +121,8 @@ public:
 	void			init();
 	void			cleanup();
 
+private:
+
 	//--------------------------------------------------------------------
 	// Login
 	//--------------------------------------------------------------------
@@ -165,8 +164,6 @@ public:
 	// Name
 	//--------------------------------------------------------------------
 public:
-	void			getName(std::string& name);	//Legacy
-	void			buildFullname(std::string &name) const; //Legacy
 	//*TODO remove, is not used as of August 20, 2009
 	void			buildFullnameAndTitle(std::string &name) const;
 
@@ -174,12 +171,13 @@ public:
 	// Gender
 	//--------------------------------------------------------------------
 public:
-	// On the very first login, gender isn't chosen until the user clicks
-	// in a dialog.  We don't render the avatar until they choose.
-	BOOL			isGenderChosen() const { return mGenderChosen; }
-	void			setGenderChosen(BOOL b)	{ mGenderChosen = b; }
+	// On the very first login, outfit needs to be chosen by some
+	// mechanism, usually by loading the requested initial outfit.  We
+	// don't render the avatar until the choice is made.
+	BOOL 			isOutfitChosen() const 	{ return mOutfitChosen; }
+	void			setOutfitChosen(BOOL b)	{ mOutfitChosen = b; }
 private:
-	BOOL			mGenderChosen;
+	BOOL			mOutfitChosen;
 
 /**                    Identity
  **                                                                            **
@@ -265,6 +263,9 @@ public:
 	LLViewerRegion	*getRegion() const;
 	const LLHost&	getRegionHost() const;
 	BOOL			inPrelude();
+
+	// Capability
+	std::string     getRegionCapability(const std::string &name); // short hand for if (getRegion()) { getRegion()->getCapability(name) }
 
 	/**
 	 * Register a boost callback to be called when the agent changes regions
@@ -485,6 +486,7 @@ private:
 	//--------------------------------------------------------------------
 public:
 	BOOL 			leftButtonGrabbed() const;
+	BOOL 			leftButtonBlocked() const;
 	BOOL 			rotateGrabbed() const;
 	BOOL 			forwardGrabbed() const;
 	BOOL 			backwardGrabbed() const;
@@ -496,13 +498,14 @@ public:
 	//--------------------------------------------------------------------
 public:
 	U32 			getControlFlags(); 
-	void 			setControlFlags(U32 mask); 			// performs bitwise mControlFlags |= mask
-	void 			clearControlFlags(U32 mask); 			// performs bitwise mControlFlags &= ~mask
+	void 			setControlFlags(U32 mask); 		// Performs bitwise mControlFlags |= mask
+	void 			clearControlFlags(U32 mask); 	// Performs bitwise mControlFlags &= ~mask
 	BOOL			controlFlagsDirty() const;
 	void			enableControlFlagReset();
 	void 			resetControlFlags();
-	BOOL			anyControlGrabbed() const; 		// True iff a script has taken over a control
-	BOOL			isControlGrabbed(S32 control_index) const;
+	BOOL			anyControlGrabbed() const; 		// True if a script has taken over any control
+	BOOL			isControlGrabbed(S32 control_index) const; // True if a script has taken over a control
+	BOOL			isControlBlocked(S32 control_index) const; // Control should be ignored or won't be passed
 	// Send message to simulator to force grabbed controls to be
 	// released, in case of a poorly written script.
 	void			forceReleaseControls();
@@ -567,6 +570,9 @@ public:
 	void			moveYaw(F32 mag, bool reset_view = true);
 	void			movePitch(F32 mag);
 
+	BOOL			isMovementLocked() const				{ return mMovementKeysLocked; }
+	void			setMovementLocked(BOOL set_locked)	{ mMovementKeysLocked = set_locked; }
+
 	//--------------------------------------------------------------------
  	// Move the avatar's frame
 	//--------------------------------------------------------------------
@@ -599,8 +605,9 @@ public:
 										 const std::string& behavior_name = std::string(), 
 										 const LLQuaternion *target_rotation = NULL, 
 										 void (*finish_callback)(BOOL, void *) = NULL, void *callback_data = NULL, 
-										 F32 stop_distance = 0.f, F32 rotation_threshold = 0.03f);
-	void 			startFollowPilot(const LLUUID &leader_id);
+										 F32 stop_distance = 0.f, F32 rotation_threshold = 0.03f,
+										 BOOL allow_flying = TRUE);
+	void 			startFollowPilot(const LLUUID &leader_id, BOOL allow_flying = TRUE, F32 stop_distance = 0.5f);
 	void			stopAutoPilot(BOOL user_cancel = FALSE);
 	void 			setAutoPilotTargetGlobal(const LLVector3d &target_global);
 	void			autoPilot(F32 *delta_yaw); 			// Autopilot walking action, angles in radians
@@ -608,6 +615,7 @@ public:
 private:
 	BOOL			mAutoPilot;
 	BOOL			mAutoPilotFlyOnStop;
+	BOOL			mAutoPilotAllowFlying;
 	LLVector3d		mAutoPilotTargetGlobal;
 	F32				mAutoPilotStopDistance;
 	BOOL			mAutoPilotUseRotation;
@@ -619,6 +627,7 @@ private:
 	void			(*mAutoPilotFinishedCallback)(BOOL, void *);
 	void*			mAutoPilotCallbackData;
 	LLUUID			mLeaderID;
+	BOOL			mMovementKeysLocked;
 	
 /**                    Movement
  **                                                                            **
@@ -662,6 +671,7 @@ public:
 	void 			teleportViaLocation(const LLVector3d& pos_global);		// To a global location - this will probably need to be deprecated
 	void			teleportViaLocationLookAt(const LLVector3d& pos_global);// To a global location, preserving camera rotation
 	void 			teleportCancel();										// May or may not be allowed by server
+	void            restoreCanceledTeleportRequest();
 	bool			getTeleportKeepsLookAt() { return mbTeleportKeepsLookAt; } // Whether look-at reset after teleport
 protected:
 	bool 			teleportCore(bool is_local = false); 					// Stuff for all teleports; returns true if the teleport can proceed
@@ -684,6 +694,7 @@ private:
 	friend class LLTeleportRequestViaLocationLookAt;
 
 	LLTeleportRequestPtr        mTeleportRequest;
+	LLTeleportRequestPtr        mTeleportCanceled;
 	boost::signals2::connection mTeleportFinishedSlot;
 	boost::signals2::connection mTeleportFailedSlot;
 
@@ -710,7 +721,7 @@ public:
 	// Teleport State
 	//--------------------------------------------------------------------
 public:
-	ETeleportState	getTeleportState() const 						{ return mTeleportState; }
+	ETeleportState	getTeleportState() const;
 	void			setTeleportState(ETeleportState state);
 private:
 	ETeleportState	mTeleportState;
@@ -752,8 +763,6 @@ public:
 	const LLAgentAccess& getAgentAccess();
 	BOOL			canManageEstate() const;
 	BOOL			getAdminOverride() const;
-	// ! BACKWARDS COMPATIBILITY ! This function can go away after the AO transition (see llstartup.cpp).
-	void 			setAOTransition();
 private:
 	LLAgentAccess * mAgentAccess;
 	

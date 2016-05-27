@@ -135,6 +135,7 @@ LLTexGlobalColorInfo::LLTexGlobalColorInfo()
 LLTexGlobalColorInfo::~LLTexGlobalColorInfo()
 {
 	for_each(mParamColorInfoList.begin(), mParamColorInfoList.end(), DeletePointer());
+	mParamColorInfoList.clear();
 }
 
 BOOL LLTexGlobalColorInfo::parseXml(LLXmlTreeNode* node)

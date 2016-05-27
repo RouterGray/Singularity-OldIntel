@@ -7502,7 +7502,7 @@ BOOL LLVOAvatar::isFullyLoaded() const
 {
 	static LLCachedControl<bool> const render_unloaded_avatar("RenderUnloadedAvatar", false);
 
-// [SL:KB] - Patch: Appearance-SyncAttach | Checked: 2010-09-22 (Catznip-2.2.0a) | Added: Catznip-2.2.0a
+// [SL:KB] - Patch: Appearance-SyncAttach | Checked: 2010-09-22 (Catznip-2.2)
 	// Changes to LLAppearanceMgr::updateAppearanceFromCOF() expect this function to actually return mFullyLoaded for gAgentAvatarp
 	return (render_unloaded_avatar && !isSelf()) ||(mFullyLoaded);
 // [/SL:KB]
@@ -7558,7 +7558,6 @@ void LLVOAvatar::updateMeshTextures()
 {
 	static S32 update_counter = 0;
 	mBakedTextureDebugText.clear();
-	if (gNoRender) return;
 
 	// if user has never specified a texture, assign the default
 	for (U32 i=0; i < getNumTEs(); i++)
@@ -8319,6 +8318,7 @@ bool resolve_appearance_version(const LLAppearanceMessageContents& contents, S32
 //-----------------------------------------------------------------------------
 void LLVOAvatar::processAvatarAppearance( LLMessageSystem* mesgsys )
 {
+    static S32 largestSelfCOFSeen(LLViewerInventoryCategory::VERSION_UNKNOWN);
 	LL_DEBUGS("Avatar") << "starts" << LL_ENDL;
 	
 	bool enable_verbose_dumps = gSavedSettings.getBOOL("DebugAvatarAppearanceMessage");
@@ -8346,7 +8346,7 @@ void LLVOAvatar::processAvatarAppearance( LLMessageSystem* mesgsys )
 		LL_WARNS() << "bad appearance version info, discarding" << LL_ENDL;
 		return;
 	}
-
+	llassert(appearance_version > 0);
 	if (appearance_version > 1)
 	{
 		LL_WARNS() << "unsupported appearance version " << appearance_version << ", discarding appearance message" << LL_ENDL;
@@ -8363,23 +8363,18 @@ void LLVOAvatar::processAvatarAppearance( LLMessageSystem* mesgsys )
 				<< " last_update_request_cof_version " << last_update_request_cof_version
 				<<  " my_cof_version " << LLAppearanceMgr::instance().getCOFVersion() << LL_ENDL;
 
-		if (getRegion() && (getRegion()->getCentralBakeVersion()==0))
+        if (largestSelfCOFSeen > this_update_cof_version)
 		{
-			LL_WARNS() << avString() << "Received AvatarAppearance message for self in non-server-bake region" << LL_ENDL;
-		}
-		if( mFirstTEMessageReceived && (appearance_version == 0))
-		{
+            LL_WARNS("Avatar") << "Already processed appearance for COF version " <<
+                largestSelfCOFSeen << ", discarding appearance with COF " << this_update_cof_version << LL_ENDL;
 			return;
 		}
+        largestSelfCOFSeen = this_update_cof_version;
+
 	}
 	else
 	{
 		LL_DEBUGS("Avatar") << "appearance message received" << LL_ENDL;
-	}
-
-	if (gNoRender)
-	{
-		return;
 	}
 
 	// Check for stale update.
@@ -8411,7 +8406,7 @@ void LLVOAvatar::processAvatarAppearance( LLMessageSystem* mesgsys )
 	}
 
 	// No backsies zone - if we get here, the message should be valid and usable, will be processed.
-
+    LL_INFOS("Avatar") << "Processing appearance message version " << this_update_cof_version << LL_ENDL;
 	setIsUsingServerBakes(appearance_version > 0);
 	
 	// Note:
@@ -8474,10 +8469,8 @@ void LLVOAvatar::processAvatarAppearance( LLMessageSystem* mesgsys )
 			LLVisualParam* param = contents.mParams[i];
 			F32 newWeight = contents.mParamWeights[i];
 
-			if(param->getID() == 10000)
-			{
+			if (!mHasPhysicsParameters && param->getID() == 10000)
 				mHasPhysicsParameters = true;
-			} 
 
 			if (is_first_appearance_message || (param->getWeight() != newWeight))
 			{

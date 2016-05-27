@@ -1092,6 +1092,7 @@ BOOL LLInvFVBridge::isCOFFolder() const
 	return LLAppearanceMgr::instance().getIsInCOF(mUUID);
 }
 
+// *TODO : Suppress isInboxFolder() once Merchant Outbox is fully deprecated
 BOOL LLInvFVBridge::isInboxFolder() const
 {
 	const LLUUID inbox_id = gInventory.findCategoryUUIDForType(LLFolderType::FT_INBOX, false);
@@ -5839,12 +5840,8 @@ void LLWearableBridge::performAction(LLInventoryModel* model, std::string action
 
 void LLWearableBridge::openItem()
 {
-	LLViewerInventoryItem* item = getItem();
-
-	if (item)
-	{
+	if (LLViewerInventoryItem* item = getItem())
 		LLInvFVBridgeAction::doAction(item->getType(),mUUID,getInventoryModel());
-	}
 }
 
 void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)

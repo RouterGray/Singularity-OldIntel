@@ -912,7 +912,6 @@ P(blockingLLSDPost);
 P(blockingLLSDGet);
 P(blockingRawGet);
 P(classifiedStatsResponder);
-P(createInventoryCategoryResponder);
 P(emeraldDicDownloader);
 P(environmentApplyResponder);
 P(environmentRequestResponder);

@@ -1278,10 +1278,15 @@ void LLPanelEditWearable::saveChanges(bool force_save_as, std::string new_name)
 		if (link_item)
 		{
 			// Create new link
+			LL_DEBUGS("Avatar") << "link refresh, creating new link to " << link_item->getLinkedUUID()
+								<< " removing old link at " << link_item->getUUID()
+								<< " wearable item id " << mWearablePtr->getItemID() << LL_ENDL;
+
 			link_inventory_object( LLAppearanceMgr::instance().getCOF(),
 								 link_item,
 								 NULL);
 
+			// Remove old link
 			remove_inventory_item(link_item, NULL);
 		}
 		gAgentWearables.saveWearable(mType, index, new_name);
