@@ -2634,6 +2634,15 @@ class LLObjectData : public view_listener_t
 	}
 };
 
+class LLSyncAnimations : public view_listener_t
+{
+	bool handleEvent(const LLSD& userdata)
+	{
+		void resync_anims();
+		resync_anims();
+		return false;
+	}
+}
 class LLCanIHasKillEmAll : public view_listener_t
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
@@ -9494,6 +9503,7 @@ void initialize_menus()
 	addMenu(new SinguCheckPoseStand(), "CheckPoseStand");
 	addMenu(new SinguRebake(), "Rebake");
 	addMenu(new SinguVisibleDebugConsole(), "VisibleRegionDebugConsole");
+	addMenu(new LLSyncAnimations(), "Tools.ResyncAnimations");
 
 // [RLVa:KB] - Checked: 2010-01-18 (RLVa-1.1.0m) | Added: RLVa-1.1.0m | OK
 	if (rlv_handler_t::isEnabled())
