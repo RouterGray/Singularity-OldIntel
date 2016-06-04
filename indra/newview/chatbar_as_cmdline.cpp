@@ -198,6 +198,23 @@ void invrepair()
 	gInventory.collectDescendents(gInventory.getRootFolderID(),cats,items,FALSE);//,objectnamematches);
 }
 
+void resync_anims()
+{
+	for (S32 i = 0; i < gObjectList.getNumObjects(); ++i)
+	{
+		LLViewerObject* object = gObjectList.getObject(i);
+		if (object && object->isAvatar())
+		{
+			LLVOAvatar& avatarp = *(LLVOAvatar*)object;
+			for (const auto& playpair : avatarp.mPlayingAnimations)
+			{
+				avatarp.stopMotion(playpair.first, TRUE);
+				avatarp.startMotion(playpair.first);
+			}
+		}
+	}
+}
+
 #ifdef PROF_CTRL_CALLS
 bool sort_calls(const std::pair<std::string, U32>& left, const std::pair<std::string, U32>& right)
 {
@@ -446,20 +463,7 @@ bool cmd_line_chat(std::string data, EChatType type)
 		}
 		else if (cmd == utf8str_tolower(sResyncAnimCommand)) // Resync Animations
 		{
-			for (S32 i = 0; i < gObjectList.getNumObjects(); i++)
-			{
-				LLViewerObject* object = gObjectList.getObject(i);
-				if (object && object->isAvatar())
-				{
-					LLVOAvatar& avatarp = *(LLVOAvatar*)object;
-					for (LLVOAvatar::AnimIterator it = avatarp.mPlayingAnimations.begin(), end = avatarp.mPlayingAnimations.end(); it != end; ++it)
-					{
-						const std::pair<LLUUID, S32>& playpair = *it;
-						avatarp.stopMotion(playpair.first, TRUE);
-						avatarp.startMotion(playpair.first);
-					}
-				}
-			}
+			resync_anims();
 			return false;
 		}
 		else if (cmd == utf8str_tolower(sKeyToName))

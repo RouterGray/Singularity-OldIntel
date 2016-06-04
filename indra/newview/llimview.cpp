@@ -45,6 +45,7 @@
 
 #include "llagent.h"
 #include "llagentcamera.h"
+#include "llagentui.h"
 #include "llavataractions.h"
 #include "llavatarnamecache.h"
 #include "llfloaterchat.h"
@@ -1452,7 +1453,7 @@ void leave_group_chat(const LLUUID& from_id, const LLUUID& session_id)
 {
 	// Tell the server we've left group chat
 	std::string name;
-	gAgent.buildFullname(name);
+	LLAgentUI::buildFullname(name);
 	pack_instant_message(gMessageSystem, gAgentID, false, gAgentSessionID, from_id,
 		name, LLStringUtil::null, IM_ONLINE, IM_SESSION_LEAVE, session_id);
 	gAgent.sendReliableMessage();

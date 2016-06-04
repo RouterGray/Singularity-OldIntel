@@ -137,11 +137,6 @@ struct LocalTextureData
 	LLTextureEntry *mTexEntry;
 };
 
-// TODO - this class doesn't really do anything, could just use a base
-// class responder if nothing else gets added.
-// Singu Note: Okay, sure, it's a responder ignore then!
-typedef LLHTTPClient::ResponderIgnore LLHoverHeightResponder;
-
 //-----------------------------------------------------------------------------
 // Callback data
 //-----------------------------------------------------------------------------
@@ -333,7 +328,7 @@ void LLVOAvatarSelf::markDead()
 {
 	BOOL success = LLVOAvatar::loadAvatar();
 
-	// set all parameters sotred directly in the avatar to have
+	// set all parameters stored directly in the avatar to have
 	// the isSelfParam to be TRUE - this is used to prevent
 	// them from being animated or trigger accidental rebakes
 	// when we copy params from the wearable to the base avatar.
@@ -384,8 +379,6 @@ BOOL LLVOAvatarSelf::buildMenus()
 	//-------------------------------------------------------------------------
 	// build the attach and detach menus
 	//-------------------------------------------------------------------------
-	if(gNoRender)
-		return TRUE;
 	buildContextMenus();
 
 	init_meshes_and_morphs_menu();
@@ -758,7 +751,7 @@ void LLVOAvatarSelf::updateVisualParams()
 
 void LLVOAvatarSelf::writeWearablesToAvatar()
 {
-for (U32 type = 0; type < LLWearableType::WT_COUNT; type++)
+	for (U32 type = 0; type < LLWearableType::WT_COUNT; type++)
 	{
 		LLWearable *wearable = gAgentWearables.getTopWearable((LLWearableType::EType)type);
 		if (wearable)
@@ -790,6 +783,13 @@ void LLVOAvatarSelf::requestStopMotion(LLMotion* motion)
 
 	// Notify agent that motion has stopped
 	gAgent.requestStopMotion(motion);
+}
+
+// virtual
+bool LLVOAvatarSelf::hasMotionFromSource(const LLUUID& source_id)
+{
+	AnimSourceIterator motion_it = mAnimationSources.find(source_id);
+	return motion_it != mAnimationSources.end();
 }
 
 // virtual
@@ -1106,13 +1106,6 @@ void LLVOAvatarSelf::wearableUpdated( LLWearableType::EType type, BOOL upload_re
 			}
 		}
 	}
-
-	// Physics type has no associated baked textures, but change of params needs to be sent to
-	// other avatars.
-	if (type == LLWearableType::WT_PHYSICS)
-	{
-		gAgent.sendAgentSetAppearance();
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1137,26 +1130,16 @@ BOOL LLVOAvatarSelf::isWearingAttachment(const LLUUID& inv_item_id) const
 //-----------------------------------------------------------------------------
 BOOL LLVOAvatarSelf::attachmentWasRequested(const LLUUID& inv_item_id) const
 {
-	const F32 REQUEST_EXPIRATION_SECONDS = 5.0;  // any request older than this is ignored/removed.
-	std::map<LLUUID,LLTimer>::iterator it = mAttachmentRequests.find(inv_item_id);
+	constexpr F32 REQUEST_EXPIRATION_SECONDS = 5.0;  // any request older than this is ignored/removed.
+	auto it = mAttachmentRequests.find(inv_item_id);
 	if (it != mAttachmentRequests.end())
 	{
-		const LLTimer& request_time = it->second;
-		F32 request_time_elapsed = request_time.getElapsedTimeF32();
-		if (request_time_elapsed > REQUEST_EXPIRATION_SECONDS)
-		{
+		if (it->second.getElapsedTimeF32() > REQUEST_EXPIRATION_SECONDS)
 			mAttachmentRequests.erase(it);
-			return FALSE;
-		}
 		else
-		{
 			return TRUE;
-		}
 	}
-	else
-	{
-		return FALSE;
-	}
+	return FALSE;
 }
 
 //-----------------------------------------------------------------------------
@@ -3156,7 +3139,11 @@ void LLVOAvatarSelf::sendHoverHeight() const
 		update["hover_height"] = hover_offset[2];
 
 		LL_DEBUGS("Avatar") << avString() << "sending hover height value " << hover_offset[2] << LL_ENDL;
-		LLHTTPClient::post(url, update, new LLHoverHeightResponder);
+
+		// *TODO: - this class doesn't really do anything, could just use a base
+		// class responder if nothing else gets added.
+		// (comment from removed Responder)
+		LLHTTPClient::post(url, update, new LLHTTPClient::ResponderIgnore);
 
 		mLastHoverOffsetSent = hover_offset;
 	}
@@ -3181,10 +3168,6 @@ void LLVOAvatarSelf::setHoverOffset(const LLVector3& hover_offset, bool send_upd
 //------------------------------------------------------------------------
 BOOL LLVOAvatarSelf::needsRenderBeam()
 {
-	if (gNoRender)
-	{
-		return FALSE;
-	}
 	LLTool *tool = LLToolMgr::getInstance()->getCurrentTool();
 
 	BOOL is_touching_or_grabbing = (tool == LLToolGrab::getInstance() && LLToolGrab::getInstance()->isEditing());

@@ -4,7 +4,7 @@
  *
  * $LicenseInfo:firstyear=2002&license=viewerlgpl$
  * Second Life Viewer Source Code
- * Copyright (C) 2010, Linden Research, Inc.
+ * Copyright (C) 2014, Linden Research, Inc.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,9 +62,6 @@
 #ifdef DIFF_INVENTORY_FILES
 #include "process.h"
 #endif
-
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy createInventoryCategoryResponder_timeout;
 
 // Increment this if the inventory contents change in a non-backwards-compatible way.
 // For viewers with link items support, former caches are incorrect.
@@ -601,7 +598,6 @@ public:
 
 	}
 
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return createInventoryCategoryResponder_timeout; }
 	/*virtual*/ char const* getName(void) const { return "LLCreateInventoryCategoryResponder"; }
 
 private:
@@ -3212,6 +3208,9 @@ void LLInventoryModel::processBulkUpdateInventory(LLMessageSystem* msg, void**)
 		InventoryCallbackInfo cbinfo = (*inv_it);
 		gInventoryCallbacks.fire(cbinfo.mCallback, cbinfo.mInvID);
 	}
+
+	//gInventory.validate();
+
 	// Don't show the inventory.  We used to call showAgentInventory here.
 	//LLPanelMainInventory* view = LLPanelMainInventory::getActiveInventory();
 	//if(view)
@@ -3634,7 +3633,8 @@ void LLInventoryModel::dumpInventory() const
 		if(cat)
 		{
 			LL_INFOS() << "  " <<  cat->getUUID() << " '" << cat->getName() << "' "
-					<< cat->getVersion() << " " << cat->getDescendentCount() << " parent: " << cat->getParentUUID() 
+					<< cat->getVersion() << " " << cat->getDescendentCount()
+					<< " parent: " << cat->getParentUUID() 
 					<< LL_ENDL;
 		}
 		else
@@ -3974,7 +3974,11 @@ BOOL decompress_file(const char* src_filename, const char* dst_filename)
 	const S32 DECOMPRESS_BUFFER_SIZE = 32000;
 
 	// open the files
+#if LL_WINDOWS
+	src = gzopen_w(utf8str_to_utf16str(src_filename).c_str(), "rb");
+#else
 	src = gzopen(src_filename, "rb");
+#endif
 	if(!src) goto err_decompress;
 	dst = LLFile::fopen(dst_filename, "wb");
 	if(!dst) goto err_decompress;
@@ -4005,13 +4009,13 @@ BOOL decompress_file(const char* src_filename, const char* dst_filename)
 #endif
 
 // If we get back a normal response, handle it here
-void  LLInventoryModel::FetchItemHttpHandler::httpSuccess(void)
+void  LLInventoryModel::FetchItemHttpHandler::httpSuccess()
 {	
 	start_new_inventory_observer();
 
 #if 0
 	LLUUID agent_id;
-	agent_id = content["agent_id"].asUUID();
+	agent_id = mContent["agent_id"].asUUID();
 	if (agent_id != gAgent.getID())
 	{
 		LL_WARNS(LOG_INV) << "Got a inventory update for the wrong agent: " << agent_id
@@ -4055,6 +4059,7 @@ void  LLInventoryModel::FetchItemHttpHandler::httpSuccess(void)
 		{
 			++update[titem->getParentUUID()];
 		}
+
 		if (folder_id.isNull())
 		{
 			folder_id = titem->getParentUUID();
@@ -4073,7 +4078,7 @@ void  LLInventoryModel::FetchItemHttpHandler::httpSuccess(void)
 	gViewerWindow->getWindow()->decBusyCount();
 }
 //If we get back an error (not found, etc...), handle it here
-void LLInventoryModel::FetchItemHttpHandler::httpFailure(void)
+void LLInventoryModel::FetchItemHttpHandler::httpFailure()
 {
 	LL_INFOS() << "FetchItemHttpHandler::error "
 		<< mStatus << ": " << mReason << LL_ENDL;

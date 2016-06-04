@@ -161,7 +161,7 @@ void LLPolyMeshSharedData::freeMeshData()
 //	mVertFaceMap.deleteAllData();
 }
 
-// compate_int is used by the qsort function to sort the index array
+// compare_int is used by the qsort function to sort the index array
 S32 compare_int(const void *a, const void *b);
 
 //-----------------------------------------------------------------------------

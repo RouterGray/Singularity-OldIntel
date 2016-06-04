@@ -4905,7 +4905,7 @@ public:
 				LLAppearanceMgr::getInstance()->wearInventoryCategory(category, true, false);
 				
 				// *TODOw: This may not be necessary if initial outfit is chosen already -- josh
-				gAgent.setGenderChosen(TRUE);
+				gAgent.setOutfitChosen(TRUE);
 			}
 		}
 

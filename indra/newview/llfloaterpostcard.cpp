@@ -41,6 +41,7 @@
 #include "lldir.h"
 
 #include "llagent.h"
+#include "llagentui.h"
 #include "llui.h"
 #include "lllineeditor.h"
 #include "llviewertexteditor.h"
@@ -128,7 +129,7 @@ BOOL LLFloaterPostcard::postBuild()
 	childDisable("from_form");
 
 	std::string name_string;
-	gAgent.buildFullname(name_string);
+	LLAgentUI::buildFullname(name_string);
 	childSetValue("name_form", LLSD(name_string));
 
 	LLTextEditor* MsgField = getChild<LLTextEditor>("msg_form");

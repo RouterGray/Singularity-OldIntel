@@ -28,11 +28,29 @@ void HippoLimits::setLimits()
 	}
 }
 
+namespace
+{
+// gMaxAgentGroups is now sent by login.cgi, which
+// looks it up from globals.xml.
+//
+// For now we need an old default value however,
+// so the viewer can be deployed ahead of login.cgi.
+//
+constexpr S32 DEFAULT_MAX_AGENT_GROUPS = 60;
+}
+
+void HippoLimits::setMaxAgentGroups()
+{
+	//KC: new server defined max groups
+	if (auto grid = gHippoGridManager->getConnectedGrid())
+		mMaxAgentGroups = grid->getMaxAgentGroups();
+	if (mMaxAgentGroups <= 0)
+		mMaxAgentGroups = DEFAULT_MAX_AGENT_GROUPS;
+}
 
 void HippoLimits::setOpenSimLimits()
 {
-	mMaxAgentGroups = gHippoGridManager->getConnectedGrid()->getMaxAgentGroups();
-	if (mMaxAgentGroups < 0) mMaxAgentGroups = 50;
+	setMaxAgentGroups();
 	mMaxPrimScale = 8192.0f;
 	mMaxHeight = 10000.0f;
 	if (gHippoGridManager->getConnectedGrid()->isRenderCompat()) {
@@ -50,8 +68,7 @@ void HippoLimits::setOpenSimLimits()
 
 void HippoLimits::setAuroraLimits()
 {
-	mMaxAgentGroups = gHippoGridManager->getConnectedGrid()->getMaxAgentGroups();
-	if (mMaxAgentGroups < 0) mMaxAgentGroups = 50;
+	setMaxAgentGroups();
 	mMaxPrimScale = 8192.0f;
 	mMinPrimScale = 0.001f;
 	mMaxHeight = 10000.0f;
@@ -62,16 +79,8 @@ void HippoLimits::setAuroraLimits()
 void HippoLimits::setSecondLifeLimits()
 {
 	LL_INFOS() << "Using Second Life limits." << LL_ENDL;
-	
-	if (gHippoGridManager->getConnectedGrid())
-	
-	//KC: new server defined max groups
-	mMaxAgentGroups = gHippoGridManager->getConnectedGrid()->getMaxAgentGroups();
-	if (mMaxAgentGroups <= 0)
-	{
-		mMaxAgentGroups = DEFAULT_MAX_AGENT_GROUPS;
-	}
-	
+	setMaxAgentGroups();
+
 	mMinPrimScale = 0.01f;
 	mMaxHeight = 4096.0f;
 	mMinHoleSize = 0.05f;

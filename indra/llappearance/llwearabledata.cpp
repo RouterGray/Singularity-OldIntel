@@ -47,7 +47,6 @@ using namespace LLAvatarAppearanceDefines;
 
 LLWearable* LLWearableData::getWearable(const LLWearableType::EType type, U32 index)
 {
-	//llassert_always(index == 0);
 	wearableentry_map_t::iterator wearable_iter = mWearableDatas.find(type);
 	if (wearable_iter == mWearableDatas.end())
 	{
@@ -66,7 +65,6 @@ LLWearable* LLWearableData::getWearable(const LLWearableType::EType type, U32 in
 
 void LLWearableData::setWearable(const LLWearableType::EType type, U32 index, LLWearable *wearable)
 {
-	//llassert_always(index == 0);
 	LLWearable *old_wearable = getWearable(type,index);
 	if (!old_wearable)
 	{

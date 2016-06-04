@@ -181,7 +181,7 @@ BOOL LLFloaterReporter::postBuild()
 	childSetAction("cancel_btn", onClickCancel, this);
 	// grab the user's name
 	std::string reporter;
-	gAgent.buildFullname(reporter);
+	LLAgentUI::buildFullname(reporter);
 	getChild<LLUICtrl>("reporter_field")->setValue(reporter);
 
 	center();
