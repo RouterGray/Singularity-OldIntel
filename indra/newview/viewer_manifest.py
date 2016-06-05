@@ -915,6 +915,19 @@ class DarwinManifest(ViewerManifest):
         self.remove(sparsename)
 
 class LinuxManifest(ViewerManifest):
+    def is_packaging_viewer(self):
+        super(LinuxManifest, self).is_packaging_viewer()
+        return True # We always want a packaged viewer even without archive.
+
+    def do(self, *actions):
+        super(LinuxManifest, self).do(*actions)
+        if not 'package' in self.actions:
+            self.package_finish() # Always finish the package.
+        else:
+            # package_finish() was called by super.do() so just create the TAR.
+            self.create_archive()
+        return self.file_list
+    
     def construct(self):
         import shutil
         shutil.rmtree("./packaged/app_settings/shaders", ignore_errors=True);
@@ -1049,12 +1062,8 @@ class LinuxManifest(ViewerManifest):
 
         self.path("featuretable_linux.txt")
 
-
     def package_finish(self):
-        installer_name = self.installer_base_name()
-
         self.strip_binaries()
-
         # Fix access permissions
         self.run_command("""
                 find %(dst)s -type d | xargs --no-run-if-empty chmod 755;
@@ -1063,37 +1072,33 @@ class LinuxManifest(ViewerManifest):
                 find %(dst)s -type f -perm 0600 | xargs --no-run-if-empty chmod 0644;
                 find %(dst)s -type f -perm 0400 | xargs --no-run-if-empty chmod 0444;
                 true""" %  {'dst':self.get_dst_prefix() })
-        self.package_file = installer_name + '.tar.xz'
 
+    def strip_binaries(self):
+        print "* Going strip-crazy on the packaged binaries"
+        # makes some small assumptions about our packaged dir structure
+        self.run_command(r"find %(d)r/lib %(d)r/lib32 %(d)r/lib64 -type f \! -name update_install | xargs --no-run-if-empty strip -S" % {'d': self.get_dst_prefix()} )
+        self.run_command(r"find %(d)r/bin -executable -type f \! -name update_install | xargs --no-run-if-empty strip -S" % {'d': self.get_dst_prefix()} )
+
+    def create_archive(self):
+        installer_name = self.installer_base_name()
         # temporarily move directory tree so that it has the right
         # name in the tarfile
         self.run_command("mv %(dst)s %(inst)s" % {
             'dst': self.get_dst_prefix(),
             'inst': self.build_path_of(installer_name)})
         try:
-            # only create tarball if it's a release build.
-            if self.args['buildtype'].lower() == 'release':
-                # --numeric-owner hides the username of the builder for
-                # security etc.
-                self.run_command('tar -C %(dir)s --numeric-owner -cJf '
-                                 '%(inst_path)s.tar.xz %(inst_name)s' % {
-                        'dir': self.get_build_prefix(),
-                        'inst_name': installer_name,
-                        'inst_path':self.build_path_of(installer_name)})
-            else:
-                print "Skipping %s.tar.xz for non-Release build (%s)" % \
-                      (installer_name, self.args['buildtype'])
+            # --numeric-owner hides the username of the builder for
+            # security etc.
+            self.run_command('tar -C %(dir)s --numeric-owner -cJf '
+                             '%(inst_path)s.tar.xz %(inst_name)s' % {
+                    'dir': self.get_build_prefix(),
+                    'inst_name': installer_name,
+                    'inst_path':self.build_path_of(installer_name)})
         finally:
             self.run_command("mv %(inst)s %(dst)s" % {
                 'dst': self.get_dst_prefix(),
                 'inst': self.build_path_of(installer_name)})
-
-    def strip_binaries(self):
-        if self.args['buildtype'].lower() == 'release' and self.is_packaging_viewer():
-            print "* Going strip-crazy on the packaged binaries, since this is a RELEASE build"
-            # makes some small assumptions about our packaged dir structure
-            self.run_command(r"find %(d)r/lib %(d)r/lib32 %(d)r/lib64 -type f \! -name update_install | xargs --no-run-if-empty strip -S" % {'d': self.get_dst_prefix()} )
-            self.run_command(r"find %(d)r/bin -executable -type f \! -name update_install | xargs --no-run-if-empty strip -S" % {'d': self.get_dst_prefix()} )
+            self.package_file = installer_name + '.tar.xz'
 
 
 class Linux_i686_Manifest(LinuxManifest):
