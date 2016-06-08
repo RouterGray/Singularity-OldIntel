@@ -551,8 +551,17 @@ void LLTextEditor::updateLineStartList(S32 startpos)
 				}
 			}
 			else
-			{ 
-				const llwchar* str = mWText.c_str() + start_idx;
+			{
+				//Scratch buffer. Avoid needless realloc.
+				static LLWString buf;
+
+				if(start_idx)
+				{
+					buf.resize(end_idx - start_idx);
+					std::copy(mWText.begin() + start_idx, mWText.begin() + end_idx, buf.begin());
+				}
+				const LLWString& str = start_idx ? buf : mWText;
+
 				S32 drawn = mGLFont->maxDrawableChars(str, (F32)abs(mTextRect.getWidth()) - line_width,
 													  end_idx - start_idx, mWordWrap ? LLFontGL::WORD_BOUNDARY_IF_POSSIBLE : LLFontGL::ANYWHERE, mAllowEmbeddedItems );
 				if( 0 == drawn && line_width == start_x)
