@@ -3019,7 +3019,7 @@ void LLTextEditor::drawSelectionBackground()
 		{
 			gGL.getTexUnit(0)->unbind(LLTexUnit::TT_TEXTURE);
 			const LLColor4& color = mReadOnly ? mReadOnlyBgColor : mWriteableBgColor;
-			F32 alpha = hasFocus() ? 1.f : 0.5f;
+			F32 alpha = hasFocus() ? 1.f : 0.8f;
 			gGL.color4f( 1.f - color.mV[0], 1.f - color.mV[1], 1.f - color.mV[2], alpha );
 			S32 margin_offset = mShowLineNumbers ? UI_TEXTEDITOR_LINE_NUMBER_MARGIN : 0;
 
