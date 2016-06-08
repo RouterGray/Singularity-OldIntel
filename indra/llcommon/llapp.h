@@ -33,8 +33,6 @@
 #include "lloptioninterface.h"
 
 // Forward declarations
-template <typename Type> class LLAtomic32;
-typedef LLAtomic32<U32> LLAtomicU32;
 class LLErrorThread;
 class LLLiveFile;
 #if LL_LINUX
@@ -326,6 +324,7 @@ private:
 private:
 	// the static application instance if it was created.
 	static LLApp* sApplication;
+
 	google_breakpad::ExceptionHandler * mExceptionHandler;
 
 

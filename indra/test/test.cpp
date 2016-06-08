@@ -43,7 +43,7 @@
 #include "linden_common.h"
 #include "llerrorcontrol.h"
 #include "lltut.h"
-#include "llaprpool.h"
+#include "llapr.h"
 
 #include "apr_getopt.h"
 

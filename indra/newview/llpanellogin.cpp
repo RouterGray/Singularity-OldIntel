@@ -56,6 +56,7 @@
 #include "llfocusmgr.h"
 #include "lllineeditor.h"
 #include "llnotificationsutil.h"
+#include "llsecapi.h"
 #include "llstartup.h"
 #include "lltextbox.h"
 #include "llui.h"
@@ -68,7 +69,6 @@
 #include "llviewerwindow.h"			// to link into child list
 #include "llnotify.h"
 #include "lluictrlfactory.h"
-#include "llhttpclient.h"
 #include "llweb.h"
 #include "llmediactrl.h"
 

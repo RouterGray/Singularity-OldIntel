@@ -33,7 +33,6 @@
 #include "llsurface.h"
 #include "pipeline.h"
 #include "llagent.h"
-#include "timing.h"
 #include "llsky.h"
 #include "llviewercamera.h"
 

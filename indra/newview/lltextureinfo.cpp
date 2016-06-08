@@ -2,31 +2,25 @@
  * @file lltextureinfo.cpp
  * @brief Object which handles local texture info
  *
- * $LicenseInfo:firstyear=2000&license=viewergpl$
- * 
- * Copyright (c) 2000-2009, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2000&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2010, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
@@ -35,19 +29,23 @@
 #include "lltextureinfo.h"
 #include "lltexturestats.h"
 #include "llviewercontrol.h"
+#include "lltrace.h"
 
-LLTextureInfo::LLTextureInfo() : 
+static LLTrace::CountStatHandle<S32> sTextureDownloadsStarted("texture_downloads_started", "number of texture downloads initiated");
+static LLTrace::CountStatHandle<S32> sTextureDownloadsCompleted("texture_downloads_completed", "number of texture downloads completed");
+static LLTrace::CountStatHandle<S32Bytes > sTextureDataDownloaded("texture_data_downloaded", "amount of texture data downloaded");
+static LLTrace::CountStatHandle<U32Milliseconds > sTexureDownloadTime("texture_download_time", "amount of time spent fetching textures");
+
+LLTextureInfo::LLTextureInfo(bool postponeStartRecoreder) :
 	mLogTextureDownloadsToViewerLog(false),
 	mLogTextureDownloadsToSimulator(false),
-	mTotalBytes(0),
-	mTotalMilliseconds(0),
-	mTextureDownloadsStarted(0),
-	mTextureDownloadsCompleted(0),
 	mTextureDownloadProtocol("NONE"),
-	mTextureLogThreshold(LLUnits::Kilobytes::fromValue(100)),
-	mCurrentStatsBundleStartTime(0)
+	mTextureLogThreshold(LLUnits::Kilobytes::fromValue(100))
 {
-	mTextures.clear();
+	if (!postponeStartRecoreder)
+{
+		startRecording();
+	}
 }
 
 void LLTextureInfo::setUpLogging(bool writeToViewerLog, bool sendToSim, U32Bytes textureLogThreshold)
@@ -92,7 +90,7 @@ void LLTextureInfo::setRequestStartTime(const LLUUID& id, U64 startTime)
 		addRequest(id);
 	}
 	mTextures[id]->mStartTime = (U64Microseconds)startTime;
-	mTextureDownloadsStarted++;
+	add(sTextureDownloadsStarted, 1);
 }
 
 void LLTextureInfo::setRequestSize(const LLUUID& id, U32 size)
@@ -163,12 +161,11 @@ void LLTextureInfo::setRequestCompleteTimeAndLog(const LLUUID& id, U64Microsecon
 
 	if(mLogTextureDownloadsToSimulator)
 	{
-		U32Bytes texture_stats_upload_threshold = mTextureLogThreshold;
-		mTotalBytes += details.mSize;
-		mTotalMilliseconds += details.mCompleteTime - details.mStartTime;
-		mTextureDownloadsCompleted++;
+		add(sTextureDataDownloaded, details.mSize);
+		add(sTexureDownloadTime, details.mCompleteTime - details.mStartTime);
+		add(sTextureDownloadsCompleted, 1);
 		mTextureDownloadProtocol = protocol;
-		if (mTotalBytes >= texture_stats_upload_threshold)
+		if (mRecording.getSum(sTextureDataDownloaded) >= mTextureLogThreshold)
 		{
 			LLSD texture_data;
 			std::stringstream startTime;
@@ -190,27 +187,35 @@ LLSD LLTextureInfo::getAverages()
 {
 	LLSD averagedTextureData;
 	S32 averageDownloadRate = 0;
-	unsigned int download_time = mTotalMilliseconds.valueInUnits<LLUnits::Seconds>();
+	unsigned int download_time = mRecording.getSum(sTexureDownloadTime).valueInUnits<LLUnits::Seconds>();
+	
 	if (0 != download_time)
 	{
-		averageDownloadRate = mTotalBytes.valueInUnits<LLUnits::Bits>() / download_time;
+		averageDownloadRate = mRecording.getSum(sTextureDataDownloaded).valueInUnits<LLUnits::Bits>() / download_time;
 	}
 
 	averagedTextureData["bits_per_second"] = averageDownloadRate;
-	averagedTextureData["bytes_downloaded"] = (LLSD::Integer)mTotalBytes.valueInUnits<LLUnits::Bits>();
-	averagedTextureData["texture_downloads_started"] = mTextureDownloadsStarted;
-	averagedTextureData["texture_downloads_completed"] = mTextureDownloadsCompleted;
+	averagedTextureData["bytes_downloaded"]            = mRecording.getSum(sTextureDataDownloaded).valueInUnits<LLUnits::Bytes>();
+	averagedTextureData["texture_downloads_started"]   = mRecording.getSum(sTextureDownloadsStarted);
+	averagedTextureData["texture_downloads_completed"] = mRecording.getSum(sTextureDownloadsCompleted);
 	averagedTextureData["transport"] = mTextureDownloadProtocol;
 
 	return averagedTextureData;
 }
 
+void LLTextureInfo::startRecording()
+{
+	mRecording.start();
+}
+
+void LLTextureInfo::stopRecording()
+{
+	mRecording.stop();
+}
+
 void LLTextureInfo::resetTextureStatistics()
 {
-	mTotalMilliseconds = U32Milliseconds(0);
-	mTotalBytes = U32Bytes(0);
-	mTextureDownloadsStarted = 0;
-	mTextureDownloadsCompleted = 0;
+	mRecording.restart();
 	mTextureDownloadProtocol = "NONE";
 	mCurrentStatsBundleStartTime = LLTimer::getTotalTime();
 }

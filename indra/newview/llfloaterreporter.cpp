@@ -2,30 +2,25 @@
  * @file llfloaterreporter.cpp
  * @brief Abuse reports.
  *
- * $LicenseInfo:firstyear=2002&license=viewergpl$
+ * $LicenseInfo:firstyear=2002&license=viewerlgpl$
  * Second Life Viewer Source Code
- * Copyright (c) 2002-2009, Linden Research, Inc.
+ * Copyright (C) 2010, Linden Research, Inc.
  * 
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
@@ -47,6 +42,9 @@
 #include "llnotificationsutil.h"
 #include "llstring.h"
 #include "llsys.h"
+#include "llvfile.h"
+#include "llvfs.h"
+#include "mean_collision_data.h"
 #include "message.h"
 #include "v3math.h"
 
@@ -55,7 +53,6 @@
 #include "llbutton.h"
 #include "lltexturectrl.h"
 #include "llscrolllistctrl.h"
-#include "llslurl.h"
 #include "lldispatcher.h"
 #include "llviewerobject.h"
 #include "llviewerregion.h"
@@ -68,6 +65,7 @@
 #include "lltoolobjpicker.h"
 #include "lltoolmgr.h"
 #include "llresourcedata.h"		// for LLResourceData
+#include "llslurl.h"
 #include "llviewerwindow.h"
 #include "llviewertexturelist.h"
 #include "llworldmap.h"
@@ -78,15 +76,67 @@
 #include "lluictrlfactory.h"
 #include "llviewernetwork.h"
 
-#include "llassetuploadresponders.h"
 #include "llagentui.h"
 
 #include "lltrans.h"
+#include "llexperiencecache.h"
+
+#include "llcorehttputil.h"
+#include "llviewerassetupload.h"
 
 #include "rlvhandler.h"
 
-const U32 INCLUDE_SCREENSHOT  = 0x01 << 0;
+//=========================================================================
+//-----------------------------------------------------------------------------
+// Support classes
+//-----------------------------------------------------------------------------
+class LLARScreenShotUploader : public LLResourceUploadInfo
+{
+public:
+    LLARScreenShotUploader(LLSD report, LLUUID assetId, LLAssetType::EType assetType);
 
+    virtual LLSD        prepareUpload();
+    virtual LLSD        generatePostBody();
+    virtual S32         getEconomyUploadCost();
+    virtual LLUUID      finishUpload(LLSD &result);
+
+    virtual bool        showInventoryPanel() const { return false; }
+    virtual std::string getDisplayName() const { return "Abuse Report"; }
+
+private:
+
+    LLSD    mReport;
+};
+
+LLARScreenShotUploader::LLARScreenShotUploader(LLSD report, LLUUID assetId, LLAssetType::EType assetType) :
+    LLResourceUploadInfo(assetId, assetType, "Abuse Report"),
+    mReport(report)
+{
+}
+
+LLSD LLARScreenShotUploader::prepareUpload()
+{
+    return LLSD().with("success", LLSD::Boolean(true));
+}
+
+LLSD LLARScreenShotUploader::generatePostBody()
+{   // The report was pregenerated and passed in the constructor.
+    return mReport;
+}
+
+S32 LLARScreenShotUploader::getEconomyUploadCost()
+{   // Abuse report screen shots do not cost anything to upload.
+    return 0;
+}
+
+LLUUID LLARScreenShotUploader::finishUpload(LLSD &result)
+{
+    /* *TODO$: Report success or failure. Carried over from previous todo on responder*/
+    return LLUUID::null;
+}
+
+
+//=========================================================================
 //-----------------------------------------------------------------------------
 // Globals
 //-----------------------------------------------------------------------------
@@ -94,6 +144,7 @@ const U32 INCLUDE_SCREENSHOT  = 0x01 << 0;
 //-----------------------------------------------------------------------------
 // Member functions
 //-----------------------------------------------------------------------------
+
 LLFloaterReporter::LLFloaterReporter()
 :	LLFloater(),
 	mReportType(COMPLAINT_REPORT),
@@ -179,6 +230,7 @@ BOOL LLFloaterReporter::postBuild()
 
 	childSetAction("send_btn", onClickSend, this);
 	childSetAction("cancel_btn", onClickCancel, this);
+
 	// grab the user's name
 	std::string reporter;
 	LLAgentUI::buildFullname(reporter);
@@ -232,6 +284,30 @@ void LLFloaterReporter::enableControls(BOOL enable)
 	getChildView("cancel_btn")->setEnabled(enable);
 }
 
+void LLFloaterReporter::getExperienceInfo(const LLUUID& experience_id)
+{
+	mExperienceID = experience_id;
+
+	if (LLUUID::null != mExperienceID)
+	{
+        const LLSD& experience = LLExperienceCache::instance().get(mExperienceID);
+		std::stringstream desc;
+
+		if(experience.isDefined())
+		{
+			setFromAvatarID(experience[LLExperienceCache::AGENT_ID]);
+			desc << "Experience id: " << mExperienceID;
+		}
+		else
+		{
+			desc << "Unable to retrieve details for id: "<< mExperienceID;
+		}
+		
+		LLUICtrl* details = getChild<LLUICtrl>("details_edit");
+		details->setValue(desc.str());
+	}
+}
+
 void LLFloaterReporter::getObjectInfo(const LLUUID& object_id)
 {
 	// TODO -- 
@@ -260,6 +336,14 @@ void LLFloaterReporter::getObjectInfo(const LLUUID& object_id)
 			if (regionp)
 			{
 				getChild<LLUICtrl>("sim_field")->setValue(regionp->getName());
+// [RLVa:KB] - Checked: 2009-07-04 (RLVa-1.0.0a)
+/*
+				if ( (rlv_handler_t::isEnabled()) && (gRlvHandler.hasBehaviour(RLV_BHVR_SHOWLOC)) )
+				{
+					childSetText("sim_field", RlvStrings::getString(RLV_STRING_HIDDEN_REGION));
+				}
+*/
+// [/RLVa:KB]
 				LLVector3d global_pos;
 				global_pos.setVec(objectp->getPositionRegion());
 				setPosBox(global_pos);
@@ -474,7 +558,7 @@ void LLFloaterReporter::showFromMenu(EReportType report_type)
 }
 
 // static
-void LLFloaterReporter::show(const LLUUID& object_id, const std::string& avatar_name)
+void LLFloaterReporter::show(const LLUUID& object_id, const std::string& avatar_name, const LLUUID& experience_id)
 {
 	LLFloaterReporter* f = getInstance();
 
@@ -487,6 +571,23 @@ void LLFloaterReporter::show(const LLUUID& object_id, const std::string& avatar_
 	{
 		f->setFromAvatarID(object_id);
 	}
+	if(experience_id.notNull())
+	{
+		f->getExperienceInfo(experience_id);
+	}
+
+	// Need to deselect on close
+	f->mDeselectOnClose = TRUE;
+
+	f->open();		/* Flawfinder: ignore */
+}
+
+
+
+void LLFloaterReporter::showFromExperience( const LLUUID& experience_id )
+{
+	LLFloaterReporter* f = getInstance();
+	f->getExperienceInfo(experience_id);
 
 	// Need to deselect on close
 	f->mDeselectOnClose = TRUE;
@@ -496,9 +597,9 @@ void LLFloaterReporter::show(const LLUUID& object_id, const std::string& avatar_
 
 
 // static
-void LLFloaterReporter::showFromObject(const LLUUID& object_id)
+void LLFloaterReporter::showFromObject(const LLUUID& object_id, const LLUUID& experience_id)
 {
-	show(object_id);
+	show(object_id, LLStringUtil::null, experience_id);
 }
 
 // static
@@ -700,62 +801,25 @@ void LLFloaterReporter::sendReportViaLegacy(const LLSD & report)
 	msg->sendReliable(regionp->getHost());
 }
 
-class LLUserReportScreenshotResponder : public LLAssetUploadResponder
+void LLFloaterReporter::finishedARPost(const LLSD &)
 {
-public:
-	LLUserReportScreenshotResponder(const LLSD & post_data, 
-									const LLUUID & vfile_id, 
-									LLAssetType::EType asset_type):
-	LLAssetUploadResponder(post_data, vfile_id, asset_type)
-	{
-	}
-	void uploadFailed(const LLSD& content)
-	{
-		// *TODO pop up a dialog so the user knows their report screenshot didn't make it
-		LLUploadDialog::modalUploadFinished();
-	}
-	void uploadComplete(const LLSD& content)
-	{
-		// we don't care about what the server returns from this post, just clean up the UI
-		LLUploadDialog::modalUploadFinished();
-	}
+    LLUploadDialog::modalUploadFinished();
 
-	/*virtual*/ char const* getName(void) const { return "LLUserReportScreenshotResponder"; }
-};
-
-class LLUserReportResponder : public LLHTTPClient::ResponderWithCompleted
-{
-	LOG_CLASS(LLUserReportResponder);
-public:
-	LLUserReportResponder() { }
-
-private:
-	void httpCompleted()
-	{
-		if (!isGoodStatus(mStatus))
-		{
-			// *TODO do some user messaging here
-			LL_WARNS("UserReport") << dumpResponse() << LL_ENDL;
-		}
-		// we don't care about what the server returns
-		LLUploadDialog::modalUploadFinished();
-	}
-	char const* getName() const { return "LLUserReportResponder"; }
-};
+}
 
 void LLFloaterReporter::sendReportViaCaps(std::string url, std::string sshot_url, const LLSD& report)
 {
 	if(getChild<LLUICtrl>("screen_check")->getValue().asBoolean() && !sshot_url.empty())
 	{
 		// try to upload screenshot
-		LLHTTPClient::post(sshot_url, report, new LLUserReportScreenshotResponder(report, 
-															mResourceDatap->mAssetInfo.mUuid, 
-															mResourceDatap->mAssetInfo.mType));			
+        LLResourceUploadInfo::ptr_t uploadInfo(new  LLARScreenShotUploader(report, mResourceDatap->mAssetInfo.mUuid, mResourceDatap->mAssetInfo.mType));
+        LLViewerAssetUpload::EnqueueInventoryUpload(sshot_url, uploadInfo);
 	}
 	else
 	{
-		// screenshot not wanted or we don't have screenshot cap
-		LLHTTPClient::post(url, report, new LLUserReportResponder);			
+        LLCoreHttpUtil::HttpCoroutineAdapter::completionCallback_t proc = boost::bind(&LLFloaterReporter::finishedARPost, _1);
+        LLUploadDialog::modalUploadDialog("Abuse Report");
+        LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(url, report, proc, proc);
 	}
 }
 
@@ -880,6 +944,7 @@ void LLFloaterReporter::setPosBox(const LLVector3d &pos)
 		mPosition.mV[VZ]);
 	getChild<LLUICtrl>("pos_field")->setValue(pos_string);
 }
+
 
 //void LLFloaterReporter::setDescription(const std::string& description, LLMeanCollisionData *mcd)
 //{

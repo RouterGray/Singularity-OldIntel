@@ -35,13 +35,19 @@
 
 #include "llallocator.h"
 #include "llsys.h"			// for LLOSInfo
+#include "lltimer.h"
 #include "llviewercontrol.h"	// settings_map_type
+#include "llappcorehttp.h"
 
 class LLCommandLineParser;
+class LLFrameTimer;
+class LLPumpIO;
 class LLTextureCache;
 class LLImageDecodeThread;
 class LLTextureFetch;
 class LLWatchdogTimeout;
+
+extern LLTrace::BlockTimerStatHandle FTM_FRAME;
 
 class LLAppViewer : public LLApp
 {
@@ -113,7 +119,7 @@ public:
     void loadNameCache();
     void saveNameCache();
 
-	void removeMarkerFile(bool leave_logout_marker = false);
+	void removeMarkerFiles();
 	
 	void removeDumpDir();
     // LLAppViewer testing helpers.
@@ -137,7 +143,7 @@ public:
 	// Load settings from the location specified by loction_key.
 	// Key availale and rules for loading, are specified in 
 	// 'app_settings/settings_files.xml'
-	bool loadSettingsFromDirectory(AIReadAccess<settings_map_type> const& settings_r,
+	bool loadSettingsFromDirectory(settings_map_type const& settings_r,
 	                               std::string const& location_key,
 	                               bool set_defaults = false);
 
@@ -170,9 +176,14 @@ public:
 	// Metrics policy helper statics.
 	static void metricsUpdateRegion(U64 region_handle);
 	static void metricsSend(bool enable_reporting);
+
+	// llcorehttp init/shutdown/config information.
+	LLAppCoreHttp & getAppCoreHttp()			{ return mAppCoreHttp; }
+	
 protected:
-	virtual bool initWindow(); // Initialize the viewer's window.
+	virtual bool initWindow(); // Initialize the viewer's 
 	virtual bool initLogging(); // Initialize log files, logging system, return false on failure.
+	virtual bool initLoggingPortable(); // <singu/> Portability mode
 	virtual void initConsole() {}; // Initialize OS level debugging console.
 	virtual bool initHardwareTest() { return true; } // A false result indicates the app should quit.
 	virtual bool initSLURLHandler();
@@ -202,8 +213,9 @@ private:
 
 	void writeSystemInfo(); // Write system info to "debug_info.log"
 
-	bool anotherInstanceRunning(); 
-	void initMarkerFile(); 
+	void processMarkerFiles(); 
+	static void recordMarkerVersion(LLFILE* marker_file);
+	bool markerIsSameVersion(const std::string& marker_name) const;
     
     void idle(); 
     void idleShutdown();
@@ -223,10 +235,10 @@ private:
     bool mSecondInstance; // Is this a second instance of the app?
 
 	std::string mMarkerFileName;
-	LLAPRFile mMarkerFile; // A file created to indicate the app is running.
+	LLFILE* mMarkerFile; // A file created to indicate the app is running.
 
 	std::string mLogoutMarkerFileName;
-	apr_file_t* mLogoutMarkerFile; // A file created to indicate the app is running.
+	LLFILE* mLogoutMarkerFile; // A file created to indicate the app is running.
 
 	
 	LLOSInfo mSysOSInfo; 
@@ -251,6 +263,9 @@ private:
 
 	LLWatchdogTimeout* mMainloopTimeout;
 
+	// For performance and metric gathering
+	class LLThread*	mFastTimerLogThread;
+
 	// for tracking viewer<->region circuit death
 	bool mAgentRegionLastAlive;
 	LLUUID mAgentRegionLastID;
@@ -259,6 +274,12 @@ private:
 
 	LLFrameTimer mMemCheckTimer;
 	
+	// llcorehttp library init/shutdown helper
+	LLAppCoreHttp mAppCoreHttp;
+
+	//---------------------------------------------
+	//*NOTE: Mani - legacy updater stuff
+	// Still useable?
 public:
 	//some information for updater
 	typedef struct

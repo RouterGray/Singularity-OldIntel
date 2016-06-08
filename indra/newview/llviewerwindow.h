@@ -65,7 +65,6 @@ class LLImageRaw;
 class LLImageFormatted;
 class LLHUDIcon;
 class LLWindow;
-class AIFilePicker;
 
 #define PICK_HALF_WIDTH 5
 #define PICK_DIAMETER (2 * PICK_HALF_WIDTH + 1)
@@ -327,9 +326,7 @@ public:
 	BOOL			thumbnailSnapshot(LLImageRaw *raw, S32 preview_width, S32 preview_height, BOOL show_ui, BOOL do_rebuild, ESnapshotType type) ;
 	BOOL			isSnapshotLocSet() const { return ! sSnapshotDir.empty(); }
 	void			resetSnapshotLoc() const { sSnapshotDir.clear(); }
-	void saveImageNumbered(LLPointer<LLImageFormatted> image, int index);
-	void saveImageNumbered_continued1(LLPointer<LLImageFormatted> image, std::string const& extension, AIFilePicker* filepicker, int index);
-	void saveImageNumbered_continued2(LLPointer<LLImageFormatted> image, std::string const& extension, int index);
+	BOOL			saveImageNumbered(LLPointer<LLImageFormatted> image, int index);
 
 	// Reset the directory where snapshots are saved.
 	// Client will open directory picker on next snapshot save.

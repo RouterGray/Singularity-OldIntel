@@ -333,7 +333,8 @@ bool LLAlertDialog::show()
 	if(mDefaultButton)
 	{
 		// delay before enabling default button
-		mDefaultBtnTimer.start(DEFAULT_BUTTON_DELAY);
+		mDefaultBtnTimer.start();
+		mDefaultBtnTimer.resetWithExpiry(DEFAULT_BUTTON_DELAY);
 	}
 
 	// attach to floater if necessary

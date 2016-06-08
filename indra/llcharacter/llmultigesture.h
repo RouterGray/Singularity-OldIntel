@@ -30,6 +30,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <boost/function.hpp>
 
 #include "lluuid.h"
 #include "llframetimer.h"

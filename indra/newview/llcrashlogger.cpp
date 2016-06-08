@@ -26,7 +26,7 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llcrashlogger.h"
-#include "linden_common.h"
+#include "llcorehttputil.h"
 #include "llstring.h"
 #include "indra_constants.h"	// CRASH_BEHAVIOR_...
 #include "llerror.h"
@@ -37,56 +37,36 @@
 #include "llsdserialize.h"
 #include "lliopipe.h"
 #include "llpumpio.h"
-#include "llhttpclient.h"
 #include "llsdserialize.h"
 #include "llproxy.h"
 #include "llwindow.h"
 #include "lltrans.h"
-#include "aistatemachine.h"
 #include "boost/filesystem.hpp"
 
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy crashLoggerResponder_timeout;
 extern const std::string OLD_LOG_FILE;
-
-class LLCrashLoggerResponder : public LLHTTPClient::ResponderWithResult
+namespace
 {
-public:
-	LLCrashLoggerResponder() 
+	void crashSendFailure(const LLSD& response)
 	{
+		LL_WARNS() << "Crash report sending failed: " << LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(response).toString() << LL_ENDL;
 	}
 
-	virtual void httpFailure(void)
-	{
-		LL_WARNS() << "Crash report sending failed: " << mReason << LL_ENDL;
-	}
-
-	virtual void httpSuccess(void)
+	void crashSendSuccess(const LLSD& response)
 	{
 		std::string msg = "Crash report successfully sent";
-		if (mContent.has("message"))
+		if (response.has("message"))
 		{
-			msg += ": " + mContent["message"].asString();
+			msg += ": " + response["message"].asString();
 		}
 		LL_INFOS() << msg << LL_ENDL;
 
-		if (mContent.has("report_id"))
+		if (response.has("report_id"))
 		{
-			gSavedSettings.setS32("CrashReportID", mContent["report_id"].asInteger());
+			gSavedSettings.setS32("CrashReportID", response["report_id"].asInteger());
 		}
 
 	}
-
-	virtual AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const 
-	{
-		return crashLoggerResponder_timeout;
-	}
-
-	virtual char const* getName(void) const
-	{
-		return "LLCrashLoggerResponder";
-	}
-};
+}
 
 LLCrashLogger::LLCrashLogger() :
 	mCrashBehavior(CRASH_BEHAVIOR_ALWAYS_SEND),
@@ -249,14 +229,6 @@ void LLCrashLogger::gatherFiles()
 
 		mFileMap["SecondLifeLog"] = mDebugLog["SLLog"].asString();
 		mFileMap["SettingsXml"] = mDebugLog["SettingsFilename"].asString();
-		if(mDebugLog.has("CAFilename"))
-		{
-			LLCurl::setCAFile(mDebugLog["CAFilename"].asString());
-		}
-		else
-		{
-			LLCurl::setCAFile(gDirUtilp->getCAFile());
-		}
 
 		LL_INFOS() << "Using log file from debug log " << mFileMap["SecondLifeLog"] << LL_ENDL;
 		LL_INFOS() << "Using settings file from debug log " << mFileMap["SettingsXml"] << LL_ENDL;
@@ -264,7 +236,6 @@ void LLCrashLogger::gatherFiles()
 	else
 	{
 		// Figure out the filename of the second life log
-		LLCurl::setCAFile(gDirUtilp->getCAFile());
 		mFileMap["SecondLifeLog"] = gDirUtilp->getExpandedFilename(LL_PATH_LOGS,"SecondLife.log");
 		mFileMap["SettingsXml"] = gDirUtilp->getExpandedFilename(LL_PATH_USER_SETTINGS,"settings.xml");
 	}
@@ -382,7 +353,8 @@ bool LLCrashLogger::sendCrashLog(std::string dump_dir)
 	LLSDSerialize::toPrettyXML(post_data, out_file);
 	out_file.close();
 
-	LLHTTPClient::post(mCrashHost, post_data, new LLCrashLoggerResponder());
+	LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(mCrashHost, post_data,
+		boost::bind(crashSendSuccess, _1), boost::bind(crashSendFailure, _1));
     
 	return true;
 }

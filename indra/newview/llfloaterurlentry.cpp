@@ -2,37 +2,29 @@
  * @file llfloaterurlentry.cpp
  * @brief LLFloaterURLEntry class implementation
  *
- * $LicenseInfo:firstyear=2007&license=viewergpl$
- * 
- * Copyright (c) 2007-2009, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2007&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2010, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
 #include "llviewerprecompiledheaders.h"
-
-#include "llhttpclient.h"
 
 #include "llfloaterurlentry.h"
 
@@ -46,56 +38,9 @@
 #include "lluictrlfactory.h"
 #include "llwindow.h"
 #include "llviewerwindow.h"
-#include "llhttpclient.h"
-
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy mediaTypeResponder_timeout;
+#include "llcorehttputil.h"
 
 static LLFloaterURLEntry* sInstance = NULL;
-
-// Move this to its own file.
-// helper class that tries to download a URL from a web site and calls a method
-// on the Panel Land Media and to discover the MIME type
-class LLMediaTypeResponder : public LLHTTPClient::ResponderHeadersOnly
-{
-public:
-	LLMediaTypeResponder( const LLHandle<LLFloater> parent ) :
-	  mParent( parent )
-	  {}
-
-	  LLHandle<LLFloater> mParent;
-
-	  /*virtual*/ void completedHeaders(void)
-	  {
-		  if (isGoodStatus(mStatus))
-		  {
-			  std::string media_type;
-			  if (mReceivedHeaders.getFirstValue("content-type", media_type))
-			  {
-				  std::string::size_type idx1 = media_type.find_first_of(";");
-				  std::string mime_type = media_type.substr(0, idx1);
-				  completeAny(mStatus, mime_type);
-				  return;
-			  }
-			  LL_WARNS() << "LLMediaTypeResponder::completedHeaders: OK HTTP status (" << mStatus << ") but no Content-Type! Received headers: " << mReceivedHeaders << LL_ENDL;
-		  }
-		  completeAny(mStatus, "none/none");
-	  }
-
-	  void completeAny(U32 status, const std::string& mime_type)
-	  {
-		  // Set empty type to none/none.  Empty string is reserved for legacy parcels
-		  // which have no mime type set.
-		  std::string resolved_mime_type = ! mime_type.empty() ? mime_type : LLMIMETypes::getDefaultMimeType();
-		  LLFloaterURLEntry* floater_url_entry = (LLFloaterURLEntry*)mParent.get();
-		  if ( floater_url_entry )
-			  floater_url_entry->headerFetchComplete( status, resolved_mime_type );
-	  }
-
-	  /*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return mediaTypeResponder_timeout; }
-
-	  /*virtual*/ char const* getName(void) const { return "LLMediaTypeResponder"; }
-};
 
 //-----------------------------------------------------------------------------
 // LLFloaterURLEntry()
@@ -229,6 +174,10 @@ void LLFloaterURLEntry::onBtnOK( void* userdata )
 		LLURLHistory::addURL("parcel", media_url);
 	}
 
+	// show progress bar here?
+	getWindow()->incBusyCount();
+	self->getChildView("loading_label")->setVisible( true);
+
 	// leading whitespace causes problems with the MIME-type detection so strip it
 	LLStringUtil::trim( media_url );
 
@@ -246,8 +195,8 @@ void LLFloaterURLEntry::onBtnOK( void* userdata )
 	if(!media_url.empty() && 
 	   (scheme == "http" || scheme == "https"))
 	{
-		LLHTTPClient::getHeaderOnly( media_url,
-			new LLMediaTypeResponder(self->getHandle()));
+        LLCoros::instance().launch("LLFloaterURLEntry::getMediaTypeCoro",
+            boost::bind(&LLFloaterURLEntry::getMediaTypeCoro, media_url, self->getHandle()));
 	}
 	else
 	{
@@ -258,10 +207,58 @@ void LLFloaterURLEntry::onBtnOK( void* userdata )
 	self->getChildView("ok_btn")->setEnabled(false);
 	self->getChildView("cancel_btn")->setEnabled(false);
 	self->getChildView("media_entry")->setEnabled(false);
+}
 
-	// show progress bar here?
-	getWindow()->incBusyCount();
-	self->getChildView("loading_label")->setVisible( true);
+// static
+void LLFloaterURLEntry::getMediaTypeCoro(std::string url, LLHandle<LLFloater> parentHandle)
+{
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("getMediaTypeCoro", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+    LLCore::HttpOptions::ptr_t httpOpts = LLCore::HttpOptions::ptr_t(new LLCore::HttpOptions);
+
+    httpOpts->setHeadersOnly(true);
+
+    LL_INFOS("HttpCoroutineAdapter", "genericPostCoro") << "Generic POST for " << url << LL_ENDL;
+
+    LLSD result = httpAdapter->getAndSuspend(httpRequest, url, httpOpts);
+
+    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    LLFloaterURLEntry* floaterUrlEntry = (LLFloaterURLEntry*)parentHandle.get();
+    if (!floaterUrlEntry)
+    {
+        LL_WARNS() << "Could not get URL entry floater." << LL_ENDL;
+        return;
+    }
+
+    // Set empty type to none/none.  Empty string is reserved for legacy parcels
+    // which have no mime type set.
+    std::string resolvedMimeType = LLMIMETypes::getDefaultMimeType();
+
+    if (!status)
+    {
+        floaterUrlEntry->headerFetchComplete(status.getType(), resolvedMimeType);
+        return;
+    }
+
+    LLSD resultHeaders = httpResults[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_HEADERS];
+
+    if (resultHeaders.has(HTTP_IN_HEADER_CONTENT_TYPE))
+    {
+        const std::string& mediaType = resultHeaders[HTTP_IN_HEADER_CONTENT_TYPE];
+        std::string::size_type idx1 = mediaType.find_first_of(";");
+        std::string mimeType = mediaType.substr(0, idx1);
+        if (!mimeType.empty())
+        {
+            resolvedMimeType = mimeType;
+        }
+    }
+
+    floaterUrlEntry->headerFetchComplete(status.getType(), resolvedMimeType);
+
 }
 
 // static

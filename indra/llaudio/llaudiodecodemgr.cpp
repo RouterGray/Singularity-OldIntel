@@ -645,7 +645,7 @@ void LLAudioDecodeMgr::Impl::processQueue(const F32 num_secs)
 						// At this point, we could see if anyone needs this sound immediately, but
 						// I'm not sure that there's a reason to - we need to poll all of the playing
 						// sounds anyway.
-						//LL_INFOS() << "Finished the vorbis decode, now what?" << LL_ENDL;
+						//LL_INFOS("AudioEngine") << "Finished the vorbis decode, now what?" << LL_ENDL;
 					}
 					else
 					{

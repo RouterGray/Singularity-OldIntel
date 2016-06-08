@@ -69,6 +69,7 @@
 #include "lloverlaybar.h"
 #include "roles_constants.h"
 #include "llweb.h"
+#include "llcorehttputil.h"
 #include "rlvactions.h"
 
 const F32 PARCEL_COLLISION_DRAW_SECS = 1.f;
@@ -239,11 +240,9 @@ void LLViewerParcelMgr::dump()
 	mCurrentParcel->dump();
 	LL_INFOS() << "banning " << mCurrentParcel->mBanList.size() << LL_ENDL;
 	
-	access_map_const_iterator cit = mCurrentParcel->mBanList.begin();
-	access_map_const_iterator end = mCurrentParcel->mBanList.end();
-	for ( ; cit != end; ++cit)
+	for (const auto& pair : mCurrentParcel->mBanList)
 	{
-		LL_INFOS() << "ban id " << (*cit).first << LL_ENDL;
+		LL_INFOS() << "ban id " << pair.first << LL_ENDL;
 	}
 	LL_INFOS() << "Hover parcel:" << LL_ENDL;
 	mHoverParcel->dump();
@@ -1322,10 +1321,13 @@ const std::string& LLViewerParcelMgr::getAgentParcelName() const
 
 void LLViewerParcelMgr::sendParcelPropertiesUpdate(LLParcel* parcel, bool use_agent_region)
 {
-	if(!parcel) return;
+	if(!parcel) 
+        return;
 
 	LLViewerRegion *region = use_agent_region ? gAgent.getRegion() : LLWorld::getInstance()->getRegionFromPosGlobal( mWestSouth );
-	if (!region) return;
+	if (!region) 
+        return;
+
 	//LL_INFOS() << "found region: " << region->getName() << LL_ENDL;
 
 	LLSD body;
@@ -1338,7 +1340,9 @@ void LLViewerParcelMgr::sendParcelPropertiesUpdate(LLParcel* parcel, bool use_ag
 		parcel->packMessage(body);
 		LL_INFOS() << "Sending parcel properties update via capability to: "
 			<< url << LL_ENDL;
-		LLHTTPClient::post(url, body, new LLHTTPClient::ResponderIgnore);
+
+        LLCoreHttpUtil::HttpCoroutineAdapter::messageHttpPost(url, body,
+            "Parcel Properties sent to sim.", "Parcel Properties failed to send to sim.");
 	}
 	else
 	{
@@ -1423,11 +1427,6 @@ void LLViewerParcelMgr::setHoverParcel(const LLVector3d& pos)
 // static
 void LLViewerParcelMgr::processParcelOverlay(LLMessageSystem *msg, void **user)
 {
-	if (gNoRender)
-	{
-		return;
-	}
-
 	// Extract the packed overlay information
 	S32 packed_overlay_size = msg->getSizeFast(_PREHASH_ParcelData, _PREHASH_Data);
 
@@ -1624,6 +1623,7 @@ void LLViewerParcelMgr::processParcelProperties(LLMessageSystem *msg, void **use
 
 		if (parcel == parcel_mgr.mAgentParcel)
 		{
+			// new agent parcel
 			S32 bitmap_size =	parcel_mgr.mParcelsPerEdge
 								* parcel_mgr.mParcelsPerEdge
 								/ 8;
@@ -1636,6 +1636,7 @@ void LLViewerParcelMgr::processParcelProperties(LLMessageSystem *msg, void **use
 			// Let interesting parties know about agent parcel change.
 			LLViewerParcelMgr* instance = LLViewerParcelMgr::getInstance();
 
+			// Notify anything that wants to know when the agent changes parcels
 			instance->mAgentParcelChangedSignal();
 
 			if (instance->mTeleportInProgress)
@@ -1963,8 +1964,8 @@ void LLViewerParcelMgr::sendParcelAccessListUpdate(U32 which)
 		BOOL start_message = TRUE;
 		BOOL initial = TRUE;
 
-		access_map_const_iterator cit = parcel->mAccessList.begin();
-		access_map_const_iterator end = parcel->mAccessList.end();
+		auto cit = parcel->mAccessList.begin();
+		auto end = parcel->mAccessList.end();
 		while ( (cit != end) || initial ) 
 		{	
 			if (start_message) 
@@ -2020,8 +2021,8 @@ void LLViewerParcelMgr::sendParcelAccessListUpdate(U32 which)
 		BOOL start_message = TRUE;
 		BOOL initial = TRUE;
 
-		access_map_const_iterator cit = parcel->mBanList.begin();
-		access_map_const_iterator end = parcel->mBanList.end();
+		auto cit = parcel->mBanList.begin();
+		auto end = parcel->mBanList.end();
 		while ( (cit != end) || initial ) 
 		{
 			if (start_message) 

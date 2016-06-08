@@ -36,8 +36,6 @@
 #include "llpreview.h"
 #include "llcharacter.h"
 
-class AIFilePicker;
-
 class LLPreviewAnim : public LLPreview
 {
 public:
@@ -62,7 +60,6 @@ public:
 									   const LLUUID& asset_uuid,
 									   LLAssetType::EType type,
 									   void* user_data, S32 status, LLExtStat ext_status);
-	static void gotAssetForSave_continued(char* buffer, S32 size, AIFilePicker* filepicker);
 	static void copyAnimID(void* userdata);
 	// </edit>
 	static void endAnimCallback( void *userdata );

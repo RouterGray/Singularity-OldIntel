@@ -32,6 +32,7 @@
 #include "llcombobox.h"
 #include "llfloatervoiceeffect.h"
 #include "lltrans.h"
+#include "llweb.h"
 
 LLPanelVoiceEffect::LLPanelVoiceEffect()
 	: mVoiceEffectCombo(NULL)

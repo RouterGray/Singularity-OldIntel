@@ -35,8 +35,6 @@
 
 #include "llpanel.h"
 
-class AIDirPicker;
-
 class LLPanelNetwork : public LLPanel
 {
 public:
@@ -51,7 +49,6 @@ public:
 private:
 	static void onClickClearCache(void*);
 	static void onClickSetCache(void*);
-	static void onClickSetCache_continued(void* user_data, AIDirPicker* dirpicker);
 	static void onClickResetCache(void*);
 	static void onCommitPort(LLUICtrl* ctrl, void*);
 	static void onCommitSocks5ProxyEnabled(LLUICtrl* ctrl, void* data);

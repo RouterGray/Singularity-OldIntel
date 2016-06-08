@@ -38,7 +38,7 @@
 #include <map>
 #include <boost/intrusive_ptr.hpp>
 
-class XMLRPCResponder;
+class LLXMLRPCTransaction;
 
 // forward decl of types from xlrpc.h
 typedef struct _xmlrpc_value* XMLRPC_VALUE;
@@ -145,7 +145,7 @@ public:
 	F64 getLastTransferRateBPS() const { return mLastTransferRateBPS; }
 
 private:
-	boost::intrusive_ptr<XMLRPCResponder> mResponder;
+	LLXMLRPCTransaction* mTransaction;
 
 	std::string mErrorMessage;
 	

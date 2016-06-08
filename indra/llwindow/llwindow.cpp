@@ -49,8 +49,8 @@ LLSplashScreen *gSplashScreenp = NULL;
 BOOL gDebugClicks = FALSE;
 BOOL gDebugWindowProc = FALSE;
 
-const S32 gURLProtocolWhitelistCount = 4;
-const std::string gURLProtocolWhitelist[] = { "secondlife:", "http:", "https:", "data:"/*, "file:"*/ };
+const S32 gURLProtocolWhitelistCount = 5;
+const std::string gURLProtocolWhitelist[] = { "secondlife:", "http:", "https:", "data:", "mailto:" };
 
 // CP: added a handler list - this is what's used to open the protocol and is based on registry entry
 //	   only meaningful difference currently is that file: protocols are opened using http:
@@ -71,7 +71,7 @@ S32 OSMessageBox(const std::string& text, const std::string& caption, U32 type)
 	}
 
 	S32 result = 0;
-#if LL_MESA_HEADLESS // !!! *FIX: (???)
+#if LL_MESA_HEADLESS // !!! *FIX: (?)
 	LL_WARNS() << "OSMessageBox: " << text << LL_ENDL;
 	return OSBTN_OK;
 #elif LL_WINDOWS
@@ -256,8 +256,6 @@ std::vector<std::string> LLWindow::getDynamicFallbackFontList()
 	return LLWindowWin32::getDynamicFallbackFontList();
 #elif LL_DARWIN
 	return LLWindowMacOSX::getDynamicFallbackFontList();
-#elif LL_MESA_HEADLESS
-	return std::vector<std::string>();
 #elif LL_SDL
 	return LLWindowSDL::getDynamicFallbackFontList();
 #else

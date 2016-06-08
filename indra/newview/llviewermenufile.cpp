@@ -36,7 +36,7 @@
 // project includes
 #include "llagent.h"
 #include "llagentcamera.h"
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 #include "llfloaterbvhpreview.h"
 #include "llfloaterimagepreview.h"
 #include "llfloatermodelpreview.h"
@@ -61,15 +61,14 @@
 #include "lluploaddialog.h"
 #include "lltrans.h"
 #include "llfloaterbuycurrency.h"
+#include "llviewerassetupload.h"
 // <edit>
 #include "llassettype.h"
 #include "llinventorytype.h"
 // </edit>
 
 // linden libraries
-#include "llassetuploadresponders.h"
 #include "lleconomy.h"
-#include "llhttpclient.h"
 #include "llmemberlistener.h"
 #include "llnotificationsutil.h"
 #include "llsdserialize.h"
@@ -152,26 +151,26 @@ static std::string SLOBJECT_EXTENSIONS = "slobject";
 #endif
 static std::string ALL_FILE_EXTENSIONS = "*.*";
 
-std::string build_extensions_string(ELoadFilter filter)
+std::string build_extensions_string(LLFilePicker::ELoadFilter filter)
 {
 	switch(filter)
 	{
 #if LL_WINDOWS
-	case FFLOAD_IMAGE:
+	case LLFilePicker::FFLOAD_IMAGE:
 		return IMAGE_EXTENSIONS;
-	case FFLOAD_WAV:
+	case LLFilePicker::FFLOAD_WAV:
 		return SOUND_EXTENSIONS;
-	case FFLOAD_ANIM:
+	case LLFilePicker::FFLOAD_ANIM:
 		return ANIM_EXTENSIONS;
-	case FFLOAD_SLOBJECT:
+	case LLFilePicker::FFLOAD_SLOBJECT:
 		return SLOBJECT_EXTENSIONS;
 #ifdef _CORY_TESTING
-	case FFLOAD_GEOMETRY:
+	case LLFilePicker::FFLOAD_GEOMETRY:
 		return GEOMETRY_EXTENSIONS;
 #endif
-	case FFLOAD_XML:
+	case LLFilePicker::FFLOAD_XML:
 	    return XML_EXTENSIONS;
-	case FFLOAD_ALL:
+	case LLFilePicker::FFLOAD_ALL:
 		return ALL_FILE_EXTENSIONS;
 #endif
     default:
@@ -185,15 +184,14 @@ class AIFileUpload {
 	virtual ~AIFileUpload() { }
 
   public:
-	bool is_valid(std::string const& filename, ELoadFilter type);
-	void filepicker_callback(ELoadFilter type, AIFilePicker* picker);
-	void start_filepicker(ELoadFilter type, char const* context);
+	bool is_valid(std::string const& filename, LLFilePicker::ELoadFilter type);
+	void start_filepicker(LLFilePicker::ELoadFilter type, char const* context);
 
   protected:
 	virtual void handle_event(std::string const& filename) = 0;
 };
 
-void AIFileUpload::start_filepicker(ELoadFilter filter, char const* context)
+void AIFileUpload::start_filepicker(LLFilePicker::ELoadFilter filter, char const* context)
 {
 	if( gAgentCamera.cameraMouselook() )
 	{
@@ -202,25 +200,16 @@ void AIFileUpload::start_filepicker(ELoadFilter filter, char const* context)
 		// display();
 	}
 
-	AIFilePicker* picker = AIFilePicker::create();
-	picker->open(filter, "", context);
-	// Note that when the call back is called then we're still in the main loop of
-	// the viewer and therefore the AIFileUpload still exists, since that is only
-	// destructed at the end of main when exiting the viewer.
-	picker->run(boost::bind(&AIFileUpload::filepicker_callback, this, filter, picker));
-}
-
-void AIFileUpload::filepicker_callback(ELoadFilter type, AIFilePicker* picker)
-{
-	if (picker->hasFilename())
+	LLFilePicker& picker = LLFilePicker::instance();
+	if (picker.getOpenFile(filter))
 	{
-	  std::string filename = picker->getFilename();
-	  if (is_valid(filename, type))
+	  std::string filename = picker.getFirstFile();
+	  if (is_valid(filename, filter))
 		handle_event(filename);
 	}
 }
 
-bool AIFileUpload::is_valid(std::string const& filename, ELoadFilter type)
+bool AIFileUpload::is_valid(std::string const& filename, LLFilePicker::ELoadFilter type)
 {
 	std::string ext = gDirUtilp->getExtension(filename);
 
@@ -285,7 +274,7 @@ bool AIFileUpload::is_valid(std::string const& filename, ELoadFilter type)
 	//now we check to see
 	//if the file is actually a valid image/sound/etc.
 	//Consider completely disabling this, see how SL handles it. Maybe we can get full song uploads again! -HgB
-	if (type == FFLOAD_WAV)
+	if (type == LLFilePicker::FFLOAD_WAV)
 	{
 		// pre-qualify wavs to make sure the format is acceptable
 		std::string error_msg;
@@ -307,7 +296,7 @@ class LLFileUploadImage : public view_listener_t, public AIFileUpload
   public:
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 	{
-		start_filepicker(FFLOAD_IMAGE, "image");
+		start_filepicker(LLFilePicker::FFLOAD_IMAGE, "image");
 		return true;
 	}
 
@@ -338,7 +327,7 @@ class LLFileUploadSound : public view_listener_t, public AIFileUpload
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 	{
-		start_filepicker(FFLOAD_WAV, "sound");
+		start_filepicker(LLFilePicker::FFLOAD_WAV, "sound");
 		return true;
 	}
 
@@ -354,7 +343,7 @@ class LLFileUploadAnim : public view_listener_t, public AIFileUpload
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 	{
-		start_filepicker(FFLOAD_ANIM, "animations");
+		start_filepicker(LLFilePicker::FFLOAD_ANIM, "animations");
 		return true;
 	}
 
@@ -378,7 +367,7 @@ class LLFileUploadScript : public view_listener_t, public AIFileUpload
 {
 	bool handleEvent(LLPointer<LLEvent> event, const LLSD& userdata)
 	{
-		start_filepicker(FFLOAD_SCRIPT, "script");
+		start_filepicker(LLFilePicker::FFLOAD_SCRIPT, "script");
 		return true;
 	}
 
@@ -400,7 +389,6 @@ class LLFileUploadBulk : public view_listener_t
 		}
 
 		// TODO:
-		// Iterate over all files
 		// Check extensions for uploadability, cost
 		// Check user balance for entire cost
 		// Charge user entire cost
@@ -428,17 +416,10 @@ class LLFileUploadBulk : public view_listener_t
 		else					// cancel
 			return false;
 
-		AIFilePicker* filepicker = AIFilePicker::create();
-		filepicker->open(FFLOAD_ALL, "", "openfile", true);
-		filepicker->run(boost::bind(&LLFileUploadBulk::onConfirmBulkUploadTemp_continued, enabled, filepicker));
-		return true;
-	}
-
-	static void onConfirmBulkUploadTemp_continued(bool enabled, AIFilePicker* filepicker)
-	{
-		if (filepicker->hasFilename())
+		LLFilePicker& filepicker = LLFilePicker::instance();
+		if (filepicker.getMultipleOpenFiles())
 		{
-			std::vector<std::string> const& file_names(filepicker->getFilenames());
+			std::vector<std::string> const& file_names(filepicker.getFilenames());
 			for (std::vector<std::string>::const_iterator iter = file_names.begin(); iter != file_names.end(); ++iter)
 			{
 				std::string const& filename(*iter);
@@ -452,25 +433,19 @@ class LLFileUploadBulk : public view_listener_t
 				LLStringUtil::stripNonprintable(asset_name);
 				LLStringUtil::trim(asset_name);
 				
-				std::string display_name = LLStringUtil::null;
-				LLAssetStorage::LLStoreAssetCallback callback = NULL;
 				S32 expected_upload_cost = LLGlobalEconomy::Singleton::getInstance()->getPriceUpload();
-				void *userdata = NULL;
 				gSavedSettings.setBOOL("TemporaryUpload", enabled);
-				upload_new_resource(
+                LLResourceUploadInfo::ptr_t uploadInfo(new LLNewFileResourceUploadInfo(
 					filename,
 					asset_name,
-					asset_name,
-					0,
-					LLFolderType::FT_NONE,
-					LLInventoryType::IT_NONE,
+					asset_name, 0,
+					LLFolderType::FT_NONE, LLInventoryType::IT_NONE,
 					LLFloaterPerms::getNextOwnerPerms("Uploads"),
 					LLFloaterPerms::getGroupPerms("Uploads"),
 					LLFloaterPerms::getEveryonePerms("Uploads"),
-					display_name,
-					callback,
-					expected_upload_cost,
-					userdata);
+					expected_upload_cost));
+
+					upload_new_resource(uploadInfo, NULL, NULL);
 
 			}
 		}
@@ -478,6 +453,7 @@ class LLFileUploadBulk : public view_listener_t
 		{
 			gSavedSettings.setBOOL("TemporaryUpload", FALSE);
 		}
+		return true;
 	}
 };
 
@@ -629,20 +605,13 @@ class LLFileQuit : public view_listener_t
 	}
 };
 
-static void handle_compress_image_continued(AIFilePicker* filepicker);
 void handle_compress_image(void*)
 {
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_IMAGE, "", "openfile", true);
-	filepicker->run(boost::bind(&handle_compress_image_continued, filepicker));
-}
-
-static void handle_compress_image_continued(AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getMultipleOpenFiles(LLFilePicker::FFLOAD_IMAGE))
 		return;
 
-	std::vector<std::string> const& filenames(filepicker->getFilenames());
+	std::vector<std::string> const& filenames(filepicker.getFilenames());
 	for(std::vector<std::string>::const_iterator filename = filenames.begin(); filename != filenames.end(); ++filename)
 	{
 		std::string const& infile(*filename);
@@ -666,8 +635,11 @@ static void handle_compress_image_continued(AIFilePicker* filepicker)
 	}
 }
 
-void upload_new_resource(const std::string& src_filename, std::string name,
-			 std::string desc, S32 compression_info,
+void upload_new_resource(
+			 const std::string& src_filename,
+			 std::string name,
+			 std::string desc,
+			 S32 compression_info,
 			 LLFolderType::EType destination_folder_type,
 			 LLInventoryType::EType inv_type,
 			 U32 next_owner_perms,
@@ -920,19 +892,19 @@ void upload_new_resource(const std::string& src_filename, std::string name,
 	{
 		uuid = tid.makeAssetID(gAgent.getSecureSessionID());
 		// copy this file into the vfs for upload
-		S32 file_size;
-		LLAPRFile infile(filename, LL_APR_RB, &file_size);
-		if (infile.getFileHandle())
+		llifstream infile(filename);
+		if (infile.good())
 		{
 			LLVFile file(gVFS, uuid, asset_type, LLVFile::WRITE);
 
-			file.setMaxSize(file_size);
+			file.setMaxSize(LLFile::size(filename));
 
 			const S32 buf_size = 65536;
 			U8 copy_buf[buf_size];
-			while ((file_size = infile.read(copy_buf, buf_size)))
+			while (infile.good())
 			{
-				file.write(copy_buf, file_size);
+				infile.read((char*)copy_buf, buf_size);
+				file.write(copy_buf, infile.gcount());
 			}
 		}
 		else
@@ -1125,9 +1097,10 @@ void upload_done_callback(const LLUUID& uuid, void* user_data, S32 result, LLExt
 		LLNotificationsUtil::add("CannotUploadReason", args);
 	}
 
-	LLUploadDialog::modalUploadFinished();
 	delete data;
 	data = NULL;
+
+	LLUploadDialog::modalUploadFinished();
 }
 
 static LLAssetID upload_new_resource_prep(
@@ -1152,48 +1125,9 @@ static LLAssetID upload_new_resource_prep(
 	return uuid;
 }
 
-LLSD generate_new_resource_upload_capability_body(
-	LLAssetType::EType asset_type,
-	const std::string& name,
-	const std::string& desc,
-	LLFolderType::EType destination_folder_type,
-	LLInventoryType::EType inv_type,
-	U32 next_owner_perms,
-	U32 group_perms,
-	U32 everyone_perms)
-{
-	LLSD body;
-
-	body["folder_id"] = gInventory.findCategoryUUIDForType(
-		destination_folder_type == LLFolderType::FT_NONE ?
-		LLFolderType::assetTypeToFolderType(asset_type) :
-		destination_folder_type);
-
-	body["asset_type"] = LLAssetType::lookup(asset_type);
-	body["inventory_type"] = LLInventoryType::lookup(inv_type);
-	body["name"] = name;
-	body["description"] = desc;
-	body["next_owner_mask"] = LLSD::Integer(next_owner_perms);
-	body["group_mask"] = LLSD::Integer(group_perms);
-	body["everyone_mask"] = LLSD::Integer(everyone_perms);
-
-	return body;
-}
-
 bool upload_new_resource(
-	const LLTransactionID &tid,
-	LLAssetType::EType asset_type,
-	std::string name,
-	std::string desc,
-	S32 compression_info,
-	LLFolderType::EType destination_folder_type,
-	LLInventoryType::EType inv_type,
-	U32 next_owner_perms,
-	U32 group_perms,
-	U32 everyone_perms,
-	const std::string& display_name,
+    LLResourceUploadInfo::ptr_t &uploadInfo,
 	LLAssetStorage::LLStoreAssetCallback callback,
-	S32 expected_upload_cost,
 	void *userdata)
 {
 	if(gDisconnected)
@@ -1201,93 +1135,63 @@ bool upload_new_resource(
 		return false;
 	}
 
-	LLAssetID uuid =
-		upload_new_resource_prep(
-			tid,
-			asset_type,
-			inv_type,
-			name,
-			display_name,
-			desc);
-	LL_INFOS() << "*** Uploading: "
-			<< "\nType: " << LLAssetType::lookup(asset_type)
-			<< "\nUUID: " << uuid
-			<< "\nName: " << name
-			<< "\nDesc: " << desc
-			<< "\nFolder: "
-			<< gInventory.findCategoryUUIDForType(destination_folder_type == LLFolderType::FT_NONE ?
-												  LLFolderType::assetTypeToFolderType(asset_type) :
-												  destination_folder_type)
-			<< "\nExpected Upload Cost: " << expected_upload_cost << LL_ENDL;
+//     uploadInfo->setAssetType(assetType);
+//     uploadInfo->setTransactionId(tid);
+
 
 	std::string url = gAgent.getRegion()->getCapability("NewFileAgentInventory");
+
 	// <edit>
-	BOOL temporary = gSavedSettings.getBOOL("TemporaryUpload");
+	bool temporary = gSavedSettings.getBOOL("TemporaryUpload");
 	gSavedSettings.setBOOL("TemporaryUpload",FALSE);
 	if (!url.empty() && !temporary)
 	// </edit>
 	{
-		LL_INFOS() << "New Agent Inventory via capability" << LL_ENDL;
-
-		LLSD body;
-		body["folder_id"] = gInventory.findCategoryUUIDForType((destination_folder_type == LLFolderType::FT_NONE) ? LLFolderType::assetTypeToFolderType(asset_type) : destination_folder_type);
-		body["asset_type"] = LLAssetType::lookup(asset_type);
-		body["inventory_type"] = LLInventoryType::lookup(inv_type);
-		body["name"] = name;
-		body["description"] = desc;
-		body["next_owner_mask"] = LLSD::Integer(next_owner_perms);
-		body["group_mask"] = LLSD::Integer(group_perms);
-		body["everyone_mask"] = LLSD::Integer(everyone_perms);
-		body["expected_upload_cost"] = LLSD::Integer(expected_upload_cost);
-		
-		LLHTTPClient::post(
-			url,
-			body,
-			new LLNewAgentInventoryResponder(
-				body,
-				uuid,
-				asset_type));
+        LLViewerAssetUpload::EnqueueInventoryUpload(url, uploadInfo);
 	}
 	else
 	{
 		// <edit>
 		if(!temporary)
 		{
+	        uploadInfo->prepareUpload();
+	        uploadInfo->logPreparedUpload();
+
 			LL_INFOS() << "NewAgentInventory capability not found, new agent inventory via asset system." << LL_ENDL;
 			// check for adequate funds
 			// TODO: do this check on the sim
-			if (LLAssetType::AT_SOUND == asset_type ||
-				LLAssetType::AT_TEXTURE == asset_type ||
-				LLAssetType::AT_ANIMATION == asset_type)
+			if (LLAssetType::AT_SOUND == uploadInfo->getAssetType() ||
+	            LLAssetType::AT_TEXTURE == uploadInfo->getAssetType() ||
+	            LLAssetType::AT_ANIMATION == uploadInfo->getAssetType())
 			{
 				S32 balance = gStatusBar->getBalance();
-				if (balance < expected_upload_cost)
+				if (balance < uploadInfo->getExpectedUploadCost())
 				{
 					// insufficient funds, bail on this upload
 					LLStringUtil::format_map_t args;
-					args["[NAME]"] = name;
+					args["[NAME]"] = uploadInfo->getName();
 					args["[CURRENCY]"] = gHippoGridManager->getConnectedGrid()->getCurrencySymbol();
-					args["[AMOUNT]"] = llformat("%d", expected_upload_cost);
-					LLFloaterBuyCurrency::buyCurrency( LLTrans::getString("UploadingCosts", args), expected_upload_cost );
+					args["[AMOUNT]"] = llformat("%d", uploadInfo->getExpectedUploadCost());
+					LLFloaterBuyCurrency::buyCurrency(LLTrans::getString("UploadingCosts", args), uploadInfo->getExpectedUploadCost());
 					return false;
 				}
 			}
 		}
 
 		LLResourceData* data = new LLResourceData;
-		data->mAssetInfo.mTransactionID = tid;
-		data->mAssetInfo.mUuid = uuid;
-		data->mAssetInfo.mType = asset_type;
+		data->mAssetInfo.mTransactionID = uploadInfo->getTransactionId();
+		data->mAssetInfo.mUuid = uploadInfo->getAssetId();
+        data->mAssetInfo.mType = uploadInfo->getAssetType();
 		data->mAssetInfo.mCreatorID = gAgentID;
-		data->mInventoryType = inv_type;
-		data->mNextOwnerPerm = next_owner_perms;
-		data->mExpectedUploadCost = expected_upload_cost;
+		data->mInventoryType = uploadInfo->getInventoryType();
+		data->mNextOwnerPerm = uploadInfo->getNextOwnerPerms();
+		data->mExpectedUploadCost = uploadInfo->getExpectedUploadCost();
 		data->mUserData = userdata;
-		data->mAssetInfo.setName(name);
-		data->mAssetInfo.setDescription(desc);
-		data->mPreferredLocation = destination_folder_type;
+		data->mAssetInfo.setName(uploadInfo->getName());
+		data->mAssetInfo.setDescription(uploadInfo->getDescription());
+		data->mPreferredLocation = uploadInfo->getDestinationFolderType();
 
-		LLAssetStorage::LLStoreAssetCallback asset_callback = temporary ? &temp_upload_callback : &upload_done_callback;
+		LLAssetStorage::LLStoreAssetCallback asset_callback = &upload_done_callback;
 		if (callback)
 		{
 			asset_callback = callback;
@@ -1438,7 +1342,11 @@ void NewResourceItemCallback::fire(const LLUUID& new_item_id)
 	}
 	
 	if(agent_url.empty()) return;
-	LLHTTPClient::post(agent_url, body,
+	// Singu FIXME: I dun wanna rewrite this function right now.
+	LL_ERRS() << "Singu TODO: Fix this to use HTTP Coroutines and such." << LL_ENDL;
+/*
+	//LLHTTPClient::post(agent_url, body,
 	new LLUpdateAgentInventoryResponder(body, vfile_id, new_item->getType()));
+*/
 }
 // </edit>

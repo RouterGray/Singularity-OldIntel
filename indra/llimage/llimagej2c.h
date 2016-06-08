@@ -29,8 +29,14 @@
 
 #include "llimage.h"
 #include "llassettype.h"
+#include "llmetricperformancetester.h"
+
+// JPEG2000 : compression rate used in j2c conversion.
+const F32 DEFAULT_COMPRESSION_RATE = 1.f/8.f;
 
 class LLImageJ2CImpl;
+class LLImageCompressionTester ;
+
 class LLImageJ2C : public LLImageFormatted
 {
 protected:
@@ -53,6 +59,8 @@ public:
 	/*virtual*/ void resetLastError();
 	/*virtual*/ void setLastError(const std::string& message, const std::string& filename = std::string());
 	
+	BOOL initDecode(LLImageRaw &raw_image, int discard_level, int* region);
+	BOOL initEncode(LLImageRaw &raw_image, int blocks_size, int precincts_size, int levels);
 	
 	// Encode with comment text 
 	BOOL encode(const LLImageRaw *raw_imagep, const char* comment_text, F32 encode_time=0.0);
@@ -67,27 +75,31 @@ public:
 	S32 getMaxBytes() const { return mMaxBytes; }
 
 	static S32 calcHeaderSizeJ2C();
-	static S32 calcDataSizeJ2C(S32 w, S32 h, S32 comp, S32 discard_level, F32 rate = 0.f);
+	static S32 calcDataSizeJ2C(S32 w, S32 h, S32 comp, S32 discard_level, F32 rate = DEFAULT_COMPRESSION_RATE);
 
-	static void openDSO();
-	static void closeDSO();
 	static std::string getEngineInfo();
 	
 protected:
 	friend class LLImageJ2CImpl;
 	friend class LLImageJ2COJ;
 	friend class LLImageJ2CKDU;
+	friend class LLImageCompressionTester;
 	void decodeFailed();
 	void updateRawDiscardLevel();
 
 	S32 mMaxBytes; // Maximum number of bytes of data to use...
+
 	S32 mDataSizes[MAX_DISCARD_LEVEL+1];		// Size of data required to reach a given level
 	U32 mAreaUsedForDataSizeCalcs;				// Height * width used to calculate mDataSizes
+
 	S8  mRawDiscardLevel;
 	F32 mRate;
 	BOOL mReversible;
 	LLImageJ2CImpl *mImpl;
 	std::string mLastError;
+
+    // Image compression/decompression tester
+	static LLImageCompressionTester* sTesterp;
 };
 
 // Derive from this class to implement JPEG2000 decoding
@@ -110,10 +122,50 @@ protected:
 	virtual BOOL decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 decode_time, S32 first_channel, S32 max_channel_count) = 0;
 	virtual BOOL encodeImpl(LLImageJ2C &base, const LLImageRaw &raw_image, const char* comment_text, F32 encode_time=0.0,
 							BOOL reversible=FALSE) = 0;
+	virtual BOOL initDecode(LLImageJ2C &base, LLImageRaw &raw_image, int discard_level = -1, int* region = NULL) = 0;
+	virtual BOOL initEncode(LLImageJ2C &base, LLImageRaw &raw_image, int blocks_size = -1, int precincts_size = -1, int levels = 0) = 0;
 
 	friend class LLImageJ2C;
 };
 
 #define LINDEN_J2C_COMMENT_PREFIX "LL_"
+
+//
+// This class is used for performance data gathering only.
+// Tracks the image compression / decompression data,
+// records and outputs them to the log file.
+//
+class LLImageCompressionTester : public LLMetricPerformanceTesterBasic
+{
+    public:
+        LLImageCompressionTester();
+        ~LLImageCompressionTester();
+        
+        void updateDecompressionStats(const F32 deltaTime) ;
+        void updateDecompressionStats(const S32 bytesIn, const S32 bytesOut) ;
+        void updateCompressionStats(const F32 deltaTime) ;
+        void updateCompressionStats(const S32 bytesIn, const S32 bytesOut) ;
+    
+    protected:
+        /*virtual*/ void outputTestRecord(LLSD* sd);
+        
+    private:
+        //
+        // Data size
+        //
+        U32 mTotalBytesInDecompression;     // Total bytes fed to decompressor
+        U32 mTotalBytesOutDecompression;    // Total bytes produced by decompressor
+        U32 mTotalBytesInCompression;       // Total bytes fed to compressor
+        U32 mTotalBytesOutCompression;      // Total bytes produced by compressor
+        U32 mRunBytesInDecompression;		// Bytes fed to decompressor in this run
+        U32 mRunBytesOutDecompression;		// Bytes produced by the decompressor in this run
+		U32 mRunBytesInCompression;			// Bytes fed to compressor in this run
+        //
+        // Time
+        //
+        F32 mTotalTimeDecompression;        // Total time spent in computing decompression
+        F32 mTotalTimeCompression;          // Total time spent in computing compression
+        F32 mRunTimeDecompression;          // Time in this run (we output every 5 sec in decompress)
+    };
 
 #endif

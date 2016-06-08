@@ -57,7 +57,7 @@
 #include "lldaycyclemanager.h"
 #include "llenvmanager.h"
 #include "llestateinfomodel.h"
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 #include "llfloatergodtools.h"	// for send_sim_wide_deletes()
 #include "llfloatertopobjects.h" // added to fix SL-32336
 #include "llfloatergroups.h"
@@ -87,6 +87,7 @@
 #include "llvlcomposition.h"
 #include "llwaterparammanager.h"
 #include "llagentui.h"
+#include "llcorehttputil.h"
 #include "hippogridmanager.h"
 // [RLVa:KB]
 #include "rlvhandler.h"
@@ -856,31 +857,6 @@ bool LLPanelRegionGeneralInfo::onMessageCommit(const LLSD& notification, const L
 	return false;
 }
 
-class ConsoleRequestResponder : public LLHTTPClient::ResponderIgnoreBody
-{
-	LOG_CLASS(ConsoleRequestResponder);
-protected:
-	/*virtual*/
-	void httpFailure()
-	{
-		LL_WARNS() << "error requesting mesh_rez_enabled " << dumpResponse() << LL_ENDL;
-	}
-	/*virtual*/ const char* getName() const { return "ConsoleRequestResponder"; }
-};
-
-
-// called if this request times out.
-class ConsoleUpdateResponder : public LLHTTPClient::ResponderIgnoreBody
-{
-	LOG_CLASS(ConsoleUpdateResponder);
-protected:
-	/* virtual */
-	void httpFailure()
-	{
-		LL_WARNS() << "error updating mesh enabled region setting " << dumpResponse() << LL_ENDL;
-	}
-};
-
 void LLFloaterRegionInfo::requestMeshRezInfo()
 {
 	std::string sim_console_url = gAgent.getRegion()->getCapability("SimConsoleAsync");
@@ -889,10 +865,8 @@ void LLFloaterRegionInfo::requestMeshRezInfo()
 	{
 		std::string request_str = "get mesh_rez_enabled";
 		
-		LLHTTPClient::post(
-			sim_console_url,
-			LLSD(request_str),
-			new ConsoleRequestResponder);
+        LLCoreHttpUtil::HttpCoroutineAdapter::messageHttpPost(sim_console_url, LLSD(request_str),
+            "Requested mesh_rez_enabled", "Error requesting mesh_rez_enabled");
 	}
 }
 
@@ -928,7 +902,8 @@ BOOL LLPanelRegionGeneralInfo::sendUpdate()
 		body["allow_parcel_changes"] = getChild<LLUICtrl>("allow_parcel_changes_check")->getValue();
 		body["block_parcel_search"] = getChild<LLUICtrl>("block_parcel_search_check")->getValue();
 
-		LLHTTPClient::post(url, body, new LLHTTPClient::ResponderIgnore);
+        LLCoreHttpUtil::HttpCoroutineAdapter::messageHttpPost(url, body,
+            "Region info update posted.", "Region info update not posted.");
 	}
 	else
 	{
@@ -1399,50 +1374,41 @@ BOOL LLPanelRegionTerrainInfo::sendUpdate()
 // static
 void LLPanelRegionTerrainInfo::onClickDownloadRaw(void* data)
 {
-	LLPanelRegionTerrainInfo* self = (LLPanelRegionTerrainInfo*)data;
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open("terrain.raw", FFSAVE_RAW);
-	filepicker->run(boost::bind(&LLPanelRegionTerrainInfo::onClickDownloadRaw_continued, self, filepicker));
-}
-
-void LLPanelRegionTerrainInfo::onClickDownloadRaw_continued(AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& picker = LLFilePicker::instance();
+	if (!picker.getSaveFile(LLFilePicker::FFSAVE_RAW, "terrain.raw"))
 	{
+		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
-	std::string filepath = filepicker->getFilename();
+	std::string filepath = picker.getFirstFile();
 	gXferManager->expectFileForRequest(filepath);
 
+	LLPanelRegionTerrainInfo* self = (LLPanelRegionTerrainInfo*)data;
 	strings_t strings;
 	strings.push_back("download filename");
 	strings.push_back(filepath);
 	LLUUID invoice(LLFloaterRegionInfo::getLastInvoice());
-	sendEstateOwnerMessage(gMessageSystem, "terrain", invoice, strings);
+	self->sendEstateOwnerMessage(gMessageSystem, "terrain", invoice, strings);
 }
 
 // static
 void LLPanelRegionTerrainInfo::onClickUploadRaw(void* data)
 {
-	LLPanelRegionTerrainInfo* self = (LLPanelRegionTerrainInfo*)data;
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_RAW);
-	filepicker->run(boost::bind(&LLPanelRegionTerrainInfo::onClickUploadRaw_continued, self, filepicker));
-}
-
-void LLPanelRegionTerrainInfo::onClickUploadRaw_continued(AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& picker = LLFilePicker::instance();
+	if (!picker.getOpenFile(LLFilePicker::FFLOAD_RAW))
+	{
+		LL_WARNS() << "No file" << LL_ENDL;
 		return;
-
-	std::string filepath = filepicker->getFilename();
+	}
+	std::string filepath = picker.getFirstFile();
 	gXferManager->expectFileForTransfer(filepath);
 
+	LLPanelRegionTerrainInfo* self = (LLPanelRegionTerrainInfo*)data;
 	strings_t strings;
 	strings.push_back("upload filename");
 	strings.push_back(filepath);
 	LLUUID invoice(LLFloaterRegionInfo::getLastInvoice());
-	sendEstateOwnerMessage(gMessageSystem, "terrain", invoice, strings);
+	self->sendEstateOwnerMessage(gMessageSystem, "terrain", invoice, strings);
 
 	LLNotificationsUtil::add("RawUploadStarted");
 }
@@ -2380,39 +2346,6 @@ void LLPanelEstateInfo::getEstateOwner()
 	gAgent.sendMessage();
 }
 */
-
-class LLEstateChangeInfoResponder : public LLHTTPClient::ResponderWithResult
-{
-	LOG_CLASS(LLEstateChangeInfoResponder);
-public:
-	LLEstateChangeInfoResponder(LLPanelEstateInfo* panel)
-	{
-		mpPanel = panel->getHandle();
-	}
-	
-protected:
-	// if we get a normal response, handle it here
-	virtual void httpSuccess()
-	{
-		LL_INFOS("Windlight") << "Successfully committed estate info" << LL_ENDL;
-
-	    // refresh the panel from the database
-		LLPanelEstateInfo* panel = dynamic_cast<LLPanelEstateInfo*>(mpPanel.get());
-		if (panel)
-			panel->refresh();
-	}
-	
-	// if we get an error response
-	virtual void httpFailure()
-	{
-		LL_WARNS("Windlight") << dumpResponse() << LL_ENDL;
-	}
-
-	/*virtual*/ char const* getName(void) const { return "LLEstateChangeInfoResponder"; }
-
-private:
-	LLHandle<LLPanel> mpPanel;
-};
 
 const std::string LLPanelEstateInfo::getOwnerName() const
 {

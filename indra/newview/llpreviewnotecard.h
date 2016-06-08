@@ -48,7 +48,6 @@ class LLViewerTextEditor;
 class LLTextEditor;
 class LLMenuBarGL;
 class LLButton;
-class AIFilePicker;
 
 class LLPreviewNotecard : public LLPreview
 {
@@ -87,7 +86,7 @@ public:
 	// After saving a notecard, the tcp based upload system will
 	// change the asset, therefore, we need to re-fetch it from the
 	// asset system. :(
-	void refreshFromInventory();
+	void refreshFromInventory(const LLUUID& item_id = LLUUID::null);
 
 	// <edit>
 	LLUUID getNotecardItemID();
@@ -99,6 +98,8 @@ public:
 	bool saveIfNeeded(LLInventoryItem* copyitem = NULL);
 
 protected:
+	friend class LLWaterParamManager;
+	friend class LLWLParamManager;
 	virtual void loadAsset();
 
 	static LLPreviewNotecard* getInstance(const LLUUID& uuid);
@@ -119,6 +120,8 @@ protected:
 	bool handleSaveChangesDialog(const LLSD& notification, const LLSD& response);
 
 	virtual const char *getTitleName() const { return "Note"; }
+
+    static void finishInventoryUpload(LLUUID itemId, LLUUID newAssetId, LLUUID newItemId);
 
 	void			initMenu();
 
@@ -151,7 +154,6 @@ protected:
 	// <edit>
 	virtual BOOL canSaveAs() const;
 	virtual void saveAs();
-	void saveAs_continued(AIFilePicker* filepicker);
 	// </edit>
 };
 

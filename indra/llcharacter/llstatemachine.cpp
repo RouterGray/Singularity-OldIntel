@@ -204,33 +204,32 @@ LLFSMState* LLStateDiagram::getState(U32 state_id)
 
 BOOL LLStateDiagram::saveDotFile(const std::string& filename)
 {
-	LLAPRFile outfile(filename, LL_APR_W);
-	apr_file_t* dot_file = outfile.getFileHandle() ;
+	llofstream outfile(filename, std::ios::out);
 
-	if (!dot_file)
+	if (!outfile.good())
 	{
 		LL_WARNS() << "LLStateDiagram::saveDotFile() : Couldn't open " << filename << " to save state diagram." << LL_ENDL;
 		return FALSE;
 	}
-	apr_file_printf(dot_file, "digraph StateMachine {\n\tsize=\"100,100\";\n\tfontsize=40;\n\tlabel=\"Finite State Machine\";\n\torientation=landscape\n\tratio=.77\n");
+	outfile << llformat("digraph StateMachine {\n\tsize=\"100,100\";\n\tfontsize=40;\n\tlabel=\"Finite State Machine\";\n\torientation=landscape\n\tratio=.77\n");
 	
 	StateMap::iterator state_it;
 	for(state_it = mStates.begin(); state_it != mStates.end(); ++state_it)
 	{
-		apr_file_printf(dot_file, "\t\"%s\" [fontsize=28,shape=box]\n", state_it->first->getName().c_str());
+		outfile << llformat("\t\"%s\" [fontsize=28,shape=box]\n", state_it->first->getName().c_str());
 	}
-	apr_file_printf(dot_file, "\t\"All States\" [fontsize=30,style=bold,shape=box]\n");
+	outfile << llformat("\t\"All States\" [fontsize=30,style=bold,shape=box]\n");
 
 	Transitions::iterator transitions_it;
 	for(transitions_it = mDefaultTransitions.begin(); transitions_it != mDefaultTransitions.end(); ++transitions_it)
 	{
-		apr_file_printf(dot_file, "\t\"All States\" -> \"%s\" [label = \"%s\",fontsize=24];\n", transitions_it->second->getName().c_str(), 
+		outfile << llformat("\t\"All States\" -> \"%s\" [label = \"%s\",fontsize=24];\n", transitions_it->second->getName().c_str(), 
 			transitions_it->second->getName().c_str());
 	}
 
 	if (mDefaultState)
 	{
-		apr_file_printf(dot_file, "\t\"All States\" -> \"%s\";\n", mDefaultState->getName().c_str());
+		outfile << llformat("\t\"All States\" -> \"%s\";\n", mDefaultState->getName().c_str());
 	}
 
 	
@@ -246,13 +245,13 @@ BOOL LLStateDiagram::saveDotFile(const std::string& filename)
 			std::string state_name = state->getName();
 			std::string target_name = transitions_it->second->getName();
 			std::string transition_name = transitions_it->first->getName();
-			apr_file_printf(dot_file, "\t\"%s\" -> \"%s\" [label = \"%s\",fontsize=24];\n", state->getName().c_str(), 
+			outfile << llformat("\t\"%s\" -> \"%s\" [label = \"%s\",fontsize=24];\n", state->getName().c_str(), 
 				target_name.c_str(), 
 				transition_name.c_str());
 		}
 	}
 
-	apr_file_printf(dot_file, "}\n");
+	outfile << "}\n";
 
 	return TRUE;
 }

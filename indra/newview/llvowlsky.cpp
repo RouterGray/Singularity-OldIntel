@@ -307,11 +307,11 @@ void LLVOWLSky::restoreGL()
 	gPipeline.markRebuild(mDrawable, LLDrawable::REBUILD_ALL, TRUE);
 }
 
-static LLFastTimer::DeclareTimer FTM_GEO_SKY("Sky Geometry");
+static LLTrace::BlockTimerStatHandle FTM_GEO_SKY("Windlight Sky Geometry");
 
 BOOL LLVOWLSky::updateGeometry(LLDrawable * drawable)
 {
-	LLFastTimer ftm(FTM_GEO_SKY);
+	LL_RECORD_BLOCK_TIME(FTM_GEO_SKY);
 	LLStrider<LLVector3>	vertices;
 	LLStrider<LLVector2>	texCoords;
 	LLStrider<U16>			indices;
@@ -399,7 +399,8 @@ BOOL LLVOWLSky::updateGeometry(LLDrawable * drawable)
 			// and unlock the buffer
 			segment->flush();
 		}
-		LL_INFOS() << "completed in " << llformat("%.2f", timer.getElapsedTimeF32()) << "seconds" << LL_ENDL;
+	
+		LL_INFOS() << "completed in " << llformat("%.2f", timer.getElapsedTimeF32().value()) << "seconds" << LL_ENDL;
 	}
 #else
 	mStripsVerts = new LLVertexBuffer(LLDrawPoolWLSky::SKY_VERTEX_DATA_MASK, GL_STATIC_DRAW_ARB);

@@ -60,7 +60,7 @@ public:
 
 		LLSD data = LLSD(success);
 
-		LLHTTPClient::post(url, data, new LLHTTPClient::ResponderIgnore);
+		LLCoreHttpUtil::HttpCoroutineAdapter::messageHttpPost(url, data, "DispatchReplaceOutfit Success", "DispatchReplaceOutfit Failure");
 
 		return true;
 	}

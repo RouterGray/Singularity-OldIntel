@@ -36,6 +36,9 @@
 #include "llmodaldialog.h"
 #include "llassetstorage.h"
 #include "llmediactrl.h"
+#include <boost/function.hpp>
+#include "lleventcoro.h"
+#include "llcoros.h"
 
 class LLButton;
 class LLRadioGroup;
@@ -76,6 +79,7 @@ public:
 private:
 	// Asset_id is overwritten with LLUUID::null when agree is clicked.
 	LLFloaterTOS(ETOSType type, const std::string & message);
+    static void testSiteIsAliveCoro(LLHandle<LLFloater> handle, std::string url);
 
 private:
 	ETOSType		mType;

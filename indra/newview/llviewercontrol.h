@@ -35,7 +35,6 @@
 
 #include <map>
 #include "llcontrol.h"
-#include "aithreadsafe.h"
 
 class LLUICtrl;
 
@@ -51,7 +50,7 @@ extern BOOL gHackGodmode;
 void settings_setup_listeners();
 
 typedef std::map<std::string, LLControlGroup*> settings_map_type;
-extern AIThreadSafeDC<settings_map_type> gSettings;
+extern settings_map_type gSettings;
 
 // for the graphics settings
 void create_graphics_group(LLControlGroup& group);

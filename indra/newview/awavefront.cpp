@@ -26,13 +26,13 @@
 #include "awavefront.h"
 
 // library includes
-#include "aifilepicker.h"
 #include "llnotificationsutil.h"
 
 // newview includes
 #include "lfsimfeaturehandler.h"
 #include "llavatarappearancedefines.h"
 #include "llface.h"
+#include "llfilepicker.h"
 #include "llvoavatar.h"
 #include "llvovolume.h"
 #include "llviewerinventory.h"
@@ -56,11 +56,12 @@ namespace
 {
 	const std::string OBJ(".obj");
 
-	void save_wavefront_continued(WavefrontSaver* wfsaver, AIFilePicker* filepicker)
+	void save_wavefront_picker(WavefrontSaver* wfsaver, std::string name)
 	{
-		if (filepicker->hasFilename())
+		LLFilePicker& filepicker = LLFilePicker::instance();
+		if (filepicker.getSaveFile(LLFilePicker::FFSAVE_ALL, name))
 		{
-			const std::string selected_filename = filepicker->getFilename();
+			const std::string selected_filename = filepicker.getFirstFile();
 			if (LLFILE* fp = LLFile::fopen(selected_filename, "wb"))
 			{
 				wfsaver->saveFile(fp);
@@ -74,13 +75,6 @@ namespace
 		else LL_WARNS() << "No file; bailing" << LL_ENDL;
 
 		delete wfsaver;
-	}
-
-	void save_wavefront_picker(WavefrontSaver* wfsaver, std::string name)
-	{
-		AIFilePicker* filepicker = AIFilePicker::create();
-		filepicker->open(name);
-		filepicker->run(boost::bind(&save_wavefront_continued, wfsaver, filepicker));
 	}
 
 	void save_wavefront_on_confirm(const LLSD& notification, const LLSD& response, WavefrontSaver* wfsaver, std::string name)
@@ -421,9 +415,7 @@ namespace
 					return true;
 				}
 
-				AIFilePicker* filepicker = AIFilePicker::create();
-				filepicker->open(avatar->getFullname()+OBJ);
-				filepicker->run(boost::bind(save_wavefront_continued, wfsaver, filepicker));
+				save_wavefront_picker(wfsaver, avatar->getFullname());
 			}
 			return true;
 		}

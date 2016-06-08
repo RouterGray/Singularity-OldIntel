@@ -30,18 +30,29 @@
 #define LL_LLPLUGINCLASSMEDIA_H
 
 #include "llgltypes.h"
-#include "llpluginclassbasic.h"
+#include "llpluginprocessparent.h"
 #include "llrect.h"
+#include "llpluginclassmediaowner.h"
+#include <queue>
 #include "v4color.h"
 
-#include <boost/signals2.hpp>
-
-class LLPluginClassMedia : public LLPluginClassBasic, public boost::signals2::trackable
+class LLPluginClassMedia : public LLPluginProcessParentOwner
 {
 	LOG_CLASS(LLPluginClassMedia);
-
 public:
 	LLPluginClassMedia(LLPluginClassMediaOwner *owner);
+	virtual ~LLPluginClassMedia();
+
+	// local initialization, called by the media manager when creating a source
+	bool init(const std::string &launcher_filename, 
+					  const std::string &plugin_dir, 
+					  const std::string &plugin_filename, 
+					  bool debug);
+
+	// undoes everything init() didm called by the media manager when destroying a source
+	void reset();
+	
+	void idle(void);
 	
 	// All of these may return 0 or an actual valid value.
 	// Callers need to check the return for 0, and not use the values in that case.
@@ -126,13 +137,39 @@ public:
 
 	void loadURI(const std::string &uri);
 	
+	// "Loading" means uninitialized or any state prior to fully running (processing commands)
+	bool isPluginLoading(void) { return mPlugin?mPlugin->isLoading():false; };
+
+	// "Running" means the steady state -- i.e. processing messages
+	bool isPluginRunning(void) { return mPlugin?mPlugin->isRunning():false; };
+	
+	// "Exited" means any regular or error state after "Running" (plugin may have crashed or exited normally)
+	bool isPluginExited(void) { return mPlugin?mPlugin->isDone():false; };
+
+	std::string getPluginVersion() { return mPlugin?mPlugin->getPluginVersion():std::string(""); };
+
+	bool getDisableTimeout() { return mPlugin?mPlugin->getDisableTimeout():false; };
+	void setDisableTimeout(bool disable) { if(mPlugin) mPlugin->setDisableTimeout(disable); };
+	
 	// Inherited from LLPluginProcessParentOwner
 	/* virtual */ void receivePluginMessage(const LLPluginMessage &message);
 	/* virtual */ void pluginLaunchFailed();
 	/* virtual */ void pluginDied();
-	// Inherited from LLPluginClassBasic
-	/* virtual */ void priorityChanged(EPriority priority);
 	
+	
+	typedef enum 
+	{
+		PRIORITY_UNLOADED,	// media plugin isn't even loaded.
+		PRIORITY_STOPPED,	// media is not playing, shouldn't need to update at all.
+		PRIORITY_HIDDEN,	// media is not being displayed or is out of view, don't need to do graphic updates, but may still update audio, playhead, etc.
+		PRIORITY_SLIDESHOW,	// media is in the far distance, updates very infrequently
+		PRIORITY_LOW,		// media is in the distance, may be rendered at reduced size
+		PRIORITY_NORMAL,	// normal (default) priority
+		PRIORITY_HIGH		// media has user focus and/or is taking up most of the screen
+	}EPriority;
+
+	static const char* priorityToString(EPriority priority);
+	void setPriority(EPriority priority);
 	void setLowPrioritySizeLimit(int size);
 	
 	F64 getCPUUsage();
@@ -177,7 +214,6 @@ public:
 	void browse_reload(bool ignore_cache = false);
 	void browse_forward();
 	void browse_back();
-	void set_status_redirect(int code, const std::string &url);
 	void setBrowserUserAgent(const std::string& user_agent);
 	void showWebInspector( bool show );
 	void proxyWindowOpened(const std::string &target, const std::string &uuid);
@@ -214,6 +250,13 @@ public:
 
 	// This is valid during MEDIA_EVENT_CLICK_LINK_HREF and MEDIA_EVENT_GEOMETRY_CHANGE
 	std::string getClickUUID() const { return mClickUUID; };
+
+	// mClickTarget is received from message and governs how link will be opened
+	// use this to enforce your own way of opening links inside plugins
+	void setOverrideClickTarget(const std::string &target);
+	void resetOverrideClickTarget() { mClickEnforceTarget = false; };
+	bool isOverrideClickTarget() const { return mClickEnforceTarget; }
+	std::string getOverrideClickTarget() const { return mOverrideClickTarget; };
 
 	// These are valid during MEDIA_EVENT_DEBUG_MESSAGE
 	std::string getDebugMessageText() const { return mDebugMessageText; };
@@ -270,17 +313,16 @@ public:
 	void initializeUrlHistory(const LLSD& url_history);
 
 protected:
-	virtual bool init_impl(void);
-	virtual void reset_impl(void);
-	virtual void idle_impl(void);
+
+	LLPluginClassMediaOwner *mOwner;
 
 	// Notify this object's owner that an event has occurred.
 	void mediaEvent(LLPluginClassMediaOwner::EMediaEvent event);
 		
+	void sendMessage(const LLPluginMessage &message);  // Send message internally, either queueing or sending directly.
+	std::queue<LLPluginMessage> mSendQueue;		// Used to queue messages while the plugin initializes.
+	
 	void setSizeInternal(void);
-
-protected:
-	LLPluginClassMediaOwner *mOwner;
 
 	bool		mTextureParamsReceived;		// the mRequestedTexture* fields are only valid when this is true
 	S32 		mRequestedTextureDepth;
@@ -328,10 +370,15 @@ protected:
 	
 	float		mRequestedVolume;
 	
+	// Priority of this media stream
+	EPriority	mPriority;
 	int			mLowPrioritySizeLimit;
 	
 	bool		mAllowDownsample;
 	int			mPadding;
+	
+	
+	LLPluginProcessParent::ptr_t mPlugin;
 	
 	LLRect mDirtyRect;
 	
@@ -342,6 +389,8 @@ protected:
 	int			mLastMouseY;
 
 	LLPluginClassMediaOwner::EMediaStatus mStatus;
+	
+	F64				mSleepTime;
 
 	bool			mCanCut;
 	bool			mCanCopy;
@@ -368,6 +417,8 @@ protected:
 	std::string		mClickNavType;
 	std::string		mClickTarget;
 	std::string		mClickUUID;
+	bool			mClickEnforceTarget;
+	std::string		mOverrideClickTarget;
 	std::string		mDebugMessageText;
 	std::string		mDebugMessageLevel;
 	S32				mGeometryX;
@@ -387,6 +438,15 @@ protected:
 	F64				mDuration;
 	F64				mCurrentRate;
 	F64				mLoadedDuration;
+	
+//--------------------------------------
+	//debug use only
+	//
+private:
+	bool  mDeleteOK ;
+public:
+	void setDeleteOK(bool flag) { mDeleteOK = flag ;}
+//--------------------------------------
 };
 
 #endif // LL_LLPLUGINCLASSMEDIA_H

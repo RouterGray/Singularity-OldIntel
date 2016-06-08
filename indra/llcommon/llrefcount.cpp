@@ -68,55 +68,55 @@ LLRefCount::~LLRefCount()
 #if LL_REF_COUNT_DEBUG
 void LLRefCount::ref() const
 { 
-		if(mMutex.isLocked()) 
-		{
-			mCrashAtUnlock = TRUE ;
-			LL_ERRS() << "the mutex is locked by the thread: " << mLockedThreadID 
-				<< " Current thread: " << AIThreadID() << LL_ENDL ;
-		}
+	if(mMutex.isLocked()) 
+	{
+		mCrashAtUnlock = TRUE ;
+		LL_ERRS() << "the mutex is locked by the thread: " << mLockedThreadID 
+			<< " Current thread: " << LLThread::currentID() << LL_ENDL ;
+	}
 
-		mMutex.lock() ;
-		mLockedThreadID.reset_inline();
+	mMutex.lock() ;
+	mLockedThreadID = LLThread::currentID() ;
 
-		mRef++; 
+	mRef++; 
 
-		if(mCrashAtUnlock)
-		{
-			while(1); //crash here.
-		}
-		mMutex.unlock() ;
+	if(mCrashAtUnlock)
+	{
+		while(1); //crash here.
+	}
+	mMutex.unlock() ;
 } 
 
 S32 LLRefCount::unref() const
 {
-		if(mMutex.isLocked()) 
-		{
-			mCrashAtUnlock = TRUE ;
-			LL_ERRS() << "the mutex is locked by the thread: " << mLockedThreadID 
-				<< " Current thread: " << AIThreadID() << LL_ENDL ;
-		}
+	if(mMutex.isLocked()) 
+	{
+		mCrashAtUnlock = TRUE ;
+		LL_ERRS() << "the mutex is locked by the thread: " << mLockedThreadID 
+			<< " Current thread: " << LLThread::currentID() << LL_ENDL ;
+	}
 
-		mMutex.lock() ;
-		mLockedThreadID.reset_inline();
+	mMutex.lock() ;
+	mLockedThreadID = LLThread::currentID() ;
 		
-		llassert(mRef >= 1);
-		if (0 == --mRef) 
-		{
-			if(mCrashAtUnlock)
-			{
-				while(1); //crash here.
-			}
-			mMutex.unlock() ;
-
-			delete this; 
-			return 0;
-		}
-
+	llassert(mRef >= 1);
+	if (0 == --mRef) 
+	{
 		if(mCrashAtUnlock)
 		{
 			while(1); //crash here.
 		}
 		mMutex.unlock() ;
-		return mRef;
+
+		delete this; 
+		return 0;
+	}
+
+	if(mCrashAtUnlock)
+	{
+		while(1); //crash here.
+	}
+	mMutex.unlock() ;
+	return mRef;
 }	
 #endif

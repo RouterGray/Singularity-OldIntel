@@ -43,7 +43,6 @@ public:
 			mLayersKBitStat,
 			mObjectKBitStat,
 			mAssetKBitStat,
-			mHTTPTextureKBitStat,
 			mUDPTextureKBitStat,
 			mVFSPendingOperations,
 			mObjectsDrawnStat,

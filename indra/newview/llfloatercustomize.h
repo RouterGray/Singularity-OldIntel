@@ -44,7 +44,6 @@ class LLTabContainer;
 class LLViewerWearable;
 class LLVisualParamReset;
 class LLPanelEditWearable;
-class AIFilePicker;
 
 /////////////////////////////////////////////////////////////////////
 // LLFloaterCustomize
@@ -101,9 +100,7 @@ private:
 	void			onBtnOk();
 	void			onBtnMakeOutfit(const LLSD& val);
 	void			onBtnImport();
-	void			onBtnImport_continued(AIFilePicker* filepicker);
 	void			onBtnExport();
-	static void		onBtnExport_continued(LLViewerWearable* edit_wearable, AIFilePicker* filepicker);
 	void			onTabChanged( const LLSD& param );
 	bool			onTabPrecommit( LLUICtrl* ctrl, const LLSD& param );
 	bool			onSaveDialog(const LLSD& notification, const LLSD& response);

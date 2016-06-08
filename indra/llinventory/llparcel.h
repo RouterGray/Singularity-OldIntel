@@ -1,31 +1,25 @@
 /** 
  * @file llparcel.h
  *
- * $LicenseInfo:firstyear=2002&license=viewergpl$
- * 
- * Copyright (c) 2002-2009, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2002&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2010, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
@@ -58,6 +52,9 @@ const S32 PARCEL_MAX_ACCESS_LIST = 300;
 //Maximum number of entires in an update packet
 //for access/ban lists.
 const F32 PARCEL_MAX_ENTRIES_PER_PACKET = 48.f;
+
+// Maximum number of experiences
+const S32 PARCEL_MAX_EXPERIENCE_LIST = 24;
 
 // Weekly charge for listing a parcel in the directory
 const S32 PARCEL_DIRECTORY_FEE = 30;
@@ -136,9 +133,11 @@ class LLSD;
 class LLAccessEntry
 {
 public:
+
+	typedef std::map<LLUUID,LLAccessEntry> map;
+
 	LLAccessEntry()
-	:	mID(),
-		mTime(0),
+	:	mTime(0),
 		mFlags(0)
 	{}
 
@@ -147,8 +146,6 @@ public:
 	U32			mFlags;		// Not used - currently should always be zero
 };
 
-typedef std::map<LLUUID,LLAccessEntry>::iterator access_map_iterator;
-typedef std::map<LLUUID,LLAccessEntry>::const_iterator access_map_const_iterator;
 
 class LLParcel
 {
@@ -326,6 +323,9 @@ public:
 	void	unpackAccessEntries(LLMessageSystem* msg,
 								std::map<LLUUID,LLAccessEntry>* list);
 
+	void	unpackExperienceEntries(LLMessageSystem* msg, U32 type);
+
+
 	void	setAABBMin(const LLVector3& min)	{ mAABBMin = min; }
 	void	setAABBMax(const LLVector3& max)	{ mAABBMax = max; }
 
@@ -471,6 +471,8 @@ public:
 	BOOL	getAllowFly() const
 					{ return (mParcelFlags & PF_ALLOW_FLY) ? TRUE : FALSE; }
 
+	// Remove permission restrictions for creating landmarks.
+	// We should eventually remove this flag completely.
 	BOOL	getAllowLandmark() const
 					{ return TRUE; }
 					//Perhaps revert for opensim?
@@ -687,6 +689,17 @@ public:
 	std::map<LLUUID,LLAccessEntry>	mBanList;
 	std::map<LLUUID,LLAccessEntry>	mTempBanList;
 	std::map<LLUUID,LLAccessEntry>	mTempAccessList;
+
+	typedef std::map<LLUUID, U32> xp_type_map_t;
+
+	void setExperienceKeyType(const LLUUID& experience_key, U32 type);
+	U32 countExperienceKeyType(U32 type);
+	U32 getExperienceKeyType(const LLUUID& experience_key)const;
+	LLAccessEntry::map getExperienceKeysByType(U32 type)const;
+	void clearExperienceKeysByType(U32 type);
+
+private:
+	xp_type_map_t mExperienceKeys;
 
 };
 

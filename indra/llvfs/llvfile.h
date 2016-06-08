@@ -32,8 +32,6 @@
 #include "llvfs.h"
 #include "llvfsthread.h"
 
-class LLPrivateMemoryPool;
-
 class LLVFile
 {
 public:
@@ -41,7 +39,7 @@ public:
 	~LLVFile();
 
 	BOOL read(U8 *buffer, S32 bytes, BOOL async = FALSE, F32 priority = 128.f);	/* Flawfinder: ignore */ 
-	static U8* readFile(LLVFS *vfs, LLPrivateMemoryPool* poolp, const LLUUID &uuid, LLAssetType::EType type, S32* bytes_read = 0);
+	static U8* readFile(LLVFS *vfs, const LLUUID &uuid, LLAssetType::EType type, S32* bytes_read = 0);
 	void setReadPriority(const F32 priority);
 	BOOL isReadComplete();
 	S32  getLastBytesRead();

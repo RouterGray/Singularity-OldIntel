@@ -35,12 +35,12 @@
 #include "llworldmap.h"
 
 #include "llregionhandle.h"
+#include "llworldmapmessage.h"
 #include "message.h"
 
 
 #include "llappviewer.h"	// for gPacificDaylightTime
 #include "llagent.h"
-#include "llmapresponders.h"
 #include "llviewercontrol.h"
 #include "llfloaterworldmap.h"
 #include "lltexturecache.h"
@@ -48,9 +48,10 @@
 #include "llviewertexturelist.h"
 #include "llviewerregion.h"
 #include "llregionflags.h"
-#include "llworldmapmessage.h"
+
 #include "hippogridmanager.h"
 #include "lfsimfeaturehandler.h"
+#include "llcorehttputil.h"
 
 bool LLWorldMap::sGotMapURL =  false;
 // Timers to temporise database requests
@@ -343,7 +344,7 @@ void LLWorldMap::clearImageRefs()
 	for (sim_info_map_t::iterator it = mSimInfoMap.begin(); it != mSimInfoMap.end(); ++it)
 	{
 		sim_info = it->second;
-		if(sim_info)
+		if (sim_info)
 		{
 			sim_info->clearImage();
 		}
@@ -463,7 +464,45 @@ void LLWorldMap::sendMapLayerRequest()
 		LLSD body;
 		body["Flags"] = (LLSD::Integer)flags;
 		//LL_INFOS() << "LLWorldMap::sendMapLayerRequest via capability" << LL_ENDL;
-		LLHTTPClient::post(url, body, new LLMapLayerResponder);
+		LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(url, body, [=](const LLSD& content)
+		{
+			LL_INFOS() << "LLMapLayerResponder::content from capabilities" << LL_ENDL;
+		
+	        S32 agent_flags = content["AgentData"]["Flags"];
+	        U32 layer = flagsToLayer(agent_flags);
+		
+	        if (layer != SIM_LAYER_COMPOSITE)
+	        {
+                LL_WARNS() << "Invalid or out of date map image type returned!" << LL_ENDL;
+                return;
+	        }
+		
+	        LLUUID image_id;
+
+	        mMapLayers.clear();
+
+	        for(LLSD::array_const_iterator iter = content["LayerData"].beginArray(); iter != content["LayerData"].endArray(); ++iter)
+	        {
+                const LLSD& layer_data = *iter;
+
+                LLWorldMapLayer new_layer;
+                new_layer.LayerDefined = TRUE;
+
+                new_layer.LayerExtents.mLeft = layer_data["Left"];
+                new_layer.LayerExtents.mRight = layer_data["Right"];
+                new_layer.LayerExtents.mBottom = layer_data["Bottom"];
+                new_layer.LayerExtents.mTop = layer_data["Top"];
+
+                new_layer.LayerImageID = layer_data["ImageID"];
+                new_layer.LayerImage = LLViewerTextureManager::getFetchedTexture(new_layer.LayerImageID);
+
+                gGL.getTexUnit(0)->bind(new_layer.LayerImage.get());
+                new_layer.LayerImage->setAddressMode(LLTexUnit::TAM_CLAMP);
+
+                mMapLayers.push_back(new_layer);
+	        }
+	        mMapLoaded = true;
+		});
 	}
 	else
 	{

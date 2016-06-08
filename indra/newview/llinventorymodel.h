@@ -35,15 +35,18 @@
 #include "llassettype.h"
 #include "llfoldertype.h"
 #include "llframetimer.h"
-#include "llhttpclient.h"
 #include "lluuid.h"
 #include "llpermissionsflags.h"
 #include "llviewerinventory.h"
 #include "llstring.h"
 #include "llmd5.h"
-
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy FetchItemHttpHandler_timeout;
+#include "httpcommon.h"
+#include "httprequest.h"
+#include "httpoptions.h"
+#include "httpheaders.h"
+#include "httphandler.h"
+#include "lleventcoro.h"
+#include "llcoros.h"
 
 class LLInventoryObserver;
 class LLInventoryObject;
@@ -64,9 +67,8 @@ class LLInventoryCollectFunctor;
 class LLInventoryModel
 {
 	LOG_CLASS(LLInventoryModel);
-public:
-	friend class LLInventoryModelFetchDescendentsResponder;
 
+public:
 	enum EHasChildren
 	{
 		CHILDREN_NO,
@@ -78,18 +80,34 @@ public:
 	typedef std::vector<LLPointer<LLViewerInventoryItem> > item_array_t;
 	typedef std::set<LLUUID> changed_items_t;
 
-	class FetchItemHttpHandler : public LLHTTPClient::ResponderWithResult
+    // Rider: This is using the old responder patter.  It should be refactored to 
+    // take advantage of coroutines.
+
+	// HTTP handler for individual item requests (inventory or library).
+	// Background item requests are derived from this in the background
+	// inventory system.  All folder requests are also located there
+	// but have their own handler derived from HttpHandler.
+	class FetchItemHttpHandler : public LLCore::HttpHandler
 	{
 	public:
 		LOG_CLASS(FetchItemHttpHandler);
 		
-		FetchItemHttpHandler(const LLSD& request_sd) : mRequestSD(request_sd) {};
-		/*virtual*/ void httpSuccess(void);
-		/*virtual*/ void httpFailure(void);
-		/*virtual*/ AICapabilityType capability_type(void) const { return cap_inventory; }
-		/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return FetchItemHttpHandler_timeout; }
-		/*virtual*/ char const* getName(void) const { return "FetchItemHttpHandler"; }
+		FetchItemHttpHandler(const LLSD & request_sd);
+		virtual ~FetchItemHttpHandler();
+
 	protected:
+		FetchItemHttpHandler(const FetchItemHttpHandler &);				// Not defined
+		void operator=(const FetchItemHttpHandler &);					// Not defined
+
+	public:
+		virtual void onCompleted(LLCore::HttpHandle handle, LLCore::HttpResponse * response);
+
+	private:
+		void processData(LLSD & body, LLCore::HttpResponse * response);
+		void processFailure(LLCore::HttpStatus status, LLCore::HttpResponse * response);
+		void processFailure(const char * const reason, LLCore::HttpResponse * response);
+
+	private:
 		LLSD mRequestSD;
 	};
 
@@ -119,6 +137,9 @@ public:
 private:
 	bool mIsAgentInvUsable; // used to handle an invalid inventory state
 
+	// One-time initialization of HTTP system.
+	void initHttpRequest();
+	
 	//--------------------------------------------------------------------
 	// Root Folders
 	//--------------------------------------------------------------------
@@ -192,14 +213,14 @@ private:
  **/
 
 	//--------------------------------------------------------------------
-	// Descendents
+	// Descendants
 	//--------------------------------------------------------------------
 public:
-	// Make sure we have the descendents in the structure.  Returns true
+	// Make sure we have the descendants in the structure.  Returns true
 	// if a fetch was performed.
 	bool fetchDescendentsOf(const LLUUID& folder_id) const;
 
-	// Return the direct descendents of the id provided.Set passed
+	// Return the direct descendants of the id provided.Set passed
 	// in values to NULL if the call fails.
 	//    NOTE: The array provided points straight into the guts of
 	//    this object, and should only be used for read operations, since
@@ -211,10 +232,10 @@ public:
 	void getDirectDescendentsOf(const LLUUID& cat_id,
 								cat_array_t*& categories) const;
 	
-	// Compute a hash of direct descendent names (for detecting child name changes)
+	// Compute a hash of direct descendant names (for detecting child name changes)
 	LLMD5 hashDirectDescendentNames(const LLUUID& cat_id) const;
 
-	// Starting with the object specified, add its descendents to the
+	// Starting with the object specified, add its descendants to the
 	// array provided, but do not add the inventory object specified
 	// by id. There is no guaranteed order. 
 	//    NOTE: Neither array will be erased before adding objects to it. 
@@ -340,7 +361,7 @@ public:
 	U32 updateItem(const LLViewerInventoryItem* item, U32 mask = 0);
 
 	// Change an existing item with the matching id or add
-	// the category. No notifcation will be sent to observers. This
+	// the category. No notification will be sent to observers. This
 	// method will only generate network traffic if the item had to be
 	// reparented.
 	//    NOTE: In usage, you will want to perform cache accounting
@@ -378,7 +399,7 @@ public:
 								   bool update_parent_version = true,
 								   bool do_notify_observers = true);
 
-	// Update model after all descendents removed from server.
+	// Update model after all descendants removed from server.
 	void onDescendentsPurgedFromServer(const LLUUID& object_id, bool fix_broken_links = true);
 
 	// Update model after an existing item gets updated on server.
@@ -409,7 +430,7 @@ public:
 	// Changes items order by insertion of the item identified by src_item_id
 	// before (or after) the item identified by dest_item_id. Both items must exist in items array.
 	// Sorting is stored after method is finished. Only src_item_id is moved before (or after) dest_item_id.
-	// The parameter "insert_before" controls on which side of dest_item_id src_item_id gets rensinserted.
+	// The parameter "insert_before" controls on which side of dest_item_id src_item_id gets reinserted.
 	static void updateItemsOrder(LLInventoryModel::item_array_t& items, 
 								 const LLUUID& src_item_id, 
 								 const LLUUID& dest_item_id,
@@ -418,14 +439,11 @@ public:
 	// Returns end() of the vector if not found.
 	static LLInventoryModel::item_array_t::iterator findItemIterByUUID(LLInventoryModel::item_array_t& items, const LLUUID& id);
 
-	// Saves current order of the passed items using inventory item sort field.
-	// Resets 'items' sort fields and saves them on server.
-	// Is used to save order for Favorites folder.
-	//void saveItemsOrder(const LLInventoryModel::item_array_t& items);
 
 	// Rearranges Landmarks inside Favorites folder.
 	// Moves source landmark before target one.
 	void rearrangeFavoriteLandmarks(const LLUUID& source_item_id, const LLUUID& target_item_id);
+	//void saveItemsOrder(const LLInventoryModel::item_array_t& items);
 
 	//--------------------------------------------------------------------
 	// Creation
@@ -436,7 +454,7 @@ public:
 	LLUUID createNewCategory(const LLUUID& parent_id,
 							 LLFolderType::EType preferred_type,
 							 const std::string& name,
-							 boost::optional<inventory_func_type> callback = boost::optional<inventory_func_type>());
+							 inventory_func_type callback = NULL);
 protected:
 	// Internal methods that add inventory and make sure that all of
 	// the internal data structures are consistent. These methods
@@ -445,6 +463,8 @@ protected:
 	void addCategory(LLViewerInventoryCategory* category);
 	void addItem(LLViewerInventoryItem* item);
 
+    void createNewCategoryCoro(std::string url, LLSD postData, inventory_func_type callback);
+	
 /**                    Mutators
  **                                                                            **
  *******************************************************************************/
@@ -487,7 +507,7 @@ public:
 	// Return (yes/no/maybe) child status of category children.
 	EHasChildren categoryHasChildren(const LLUUID& cat_id) const;
 
-	// Returns true iff category version is known and theoretical
+	// Returns true if category version is known and theoretical
 	// descendents == actual descendents.
 	bool isCategoryComplete(const LLUUID& cat_id) const;
 	
@@ -508,10 +528,12 @@ public:
 
 	// Call to explicitly update everyone on a new state.
 	void notifyObservers();
+
 	// Allows outsiders to tell the inventory if something has
 	// been changed 'under the hood', but outside the control of the
 	// inventory. The next notify will include that notification.
 	void addChangedMask(U32 mask, const LLUUID& referent);
+
 	const changed_items_t& getChangedIDs() const { return mChangedItemIDs; }
 	const changed_items_t& getAddedIDs() const { return mAddedItemIDs; }
 protected:
@@ -540,6 +562,41 @@ private:
 	observer_list_t mObservers;
 	
 /**                    Notifications
+ **                                                                            **
+ *******************************************************************************/
+
+
+/********************************************************************************
+ **                                                                            **
+ **                    HTTP Transport
+ **/
+public:
+	// Invoke handler completion method (onCompleted) for all
+	// requests that are ready.
+	void handleResponses(bool foreground);
+
+	// Request an inventory HTTP operation to either the
+	// foreground or background processor.  These are actually
+	// the same service queue but the background requests are
+	// seviced more slowly effectively de-prioritizing new
+	// requests.
+	LLCore::HttpHandle requestPost(bool foreground,
+								   const std::string & url,
+								   const LLSD & body,
+								   const LLCore::HttpHandler::ptr_t &handler,
+								   const char * const message);
+	
+private:
+	// Usual plumbing for LLCore:: HTTP operations.
+	LLCore::HttpRequest *				mHttpRequestFG;
+	LLCore::HttpRequest *				mHttpRequestBG;
+	LLCore::HttpOptions::ptr_t			mHttpOptions;
+	LLCore::HttpHeaders::ptr_t			mHttpHeaders;
+	LLCore::HttpRequest::policy_t		mHttpPolicyClass;
+	LLCore::HttpRequest::priority_t		mHttpPriorityFG;
+	LLCore::HttpRequest::priority_t		mHttpPriorityBG;
+	
+/**                    HTTP Transport
  **                                                                            **
  *******************************************************************************/
 

@@ -33,6 +33,7 @@
 
 #include "linden_common.h"
 #include "lluictrl.h"
+#include "llfasttimer.h"
 #include "llfocusmgr.h"
 #include "llpanel.h"
 
@@ -332,23 +333,34 @@ void LLUICtrl::onMouseLeave(S32 x, S32 y, MASK mask)
 //virtual 
 BOOL LLUICtrl::handleMouseDown(S32 x, S32 y, MASK mask)
 {
+
+	//LL_DEBUGS() << "LLUICtrl::handleMouseDown calling	LLView)'s handleMouseUp (first initialized xui to: " << getPathname() << " )" << LL_ENDL;
+  
 	BOOL handled  = LLView::handleMouseDown(x,y,mask);
 
 	if (mMouseDownSignal)
 	{
 		(*mMouseDownSignal)(this,x,y,mask);
 	}
+	LL_DEBUGS() << "LLUICtrl::handleMousedown - handled is returning as: " << handled << "	  " << LL_ENDL;
+
 	return handled;
 }
 
 //virtual
 BOOL LLUICtrl::handleMouseUp(S32 x, S32 y, MASK mask)
 {
+
+//	LL_DEBUGS() << "LLUICtrl::handleMouseUp calling LLView)'s handleMouseUp (first initialized xui to: " << getPathname() << " )" << LL_ENDL;
+
 	BOOL handled  = LLView::handleMouseUp(x,y,mask);
 	if (mMouseUpSignal)
 	{
 		(*mMouseUpSignal)(this,x,y,mask);
 	}
+
+//	LL_DEBUGS() << "LLUICtrl::handleMouseUp - handled for xui " << getPathname() << "  -  is returning as: " << handled << "   " << LL_ENDL;
+
 	return handled;
 }
 
@@ -712,11 +724,11 @@ public:
 	}
 };
 
-LLFastTimer::DeclareTimer FTM_FOCUS_FIRST_ITEM("Focus First Item");
+LLTrace::BlockTimerStatHandle FTM_FOCUS_FIRST_ITEM("Focus First Item");
 
 BOOL LLUICtrl::focusFirstItem(BOOL prefer_text_fields, BOOL focus_flash)
 {
-	LLFastTimer _(FTM_FOCUS_FIRST_ITEM);
+	LL_RECORD_BLOCK_TIME(FTM_FOCUS_FIRST_ITEM);
 	// try to select default tab group child
 	LLCtrlQuery query = getTabOrderQuery();
 	// sort things such that the default tab group is at the front

@@ -4,33 +4,26 @@
  *
  * @cond
  *
- * $LicenseInfo:firstyear=2008&license=viewergpl$
- * 
- * Copyright (c) 2008-2010, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2008&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlife.com/developers/opensource/gplv2
+ * Copyright (C) 2010, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlife.com/developers/opensource/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
- * 
  *
  * @endcond
  */
@@ -44,8 +37,12 @@
 #include "llapr.h"
 #include "llstring.h"
 
+#include <iostream>
+#include <fstream>
+using namespace std;
+
+
 #if LL_DARWIN
-	#include <Carbon/Carbon.h>
 	#include "slplugin-objc.h"
 #endif
 
@@ -78,7 +75,7 @@ static void crash_handler(int sig)
 #endif
 
 #if LL_WINDOWS
-#include <windows.h>
+#include "llwin32headerslean.h"
 ////////////////////////////////////////////////////////////////////////////////
 //	Our exception handler - will probably just exit and the host application
 //	will miss the heartbeat and log the error in the usual fashion.
@@ -104,12 +101,12 @@ static BOOL PreventSetUnhandledExceptionFilter()
 
 #ifdef _M_IX86
 	// Code for x86:
-	// 33 C0                xor         eax,eax
-	// C2 04 00             ret         4
+	// 33 C0                xor         eax,eax  
+	// C2 04 00             ret         4 
 	unsigned char szExecute[] = { 0x33, 0xC0, 0xC2, 0x04, 0x00 };
 #elif _M_X64
-	// 33 C0                xor         eax,eax
-	// C3                   ret
+	// 33 C0                xor         eax,eax 
+	// C3                   ret  
 	unsigned char szExecute[] = { 0x33, 0xC0, 0xC3 };
 #else
 #error "The following code only works for x86 and x64!"
@@ -164,8 +161,6 @@ bool checkExceptionHandler()
 }
 #endif
 
-bool self_test = false;
-
 // If this application on Windows platform is a console application, a console is always
 // created which is bad. Making it a Windows "application" via CMake settings but not
 // adding any code to explicitly create windows does the right thing.
@@ -175,12 +170,8 @@ int APIENTRY WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 int main(int argc, char **argv)
 #endif
 {
-#ifdef CWDEBUG
-	Debug( libcw_do.margin().assign("SLPlugin ", 9) );
-	Debug(debug::init());
-	// Uncomment this to automatically open a terminal with gdb.
-	//Debug(attach_gdb());
-#endif
+
+	ll_init_apr();
 
 	// Set up llerror logging
 	{
@@ -212,42 +203,33 @@ int main(int argc, char **argv)
 		LL_ERRS("slplugin") << "usage: " << argv[0] << " launcher_port" << LL_ENDL;
 	}
 
-	U32 port = 61916;	// Test port.
-	if (strcmp(argv[1], "TESTPLUGIN") == 0)
-	{
-		std::cout << "Running self test..." << std::endl;
-		self_test = true;
-	}
-	else if (!LLStringUtil::convertToU32(argv[1], port))
+	U32 port = 0;
+	if(!LLStringUtil::convertToU32(argv[1], port))
 	{
 		LL_ERRS("slplugin") << "port number must be numeric" << LL_ENDL;
 	}
 
-	if (!self_test)
-	{
-	  // Catch signals that most kinds of crashes will generate, and exit cleanly so the system crash dialog isn't shown.
-	  signal(SIGILL, &crash_handler);		// illegal instruction
+	// Catch signals that most kinds of crashes will generate, and exit cleanly so the system crash dialog isn't shown.
+	signal(SIGILL, &crash_handler);		// illegal instruction
+	signal(SIGFPE, &crash_handler);		// floating-point exception
+	signal(SIGBUS, &crash_handler);		// bus error
+	signal(SIGSEGV, &crash_handler);	// segmentation violation
+	signal(SIGSYS, &crash_handler);		// non-existent system call invoked
+#endif
 # if LL_DARWIN
-	  signal(SIGEMT, &crash_handler);		// emulate instruction executed
-# endif // LL_DARWIN
-	  signal(SIGFPE, &crash_handler);		// floating-point exception
-	  signal(SIGBUS, &crash_handler);		// bus error
-	  signal(SIGSEGV, &crash_handler);	// segmentation violation
-	  signal(SIGSYS, &crash_handler);		// non-existent system call invoked
-	}
-#endif
+	signal(SIGEMT, &crash_handler);		// emulate instruction executed
 
-#if LL_DARWIN
-	setupCocoa();
-	createAutoReleasePool();
-#endif
+    LLCocoaPlugin cocoa_interface;
+	cocoa_interface.setupCocoa();
+	cocoa_interface.createAutoReleasePool();
+#endif //LL_DARWIN
 
 	LLPluginProcessChild *plugin = new LLPluginProcessChild();
 
 	plugin->init(port);
 
 #if LL_DARWIN
-	deleteAutoReleasePool();
+    cocoa_interface.deleteAutoReleasePool();
 #endif
 
 	LLTimer timer;
@@ -258,114 +240,22 @@ int main(int argc, char **argv)
 #endif
 
 #if LL_DARWIN
+    
 	// If the plugin opens a new window (such as the Flash plugin's fullscreen player), we may need to bring this plugin process to the foreground.
 	// Use this to track the current frontmost window and bring this process to the front if it changes.
-	WindowRef front_window = NULL;
-	WindowGroupRef layer_group = NULL;
-	int window_hack_state = 0;
-	CreateWindowGroup(kWindowGroupAttrFixedLevel, &layer_group);
-	if(layer_group)
-	{
-		// Start out with a window layer that's way out in front (fixes the problem with the menubar not getting hidden on first switch to fullscreen youtube)
-		SetWindowGroupName(layer_group, CFSTR("SLPlugin Layer"));
-		SetWindowGroupLevel(layer_group, kCGOverlayWindowLevel);		
-	}
-#endif
-
-#if LL_DARWIN
-	EventTargetRef event_target = GetEventDispatcherTarget();
+ //   cocoa_interface.mEventTarget = GetEventDispatcherTarget();
 #endif
 	while(!plugin->isDone())
 	{
 #if LL_DARWIN
-		createAutoReleasePool();
+		cocoa_interface.createAutoReleasePool();
 #endif
 		timer.reset();
 		plugin->idle();
 #if LL_DARWIN
 		{
-			// Some plugins (webkit at least) will want an event loop.  This qualifies.
-			EventRef event;
-			if(ReceiveNextEvent(0, 0, kEventDurationNoWait, true, &event) == noErr)
-			{
-				SendEventToEventTarget (event, event_target);
-				ReleaseEvent(event);
-			}
-			
-			// Check for a change in this process's frontmost window.
-			if(FrontNonFloatingWindow() != front_window)
-			{
-				ProcessSerialNumber self = { 0, kCurrentProcess };
-				ProcessSerialNumber parent = { 0, kNoProcess };
-				ProcessSerialNumber front = { 0, kNoProcess };
-				Boolean this_is_front_process = false;
-				Boolean parent_is_front_process = false;
-				{
-					// Get this process's parent
-					ProcessInfoRec info;
-					info.processInfoLength = sizeof(ProcessInfoRec);
-					info.processName = NULL;
-					info.processAppSpec = NULL;
-					if(GetProcessInformation( &self, &info ) == noErr)
-					{
-						parent = info.processLauncher;
-					}
-					
-					// and figure out whether this process or its parent are currently frontmost
-					if(GetFrontProcess(&front) == noErr)
-					{
-						(void) SameProcess(&self, &front, &this_is_front_process);
-						(void) SameProcess(&parent, &front, &parent_is_front_process);
-					}
-				}
-								
-				if((FrontNonFloatingWindow() != NULL) && (front_window == NULL))
-				{
-					// Opening the first window
-					
-					if(window_hack_state == 0)
-					{
-						// Next time through the event loop, lower the window group layer
-						window_hack_state = 1;
-					}
-
-					if(layer_group)
-					{
-						SetWindowGroup(FrontNonFloatingWindow(), layer_group);
-					}
-					
-					if(parent_is_front_process)
-					{
-						// Bring this process's windows to the front.
-						(void) SetFrontProcess( &self );
-					}
-
-					ActivateWindow(FrontNonFloatingWindow(), true);					
-				}
-				else if((FrontNonFloatingWindow() == NULL) && (front_window != NULL))
-				{
-					// Closing the last window
-					
-					if(this_is_front_process)
-					{
-						// Try to bring this process's parent to the front
-						(void) SetFrontProcess(&parent);
-					}
-				}
-				else if(window_hack_state == 1)
-				{
-					if(layer_group)
-					{
-						// Set the window group level back to something less extreme
-						SetWindowGroupLevel(layer_group, kCGNormalWindowLevel);
-					}
-					window_hack_state = 2;
-				}
-
-				front_window = FrontNonFloatingWindow();
-
-			}
-		}
+			cocoa_interface.processEvents();
+        }
 #endif
 		F64 elapsed = timer.getElapsedTimeF64();
 		F64 remaining = plugin->getSleepTime() - elapsed;
@@ -389,7 +279,8 @@ int main(int argc, char **argv)
 
 //			LL_INFOS("slplugin") << "slept for "<< timer.getElapsedTimeF64() * 1000.0f << " ms" <<  LL_ENDL;
 		}
-
+        
+        
 #if LL_WINDOWS
 	// More agressive checking of interfering exception handlers.
 	// Doesn't appear to be required so far - even for plugins
@@ -399,12 +290,13 @@ int main(int argc, char **argv)
 #endif
 
 #if LL_DARWIN
-		deleteAutoReleasePool();
+		cocoa_interface.deleteAutoReleasePool();
 #endif
 	}
-
 	delete plugin;
+
+	ll_cleanup_apr();
+
 
 	return 0;
 }
-

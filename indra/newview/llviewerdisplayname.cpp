@@ -35,7 +35,7 @@
 
 // library includes
 #include "llavatarnamecache.h"
-#include "llhttpclient.h"
+#include "llcorehttputil.h"
 #include "llhttpnode.h"
 #include "llnotificationsutil.h"
 #include "llui.h"					// getLanguage()
@@ -53,23 +53,14 @@ namespace LLViewerDisplayName
 		sNameChangedSignal.connect(cb); 
 	}
 
+	void onSetDisplayNameFailure()
+	{
+		LL_WARNS() << "SetDisplayName Failed" << LL_ENDL;
+		sSetDisplayNameSignal(false, "", LLSD());
+		sSetDisplayNameSignal.disconnect_all_slots();
+	}
 	void doNothing() { }
 }
-
-class LLSetDisplayNameResponder : public LLHTTPClient::ResponderIgnoreBody
-{
-	LOG_CLASS(LLSetDisplayNameResponder);
-private:
-	// only care about errors
-	/*virtual*/ void httpFailure()
-	{
-		LL_WARNS() << dumpResponse() << LL_ENDL;
-		LLViewerDisplayName::sSetDisplayNameSignal(false, "", LLSD());
-		LLViewerDisplayName::sSetDisplayNameSignal.disconnect_all_slots();
-	}
-
-	/*virtual*/ char const* getName(void) const { return "LLSetDisplayNameResponder"; }
-};
 
 void LLViewerDisplayName::set(const std::string& display_name, const set_name_slot_t& slot)
 {
@@ -84,10 +75,6 @@ void LLViewerDisplayName::set(const std::string& display_name, const set_name_sl
 		slot(false, "unsupported", LLSD());
 		return;
 	}
-
-	// People API can return localized error messages.  Indicate our
-	// language preference via header.
-	AIHTTPHeaders headers("Accept-Language", LLUI::getLanguage());
 
 	// People API requires both the old and new value to change a variable.
 	// Our display name will be in cache before the viewer's UI is available
@@ -114,7 +101,7 @@ void LLViewerDisplayName::set(const std::string& display_name, const set_name_sl
 	// communicates with the back-end.
 	LLSD body;
 	body["display_name"] = change_array;
-	LLHTTPClient::post(cap_url, body, new LLSetDisplayNameResponder, headers);
+	LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(cap_url, body, boost::bind(onSetDisplayNameFailure));
 }
 
 class LLSetDisplayNameReply : public LLHTTPNode
@@ -182,7 +169,7 @@ class LLDisplayNameUpdate : public LLHTTPNode
 		// default value
 		// *TODO: get actual headers out of ResponsePtr
 		//LLSD headers = response->mHeaders;
-		AIHTTPReceivedHeaders headers;
+		LLSD headers;
 		av_name.mExpires = 
 			LLAvatarNameCache::nameExpirationFromHeaders(headers);
 

@@ -88,6 +88,7 @@
 #include "llviewermenu.h"
 #include "llviewerobjectlist.h"
 #include "llviewerparcelmgr.h"
+#include "llviewerregion.h"
 #include "llviewershadermgr.h"
 #include "llviewerstats.h"
 #include "llviewerwearable.h"
@@ -116,6 +117,7 @@
 
 #include "llavatarname.h"
 #include "../lscript/lscript_byteformat.h"
+#include "llcorehttputil.h"
 
 #include "hippogridmanager.h"
 
@@ -700,7 +702,8 @@ bool SHClientTagMgr::fetchDefinitions() const
 {
 	std::string client_list_filename = gDirUtilp->getExpandedFilename(LL_PATH_USER_SETTINGS, "client_tags_sg1.xml");
 	std::string client_list_url = gSavedSettings.getString("ClientDefinitionsURL");
-	LLSD response = LLHTTPClient::blockingGet(client_list_url);
+	LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("SHClientTagMgr", LLCore::HttpRequest::DEFAULT_POLICY_ID));
+	LLSD response = httpAdapter->getAndSuspend(LLCore::HttpRequest::ptr_t(new LLCore::HttpRequest), client_list_url);
 	if(response.has("body"))
 	{
 		const LLSD &client_list = response["body"];
@@ -1569,7 +1572,7 @@ void LLVOAvatar::initInstance(void)
 	if (LLCharacter::sInstances.size() == 1)
 	{
 		LLKeyframeMotion::setVFS(gStaticVFS);
-		registerMotion( ANIM_AGENT_BUSY,					LLNullMotion::create );
+		registerMotion( ANIM_AGENT_DO_NOT_DISTURB,					LLNullMotion::create );
 		registerMotion( ANIM_AGENT_CROUCH,					LLKeyframeStandMotion::create );
 		registerMotion( ANIM_AGENT_CROUCHWALK,				LLKeyframeWalkMotion::create );
 		registerMotion( ANIM_AGENT_EXPRESS_AFRAID,			LLEmote::create );
@@ -2459,12 +2462,12 @@ S32 LLVOAvatar::setTETexture(const U8 te, const LLUUID& uuid)
 	return setTETextureCore(te, image);
 }
 
-static LLFastTimer::DeclareTimer FTM_AVATAR_UPDATE("Avatar Update");
-static LLFastTimer::DeclareTimer FTM_JOINT_UPDATE("Update Joints");
-static LLFastTimer::DeclareTimer FTM_CHARACTER_UPDATE("Character Update");
-static LLFastTimer::DeclareTimer FTM_BASE_UPDATE("Base Update");
-static LLFastTimer::DeclareTimer FTM_MISC_UPDATE("Misc Update");
-static LLFastTimer::DeclareTimer FTM_DETAIL_UPDATE("Detail Update");
+static LLTrace::BlockTimerStatHandle FTM_AVATAR_UPDATE("Avatar Update");
+static LLTrace::BlockTimerStatHandle FTM_JOINT_UPDATE("Update Joints");
+static LLTrace::BlockTimerStatHandle FTM_CHARACTER_UPDATE("Character Update");
+static LLTrace::BlockTimerStatHandle FTM_BASE_UPDATE("Base Update");
+static LLTrace::BlockTimerStatHandle FTM_MISC_UPDATE("Misc Update");
+static LLTrace::BlockTimerStatHandle FTM_DETAIL_UPDATE("Detail Update");
 
 //------------------------------------------------------------------------
 // LLVOAvatar::dumpAnimationState()
@@ -2498,7 +2501,7 @@ void LLVOAvatar::dumpAnimationState()
 //------------------------------------------------------------------------
 void LLVOAvatar::idleUpdate(LLAgent &agent, LLWorld &world, const F64 &time)
 {
-	LLFastTimer t(FTM_AVATAR_UPDATE);
+	LL_RECORD_BLOCK_TIME(FTM_AVATAR_UPDATE);
 
 	if (isDead())
 	{
@@ -2517,9 +2520,9 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, LLWorld &world, const F64 &time)
 	setPixelAreaAndAngle(gAgent);
 
 	// force asynchronous drawable update
-	if(mDrawable.notNull() && !gNoRender)
+	if(mDrawable.notNull())
 	{
-		LLFastTimer t(FTM_JOINT_UPDATE);
+		LL_RECORD_BLOCK_TIME(FTM_JOINT_UPDATE);
 	
 		if (mIsSitting && getParent())
 		{
@@ -2551,7 +2554,7 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, LLWorld &world, const F64 &time)
 	if (isSelf())
 	{
 		{
-			LLFastTimer t(FTM_BASE_UPDATE);
+			LL_RECORD_BLOCK_TIME(FTM_BASE_UPDATE);
 			LLViewerObject::idleUpdate(agent, world, time);
 		}
 		
@@ -2566,7 +2569,7 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, LLWorld &world, const F64 &time)
 		// Should override the idleUpdate stuff and leave out the angular update part.
 		LLQuaternion rotation = getRotation();
 		{
-			LLFastTimer t(FTM_BASE_UPDATE);
+			LL_RECORD_BLOCK_TIME(FTM_BASE_UPDATE);
 			LLViewerObject::idleUpdate(agent, world, time);
 		}
 		setRotation(rotation);
@@ -2580,12 +2583,8 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, LLWorld &world, const F64 &time)
 	mLastRootPos = mRoot->getWorldPosition();
 	bool detailed_update;
 	{
-		LLFastTimer t(FTM_CHARACTER_UPDATE);
+		LL_RECORD_BLOCK_TIME(FTM_CHARACTER_UPDATE);
 		detailed_update = updateCharacter(agent);
-	}
-	if (gNoRender)
-	{
-		return;
 	}
 
 	static LLUICachedControl<bool> visualizers_in_calls("ShowVoiceVisualizersInCalls", false);
@@ -2593,13 +2592,13 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, LLWorld &world, const F64 &time)
 						 LLVoiceClient::getInstance()->getVoiceEnabled(mID);
 
 	{
-		LLFastTimer t(FTM_MISC_UPDATE);
+		LL_RECORD_BLOCK_TIME(FTM_MISC_UPDATE);
 		idleUpdateVoiceVisualizer(voice_enabled);
 		idleUpdateMisc(detailed_update);
 		idleUpdateAppearanceAnimation();
 		if (detailed_update)
 		{
-			LLFastTimer t(FTM_DETAIL_UPDATE);
+			LL_RECORD_BLOCK_TIME(FTM_DETAIL_UPDATE);
 			idleUpdateLipSync(voice_enabled);
 			idleUpdateLoadingEffect();
 			idleUpdateBelowWater();	// wind effect uses this
@@ -2726,7 +2725,7 @@ void LLVOAvatar::idleUpdateVoiceVisualizer(bool voice_enabled)
 	}//if ( voiceEnabled )
 }		
 
-static LLFastTimer::DeclareTimer FTM_ATTACHMENT_UPDATE("Update Attachments");
+static LLTrace::BlockTimerStatHandle FTM_ATTACHMENT_UPDATE("Update Attachments");
 
 void LLVOAvatar::idleUpdateMisc(bool detailed_update)
 {
@@ -2743,7 +2742,7 @@ void LLVOAvatar::idleUpdateMisc(bool detailed_update)
 	// update attachments positions
 	if (detailed_update || !sUseImpostors)
 	{
-		LLFastTimer t(FTM_ATTACHMENT_UPDATE);
+		LL_RECORD_BLOCK_TIME(FTM_ATTACHMENT_UPDATE);
 		/*for (attachment_map_t::iterator iter = mAttachmentPoints.begin(); 
 			 iter != mAttachmentPoints.end();
 			 ++iter)
@@ -3326,7 +3325,7 @@ void LLVOAvatar::idleUpdateNameTagText(BOOL new_name)
 	bool fRlvShowNames = gRlvHandler.hasBehaviour(RLV_BHVR_SHOWNAMES);
 // [/RLVa:KB]
 	bool is_away = mSignaledAnimations.find(ANIM_AGENT_AWAY)  != mSignaledAnimations.end();
-	bool is_busy = mSignaledAnimations.find(ANIM_AGENT_BUSY) != mSignaledAnimations.end();
+	bool is_busy = mSignaledAnimations.find(ANIM_AGENT_DO_NOT_DISTURB) != mSignaledAnimations.end();
 	bool is_appearance = mSignaledAnimations.find(ANIM_AGENT_CUSTOMIZE) != mSignaledAnimations.end();
 	bool is_muted;
 	if (isSelf())
@@ -3832,7 +3831,7 @@ bool LLVOAvatar::isVisuallyMuted() const
 		static const LLCachedControl<bool> show_muted(gSavedSettings, "LiruLegacyDisplayMuteds", false);
 
 	muted = (!show_muted && LLMuteList::getInstance()->isMuted(getID())) ||
-			(mAttachmentGeometryBytes > max_attachment_bytes && max_attachment_bytes > 0) ||
+			((U32)mAttachmentGeometryBytes > max_attachment_bytes && max_attachment_bytes > 0) ||
 			(mAttachmentSurfaceArea > max_attachment_area && max_attachment_area > 0.f) ||
 // [RLVa:LF] - RLV 2.9 camavdist
 			(gRlvHandler.hasBehaviour(RLV_BHVR_CAMAVDIST) && (gAgent.getPosGlobalFromAgent(const_cast<LLVOAvatar&>(*this).getCharacterPosition()) - gAgent.getPosGlobalFromAgent(gAgentAvatarp->getRenderPosition())).magVec() > gRlvHandler.camPole(RLV_BHVR_CAMAVDIST)) ||
@@ -5270,10 +5269,10 @@ void LLVOAvatar::releaseOldTextures()
 	mTextureIDs = new_texture_ids;
 }
 
-static LLFastTimer::DeclareTimer FTM_TEXTURE_UPDATE("Update Textures");
+static LLTrace::BlockTimerStatHandle FTM_TEXTURE_UPDATE("Update Textures");
 void LLVOAvatar::updateTextures()
 {
-	LLFastTimer t(FTM_TEXTURE_UPDATE);
+	LL_RECORD_BLOCK_TIME(FTM_TEXTURE_UPDATE);
 	releaseOldTextures();
 	
 	BOOL render_avatar = TRUE;
@@ -5759,10 +5758,10 @@ BOOL LLVOAvatar::processSingleAnimationStateChange( const LLUUID& anim_id, BOOL 
 		{
 			sitDown(FALSE);
 		}
-		if ((anim_id == ANIM_AGENT_BUSY) && gAgent.isDoNotDisturb())
+		if ((anim_id == ANIM_AGENT_DO_NOT_DISTURB) && gAgent.isDoNotDisturb())
 		{
 			// re-assert DND tag animation
-			gAgent.sendAnimationRequest(ANIM_AGENT_BUSY, ANIM_REQUEST_START);
+			gAgent.sendAnimationRequest(ANIM_AGENT_DO_NOT_DISTURB, ANIM_REQUEST_START);
 			return result;
 		}
 		stopMotion(anim_id);
@@ -6392,10 +6391,10 @@ BOOL LLVOAvatar::isActive() const
 //-----------------------------------------------------------------------------
 // setPixelAreaAndAngle()
 //-----------------------------------------------------------------------------
-static LLFastTimer::DeclareTimer FTM_PIXEL_AREA("Pixel Area");
+static LLTrace::BlockTimerStatHandle FTM_PIXEL_AREA("Pixel Area");
 void LLVOAvatar::setPixelAreaAndAngle(LLAgent &agent)
 {
-	LLFastTimer t(FTM_PIXEL_AREA);
+	LL_RECORD_BLOCK_TIME(FTM_PIXEL_AREA);
 	if (mDrawable.isNull())
 	{
 		return;
@@ -6514,10 +6513,10 @@ void LLVOAvatar::updateGL()
 //-----------------------------------------------------------------------------
 // updateGeometry()
 //-----------------------------------------------------------------------------
-static LLFastTimer::DeclareTimer FTM_UPDATE_AVATAR("Update Avatar");
+static LLTrace::BlockTimerStatHandle FTM_UPDATE_AVATAR("Update Avatar");
 BOOL LLVOAvatar::updateGeometry(LLDrawable *drawable)
 {
-	LLFastTimer ftm(FTM_UPDATE_AVATAR);
+	LL_RECORD_BLOCK_TIME(FTM_UPDATE_AVATAR);
  	if (!(gPipeline.hasRenderType(LLPipeline::RENDER_TYPE_AVATAR)))
 	{
 		return TRUE;
@@ -8135,12 +8134,14 @@ bool LLVOAvatar::visualParamWeightsAreDefault()
 	return rtn;
 }
 
-void dump_visual_param(LLAPRFile& file, LLVisualParam const* viewer_param, F32 value)
+void dump_visual_param(llofstream& ofstream, LLVisualParam* viewer_param, F32 value)
 {
 	S32 u8_value = F32_to_U8(value,viewer_param->getMinWeight(),viewer_param->getMaxWeight());
-	apr_file_printf(file.getFileHandle(), "    <param id=\"%d\" name=\"%s\" value=\"%.3f\" u8=\"%d\" type=\"%s\" wearable=\"%s\"/>\n",
+	ofstream << llformat("\t\t<param id=\"%d\" name=\"%s\" value=\"%.3f\" u8=\"%d\" type=\"%s\" wearable=\"%s\"/>\n",
 					viewer_param->getID(), viewer_param->getName().c_str(), value, u8_value, viewer_param->getTypeString(),
-					viewer_param->getDumpWearableTypeName().c_str());
+					viewer_param->getDumpWearableTypeName().c_str()
+//					param_location_name(vparam->getParamLocation()).c_str()
+		);
 }
 
 
@@ -8150,11 +8151,9 @@ void LLVOAvatar::dumpAppearanceMsgParams( const std::string& dump_prefix,
 {
 	std::string outfilename = get_sequential_numbered_file_name(dump_prefix,".xml");
 
-	LLAPRFile outfile;
 	std::string fullpath = gDirUtilp->getExpandedFilename(LL_PATH_LOGS,outfilename);
-	outfile.open(fullpath, LL_APR_WB );
-	apr_file_t* file = outfile.getFileHandle();
-	if (!file)
+	llofstream outstream(fullpath, std::ios::out | std::ios::binary | std::ios::trunc);
+	if (!outstream.is_open())
 	{
 		return;
 	}
@@ -8163,7 +8162,12 @@ void LLVOAvatar::dumpAppearanceMsgParams( const std::string& dump_prefix,
 		LL_DEBUGS("Avatar") << "dumping appearance message to " << fullpath << LL_ENDL;
 	}
 
+	/*outstream << "<header>\n";
+	outstream << llformat("\t\t<cof_version %i />\n", contents.mCOFVersion);
+	outstream << llformat("\t\t<appearance_version %i />\n", contents.mAppearanceVersion);
+	outstream << "</header>\n";*/
 
+	outstream << "\n<params>\n";
 	LLVisualParam* param = getFirstVisualParam();
 	for (S32 i = 0; i < (S32)params_for_dump.size(); i++)
 	{
@@ -8174,15 +8178,19 @@ void LLVOAvatar::dumpAppearanceMsgParams( const std::string& dump_prefix,
 		}
 		LLViewerVisualParam* viewer_param = (LLViewerVisualParam*)param;
 		F32 value = params_for_dump[i];
-		dump_visual_param(outfile, viewer_param, value);
+		dump_visual_param(outstream, viewer_param, value);
 		param = getNextVisualParam();
 	}
+	outstream << "</params>\n";
+
+	outstream << "\n<textures>\n";
 	for (U32 i = 0; i < tec.face_count; i++)
 	{
 		std::string uuid_str;
 		((LLUUID*)tec.image_data)[i].toString(uuid_str);
-		apr_file_printf( file, "\t\t<texture te=\"%i\" uuid=\"%s\"/>\n", i, uuid_str.c_str());
+		outstream << llformat("\t\t<texture te=\"%i\" uuid=\"%s\"/>\n", i, uuid_str.c_str());
 	}
+	outstream << "</textures>\n";
 }
 
 void LLVOAvatar::parseAppearanceMessage(LLMessageSystem* mesgsys, LLAppearanceMessageContents& contents)
@@ -8201,7 +8209,7 @@ void LLVOAvatar::parseAppearanceMessage(LLMessageSystem* mesgsys, LLAppearanceMe
 		//mesgsys->getU32Fast(_PREHASH_AppearanceData, _PREHASH_Flags, appearance_flags, 0);
 	}
 
-	// Parse the AppearanceHover field, if any.
+	// Parse the AppearanceData field, if any.
 	contents.mHoverOffsetWasSet = false;
 	if (mesgsys->has(_PREHASH_AppearanceHover))
 	{
@@ -8356,7 +8364,6 @@ void LLVOAvatar::processAvatarAppearance( LLMessageSystem* mesgsys )
 	S32 this_update_cof_version = contents.mCOFVersion;
 	S32 last_update_request_cof_version = mLastUpdateRequestCOFVersion;
 
-	// Only now that we have result of appearance_version can we decide whether to bail out.
 	if( isSelf() )
 	{
 		LL_DEBUGS("Avatar") << "this_update_cof_version " << this_update_cof_version
@@ -9098,7 +9105,7 @@ LLHost LLVOAvatar::getObjectHost() const
 	}
 	else
 	{
-		return LLHost::invalid;
+		return LLHost();
 	}
 }
 

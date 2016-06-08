@@ -34,7 +34,6 @@
 
 #include "llmenucommands.h"
 
-#include "aihttpview.h"
 #include "alfloaterregiontracker.h"
 #include "floaterao.h"
 #include "floaterlocalassetbrowse.h"
@@ -154,7 +153,6 @@ struct MenuFloaterDict : public LLSingleton<MenuFloaterDict>
 		registerConsole("debug console", gDebugView->mDebugConsolep);
 		registerConsole("fast timers", gDebugView->mFastTimerView);
 		registerConsole("frame console", gDebugView->mFrameStatView);
-		registerConsole("http console", gHttpView);
 		registerConsole("texture console", gTextureView);
 		if (gAuditTexture)
 		{

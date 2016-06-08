@@ -2,49 +2,63 @@
  * @file llcriticaldamp.cpp
  * @brief Implementation of the critical damping functionality.
  *
- * $LicenseInfo:firstyear=2002&license=viewergpl$
- * 
- * Copyright (c) 2002-2009, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2002&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2010, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
 #include "linden_common.h"
 
 #include "llcriticaldamp.h"
+#include <algorithm>
 
 //-----------------------------------------------------------------------------
 // static members
 //-----------------------------------------------------------------------------
-LLFrameTimer LLCriticalDamp::sInternalTimer;
-std::map<F32, F32> LLCriticalDamp::sInterpolants;
-F32 LLCriticalDamp::sTimeDelta;
+LLFrameTimer LLSmoothInterpolation::sInternalTimer;
+std::vector<LLSmoothInterpolation::Interpolant> LLSmoothInterpolation::sInterpolants;
+F32 LLSmoothInterpolation::sTimeDelta;
+
+// helper functors
+struct LLSmoothInterpolation::CompareTimeConstants
+{
+	bool operator()(const F32& a, const LLSmoothInterpolation::Interpolant& b) const
+	{
+		return a < b.mTimeScale;
+	}
+
+	bool operator()(const LLSmoothInterpolation::Interpolant& a, const F32& b) const
+	{
+		return a.mTimeScale < b; // bottom of a is higher than bottom of b
+	}
+
+	bool operator()(const LLSmoothInterpolation::Interpolant& a, const LLSmoothInterpolation::Interpolant& b) const
+	{
+		return a.mTimeScale < b.mTimeScale; // bottom of a is higher than bottom of b
+	}
+};
 
 //-----------------------------------------------------------------------------
-// LLCriticalDamp()
+// LLSmoothInterpolation()
 //-----------------------------------------------------------------------------
-LLCriticalDamp::LLCriticalDamp()
+LLSmoothInterpolation::LLSmoothInterpolation()
 {
 	sTimeDelta = 0.f;
 }
@@ -53,43 +67,55 @@ LLCriticalDamp::LLCriticalDamp()
 //-----------------------------------------------------------------------------
 // updateInterpolants()
 //-----------------------------------------------------------------------------
-void LLCriticalDamp::updateInterpolants()
+void LLSmoothInterpolation::updateInterpolants()
 {
 	sTimeDelta = sInternalTimer.getElapsedTimeAndResetF32();
 
-	F32 time_constant;
-
-	for (std::map<F32, F32>::iterator iter = sInterpolants.begin();
-		 iter != sInterpolants.end(); iter++)
+	for (S32 i = 0; i < sInterpolants.size(); i++)
 	{
-		time_constant = iter->first;
-		F32 new_interpolant = 1.f - pow(2.f, -sTimeDelta / time_constant);
-		new_interpolant = llclamp(new_interpolant, 0.f, 1.f);
-		sInterpolants[time_constant] = new_interpolant;
+		Interpolant& interp = sInterpolants[i];
+		interp.mInterpolant = calcInterpolant(interp.mTimeScale);
 	}
 } 
 
 //-----------------------------------------------------------------------------
 // getInterpolant()
 //-----------------------------------------------------------------------------
-F32 LLCriticalDamp::getInterpolant(const F32 time_constant, BOOL use_cache)
+F32 LLSmoothInterpolation::getInterpolant(F32SecondsImplicit time_constant, bool use_cache)
 {
 	if (time_constant == 0.f)
 	{
 		return 1.f;
 	}
 
-	if (use_cache && sInterpolants.count(time_constant))
-	{
-		return sInterpolants[time_constant];
-	}
-	
-	F32 interpolant = 1.f - pow(2.f, -sTimeDelta / time_constant);
-	interpolant = llclamp(interpolant, 0.f, 1.f);
 	if (use_cache)
 	{
-		sInterpolants[time_constant] = interpolant;
+		interpolant_vec_t::iterator find_it = std::lower_bound(sInterpolants.begin(), sInterpolants.end(), time_constant.value(), CompareTimeConstants());
+		if (find_it != sInterpolants.end() && find_it->mTimeScale == time_constant) 
+	{
+			return find_it->mInterpolant;
 	}
+		else
+	{
+			Interpolant interp;
+			interp.mTimeScale = time_constant.value();
+			interp.mInterpolant = calcInterpolant(time_constant.value());
+			sInterpolants.insert(find_it, interp);
+			return interp.mInterpolant;
+	}
+	}
+	else
+	{
+		return calcInterpolant(time_constant.value());
 
-	return interpolant;
 }
+}
+
+//-----------------------------------------------------------------------------
+// calcInterpolant()
+//-----------------------------------------------------------------------------
+F32 LLSmoothInterpolation::calcInterpolant(F32 time_constant)
+{
+	return llclamp(1.f - powf(2.f, -sTimeDelta / time_constant), 0.f, 1.f);
+}
+

@@ -1,32 +1,26 @@
 /**
  * @file lluploadfloaterobservers.h
- * @brief LLUploadModelPremissionsResponder declaration
- *
- * $LicenseInfo:firstyear=2011&license=viewergpl$
+ * @brief LLUploadModelPermissionsResponder declaration
  * 
- * Copyright (c) 2011, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2011&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2011, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
- * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
@@ -34,26 +28,19 @@
 #define LL_LLUPLOADFLOATEROBSERVERS_H
 
 #include "llfloater.h"
-#include "llhttpclient.h"
-#include "llui.h"
-
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy uploadModelPremissionsResponder_timeout;
+#include "llhandle.h"
 
 class LLUploadPermissionsObserver
 {
 public:
 
-	LLUploadPermissionsObserver() { mUploadPermObserverHandle.bind(this); }
+	LLUploadPermissionsObserver(){mUploadPermObserverHandle.bind(this);}
 	virtual ~LLUploadPermissionsObserver() {}
 
 	virtual void onPermissionsReceived(const LLSD& result) = 0;
-	virtual void setPermissonsErrorStatus(U32 status, const std::string& reason) = 0;
+	virtual void setPermissonsErrorStatus(S32 status, const std::string& reason) = 0;
 
-	LLHandle<LLUploadPermissionsObserver> getPermObserverHandle() const
-	{
-		return mUploadPermObserverHandle;
-	}
+	LLHandle<LLUploadPermissionsObserver> getPermObserverHandle() const {return mUploadPermObserverHandle;}
 
 protected:
 	LLRootHandle<LLUploadPermissionsObserver> mUploadPermObserverHandle;
@@ -66,12 +53,9 @@ public:
 	virtual ~LLWholeModelFeeObserver() {}
 
 	virtual void onModelPhysicsFeeReceived(const LLSD& result, std::string upload_url) = 0;
-	virtual void setModelPhysicsFeeErrorStatus(U32 status, const std::string& reason) = 0;
+	virtual void setModelPhysicsFeeErrorStatus(S32 status, const std::string& reason) = 0;
 
-	LLHandle<LLWholeModelFeeObserver> getWholeModelFeeObserverHandle() const
-	{
-		return mWholeModelFeeObserverHandle;
-	}
+	LLHandle<LLWholeModelFeeObserver> getWholeModelFeeObserverHandle() const { return mWholeModelFeeObserverHandle; }
 
 protected:
 	LLRootHandle<LLWholeModelFeeObserver> mWholeModelFeeObserverHandle;
@@ -88,29 +72,10 @@ public:
 
 	virtual void onModelUploadFailure() = 0;
 
-	LLHandle<LLWholeModelUploadObserver> getWholeModelUploadObserverHandle() const
-	{
-		return mWholeModelUploadObserverHandle;
-	}
+	LLHandle<LLWholeModelUploadObserver> getWholeModelUploadObserverHandle() const { return mWholeModelUploadObserverHandle; }
 
 protected:
 	LLRootHandle<LLWholeModelUploadObserver> mWholeModelUploadObserverHandle;
-};
-
-
-class LLUploadModelPremissionsResponder : public LLHTTPClient::ResponderWithResult
-{
-public:
-
-	LLUploadModelPremissionsResponder(const LLHandle<LLUploadPermissionsObserver>& observer);
-
-	/*virtual*/ void httpFailure(void);
-	/*virtual*/ void httpSuccess(void);
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return uploadModelPremissionsResponder_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLUploadModelPremissionsResponder"; }
-
-private:
-	LLHandle<LLUploadPermissionsObserver> mObserverHandle;
 };
 
 #endif /* LL_LLUPLOADFLOATEROBSERVERS_H */

@@ -2522,10 +2522,9 @@ void LLPanelLandAccess::refresh()
 			getChild<LLUICtrl>("AccessList")->setToolTipArg(LLStringExplicit("[LISTED]"), llformat("%d",count));
 			getChild<LLUICtrl>("AccessList")->setToolTipArg(LLStringExplicit("[MAX]"), llformat("%d",PARCEL_MAX_ACCESS_LIST));
 
-			for (access_map_const_iterator cit = parcel->mAccessList.begin();
-				 cit != parcel->mAccessList.end(); ++cit)
+			for (const auto& pair : parcel->mAccessList)
 			{
-				const LLAccessEntry& entry = (*cit).second;
+				const LLAccessEntry& entry = pair.second;
 				std::string suffix;
 				if (entry.mTime != 0)
 				{
@@ -2569,10 +2568,9 @@ void LLPanelLandAccess::refresh()
 			getChild<LLUICtrl>("BannedList")->setToolTipArg(LLStringExplicit("[LISTED]"), llformat("%d",count));
 			getChild<LLUICtrl>("BannedList")->setToolTipArg(LLStringExplicit("[MAX]"), llformat("%d",PARCEL_MAX_ACCESS_LIST));
 
-			for (access_map_const_iterator cit = parcel->mBanList.begin();
-				 cit != parcel->mBanList.end(); ++cit)
+			for (const auto& pair : parcel->mBanList)
 			{
-				const LLAccessEntry& entry = (*cit).second;
+				const LLAccessEntry& entry = pair.second;
 				std::string suffix;
 				if (entry.mTime != 0)
 				{

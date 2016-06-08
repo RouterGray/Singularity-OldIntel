@@ -41,26 +41,16 @@
 #include <algorithm>
 // std headers
 #include <typeinfo>
-#include <cassert>
 #include <cmath>
 #include <cctype>
 // external library headers
 #include <boost/range/iterator_range.hpp>
-#if LL_WINDOWS
-#pragma warning (push)
-#pragma warning (disable : 4701) // compiler thinks might use uninitialized var, but no
-#endif
 #include <boost/lexical_cast.hpp>
-#if LL_WINDOWS
-#pragma warning (pop)
-#endif
+
 // other Linden headers
 #include "stringize.h"
 #include "llerror.h"
 #include "llsdutil.h"
-#if LL_MSVC
-#pragma warning (disable : 4702)
-#endif
 
 /*****************************************************************************
 *   queue_names: specify LLEventPump names that should be instantiated as
@@ -132,6 +122,17 @@ LLEventPump& LLEventPumps::obtain(const std::string& name)
     mOurPumps.insert(newInstance);
     return *newInstance;
 }
+
+bool LLEventPumps::post(const std::string&name, const LLSD&message)
+{
+    PumpMap::iterator found = mPumpMap.find(name);
+
+    if (found == mPumpMap.end())
+        return false;
+
+    return (*found).second->post(message);
+}
+
 
 void LLEventPumps::flush()
 {
@@ -244,31 +245,17 @@ void LLEventPumps::unregister(const LLEventPump& pump)
     }
 }
 
-//static
-bool LLEventPumps::sDeleted;
-
-//static
-void LLEventPumps::maybe_unregister(const LLEventPump& pump)
-{
-	if (!sDeleted)
-	{
-		LLEventPumps::instance().unregister(pump);
-	}
-}
-
 LLEventPumps::~LLEventPumps()
 {
-    // Deleting an LLEventPump calls its destructor, which calls maybe_unregister(),
-    // which would try to remove that LLEventPump instance from a NEWLY created LLEventPumps
-    // singleton (as we're already being destructed). Therefore, mark that we're not
-    // home anymore... --Aleric
-    sDeleted = true;
-
-    // Subsequently we can delete every LLEventPump we instantiated (via obtain()).
-	// We're not clearing mPumpMap or mOurPumps here... their destructors will.
-    for (LLEventPumps::PumpSet::iterator pump = mOurPumps.begin(); pump != mOurPumps.end(); ++pump)
+    // On destruction, delete every LLEventPump we instantiated (via
+    // obtain()). CAREFUL: deleting an LLEventPump calls its destructor, which
+    // calls unregister(), which removes that LLEventPump instance from
+    // mOurPumps. So an iterator loop over mOurPumps to delete contained
+    // LLEventPump instances is dangerous! Instead, delete them one at a time
+    // until mOurPumps is empty.
+    while (! mOurPumps.empty())
     {
-        delete *pump;
+        delete *mOurPumps.begin();
     }
 }
 
@@ -294,7 +281,7 @@ LLEventPump::LLEventPump(const std::string& name, bool tweak):
 LLEventPump::~LLEventPump()
 {
     // Unregister this doomed instance from LLEventPumps
-    LLEventPumps::maybe_unregister(*this);
+    LLEventPumps::instance().unregister(*this);
 }
 
 // static data member
@@ -510,6 +497,43 @@ bool LLEventStream::post(const LLSD& event)
     // LLEventPump.
     return (*signal)(event);
 }
+
+/*****************************************************************************
+ *   LLEventMailDrop
+ *****************************************************************************/
+bool LLEventMailDrop::post(const LLSD& event)
+{
+    bool posted = false;
+    
+    if (!mSignal->empty())
+        posted = LLEventStream::post(event);
+    
+    if (!posted)
+    {   // if the event was not handled we will save it for later so that it can 
+        // be posted to any future listeners when they attach.
+        mEventHistory.push_back(event);
+    }
+    
+    return posted;
+}
+
+LLBoundListener LLEventMailDrop::listen_impl(const std::string& name,
+                                    const LLEventListener& listener,
+                                    const NameList& after,
+                                    const NameList& before)
+{
+    if (!mEventHistory.empty())
+    {
+        if (listener(mEventHistory.front()))
+        {
+            mEventHistory.pop_front();
+        }
+    }
+
+    return LLEventStream::listen_impl(name, listener, after, before);
+
+}
+
 
 /*****************************************************************************
 *   LLEventQueue

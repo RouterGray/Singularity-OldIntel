@@ -68,7 +68,7 @@ public:
 	void setSnapshot(const LLUUID& snapshot_id);
 	void setLocationString(const std::string& location);
 	void setLandTypeString(const std::string& land_type);
-	/*virtual*/ void setErrorStatus(U32 status, const std::string& reason);
+	/*virtual*/ void setErrorStatus(S32 status, const std::string& reason);
 	void resetName(const std::string& name);
 
 	void displayParcelInfo(const LLVector3& pos_region,

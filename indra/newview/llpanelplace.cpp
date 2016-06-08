@@ -203,7 +203,7 @@ void LLPanelPlace::setLandTypeString(const std::string& land_type)
 		mLandTypeEditor->setText(land_type);
 }
 
-void LLPanelPlace::setErrorStatus(U32 status, const std::string& reason)
+void LLPanelPlace::setErrorStatus(S32 status, const std::string& reason)
 {
 	// We only really handle 404 and timeout errors
 	std::string error_text;
@@ -215,7 +215,7 @@ void LLPanelPlace::setErrorStatus(U32 status, const std::string& reason)
 	{
 		error_text = getString("server_forbidden_text");
 	}
-	else if (status == HTTP_INTERNAL_ERROR_LOW_SPEED || status == HTTP_INTERNAL_ERROR_CURL_TIMEOUT)
+	else if (status == 494 || status == 497)
 	{
 		error_text = getString("internal_timeout_text");
 	}
@@ -330,17 +330,7 @@ void LLPanelPlace::displayParcelInfo(const LLVector3& pos_region,
 	std::string url = gAgent.getRegion()->getCapability("RemoteParcelRequest");
 	if (!url.empty())
 	{
-		body["location"] = ll_sd_from_vector3(pos_region);
-		if (!region_id.isNull())
-		{
-			body["region_id"] = region_id;
-		}
-		if (!pos_global.isExactlyZero())
-		{
-			U64 region_handle = to_region_handle(pos_global);
-			body["region_handle"] = ll_sd_from_U64(region_handle);
-		}
-		LLHTTPClient::post(url, body, new LLRemoteParcelRequestResponder(this->getObserverHandle()));
+		LLRemoteParcelInfoProcessor::instance().requestRegionParcelInfo(url, region_id, pos_region, pos_global, getObserverHandle());
 	}
 	else
 	{

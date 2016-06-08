@@ -27,21 +27,32 @@
 
 #include "llcommon.h"
 #include "llthread.h"
+#include "lltrace.h"
+#include "lltracethreadrecorder.h"
+
+static LLTrace::ThreadRecorder* sMasterThreadRecorder = NULL;
 
 //static
 void LLCommon::initClass()
 {
 	LLMemory::initClass();
 	LLTimer::initClass();
-// 	LLWorkerThread::initClass();
-// 	LLFrameCallbackManager::initClass();
+	LLThreadSafeRefCount::initThreadSafeRefCount();
+	assert_main_thread();		// Make sure we record the main thread
+	if (!sMasterThreadRecorder)
+	{
+		sMasterThreadRecorder = new LLTrace::ThreadRecorder();
+		LLTrace::set_master_thread_recorder(sMasterThreadRecorder);
+	}
 }
 
 //static
 void LLCommon::cleanupClass()
 {
-// 	LLFrameCallbackManager::cleanupClass();
-// 	LLWorkerThread::cleanupClass();
+	delete sMasterThreadRecorder;
+	sMasterThreadRecorder = NULL;
+	LLTrace::set_master_thread_recorder(NULL);
+	LLThreadSafeRefCount::cleanupThreadSafeRefCount();
 	LLTimer::cleanupClass();
 	LLMemory::cleanupClass();
 }

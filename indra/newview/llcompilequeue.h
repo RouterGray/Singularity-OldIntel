@@ -160,6 +160,11 @@ protected:
 	virtual void handleInventory(LLViewerObject* viewer_obj,
 								 LLInventoryObject::object_list_t* inv);
 
+	static void requestAsset(struct LLScriptQueueData* datap, const LLSD& experience);
+
+
+    static void finishLSLUpload(LLUUID itemId, LLUUID taskId, LLUUID newAssetId, LLSD response, std::string scriptName, LLUUID queueId);
+
 	// This is the callback for when each script arrives
 	static void scriptArrived(LLVFS *vfs, const LLUUID& asset_id,
 								LLAssetType::EType type,
@@ -179,6 +184,7 @@ protected:
 	LLViewerInventoryItem::item_array_t mCurrentScripts;
 
 private:
+    static void processExperienceIdResults(LLSD result, LLUUID parent);
 	LLAssetUploadQueue* mUploadQueue;
 	uuid_list_t mExperienceIds;
 };

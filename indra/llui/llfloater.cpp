@@ -2501,7 +2501,9 @@ LLView* LLFloater::fromXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFactory *f
 	return floaterp;
 }
 
-LLFastTimer::DeclareTimer POST_BUILD("Floater Post Build");
+LLTrace::BlockTimerStatHandle POST_BUILD("Floater Post Build");
+static LLTrace::BlockTimerStatHandle FTM_EXTERNAL_FLOATER_LOAD("Load Extern Floater Reference");
+
 void LLFloater::initFloaterXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFactory *factory, BOOL open)	/* Flawfinder: ignore */
 {
 	std::string name(getName());
@@ -2573,7 +2575,7 @@ void LLFloater::initFloaterXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFactor
 
 	BOOL result;
 	{
-		LLFastTimer ft(POST_BUILD);
+		LL_RECORD_BLOCK_TIME(POST_BUILD);
 
 		result = postBuild();
 	}

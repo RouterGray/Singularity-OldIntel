@@ -33,6 +33,7 @@
 #include "llscrolllistctrl.h"
 #include "llscrolllistitem.h"
 #include "llspeakers.h"
+#include "llviewerregion.h"
 #include "llviewerwindow.h"
 #include "llvoiceclient.h"
 #include "llworld.h" // Edit: For ghost detection

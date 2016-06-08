@@ -31,7 +31,6 @@
 
 #include "llmatrix4a.h"
 #include <boost/bind.hpp>
-#include "apr_time.h"
 
 std::list<LLModelLoader*> LLModelLoader::sActiveLoaderList;
 
@@ -311,7 +310,7 @@ bool LLModelLoader::loadFromSLM(const std::string& filename)
 
 	S32 file_size = (S32) stat.st_size;
 	
-	llifstream ifstream(filename.c_str(), std::ifstream::in | std::ifstream::binary);
+	llifstream ifstream(filename.c_str(), std::ios::in | std::ios::binary);
 	LLSD data;
 	LLSDSerialize::fromBinary(data, ifstream, file_size);
 	ifstream.close();
@@ -459,7 +458,7 @@ void LLModelLoader::loadModelCallback()
 
 	while (!isStopped())
 	{ //wait until this thread is stopped before deleting self
-		apr_sleep(100);
+		boost::this_thread::sleep_for(boost::chrono::microseconds(100));
 	}
 
 	//double check if "this" is valid before deleting it, in case it is aborted during running.

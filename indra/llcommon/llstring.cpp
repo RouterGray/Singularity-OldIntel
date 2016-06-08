@@ -28,11 +28,16 @@
 
 #include "llstring.h"
 #include "llerror.h"
+#include "llfasttimer.h"
+#include "llsd.h"
 
 #if LL_WINDOWS
 #include "llwin32headerslean.h"
 #include <winnls.h> // for WideCharToMultiByte
 #endif
+
+LLTrace::BlockTimerStatHandle FT_STRING_FORMAT("String Format");
+
 
 std::string ll_safe_string(const char* in)
 {
@@ -45,6 +50,23 @@ std::string ll_safe_string(const char* in, S32 maxlen)
 	if(in && maxlen > 0 ) return std::string(in, maxlen);
 
 	return std::string();
+}
+
+bool is_char_hex(char hex)
+{
+	if((hex >= '0') && (hex <= '9'))
+	{
+		return true;
+	}
+	else if((hex >= 'a') && (hex <='f'))
+	{
+		return true;
+	}
+	else if((hex >= 'A') && (hex <='F'))
+	{
+		return true;
+	}
+	return false; // uh - oh, not hex any more...
 }
 
 U8 hex_as_nybble(char hex)
@@ -1169,6 +1191,7 @@ bool LLStringUtil::formatDatetime(std::string& replacement, std::string token,
 template<> 
 S32 LLStringUtil::format(std::string& s, const format_map_t& substitutions)
 {
+	LL_RECORD_BLOCK_TIME(FT_STRING_FORMAT);
 	S32 res = 0;
 
 	std::string output;
@@ -1241,6 +1264,7 @@ S32 LLStringUtil::format(std::string& s, const format_map_t& substitutions)
 template<> 
 S32 LLStringUtil::format(std::string& s, const LLSD& substitutions)
 {
+	LL_RECORD_BLOCK_TIME(FT_STRING_FORMAT);
 	S32 res = 0;
 
 	if (!substitutions.isMap()) 

@@ -43,8 +43,7 @@
 
 // linden library includes
 #include "llbutton.h"
-#include "llhttpclient.h"
-#include "llhttpstatuscodes.h"	// for HTTP_FOUND
+#include "llcorehttputil.h"
 #include "llradiogroup.h"
 #include "lltextbox.h"
 #include "llui.h"
@@ -52,65 +51,12 @@
 #include "llvfile.h"
 #include "message.h"
 
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy iamHereVoice_timeout;
-
 FloaterVoiceLicense::FloaterVoiceLicense(const LLSD& key)
 :	LLModalDialog( std::string(" "), 100, 100 ),
 	mLoadCompleteCount( 0 )
 {
 	LLUICtrlFactory::getInstance()->buildFloater(this, "floater_voice_license.xml");
 }
-
-// helper class that trys to download a URL from a web site and calls a method 
-// on parent class indicating if the web server is working or not
-class LLIamHereVoice : public LLHTTPClient::ResponderWithResult
-{
-	private:
-		LLIamHereVoice( FloaterVoiceLicense* parent ) :
-		   mParent( parent )
-		{}
-
-		FloaterVoiceLicense* mParent;
-
-	public:
-		static boost::intrusive_ptr< LLIamHereVoice > build( FloaterVoiceLicense* parent )
-		{
-			return boost::intrusive_ptr< LLIamHereVoice >( new LLIamHereVoice( parent ) );
-		};
-		
-		virtual void  setParent( FloaterVoiceLicense* parentIn )
-		{
-			mParent = parentIn;
-		};
-		
-		/*virtual*/ void httpSuccess(void)
-		{
-			if ( mParent )
-				mParent->setSiteIsAlive( true );
-		};
-
-		/*virtual*/ void httpFailure(void)
-		{
-			if ( mParent )
-			{
-				// *HACK: For purposes of this alive check, 302 Found
-				// (aka Moved Temporarily) is considered alive.  The web site
-				// redirects this link to a "cache busting" temporary URL. JC
-				bool alive = (mStatus == HTTP_FOUND);
-				mParent->setSiteIsAlive( alive );
-			}
-		};
-
-		/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return iamHereVoice_timeout; }
-		/*virtual*/ bool pass_redirect_status(void) const { return true; }
-		/*virtual*/ char const* getName(void) const { return "LLIamHereVoice"; }
-};
-
-// this is global and not a class member to keep crud out of the header file
-namespace {
-	boost::intrusive_ptr< LLIamHereVoice > gResponsePtr = 0;
-};
 
 BOOL FloaterVoiceLicense::postBuild()
 {	
@@ -132,12 +78,15 @@ BOOL FloaterVoiceLicense::postBuild()
 		// start to observe it so we see navigate complete events
 		web_browser->addObserver( this );
 		std::string url = getString( "real_url" );
-		if(url.substr(0,4) == "http") {
-			gResponsePtr = LLIamHereVoice::build( this );
-			LLHTTPClient::get( url, gResponsePtr );
-		} else {
-			setSiteIsAlive(false);
+		if (url.substr(0, 4) == "http")
+		{
+			LLHandle<LLFloater> handle = getHandle();
+
+			LLCoros::instance().launch("LLFloaterTOS::testSiteIsAliveCoro",
+				boost::bind(&FloaterVoiceLicense::testSiteIsAliveCoro, handle, url));
 		}
+		else
+			setSiteIsAlive(false);
 	}
 
 	return TRUE;
@@ -168,12 +117,6 @@ void FloaterVoiceLicense::setSiteIsAlive( bool alive )
 
 FloaterVoiceLicense::~FloaterVoiceLicense()
 {
-
-	// tell the responder we're not here anymore
-	if ( gResponsePtr )
-	{
-		gResponsePtr->setParent( 0 );
-	}
 }
 
 // virtual
@@ -240,5 +183,40 @@ void FloaterVoiceLicense::handleMediaEvent(LLPluginClassMedia* /*self*/, EMediaE
 			LLCheckBoxCtrl * license_agreement = getChild<LLCheckBoxCtrl>("agree_chk");
 			license_agreement->setEnabled( true );
 		}
+	}
+}
+
+void FloaterVoiceLicense::testSiteIsAliveCoro(LLHandle<LLFloater> handle, std::string url)
+{
+	LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+	LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+		httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("genericPostCoro", httpPolicy));
+	LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+	LLCore::HttpOptions::ptr_t httpOpts = LLCore::HttpOptions::ptr_t(new LLCore::HttpOptions);
+
+
+	httpOpts->setWantHeaders(true);
+
+
+	LL_INFOS("testSiteIsAliveCoro") << "Generic POST for " << url << LL_ENDL;
+
+	LLSD result = httpAdapter->getAndSuspend(httpRequest, url);
+
+	LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+	LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+	if (handle.isDead())
+	{
+		LL_WARNS("testSiteIsAliveCoro") << "Dialog canceled before response." << LL_ENDL;
+		return;
+	}
+
+	FloaterVoiceLicense *that = dynamic_cast<FloaterVoiceLicense *>(handle.get());
+
+	if (that)
+		that->setSiteIsAlive(static_cast<bool>(status));
+	else
+	{
+		LL_WARNS("testSiteIsAliveCoro") << "Handle was not a TOS floater." << LL_ENDL;
 	}
 }

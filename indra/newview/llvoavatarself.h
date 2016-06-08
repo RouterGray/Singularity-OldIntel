@@ -31,6 +31,8 @@
 #include "llviewertexture.h"
 #include "llvoavatar.h"
 #include <map>
+#include "lleventcoro.h"
+#include "llcoros.h"
 
 struct LocalTextureData;
 class LLInventoryCallback;
@@ -253,6 +255,7 @@ public:
 	LLViewerTexLayerSet* getLayerSet(LLAvatarAppearanceDefines::EBakedTextureIndex baked_index) const;
 	LLViewerTexLayerSet* getLayerSet(LLAvatarAppearanceDefines::ETextureIndex index) const;
 	
+
 	//--------------------------------------------------------------------
 	// Composites
 	//--------------------------------------------------------------------
@@ -374,7 +377,7 @@ public:
 public:	
 	static void		dumpTotalLocalTextureByteCount();
 	void			dumpLocalTextures() const;
-	void			dumpWearableInfo(LLAPRFile& outfile);
+	void			dumpWearableInfo(llofstream& outfile);
 
 	//--------------------------------------------------------------------
 	// Avatar Rez Metrics
@@ -421,6 +424,9 @@ private:
 	F32 					mDebugBakedTextureTimes[LLAvatarAppearanceDefines::BAKED_NUM_INDICES][2]; // time to start upload and finish upload of each baked texture
 	void					debugTimingLocalTexLoaded(BOOL success, LLViewerFetchedTexture *src_vi, LLImageRaw* src, LLImageRaw* aux_src, S32 discard_level, BOOL final, void* userdata);
 
+    void                    appearanceChangeMetricsCoro(std::string url);
+    bool                    mInitialMetric;
+    S32                     mMetricSequence;
 /**                    Diagnostics
  **                                                                            **
  *******************************************************************************/

@@ -45,6 +45,8 @@
 #include "llviewerinventory.h"
 #include "llinventorymodel.h"
 #include "v3dmath.h"
+#include "httprequest.h"
+#include "llcorehttputil.h"
 
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
@@ -237,6 +239,8 @@ public:
 	void			setHomePosRegion(const U64& region_handle, const LLVector3& pos_region);
 	BOOL			getHomePosGlobal(LLVector3d* pos_global);
 private:
+    void            setStartPositionSuccess(const LLSD &result);
+
 	BOOL 			mHaveHomePosition;
 	U64				mHomeRegionHandle;
 	LLVector3		mHomePosRegion;
@@ -261,7 +265,7 @@ private:
 public:
 	void			setRegion(LLViewerRegion *regionp);
 	LLViewerRegion	*getRegion() const;
-	const LLHost&	getRegionHost() const;
+	LLHost			getRegionHost() const;
 	BOOL			inPrelude();
 
 	// Capability
@@ -818,11 +822,12 @@ private:
 	unsigned int                    mMaturityPreferenceNumRetries;
 	U8                              mLastKnownRequestMaturity;
 	U8                              mLastKnownResponseMaturity;
+	LLCore::HttpRequest::policy_t	mHttpPolicy;
 
 	bool            isMaturityPreferenceSyncedWithServer() const;
 	void 			sendMaturityPreferenceToServer(U8 pPreferredMaturity);
+    void            processMaturityPreferenceFromServer(const LLSD &result, U8 perferredMaturity);
 
-	friend class LLMaturityPreferencesResponder;
 	void            handlePreferredMaturityResult(U8 pServerMaturity);
 	void            handlePreferredMaturityError();
 	void            reportPreferredMaturitySuccess();
@@ -971,6 +976,24 @@ public:
 	static void		processAgentCachedTextureResponse(LLMessageSystem *mesgsys, void **user_data);
 	
 /**                    Messaging
+ **                                                                            **
+ *******************************************************************************/
+
+/********************************************************************************
+ **                                                                            **
+ **                    UTILITY
+ **/
+public:
+    typedef LLCoreHttpUtil::HttpCoroutineAdapter::completionCallback_t httpCallback_t;
+
+	/// Utilities for allowing the the agent sub managers to post and get via
+	/// HTTP using the agent's policy settings and headers.  
+    bool requestPostCapability(const std::string &capName, LLSD &postData, httpCallback_t cbSuccess = NULL, httpCallback_t cbFailure = NULL);
+    bool requestGetCapability(const std::string &capName, httpCallback_t cbSuccess = NULL, httpCallback_t cbFailure = NULL);
+
+    LLCore::HttpRequest::policy_t getAgentPolicy() const { return mHttpPolicy; }
+
+/**                    Utility
  **                                                                            **
  *******************************************************************************/
 

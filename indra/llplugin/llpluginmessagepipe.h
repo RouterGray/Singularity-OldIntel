@@ -55,8 +55,6 @@ protected:
 	bool canSendMessage(void);
 	// call this to send a message over the pipe
 	bool writeMessageRaw(const std::string &message);
-	// call this to attempt to flush all messages for 10 seconds long.
-	bool flushMessages(void);
 	// call this to close the pipe
 	void killMessagePipe(void);
 	
@@ -75,10 +73,8 @@ public:
 	void clearOwner(void);
 	
 	bool pump(F64 timeout = 0.0f);
-	bool pumpOutput(bool flush = false);
+	bool pumpOutput();
 	bool pumpInput(F64 timeout = 0.0f);
-
-	bool flushMessages(void) { return pumpOutput(true); }
 		
 protected:	
 	void processInput(void);
@@ -90,6 +86,7 @@ protected:
 	std::string mInput;
 	LLMutex mOutputMutex;
 	std::string mOutput;
+	std::string::size_type mOutputStartIndex;
 
 	LLPluginMessagePipeOwner *mOwner;
 	LLSocket::ptr_t mSocket;

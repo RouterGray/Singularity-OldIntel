@@ -78,9 +78,6 @@
 			<string name="done_text">
 				Hecho
 			</string>
-			<string name="redirect_404_url">
-				http://secondlife.com/app/search/notfound.html
-			</string>
 			<string name="default_search_page">
 				http://secondlife.com/app/search/index.php?
 			</string>
@@ -248,9 +245,6 @@
 			</string>
 			<string name="done_text">
 				Hecho
-			</string>
-			<string name="redirect_404_url">
-				http://secondlife.com/app/search/notfound.html
 			</string>
 			<string name="default_search_page">
 				"http://secondlife.com/app/showcase/index.php?"
@@ -475,7 +469,6 @@
 			<text name="status_text"/>
 			<string name="loading_text">Cargando...</string>
 			<string name="done_text">Hecho</string>
-			<string name="redirect_404_url">[APP_SITE]/404</string>
 			<string name="default_search_page">https://marketplace.secondlife.com/?lang=es-ES</string>
 		</panel>
 	</tab_container>

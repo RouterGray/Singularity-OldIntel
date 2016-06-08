@@ -35,10 +35,14 @@
 #define LL_LLFLOATERREGIONINFO_H
 
 #include <vector>
+#include "llassettype.h"
 #include "llfloater.h"
+#include "llhost.h"
 #include "llpanel.h"
+#include "llextendedstatus.h"
 
 #include "llenvmanager.h" // for LLEnvironmentSettings
+#include "lleventcoro.h"
 
 class LLAvatarName;
 struct LLEstateAccessChangeInfo;
@@ -56,7 +60,7 @@ class LLRadioGroup;
 class LLSliderCtrl;
 class LLSpinCtrl;
 class LLTextBox;
-class AIFilePicker;
+class LLVFS;
 
 class LLPanelRegionGeneralInfo;
 class LLPanelRegionDebugInfo;
@@ -245,9 +249,7 @@ protected:
 	virtual BOOL sendUpdate();
 
 	static void onClickDownloadRaw(void*);
-	void onClickDownloadRaw_continued(AIFilePicker* filepicker);
 	static void onClickUploadRaw(void*);
-	void onClickUploadRaw_continued(AIFilePicker* filepicker);
 	static void onClickBakeTerrain(void*);
 	bool callbackBakeTerrain(const LLSD& notification, const LLSD& response);
 };
@@ -410,8 +412,6 @@ public:
 
 	// LLPanel
 	/*virtual*/ BOOL postBuild();
-
-	// LLPanelRegionInfo
 	/*virtual*/ void onOpen(const LLSD& key);
 
 	// LLView

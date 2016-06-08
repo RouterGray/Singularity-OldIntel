@@ -38,7 +38,6 @@
 #include "boost/unordered_set.hpp"
 
 #include "llfloater.h"
-#include "statemachine/aifilepicker.h"
 #include "lluuid.h"
 
 #include "llviewerinventory.h"
@@ -79,11 +78,9 @@ public:
 
 	// Import entry point
 	void importObject(bool upload = false);
-	void importObject_continued(AIFilePicker* filepicker);
 
 	// Export entry point
 	void exportObject();
-	void exportObject_continued(AIFilePicker* filepicker);
 
 	///////////////////////////////////////////////////////////////////////////
 	// Public methods used in callbacks, workers and responders

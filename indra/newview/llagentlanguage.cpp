@@ -32,6 +32,7 @@
 #include "llviewerregion.h"
 // library includes
 #include "llui.h"					// getLanguage()
+#include "httpcommon.h"
 
 LLAgentLanguage::LLAgentLanguage()
 {
@@ -47,21 +48,15 @@ LLAgentLanguage::LLAgentLanguage()
 bool LLAgentLanguage::update()
 {
 	LLSD body;
-	std::string url;
 
-	if (gAgent.getRegion())
-	{
-		url = gAgent.getRegion()->getCapability("UpdateAgentLanguage");
-	}
+	std::string language = LLUI::getLanguage();
 
-	if (!url.empty())
-	{
-		std::string language = LLUI::getLanguage();
+	body["language"] = language;
+	body["language_is_public"] = gSavedSettings.getBOOL("LanguageIsPublic");
 		
-		body["language"] = language;
-		body["language_is_public"] = gSavedSettings.getBOOL("LanguageIsPublic");
-		
-		LLHTTPClient::post(url, body, new LLHTTPClient::ResponderIgnore);
+    if (!gAgent.requestPostCapability("UpdateAgentLanguage", body))
+    {
+        LL_WARNS("Language") << "Language capability unavailable." << LL_ENDL;
 	}
     return true;
 }

@@ -43,8 +43,6 @@
 #include "llviewercontrol.h"
 #include "llviewerobjectlist.h"
 
-extern BOOL gNoRender;
-
 // These are loaded from saved settings.
 LLColor4 LLHUDManager::sParentColor;
 LLColor4 LLHUDManager::sChildColor;
@@ -61,11 +59,11 @@ LLHUDManager::~LLHUDManager()
 {
 }
 
-static LLFastTimer::DeclareTimer FTM_HUD_EFFECTS("Hud Effects");
+static LLTrace::BlockTimerStatHandle FTM_UPDATE_HUD_EFFECTS("Update Hud Effects");
 
 void LLHUDManager::updateEffects()
 {
-	LLFastTimer ftm(FTM_HUD_EFFECTS);
+	LL_RECORD_BLOCK_TIME(FTM_UPDATE_HUD_EFFECTS);
 	U32 i;
 	for (i = 0; i < mHUDEffects.size(); i++)
 	{
@@ -179,11 +177,6 @@ LLHUDEffect *LLHUDManager::createViewerEffect(const U8 type, BOOL send_to_sim, B
 //static
 void LLHUDManager::processViewerEffect(LLMessageSystem *mesgsys, void **user_data)
 {
-	if (gNoRender)
-	{
-		return;
-	}
-
 	LLHUDEffect *effectp = NULL;
 	LLUUID effect_id;
 	U8 effect_type = 0;

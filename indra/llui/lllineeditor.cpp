@@ -771,7 +771,7 @@ BOOL LLLineEditor::handleHover(S32 x, S32 y, MASK mask)
 		if (mScrollTimer.hasExpired())
 		{
 			S32 increment = ll_round(mScrollTimer.getElapsedTimeF32() / AUTO_SCROLL_TIME);
-			mScrollTimer.reset(AUTO_SCROLL_TIME);
+			mScrollTimer.resetWithExpiry(AUTO_SCROLL_TIME);
 			if( (x < mMinHPixels) && (mScrollHPos > 0 ) )
 			{
 				// Scroll to the left

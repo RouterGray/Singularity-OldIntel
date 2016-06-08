@@ -32,6 +32,7 @@
 #include "llimagegl.h"
 
 #include "llerror.h"
+#include "llfasttimer.h"
 #include "llimage.h"
 
 #include "llmath.h"
@@ -286,11 +287,11 @@ S32 LLImageGL::dataFormatComponents(S32 dataformat)
 
 //----------------------------------------------------------------------------
 
-static LLFastTimer::DeclareTimer FTM_IMAGE_UPDATE_STATS("Image Stats");
+static LLTrace::BlockTimerStatHandle FTM_IMAGE_UPDATE_STATS("Image Stats");
 // static
 void LLImageGL::updateStats(F32 current_time)
 {
-	LLFastTimer t(FTM_IMAGE_UPDATE_STATS);
+	LL_RECORD_BLOCK_TIME(FTM_IMAGE_UPDATE_STATS);
 	sLastFrameTime = current_time;
 	sBoundTextureMemory = sCurBoundTextureMemory;
 	sCurBoundTextureMemory = S32Bytes(0);
@@ -697,10 +698,10 @@ void LLImageGL::setImage(const LLImageRaw* imageraw)
 	setImage(rawdata, FALSE);
 }
 
-static LLFastTimer::DeclareTimer FTM_SET_IMAGE("setImage");
+static LLTrace::BlockTimerStatHandle FTM_SET_IMAGE("setImage");
 void LLImageGL::setImage(const U8* data_in, BOOL data_hasmips)
 {
-	LLFastTimer t(FTM_SET_IMAGE);
+	LL_RECORD_BLOCK_TIME(FTM_SET_IMAGE);
 	bool is_compressed = false;
 	if (mFormatPrimary >= GL_COMPRESSED_RGBA_S3TC_DXT1_EXT && mFormatPrimary <= GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
 	{
@@ -752,7 +753,7 @@ void LLImageGL::setImage(const U8* data_in, BOOL data_hasmips)
 				}
 				else
 				{
-// 					LLFastTimer t2(FTM_TEMP4);
+// 					LL_RECORD_BLOCK_TIME(FTM_TEMP4);
 
 					if(mFormatSwapBytes)
 					{
@@ -784,7 +785,7 @@ void LLImageGL::setImage(const U8* data_in, BOOL data_hasmips)
 			{
 				stop_glerror();
 				{
-// 					LLFastTimer t2(FTM_TEMP4);
+// 					LL_RECORD_BLOCK_TIME(FTM_TEMP4);
 
 					if(mFormatSwapBytes)
 					{
@@ -840,7 +841,6 @@ void LLImageGL::setImage(const U8* data_in, BOOL data_hasmips)
 #ifdef SHOW_ASSERT
 				S32 cur_mip_size = 0;
 #endif
-				
 				mMipLevels = nummips;
 
 				for (int m=0; m<nummips; m++)
@@ -869,7 +869,7 @@ void LLImageGL::setImage(const U8* data_in, BOOL data_hasmips)
 					}
 					llassert(w > 0 && h > 0 && cur_mip_data);
 					{
-// 						LLFastTimer t1(FTM_TEMP4);
+// 						LL_RECORD_BLOCK_TIME(FTM_TEMP4);
 						if(mFormatSwapBytes)
 						{
 							glPixelStorei(GL_UNPACK_SWAP_BYTES, 1);
@@ -1071,10 +1071,10 @@ BOOL LLImageGL::setSubImageFromFrameBuffer(S32 fb_x, S32 fb_y, S32 x_pos, S32 y_
 }
 
 // static
-static LLFastTimer::DeclareTimer FTM_GENERATE_TEXTURES("generate textures");
+static LLTrace::BlockTimerStatHandle FTM_GENERATE_TEXTURES("generate textures");
 void LLImageGL::generateTextures(S32 numTextures, U32 *textures)
 {
-	LLFastTimer t(FTM_GENERATE_TEXTURES);
+	LL_RECORD_BLOCK_TIME(FTM_GENERATE_TEXTURES);
 	glGenTextures(numTextures, textures);
 }
 
@@ -1297,10 +1297,10 @@ typedef struct {
 } DDS_HEADER_DXT10;
 
 // static
-static LLFastTimer::DeclareTimer FTM_SET_MANUAL_IMAGE("setManualImage");
+static LLTrace::BlockTimerStatHandle FTM_SET_MANUAL_IMAGE("setManualImage");
 void LLImageGL::setManualImage(U32 target, S32 miplevel, S32 intformat, S32 width, S32 height, U32 pixformat, U32 pixtype, const void *pixels, bool allow_compression)
 {
-	LLFastTimer t(FTM_SET_MANUAL_IMAGE);
+	LL_RECORD_BLOCK_TIME(FTM_SET_MANUAL_IMAGE);
 	std::vector<U32> scratch;
 	if (LLRender::sGLCoreProfile)
 	{
@@ -1496,10 +1496,10 @@ void LLImageGL::setManualImage(U32 target, S32 miplevel, S32 intformat, S32 widt
 
 //create an empty GL texture: just create a texture name
 //the texture is assiciate with some image by calling glTexImage outside LLImageGL
-static LLFastTimer::DeclareTimer FTM_CREATE_GL_TEXTURE1("createGLTexture()");
+static LLTrace::BlockTimerStatHandle FTM_CREATE_GL_TEXTURE1("createGLTexture()");
 BOOL LLImageGL::createGLTexture()
 {
-	LLFastTimer t(FTM_CREATE_GL_TEXTURE1);
+	LL_RECORD_BLOCK_TIME(FTM_CREATE_GL_TEXTURE1);
 	if (gGLManager.mIsDisabled)
 	{
 		LL_WARNS() << "Trying to create a texture while GL is disabled!" << LL_ENDL;
@@ -1527,10 +1527,10 @@ BOOL LLImageGL::createGLTexture()
 	return TRUE ;
 }
 
-static LLFastTimer::DeclareTimer FTM_CREATE_GL_TEXTURE2("createGLTexture(raw)");
+static LLTrace::BlockTimerStatHandle FTM_CREATE_GL_TEXTURE2("createGLTexture(raw)");
 BOOL LLImageGL::createGLTexture(S32 discard_level, const LLImageRaw* imageraw, S32 usename/*=0*/, BOOL to_create, S32 category)
 {
-	LLFastTimer t(FTM_CREATE_GL_TEXTURE2);
+	LL_RECORD_BLOCK_TIME(FTM_CREATE_GL_TEXTURE2);
 	if (gGLManager.mIsDisabled)
 	{
 		LL_WARNS() << "Trying to create a texture while GL is disabled!" << LL_ENDL;
@@ -1604,10 +1604,10 @@ BOOL LLImageGL::createGLTexture(S32 discard_level, const LLImageRaw* imageraw, S
 	return createGLTexture(discard_level, rawdata, FALSE, usename);
 }
 
-static LLFastTimer::DeclareTimer FTM_CREATE_GL_TEXTURE3("createGLTexture3(data)");
+static LLTrace::BlockTimerStatHandle FTM_CREATE_GL_TEXTURE3("createGLTexture3(data)");
 BOOL LLImageGL::createGLTexture(S32 discard_level, const U8* data_in, BOOL data_hasmips, S32 usename)
 {
-	LLFastTimer t(FTM_CREATE_GL_TEXTURE3);
+	LL_RECORD_BLOCK_TIME(FTM_CREATE_GL_TEXTURE3);
 	llassert(data_in);
 	stop_glerror();
 

@@ -30,16 +30,19 @@
 
 // libs
 #include "llbufferstream.h"
-#include "llhttpclient.h"
 #include "llimagepng.h"
 #include "llplugincookiestore.h"
 
+#include "llsdserialize.h"
+
 // newview
-#include "llpanelprofile.h"		// <edit>getProfileURL (this is the original location LL put it).</edit>
+#include "llpanelprofile.h" // for getProfileURL(). FIXME: move the method to LLAvatarActions
 #include "llviewermedia.h" // FIXME: don't use LLViewerMedia internals
 
-// third-party JSONCPP
-#include <jsoncpp/reader.h>	// JSONCPP
+#include "llcorehttputil.h"
+
+// third-party
+#include "jsoncpp/reader.h" // JSON
 
 /*
  * Workflow:
@@ -55,153 +58,6 @@
  */
 
 ///////////////////////////////////////////////////////////////////////////////
-// LLWebProfileResponders::ConfigResponder
-
-extern AIHTTPTimeoutPolicy webProfileResponders_timeout;
-
-class LLWebProfileResponders::ConfigResponder : public LLHTTPClient::ResponderWithCompleted
-{
-	LOG_CLASS(LLWebProfileResponders::ConfigResponder);
-
-public:
-	ConfigResponder(LLPointer<LLImageFormatted> imagep)
-	:	mImagep(imagep)
-	{
-	}
-
-	/*virtual*/ void completedRaw(LLChannelDescriptors const& channels, buffer_ptr_t const& buffer)
-	{
-		LLBufferStream istr(channels, buffer.get());
-		std::stringstream strstrm;
-		strstrm << istr.rdbuf();
-		const std::string body = strstrm.str();
-
-		if (mStatus != HTTP_OK)
-		{
-			LL_WARNS() << "Failed to get upload config (" << mStatus << ")" << LL_ENDL;
-			LLWebProfile::reportImageUploadStatus(false);
-			return;
-		}
-
-		Json::Value root;
-		Json::Reader reader;
-		if (!reader.parse(body, root))
-		{
-			LL_WARNS() << "Failed to parse upload config: " << reader.getFormattedErrorMessages() << LL_ENDL;
-			LLWebProfile::reportImageUploadStatus(false);
-			return;
-		}
-
-		// *TODO: 404 = not supported by the grid
-		// *TODO: increase timeout or handle HTTP_INTERNAL_ERROR_* time errors.
-
-		// Convert config to LLSD.
-		const Json::Value data = root["data"];
-		const std::string upload_url = root["url"].asString();
-		LLSD config;
-		config["acl"]						= data["acl"].asString();
-		config["AWSAccessKeyId"]			= data["AWSAccessKeyId"].asString();
-		config["Content-Type"]				= data["Content-Type"].asString();
-		config["key"]						= data["key"].asString();
-		config["policy"]					= data["policy"].asString();
-		config["success_action_redirect"]	= data["success_action_redirect"].asString();
-		config["signature"]					= data["signature"].asString();
-		config["add_loc"]					= data.get("add_loc", "0").asString();
-		config["caption"]					= data.get("caption", "").asString();
-
-		// Do the actual image upload using the configuration.
-		LL_DEBUGS("Snapshots") << "Got upload config, POSTing image to " << upload_url << ", config=[" << config << "]" << LL_ENDL;
-		LLWebProfile::post(mImagep, config, upload_url);
-	}
-
-protected:
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return webProfileResponders_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLWebProfileResponders::ConfigResponder"; }
-
-private:
-	LLPointer<LLImageFormatted> mImagep;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-// LLWebProfilePostImageRedirectResponder
-class LLWebProfileResponders::PostImageRedirectResponder : public LLHTTPClient::ResponderWithCompleted
-{
-	LOG_CLASS(LLWebProfileResponders::PostImageRedirectResponder);
-
-public:
-	/*virtual*/ void completedRaw(LLChannelDescriptors const& channels, buffer_ptr_t const& buffer)
-	{
-		if (mStatus != HTTP_OK)
-		{
-			LL_WARNS() << "Failed to upload image: " << mStatus << " " << mReason << LL_ENDL;
-			LLWebProfile::reportImageUploadStatus(false);
-			return;
-		}
-
-		LLBufferStream istr(channels, buffer.get());
-		std::stringstream strstrm;
-		strstrm << istr.rdbuf();
-		const std::string body = strstrm.str();
-		LL_INFOS() << "Image uploaded." << LL_ENDL;
-		LL_DEBUGS("Snapshots") << "Uploading image succeeded. Response: [" << body << "]" << LL_ENDL;
-		LLWebProfile::reportImageUploadStatus(true);
-	}
-
-protected:
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return webProfileResponders_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLWebProfileResponders::PostImageRedirectResponder"; }
-
-private:
-	LLPointer<LLImageFormatted> mImagep;
-};
-
-
-///////////////////////////////////////////////////////////////////////////////
-// LLWebProfileResponders::PostImageResponder
-class LLWebProfileResponders::PostImageResponder : public LLHTTPClient::ResponderWithCompleted
-{
-	LOG_CLASS(LLWebProfileResponders::PostImageResponder);
-
-public:
-	/*virtual*/ bool needsHeaders(void) const { return true; }
-
-	/*virtual*/ void completedHeaders(void)
-	{
-		// Server abuses 303 status; Curl can't handle it because it tries to resent
-		// the just uploaded data, which fails
-		// (CURLE_SEND_FAIL_REWIND: Send failed since rewinding of the data stream failed).
-		// Handle it manually.
-		if (mStatus == HTTP_SEE_OTHER)
-		{
-			AIHTTPHeaders headers;
-			headers.addHeader("Accept", "*/*");
-			headers.addHeader("Cookie", LLWebProfile::getAuthCookie());
-			headers.addHeader("User-Agent", LLViewerMedia::getCurrentUserAgent());
-			std::string redir_url;
-			mReceivedHeaders.getFirstValue("location", redir_url);
-			LL_DEBUGS("Snapshots") << "Got redirection URL: " << redir_url << LL_ENDL;
-			LLHTTPClient::get(redir_url, new LLWebProfileResponders::PostImageRedirectResponder, headers);
-		}
-		else
-		{
-			LL_WARNS() << "Unexpected POST status: " << mStatus << " " << mReason << LL_ENDL;
-			LL_DEBUGS("Snapshots") << "received_headers: [" << mReceivedHeaders << "]" << LL_ENDL;
-			LLWebProfile::reportImageUploadStatus(false);
-		}
-	}
-
-	// Override just to suppress warnings.
-	/*virtual*/ void completedRaw(LLChannelDescriptors const& channels, buffer_ptr_t const& buffer)
-	{
-	}
-
-protected:
-	/*virtual*/ bool pass_redirect_status(void) const { return true; }
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return webProfileResponders_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLWebProfileResponders::PostImageResponder"; }
-};
-
-///////////////////////////////////////////////////////////////////////////////
 // LLWebProfile
 
 std::string LLWebProfile::sAuthCookie;
@@ -210,17 +66,9 @@ LLWebProfile::status_callback_t LLWebProfile::mStatusCallback;
 // static
 void LLWebProfile::uploadImage(LLPointer<LLImageFormatted> image, const std::string& caption, bool add_location)
 {
-	// Get upload configuration data.
-	std::string config_url(getProfileURL(LLStringUtil::null) + "snapshots/s3_upload_config");
-	config_url += "?caption=" + LLURI::escape(caption);
-	config_url += "&add_loc=" + std::string(add_location ? "1" : "0");
+    LLCoros::instance().launch("LLWebProfile::uploadImageCoro",
+        boost::bind(&LLWebProfile::uploadImageCoro, image, caption, add_location));
 
-	LL_DEBUGS("Snapshots") << "Requesting " << config_url << LL_ENDL;
-	AIHTTPHeaders headers;
-	headers.addHeader("Accept", "*/*");
-	headers.addHeader("Cookie", LLWebProfile::getAuthCookie());
-	headers.addHeader("User-Agent", LLViewerMedia::getCurrentUserAgent());
-	LLHTTPClient::get(config_url, new LLWebProfileResponders::ConfigResponder(image), headers);
 }
 
 // static
@@ -230,74 +78,178 @@ void LLWebProfile::setAuthCookie(const std::string& cookie)
 	sAuthCookie = cookie;
 }
 
-// static
-void LLWebProfile::post(LLPointer<LLImageFormatted> image, const LLSD& config, const std::string& url)
+
+/*static*/
+LLCore::HttpHeaders::ptr_t LLWebProfile::buildDefaultHeaders()
 {
-	if (dynamic_cast<LLImagePNG*>(image.get()) == 0)
+    LLCore::HttpHeaders::ptr_t httpHeaders(new LLCore::HttpHeaders);
+    LLSD headers = LLViewerMedia::getHeaders();
+
+    for (LLSD::map_iterator it = headers.beginMap(); it != headers.endMap(); ++it)
 	{
-		LL_WARNS() << "Image to upload is not a PNG" << LL_ENDL;
-		llassert(dynamic_cast<LLImagePNG*>(image.get()) != 0);
+        httpHeaders->append((*it).first, (*it).second.asStringRef());
+	}
+
+    return httpHeaders;
+}
+
+
+/*static*/
+void LLWebProfile::uploadImageCoro(LLPointer<LLImageFormatted> image, std::string caption, bool addLocation)
+{
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("genericPostCoro", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+    LLCore::HttpOptions::ptr_t httpOpts(new LLCore::HttpOptions);
+    LLCore::HttpHeaders::ptr_t httpHeaders;
+
+    if (dynamic_cast<LLImagePNG*>(image.get()) == 0)
+	{
+        LL_WARNS() << "Image to upload is not a PNG" << LL_ENDL;
+        llassert(dynamic_cast<LLImagePNG*>(image.get()) != 0);
 		return;
 	}
 
-	const std::string boundary = "----------------------------0123abcdefab";
+    httpOpts->setWantHeaders(true);
+    httpOpts->setFollowRedirects(false);
 
-	AIHTTPHeaders headers;
-	headers.addHeader("Accept", "*/*");
-	headers.addHeader("Cookie", LLWebProfile::getAuthCookie());
-	headers.addHeader("User-Agent", LLViewerMedia::getCurrentUserAgent());
-	headers.addHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
+    // Get upload configuration data.
+    std::string configUrl(getProfileURL(std::string()) + "snapshots/s3_upload_config");
+    configUrl += "?caption=" + LLURI::escape(caption);
+    configUrl += "&add_loc=" + std::string(addLocation ? "1" : "0");
 
-	std::ostringstream body;
+    LL_DEBUGS("Snapshots") << "Requesting " << configUrl << LL_ENDL;
+
+    httpHeaders = buildDefaultHeaders();
+    httpHeaders->append(HTTP_OUT_HEADER_COOKIE, getAuthCookie());
+
+    LLSD result = httpAdapter->getJsonAndSuspend(httpRequest, configUrl, httpOpts, httpHeaders);
+
+    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    if (!status)
+	{
+        LL_WARNS("Snapshots") << "Failed to get image upload config" << LL_ENDL;
+		LLWebProfile::reportImageUploadStatus(false);
+		return;
+	}
+
+    // Ready to build our image post body.
+
+    const LLSD &data = result["data"];
+    const std::string &uploadUrl = result["url"].asStringRef();
+    const std::string boundary = "----------------------------0123abcdefab";
+
+    // a new set of headers.
+    httpHeaders = LLWebProfile::buildDefaultHeaders();
+    httpHeaders->append(HTTP_OUT_HEADER_COOKIE, getAuthCookie());
+    httpHeaders->remove(HTTP_OUT_HEADER_CONTENT_TYPE);
+    httpHeaders->append(HTTP_OUT_HEADER_CONTENT_TYPE, "multipart/form-data; boundary=" + boundary);
+
+    LLCore::BufferArray::ptr_t body = LLWebProfile::buildPostData(data, image, boundary);
+
+    result = httpAdapter->postAndSuspend(httpRequest, uploadUrl, body, httpOpts, httpHeaders);
+
+    body.reset();
+    httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    if (!status && (status != LLCore::HttpStatus(HTTP_SEE_OTHER)))
+	{
+        LL_WARNS("Snapshots") << "Failed to upload image data." << LL_ENDL;
+			LLWebProfile::reportImageUploadStatus(false);
+        return;
+	}
+
+    LLSD resultHeaders = httpResults[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_HEADERS];
+
+    httpHeaders = LLWebProfile::buildDefaultHeaders();
+    httpHeaders->append(HTTP_OUT_HEADER_COOKIE, getAuthCookie());
+
+    const std::string& redirUrl = resultHeaders[HTTP_IN_HEADER_LOCATION].asStringRef();
+
+    if (redirUrl.empty())
+    {
+        LL_WARNS("Snapshots") << "Received empty redirection URL in post image." << LL_ENDL;
+        LLWebProfile::reportImageUploadStatus(false);
+    }
+
+    LL_DEBUGS("Snapshots") << "Got redirection URL: " << redirUrl << LL_ENDL;
+
+    result = httpAdapter->getRawAndSuspend(httpRequest, redirUrl, httpOpts, httpHeaders);
+
+    httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    if (status != LLCore::HttpStatus(HTTP_OK))
+	{
+        LL_WARNS("Snapshots") << "Failed to upload image." << LL_ENDL;
+        LLWebProfile::reportImageUploadStatus(false);
+		return;
+	}
+
+    //LLSD raw = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_RAW];
+
+    LL_INFOS("Snapshots") << "Image uploaded." << LL_ENDL;
+    //LL_DEBUGS("Snapshots") << "Uploading image succeeded. Response: [" << raw.asString() << "]" << LL_ENDL;
+    LLWebProfile::reportImageUploadStatus(true);
+
+
+}
+
+/*static*/
+LLCore::BufferArray::ptr_t LLWebProfile::buildPostData(const LLSD &data, LLPointer<LLImageFormatted> &image, const std::string &boundary)
+{
+    LLCore::BufferArray::ptr_t body(new LLCore::BufferArray);
+    LLCore::BufferArrayStream bas(body.get());
 
 	// *NOTE: The order seems to matter.
-	body	<< "--" << boundary << "\r\n"
-			<< "Content-Disposition: form-data; name=\"key\"\r\n\r\n"
-			<< config["key"].asString() << "\r\n";
+    bas << "--" << boundary << "\r\n"
+		<< "Content-Disposition: form-data; name=\"key\"\r\n\r\n"
+        << data["key"].asString() << "\r\n";
 
-	body	<< "--" << boundary << "\r\n"
-			<< "Content-Disposition: form-data; name=\"AWSAccessKeyId\"\r\n\r\n"
-			<< config["AWSAccessKeyId"].asString() << "\r\n";
+    bas << "--" << boundary << "\r\n"
+		<< "Content-Disposition: form-data; name=\"AWSAccessKeyId\"\r\n\r\n"
+        << data["AWSAccessKeyId"].asString() << "\r\n";
 
-	body	<< "--" << boundary << "\r\n"
-			<< "Content-Disposition: form-data; name=\"acl\"\r\n\r\n"
-			<< config["acl"].asString() << "\r\n";
+    bas << "--" << boundary << "\r\n"
+		<< "Content-Disposition: form-data; name=\"acl\"\r\n\r\n"
+        << data["acl"].asString() << "\r\n";
 
-	body	<< "--" << boundary << "\r\n"
-			<< "Content-Disposition: form-data; name=\"Content-Type\"\r\n\r\n"
-			<< config["Content-Type"].asString() << "\r\n";
+    bas << "--" << boundary << "\r\n"
+		<< "Content-Disposition: form-data; name=\"Content-Type\"\r\n\r\n"
+        << data["Content-Type"].asString() << "\r\n";
 
-	body	<< "--" << boundary << "\r\n"
-			<< "Content-Disposition: form-data; name=\"policy\"\r\n\r\n"
-			<< config["policy"].asString() << "\r\n";
+    bas << "--" << boundary << "\r\n"
+		<< "Content-Disposition: form-data; name=\"policy\"\r\n\r\n"
+        << data["policy"].asString() << "\r\n";
 
-	body	<< "--" << boundary << "\r\n"
-			<< "Content-Disposition: form-data; name=\"signature\"\r\n\r\n"
-			<< config["signature"].asString() << "\r\n";
+    bas << "--" << boundary << "\r\n"
+		<< "Content-Disposition: form-data; name=\"signature\"\r\n\r\n"
+        << data["signature"].asString() << "\r\n";
 
-	body	<< "--" << boundary << "\r\n"
-			<< "Content-Disposition: form-data; name=\"success_action_redirect\"\r\n\r\n"
-			<< config["success_action_redirect"].asString() << "\r\n";
+    bas << "--" << boundary << "\r\n"
+		<< "Content-Disposition: form-data; name=\"success_action_redirect\"\r\n\r\n"
+        << data["success_action_redirect"].asString() << "\r\n";
 
-	body	<< "--" << boundary << "\r\n"
-			<< "Content-Disposition: form-data; name=\"file\"; filename=\"snapshot.png\"\r\n"
-			<< "Content-Type: image/png\r\n\r\n";
-	size_t const body_size = body.str().size();
+    bas << "--" << boundary << "\r\n"
+		<< "Content-Disposition: form-data; name=\"file\"; filename=\"snapshot.png\"\r\n"
+		<< "Content-Type: image/png\r\n\r\n";
 
-	std::ostringstream footer;
-	footer << "\r\n--" << boundary << "--\r\n";
-	size_t const footer_size = footer.str().size();
-
-	size_t size = body_size + image->getDataSize() + footer_size;
-	// postRaw() takes ownership of the buffer and releases it later.
-	U8* data = new U8 [size];
-	memcpy(data, body.str().data(), body_size);
 	// Insert the image data.
-	memcpy(data + body_size, image->getData(), image->getDataSize());
-	memcpy(data + body_size + image->getDataSize(), footer.str().data(), footer_size);
+    //char *datap = (char *)(image->getData());
+    //bas.write(datap, image->getDataSize());
+    U8* image_data = image->getData();
+    for (S32 i = 0; i < image->getDataSize(); ++i)
+    {
+        bas << image_data[i];
+    }
 
-	// Send request, successful upload will trigger posting metadata.
-	LLHTTPClient::postRaw(url, data, size, new LLWebProfileResponders::PostImageResponder(), headers/*,*/ DEBUG_CURLIO_PARAM(debug_off), no_keep_alive);
+    bas << "\r\n--" << boundary << "--\r\n";
+
+    return body;
 }
 
 // static

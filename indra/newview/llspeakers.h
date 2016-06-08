@@ -29,7 +29,9 @@
 
 #include "llevent.h"
 #include "lleventtimer.h"
-#include "llhandle.h"
+#include "llvoicechannel.h"
+#include "lleventcoro.h"
+#include "llcoros.h"
 
 class LLAvatarName;
 class LLSpeakerMgr;
@@ -260,7 +262,7 @@ public:
 
 protected:
 	virtual void updateSpeakerList();
-	void setSpeakerNotInChannel(LLSpeaker* speackerp);
+	void setSpeakerNotInChannel(LLPointer<LLSpeaker> speackerp);
 	bool removeSpeaker(const LLUUID& speaker_id);
 
 	typedef std::map<LLUUID, LLPointer<LLSpeaker> > speaker_map_t;
@@ -334,6 +336,8 @@ protected:
 	 * Process all participants to mute/unmute them according to passed voice session state.
 	 */
 	void forceVoiceModeratedMode(bool should_be_muted);
+
+    void moderationActionCoro(std::string url, LLSD action);
 
 };
 

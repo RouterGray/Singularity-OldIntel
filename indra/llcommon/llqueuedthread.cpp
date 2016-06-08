@@ -28,6 +28,7 @@
 
 #include "llstl.h"
 #include "lltimer.h"	// ms_sleep()
+#include "lltracethreadrecorder.h"
 
 //============================================================================
 
@@ -411,6 +412,7 @@ S32 LLQueuedThread::processNextRequest()
 	QueuedRequest *req;
 	// Get next request from pool
 	lockData();
+	
 	while(1)
 	{
 		req = NULL;
@@ -490,7 +492,7 @@ S32 LLQueuedThread::processNextRequest()
 			req->setFlags(FLAG_LOCKED);
 			unlockData();
 			req->finishRequest(true);
-			if ((req->getFlags() & FLAG_AUTO_COMPLETE))
+			if (req->getFlags() & FLAG_AUTO_COMPLETE)
 			{
 				lockData();
 				req->resetFlags(FLAG_AUTO_COMPLETE);
@@ -516,6 +518,8 @@ S32 LLQueuedThread::processNextRequest()
 				ms_sleep(1); // sleep the thread a little
 			}
 		}
+		
+		LLTrace::get_thread_recorder()->pushToParent();
 	}
 
 	S32 pending = getPending();
@@ -548,6 +552,7 @@ void LLQueuedThread::run()
 		
 		if (isQuitting())
 		{
+			LLTrace::get_thread_recorder()->pushToParent();
 			endThread();
 			break;
 		}

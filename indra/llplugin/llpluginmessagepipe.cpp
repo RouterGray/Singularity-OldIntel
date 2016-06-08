@@ -82,16 +82,6 @@ bool LLPluginMessagePipeOwner::writeMessageRaw(const std::string &message)
 	return result;
 }
 
-bool LLPluginMessagePipeOwner::flushMessages(void)
-{
-	bool result = true;
-	if (mMessagePipe != NULL)
-	{
-		result = mMessagePipe->flushMessages();
-	}
-	return result;
-}
-
 void LLPluginMessagePipeOwner::killMessagePipe(void)
 {
 	if(mMessagePipe != NULL)
@@ -102,10 +92,12 @@ void LLPluginMessagePipeOwner::killMessagePipe(void)
 }
 
 LLPluginMessagePipe::LLPluginMessagePipe(LLPluginMessagePipeOwner *owner, LLSocket::ptr_t socket):
+	mInputMutex(),
+	mOutputMutex(),
+	mOutputStartIndex(0),
 	mOwner(owner),
 	mSocket(socket)
 {
-	
 	mOwner->setMessagePipe(this);
 }
 
@@ -120,11 +112,18 @@ LLPluginMessagePipe::~LLPluginMessagePipe()
 bool LLPluginMessagePipe::addMessage(const std::string &message)
 {
 	// queue the message for later output
-	//LLMutexLock lock(&mOutputMutex);
-	mOutputMutex.lock();
+	LLMutexLock lock(&mOutputMutex);
+
+	// If we're starting to use up too much memory, clear
+	if (mOutputStartIndex > 1024 * 1024)
+	{
+		mOutput = mOutput.substr(mOutputStartIndex);
+		mOutputStartIndex = 0;
+	}
+		
 	mOutput += message;
 	mOutput += MESSAGE_DELIMITER;	// message separator
-	mOutputMutex.unlock();
+	
 	return true;
 }
 
@@ -167,64 +166,50 @@ bool LLPluginMessagePipe::pump(F64 timeout)
 	return result;
 }
 
-static apr_interval_time_t const flush_max_block_time = 10000000;	// Even when flushing, give up after 10 seconds.
-static apr_interval_time_t const flush_min_timeout = 1000;			// When flushing, initially timeout after 1 ms.
-static apr_interval_time_t const flush_max_timeout = 50000;			// Never wait longer than 50 ms.
-
-// DO NOT SET 'flush' TO TRUE WHEN CALLED ON THE VIEWER SIDE!
-// flush is only intended for plugin-side.
-bool LLPluginMessagePipe::pumpOutput(bool flush)
+bool LLPluginMessagePipe::pumpOutput()
 {
 	bool result = true;
 	
 	if(mSocket)
 	{
-		apr_interval_time_t flush_time_left_usec = flush_max_block_time;
-		apr_interval_time_t timeout_usec = flush ? flush_min_timeout : 0;
+		apr_status_t status;
+		apr_size_t in_size, out_size;
 		
 		LLMutexLock lock(&mOutputMutex);
-		while(result && !mOutput.empty())
+
+		const char * output_data = &(mOutput.data()[mOutputStartIndex]);
+		if(*output_data != '\0')
 		{
 			// write any outgoing messages
-			apr_size_t size = (apr_size_t)mOutput.size();
+			in_size = (apr_size_t) (mOutput.size() - mOutputStartIndex);
+			out_size = in_size;
 			
-			setSocketTimeout(timeout_usec);
+			setSocketTimeout(0);
 			
 //			LL_INFOS("Plugin") << "before apr_socket_send, size = " << size << LL_ENDL;
 
-			apr_status_t status = apr_socket_send(
-					mSocket->getSocket(),
-					(const char*)mOutput.data(),
-					&size);
+			status = apr_socket_send(mSocket->getSocket(),
+									 output_data,
+									 &out_size);
 
 //			LL_INFOS("Plugin") << "after apr_socket_send, size = " << size << LL_ENDL;
 			
-			if(status == APR_SUCCESS)
+			if((status == APR_SUCCESS) || APR_STATUS_IS_EAGAIN(status))
 			{
-				// success
-				mOutput = mOutput.substr(size);
-				break;
-			}
-			else if(APR_STATUS_IS_EAGAIN(status) || APR_STATUS_IS_TIMEUP(status))
-			{
-				// Socket buffer is full... 
-				// remove the written part from the buffer and try again later.
-				mOutput = mOutput.substr(size);
-				if (!flush)
-					break;
-				flush_time_left_usec -= timeout_usec;
-				if (flush_time_left_usec <= 0)
+				// Success or Socket buffer is full... 
+				
+				// If we've pumped the entire string, clear it
+				if (out_size == in_size)
 				{
-					result = false;
-				}
-				else if (size == 0)
-				{
-					// Nothing at all was written. Increment wait time.
-					timeout_usec = llmin(flush_max_timeout, 2 * timeout_usec);
+					mOutputStartIndex = 0;
+					mOutput.clear();
 				}
 				else
 				{
-					timeout_usec = llmax(flush_min_timeout, timeout_usec / 2);
+					llassert(in_size > out_size);
+					
+					// Remove the written part from the buffer and try again later.
+					mOutputStartIndex += out_size;
 				}
 			}
 			else if(APR_STATUS_IS_EOF(status))

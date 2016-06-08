@@ -3,8 +3,6 @@
 #define LL_LLFLOATERBLACKLIST_H
 #include "llfloater.h"
 
-class AIFilePicker;
-
 class LLFloaterBlacklist : LLFloater
 {
 public:
@@ -48,9 +46,7 @@ private:
 	static void onClickAdd(void* user_data);
 	static void onClickClear(void* user_data);
 	static void onClickSave(void* user_data);
-	static void onClickSave_continued(AIFilePicker* filepicker);
 	static void onClickLoad(void* user_data);
-	static void onClickLoad_continued(AIFilePicker* filepicker);
 	static void onClickRerender(void* user_data);
 	static void onClickCopyUUID(void* user_data);
 	static void onClickRemove(void* user_data);

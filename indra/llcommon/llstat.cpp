@@ -29,7 +29,6 @@
 #include "lllivefile.h"
 #include "llerrorcontrol.h"
 #include "llframetimer.h"
-#include "timing.h"
 #include "llsd.h"
 #include "llsdserialize.h"
 #include "llstl.h"

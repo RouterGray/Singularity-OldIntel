@@ -18,6 +18,7 @@ include(LLAppearance)
 include(LLAudio)
 include(LLCharacter)
 include(LLCommon)
+include(LLCoreHttp)
 include(LLImage)
 include(LLImageJ2COJ)
 include(LLInventory)
@@ -35,7 +36,6 @@ include(Linking)
 include(NDOF)
 include(NVAPI)
 include(OPENAL)
-include(StateMachine)
 include(TemplateCheck)
 include(UI)
 include(ViewerMiscLibs)
@@ -47,7 +47,6 @@ if (MSVC)
 endif (MSVC)
 
 include_directories(
-    ${STATEMACHINE_INCLUDE_DIRS}
     ${DBUSGLIB_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIRS}
     ${JSONCPP_INCLUDE_DIR}
@@ -55,6 +54,7 @@ include_directories(
     ${LLAUDIO_INCLUDE_DIRS}
     ${LLCHARACTER_INCLUDE_DIRS}
     ${LLCOMMON_INCLUDE_DIRS}
+    ${LLCOREHTTP_INCLUDE_DIRS}
     ${LLPHYSICSEXTENSIONS_INCLUDE_DIRS}
     ${LLIMAGE_INCLUDE_DIRS}
     ${LLINVENTORY_INCLUDE_DIRS}
@@ -74,7 +74,8 @@ include_directories(
 
 set(viewer_SOURCE_FILES
     NACLantispam.cpp
-    aihttpview.cpp
+    aifile.cpp
+    #aixml.cpp
     #aixmllindengenepool.cpp
     alfloaterregiontracker.cpp
     aoremotectrl.cpp
@@ -114,10 +115,9 @@ set(viewer_SOURCE_FILES
     llagentwearables.cpp
     llagentwearablesfetch.cpp
     llanimstatelabels.cpp
+    llappcorehttp.cpp
     llappearancemgr.cpp
     llappviewer.cpp
-    llassetuploadqueue.cpp
-    llassetuploadresponders.cpp
     llattachmentsmgr.cpp
     llaudiosourcevo.cpp
     llautoreplace.cpp
@@ -127,11 +127,8 @@ set(viewer_SOURCE_FILES
     llbox.cpp
     llcallbacklist.cpp
     llcallingcard.cpp
-    llcapabilitylistener.cpp
-    llcaphttpsender.cpp
     llchatbar.cpp
     llclassifiedinfo.cpp
-    llclassifiedstatsresponder.cpp
     llcloud.cpp
     llcolorscheme.cpp
     llcolorswatch.cpp
@@ -147,6 +144,7 @@ set(viewer_SOURCE_FILES
     lldebugmessagebox.cpp
     lldebugview.cpp
     lldelayedgestureerror.cpp
+    lldirpicker.cpp
     lldrawable.cpp
     lldrawpool.cpp
     lldrawpoolalpha.cpp
@@ -168,10 +166,12 @@ set(viewer_SOURCE_FILES
     lleventinfo.cpp
     lleventnotifier.cpp
     lleventpoll.cpp
+    llexperiencelog.cpp
     llexternaleditor.cpp
     llface.cpp
     llfasttimerview.cpp
     llfeaturemanager.cpp
+    llfilepicker.cpp
     llfirstuse.cpp
     llflexibleobject.cpp
     llfloaterabout.cpp
@@ -289,7 +289,6 @@ set(viewer_SOURCE_FILES
     llgroupactions.cpp
     llgroupmgr.cpp
     llgroupnotify.cpp
-    llhomelocationresponder.cpp
     llhoverview.cpp
     llhttpretrypolicy.cpp
     llhudeffect.cpp
@@ -313,20 +312,19 @@ set(viewer_SOURCE_FILES
     llinventoryfunctions.cpp
     llinventoryicon.cpp
     llinventorymodel.cpp
-    llinventorymodelbackgroundfetch.cpp
     llinventoryobserver.cpp
     llinventorypanel.cpp
     lljoystickbutton.cpp
     lllandmarklist.cpp
     lllogchat.cpp
     llloginhandler.cpp
+    llmachineid.cpp
     llmainlooprepeater.cpp
     llmakeoutfitdialog.cpp
     llmanip.cpp
     llmaniprotate.cpp
     llmanipscale.cpp
     llmaniptranslate.cpp
-    llmapresponders.cpp
     llmarketplacefunctions.cpp
     llmarketplacenotifications.cpp
     llmaterialmgr.cpp
@@ -438,6 +436,8 @@ set(viewer_SOURCE_FILES
     llsavedsettingsglue.cpp
     llscrollingpanelparam.cpp
     llscrollingpanelparambase.cpp
+    llsecapi.cpp
+    llsechandler_basic.cpp
     llselectmgr.cpp
     llshareavatarhandler.cpp
     llsky.cpp
@@ -456,7 +456,6 @@ set(viewer_SOURCE_FILES
     lltextureinfo.cpp
     lltextureinfodetails.cpp
     lltexturestats.cpp
-    lltexturestatsuploader.cpp
     lltextureview.cpp
     lltool.cpp
     lltoolbar.cpp
@@ -480,7 +479,6 @@ set(viewer_SOURCE_FILES
     lltoolview.cpp
     lltracker.cpp
     lluploaddialog.cpp
-    lluploadfloaterobservers.cpp
     llurl.cpp
     llurldispatcher.cpp
     llurlhistory.cpp
@@ -493,6 +491,7 @@ set(viewer_SOURCE_FILES
     llviewerassetstats.cpp
     llviewerassetstorage.cpp
     llviewerassettype.cpp
+    llviewerassetupload.cpp
     llvieweraudio.cpp
     llviewercamera.cpp
     llviewercontrol.cpp
@@ -525,7 +524,6 @@ set(viewer_SOURCE_FILES
     llviewerparceloverlay.cpp
     llviewerpartsim.cpp
     llviewerpartsource.cpp
-    llviewerpluginmanager.cpp
     llviewerregion.cpp
     llviewershadermgr.cpp
     llviewerstats.cpp
@@ -577,7 +575,8 @@ set(viewer_SOURCE_FILES
     llworldmapmessage.cpp
     llworldmapview.cpp
     llworldmipmap.cpp
-    llxmlrpcresponder.cpp
+    llxmlrpclistener.cpp
+    llxmlrpctransaction.cpp
     m7wlinterface.cpp
     pipeline.cpp
     qtoolalign.cpp
@@ -605,7 +604,8 @@ set(viewer_HEADER_FILES
     ViewerInstall.cmake
 
     NACLantispam.h
-    aihttpview.h
+    aifile.h
+    #aixml.h
     #aixmllindengenepool.h
     alfloaterregiontracker.h
     aoremotectrl.h
@@ -645,11 +645,10 @@ set(viewer_HEADER_FILES
     llagentwearables.h
     llagentwearablesfetch.h
     llanimstatelabels.h
+    llappcorehttp.h
     llappearance.h
     llappearancemgr.h
     llappviewer.h
-    llassetuploadqueue.h
-    llassetuploadresponders.h
     llattachmentsmgr.h
     llaudiosourcevo.h
     llautoreplace.h
@@ -658,11 +657,8 @@ set(viewer_HEADER_FILES
     llavatarrenderinfoaccountant.h
     llbox.h
     llcallingcard.h
-    llcapabilitylistener.h
-    llcaphttpsender.h
     llchatbar.h
     llclassifiedinfo.h
-    llclassifiedstatsresponder.h
     llcloud.h
     llcolorscheme.h
     llcolorswatch.h
@@ -678,6 +674,7 @@ set(viewer_HEADER_FILES
     lldebugmessagebox.h
     lldebugview.h
     lldelayedgestureerror.h
+    lldirpicker.h
     lldrawable.h
     lldrawpool.h
     lldrawpoolalpha.h
@@ -699,10 +696,12 @@ set(viewer_HEADER_FILES
     lleventinfo.h
     lleventnotifier.h
     lleventpoll.h
+    llexperiencelog.h
     llexternaleditor.h
     llface.h
     llfasttimerview.h
     llfeaturemanager.h
+    llfilepicker.h
     llfirstuse.h
     llflexibleobject.h
     llfloaterabout.h
@@ -821,7 +820,6 @@ set(viewer_HEADER_FILES
     llgroupmgr.h
     llgroupnotify.h
     llhttpretrypolicy.h
-    llhomelocationresponder.h
     llhoverview.h
     llhudeffect.h
     llhudeffectbeam.h
@@ -843,7 +841,6 @@ set(viewer_HEADER_FILES
     llinventoryfunctions.h
     llinventoryicon.h
     llinventorymodel.h
-    llinventorymodelbackgroundfetch.h
     llinventoryobserver.h
     llinventorypanel.h
     lljoystickbutton.h
@@ -851,13 +848,13 @@ set(viewer_HEADER_FILES
     lllightconstants.h
     lllogchat.h
     llloginhandler.h
+    llmachineid.h
     llmainlooprepeater.h
     llmakeoutfitdialog.h
     llmanip.h
     llmaniprotate.h
     llmanipscale.h
     llmaniptranslate.h
-    llmapresponders.h
     llmarketplacefunctions.h
     llmarketplacenotifications.h
     llmaterialmgr.h
@@ -971,6 +968,8 @@ set(viewer_HEADER_FILES
     llsavedsettingsglue.h
     llscrollingpanelparam.h
     llscrollingpanelparambase.h
+    llsecapi.h
+    llsechandler_basic.h
     llselectmgr.h
     llsimplestat.h
     llsky.h
@@ -990,7 +989,6 @@ set(viewer_HEADER_FILES
     lltextureinfo.h
     lltextureinfodetails.h
     lltexturestats.h
-    lltexturestatsuploader.h
     lltextureview.h
     lltool.h
     lltoolbar.h
@@ -1029,6 +1027,7 @@ set(viewer_HEADER_FILES
     llviewerassetstats.h
     llviewerassetstorage.h
     llviewerassettype.h
+    llviewerassetupload.h
     llvieweraudio.h
     llviewercamera.h
     llviewercontrol.h
@@ -1060,7 +1059,6 @@ set(viewer_HEADER_FILES
     llviewerparceloverlay.h
     llviewerpartsim.h
     llviewerpartsource.h
-    llviewerpluginmanager.h
     llviewerprecompiledheaders.h
     llviewerregion.h
     llviewershadermgr.h
@@ -1114,7 +1112,8 @@ set(viewer_HEADER_FILES
     llworldmapmessage.h
     llworldmapview.h
     llworldmipmap.h
-    llxmlrpcresponder.h
+    llxmlrpclistener.h
+    llxmlrpctransaction.h
     m7wlinterface.h
     macmain.h
     pipeline.h
@@ -1157,16 +1156,25 @@ set_source_files_properties(
 
 if (DARWIN)
   LIST(APPEND viewer_SOURCE_FILES llappviewermacosx.cpp)
+  LIST(APPEND viewer_SOURCE_FILES llappviewermacosx-objc.mm)
+  LIST(APPEND viewer_SOURCE_FILES llappviewermacosx-objc.h)
+  LIST(APPEND viewer_SOURCE_FILES llfilepicker_mac.mm)
+  LIST(APPEND viewer_HEADER_FILES llfilepicker_mac.h)
+
+  # This should be compiled with the viewer.
+  LIST(APPEND viewer_SOURCE_FILES llappdelegate-objc.mm)
 
   find_library(AGL_LIBRARY AGL)
   find_library(APPKIT_LIBRARY AppKit)
   find_library(COCOA_LIBRARY Cocoa)
   find_library(IOKIT_LIBRARY IOKit)
+  find_library(COREAUDIO_LIBRARY CoreAudio)
 
   set(viewer_LIBRARIES
     ${COCOA_LIBRARY}
     ${AGL_LIBRARY}
     ${IOKIT_LIBRARY}
+    ${COREAUDIO_LIBRARY}
     )
 
   # Add resource files to the project.
@@ -1631,7 +1639,6 @@ target_link_libraries(${VIEWER_BINARY_NAME}
     ${LLINVENTORY_LIBRARIES}
     ${LLMESSAGE_LIBRARIES}
     ${LLPLUGIN_LIBRARIES}
-    ${STATEMACHINE_LIBRARIES}
     ${LLPRIMITIVE_LIBRARIES}
     ${LLRENDER_LIBRARIES}
     ${FREETYPE_LIBRARIES}
@@ -1640,6 +1647,7 @@ target_link_libraries(${VIEWER_BINARY_NAME}
     ${LLWINDOW_LIBRARIES}
     ${LLXML_LIBRARIES}
     ${LLMATH_LIBRARIES}
+    ${LLCOREHTTP_LIBRARIES}
     ${LLCOMMON_LIBRARIES}
     ${NDOF_LIBRARY}
     ${NVAPI_LIBRARY}

@@ -107,7 +107,7 @@ S32 normal_channel = -1;
 S32 specular_channel = -1;
 S32 cube_channel = -1;
 
-static LLFastTimer::DeclareTimer FTM_SHADOW_AVATAR("Avatar Shadow");
+static LLTrace::BlockTimerStatHandle FTM_SHADOW_AVATAR("Avatar Shadow");
 
 LLDrawPoolAvatar::LLDrawPoolAvatar() : 
 	LLFacePool(POOL_AVATAR)	
@@ -163,9 +163,12 @@ const LLMatrix4a& LLDrawPoolAvatar::getModelView()
 //-----------------------------------------------------------------------------
 // render()
 //-----------------------------------------------------------------------------
+
+
+
 void LLDrawPoolAvatar::beginDeferredPass(S32 pass)
 {
-	LLFastTimer t(FTM_RENDER_CHARACTERS);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_CHARACTERS);
 	
 	sSkipTransparent = TRUE;
 	is_deferred_render = true;
@@ -200,7 +203,7 @@ void LLDrawPoolAvatar::beginDeferredPass(S32 pass)
 
 void LLDrawPoolAvatar::endDeferredPass(S32 pass)
 {
-	LLFastTimer t(FTM_RENDER_CHARACTERS);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_CHARACTERS);
 
 	sSkipTransparent = FALSE;
 	is_deferred_render = false;
@@ -365,7 +368,7 @@ void LLDrawPoolAvatar::endPostDeferredAlpha()
 
 void LLDrawPoolAvatar::renderPostDeferred(S32 pass)
 {
-	const S32 actual_pass[] =
+	static const S32 actual_pass[] =
 	{ //map post deferred pass numbers to what render() expects
 		2, //skinned
 		4, // rigged fullbright
@@ -399,7 +402,7 @@ S32 LLDrawPoolAvatar::getNumShadowPasses()
 
 void LLDrawPoolAvatar::beginShadowPass(S32 pass)
 {
-	LLFastTimer t(FTM_SHADOW_AVATAR);
+	LL_RECORD_BLOCK_TIME(FTM_SHADOW_AVATAR);
 
 	if (pass == 0)
 	{
@@ -425,7 +428,7 @@ void LLDrawPoolAvatar::beginShadowPass(S32 pass)
 
 void LLDrawPoolAvatar::endShadowPass(S32 pass)
 {
-	LLFastTimer t(FTM_SHADOW_AVATAR);
+	LL_RECORD_BLOCK_TIME(FTM_SHADOW_AVATAR);
 	if (pass == 0)
 	{
 		if (sShaderLevel > 0)
@@ -444,7 +447,7 @@ void LLDrawPoolAvatar::endShadowPass(S32 pass)
 
 void LLDrawPoolAvatar::renderShadow(S32 pass)
 {
-	LLFastTimer t(FTM_SHADOW_AVATAR);
+	LL_RECORD_BLOCK_TIME(FTM_SHADOW_AVATAR);
 
 	if (mDrawFace.empty())
 	{
@@ -510,7 +513,7 @@ S32 LLDrawPoolAvatar::getNumDeferredPasses()
 
 void LLDrawPoolAvatar::render(S32 pass)
 {
-	LLFastTimer t(FTM_RENDER_CHARACTERS);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_CHARACTERS);
 	if (LLPipeline::sImpostorRender)
 	{
 		renderAvatars(NULL, pass+2);
@@ -522,7 +525,7 @@ void LLDrawPoolAvatar::render(S32 pass)
 
 void LLDrawPoolAvatar::beginRenderPass(S32 pass)
 {
-	LLFastTimer t(FTM_RENDER_CHARACTERS);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_CHARACTERS);
 	//reset vertex buffer mappings
 	LLVertexBuffer::unbind();
 
@@ -573,7 +576,7 @@ void LLDrawPoolAvatar::beginRenderPass(S32 pass)
 
 void LLDrawPoolAvatar::endRenderPass(S32 pass)
 {
-	LLFastTimer t(FTM_RENDER_CHARACTERS);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_CHARACTERS);
 
 	if (LLPipeline::sImpostorRender)
 	{
@@ -685,11 +688,9 @@ void LLDrawPoolAvatar::beginDeferredImpostor()
 	}
 
 	sVertexProgram = &gDeferredImpostorProgram;
-
 	specular_channel = sVertexProgram->enableTexture(LLViewerShaderMgr::SPECULAR_MAP);
 	normal_channel = sVertexProgram->enableTexture(LLViewerShaderMgr::DEFERRED_NORMAL);
 	sDiffuseChannel = sVertexProgram->enableTexture(LLViewerShaderMgr::DIFFUSE_MAP);
-				
 	sVertexProgram->bind();
 	sVertexProgram->setMinimumAlpha(0.01f);
 }
@@ -1073,11 +1074,12 @@ void LLDrawPoolAvatar::endDeferredSkinned()
 	gGL.getTexUnit(0)->activate();
 }
 
-static LLFastTimer::DeclareTimer FTM_RENDER_AVATARS("renderAvatars");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_AVATARS("renderAvatars");
+
 
 void LLDrawPoolAvatar::renderAvatars(LLVOAvatar* single_avatar, S32 pass)
 {
-	LLFastTimer t(FTM_RENDER_AVATARS);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_AVATARS);
 
 	if (pass == -1)
 	{
@@ -1252,9 +1254,14 @@ void LLDrawPoolAvatar::renderAvatars(LLVOAvatar* single_avatar, S32 pass)
 		}
 		return;
 	}
+
+
+
+
 	if (pass == 5)
 	{
 		renderRiggedShinySimple(avatarp);
+
 		return;
 	}
 
@@ -1687,11 +1694,11 @@ void LLDrawPoolAvatar::renderDeferredRiggedMaterial(LLVOAvatar* avatar, S32 pass
 	renderRigged(avatar, pass);
 }
 
-static LLFastTimer::DeclareTimer FTM_RIGGED_VBO("Rigged VBO");
+static LLTrace::BlockTimerStatHandle FTM_RIGGED_VBO("Rigged VBO");
 
 void LLDrawPoolAvatar::updateRiggedVertexBuffers(LLVOAvatar* avatar)
 {
-	LLFastTimer t(FTM_RIGGED_VBO);
+	LL_RECORD_BLOCK_TIME(FTM_RIGGED_VBO);
 
 	//update rigged vertex buffers
 	for (U32 type = 0; type < NUM_RIGGED_PASSES; ++type)

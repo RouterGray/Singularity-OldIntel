@@ -33,10 +33,8 @@
 #include "llhost.h"
 #include "llgltypes.h"
 #include "llrender.h"
-#if 0
 #include "llmetricperformancetester.h"
-#endif
-#include "llface.h"
+#include "httpcommon.h"
 
 #include <map>
 #include <list>
@@ -44,7 +42,7 @@
 extern const S32Megabytes gMinVideoRam;
 extern const S32Megabytes gMaxVideoRam;
 
-
+class LLFace;
 class LLImageGL ;
 class LLImageRaw;
 class LLViewerObject;
@@ -60,7 +58,6 @@ class LLVFile;
 class LLMessageSystem;
 class LLViewerMediaImpl ;
 class LLVOVolume ;
-class LLFace ; //But llface.h is already included...(?)
 
 class LLLoadedCallbackEntry
 {
@@ -106,7 +103,7 @@ public:
 		INVALID_TEXTURE_TYPE
 	};
 
-	typedef std::vector<LLFace*> ll_face_list_t;
+	typedef std::vector<class LLFace*> ll_face_list_t;
 	typedef std::vector<LLVOVolume*> ll_volume_list_t;
 
 
@@ -128,7 +125,7 @@ public:
 
 	virtual S8 getType() const;
 	virtual BOOL isMissingAsset()const ;
-	virtual void dump();	// debug info to llinfos
+	virtual void dump();	// debug info to LL_INFOS()
 	
 	/*virtual*/ bool bindDefaultImage(const S32 stage = 0) ;
 	/*virtual*/ void forceImmediateUpdate() ;
@@ -185,7 +182,6 @@ private:
 	friend class LLBumpImageList;
 	friend class LLUIImageList;
 
-	//note: do not make this function public.
 	virtual void switchToCachedImage();
 	
 	static bool isMemoryForTextureLow() ;
@@ -230,7 +226,6 @@ public:
 	static S32 sMaxSmallImageSize ;
 	static BOOL sFreezeImageScalingDown ;//do not scale down image res if set.
 	static F32  sCurrentTime ;
-	//static BOOL sUseTextureAtlas ;
 
 	enum EDebugTexels
 	{
@@ -272,7 +267,7 @@ class LLViewerFetchedTexture : public LLViewerTexture
 protected:
 	/*virtual*/ ~LLViewerFetchedTexture();
 public:
-	LLViewerFetchedTexture(const LLUUID& id, FTType f_type, const LLHost& host = LLHost::invalid, BOOL usemipmaps = TRUE);
+	LLViewerFetchedTexture(const LLUUID& id, FTType f_type, const LLHost& host = LLHost(), BOOL usemipmaps = TRUE);
 	LLViewerFetchedTexture(const LLImageRaw* raw, FTType f_type, BOOL usemipmaps);
 	LLViewerFetchedTexture(const std::string& url, FTType f_type, const LLUUID& id, BOOL usemipmaps = TRUE);
 
@@ -410,7 +405,11 @@ public:
 	void        setCanUseHTTP(bool can_use_http) {mCanUseHTTP = can_use_http;}
 
 	void        forceToDeleteRequest();
-	void		forceRefetch();
+	void		forceRefetch(); // <edit/>
+	void        loadFromFastCache();
+	void        setInFastCacheList(bool in_list) { mInFastCacheList = in_list; }
+	bool        isInFastCacheList() { return mInFastCacheList; }
+
 	/*virtual*/bool  isActiveFetching(); //is actively in fetching by the fetching pipeline.
 
 protected:
@@ -433,6 +432,7 @@ private:
 private:
 	BOOL  mFullyLoaded;
 	BOOL  mInDebug;
+	BOOL  mInFastCacheList;
 	BOOL  mForceCallbackFetch;
 
 protected:		
@@ -467,6 +467,7 @@ protected:
 	S8  mHasFetcher;				// We've made a fecth request
 	S8  mIsFetching;				// Fetch request is active
 	bool mCanUseHTTP ;              //This texture can be fetched through http if true.
+	LLCore::HttpStatus mLastHttpGetStatus; // Result of the most recently completed http request for this texture.
 
 	FTType mFTType; // What category of image is this - map tile, server bake, etc?
 	mutable S8 mIsMissingAsset;		// True if we know that there is no image asset with this image id in the database.		
@@ -499,7 +500,7 @@ protected:
 	S32 mCachedRawDiscardLevel;
 	BOOL mCachedRawImageReady; //the rez of the mCachedRawImage reaches the upper limit.	
 
-	LLHost mTargetHost;	// if LLHost::invalid, just request from agent's simulator
+	LLHost mTargetHost;	// if invalid, just request from agent's simulator
 
 	// Timers
 	LLFrameTimer mLastPacketTimer;		// Time since last packet.
@@ -529,7 +530,7 @@ protected:
 	/*virtual*/ ~LLViewerLODTexture(){}
 
 public:
-	LLViewerLODTexture(const LLUUID& id, FTType f_type, const LLHost& host = LLHost::invalid, BOOL usemipmaps = TRUE);
+	LLViewerLODTexture(const LLUUID& id, FTType f_type, const LLHost& host = LLHost(), BOOL usemipmaps = TRUE);
 	LLViewerLODTexture(const std::string& url, FTType f_type, const LLUUID& id, BOOL usemipmaps = TRUE);
 
 	/*virtual*/ S8 getType() const;
@@ -619,9 +620,7 @@ private:
 
 public:
     //texture pipeline tester
-#if 0
 	static LLTexturePipelineTester* sTesterp ;
-#endif
 
 	//returns NULL if tex is not a LLViewerFetchedTexture nor derived from LLViewerFetchedTexture.
 	static LLViewerFetchedTexture*    staticCastToFetchedTexture(LLTexture* tex, BOOL report_error = FALSE) ;
@@ -685,7 +684,6 @@ public:
 //it tracks the activities of the texture pipeline
 //records them, and outputs them to log files
 //
-#if 0
 class LLTexturePipelineTester : public LLMetricPerformanceTesterWithSession
 {
 	enum
@@ -713,18 +711,18 @@ private:
 private:
 	BOOL mUsingDefaultTexture;            //if set, some textures are still gray.
 
-	U32 mTotalBytesUsed ;                     //total bytes of textures bound/used for the current frame.
-	U32 mTotalBytesUsedForLargeImage ;        //total bytes of textures bound/used for the current frame for images larger than 256 * 256.
-	U32 mLastTotalBytesUsed ;                 //total bytes of textures bound/used for the previous frame.
-	U32 mLastTotalBytesUsedForLargeImage ;    //total bytes of textures bound/used for the previous frame for images larger than 256 * 256.
+	U32Bytes mTotalBytesUsed ;                     //total bytes of textures bound/used for the current frame.
+	U32Bytes mTotalBytesUsedForLargeImage ;        //total bytes of textures bound/used for the current frame for images larger than 256 * 256.
+	U32Bytes mLastTotalBytesUsed ;                 //total bytes of textures bound/used for the previous frame.
+	U32Bytes mLastTotalBytesUsedForLargeImage ;    //total bytes of textures bound/used for the previous frame for images larger than 256 * 256.
 		
 	//
 	//data size
 	//
-	U32 mTotalBytesLoaded ;               //total bytes fetched by texture pipeline
-	U32 mTotalBytesLoadedFromCache ;      //total bytes fetched by texture pipeline from local cache	
-	U32 mTotalBytesLoadedForLargeImage ;  //total bytes fetched by texture pipeline for images larger than 256 * 256. 
-	U32 mTotalBytesLoadedForSculpties ;   //total bytes fetched by texture pipeline for sculpties
+	U32Bytes mTotalBytesLoaded ;               //total bytes fetched by texture pipeline
+	U32Bytes mTotalBytesLoadedFromCache ;      //total bytes fetched by texture pipeline from local cache	
+	U32Bytes mTotalBytesLoadedForLargeImage ;  //total bytes fetched by texture pipeline for images larger than 256 * 256. 
+	U32Bytes mTotalBytesLoadedForSculpties ;   //total bytes fetched by texture pipeline for sculpties
 
 	//
 	//time
@@ -773,7 +771,7 @@ private:
 	};
 
 	/*virtual*/ LLMetricPerformanceTesterWithSession::LLTestSession* loadTestSession(LLSD* log) ;
-	/*virtual*/ void compareTestSessions(std::ofstream* os) ;
+	/*virtual*/ void compareTestSessions(llofstream* os) ;
 };
-#endif
+
 #endif

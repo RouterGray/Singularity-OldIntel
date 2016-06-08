@@ -63,6 +63,8 @@ public:
 	static void onClickCancel(void* data);
 	static void onClickSend(void* data);
 
+	static void uploadPostcardFailure(LLSD content, const std::string& name, int mSnapshotIndex);
+
 	static void uploadCallback(const LLUUID& asset_id,
 							   void *user_data,
 							   S32 result, LLExtStat ext_status);

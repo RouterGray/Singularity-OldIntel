@@ -54,28 +54,28 @@ public:
 	// otherwise use LLUUID::null.
 	static LLPreviewGesture* show(const std::string& title, const LLUUID& item_id, const LLUUID& object_id, BOOL take_focus = TRUE);
 
+	virtual ~LLPreviewGesture();
+
 	// LLView
-	virtual void draw();
-	virtual BOOL handleKeyHere(KEY key, MASK mask);
-	virtual BOOL handleDragAndDrop(S32 x, S32 y, MASK mask, BOOL drop,
+	/*virtual*/ void draw();
+	/*virtual*/ BOOL handleKeyHere(KEY key, MASK mask);
+	/*virtual*/ BOOL handleDragAndDrop(S32 x, S32 y, MASK mask, BOOL drop,
 									 EDragAndDropType cargo_type,
 									 void* cargo_data,
 									 EAcceptance* accept,
 									 std::string& tooltip_msg);
 
 	// LLPanel
-	virtual BOOL postBuild();
+	/*virtual*/ BOOL postBuild();
 
 	// LLFloater
-	virtual BOOL canClose();
-	virtual void setMinimized(BOOL minimize);
-	virtual void onClose(bool app_quitting);
-	virtual void onUpdateSucceeded();
-	
+	/*virtual*/ BOOL canClose();
+	/*virtual*/ void setMinimized(BOOL minimize);
+	/*virtual*/ void onClose(bool app_quitting);
+	/*virtual*/ void onUpdateSucceeded();
 
 protected:
 	LLPreviewGesture();
-	virtual ~LLPreviewGesture();
 
 	void init(const LLUUID& item_id, const LLUUID& object_id);
 
@@ -143,7 +143,8 @@ protected:
 
 	virtual const char *getTitleName() const { return "Gesture"; }
 
-protected:
+    static void finishInventoryUpload(LLUUID itemId, LLUUID newAssetId);
+private:
 	// LLPreview contains mDescEditor
 	LLLineEditor*	mTriggerEditor;
 	LLTextBox*		mReplaceText;
@@ -176,4 +177,4 @@ protected:
 	BOOL mDirty;
 };
 
-#endif
+#endif // LL_LLPREVIEWGESTURE_H

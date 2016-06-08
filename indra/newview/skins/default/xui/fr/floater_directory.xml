@@ -43,9 +43,6 @@
 			<string name="done_text">
 				Fini
 			</string>
-			<string name="redirect_404_url">
-				http://secondlife.com/app/search/notfound.html
-			</string>
 			<string name="default_search_page">
 				http://secondlife.com/app/search/index.php?
 			</string>
@@ -199,9 +196,6 @@
 			</string>
 			<string name="done_text">
 				Fini
-			</string>
-			<string name="redirect_404_url">
-				http://secondlife.com/app/search/notfound.html
 			</string>
 			<string name="default_search_page">
 				http://secondlife.com/app/showcase/index.php?

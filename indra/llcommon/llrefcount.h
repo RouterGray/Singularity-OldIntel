@@ -27,13 +27,13 @@
 #define LLREFCOUNT_H
 
 #include <boost/noncopyable.hpp>
-#include "llpreprocessor.h"			// LL_COMMON_API
-#include "stdtypes.h"				// S32
-#include "llerror.h"				// llassert
+#include <boost/intrusive_ptr.hpp>
+#include "llatomic.h"
+#include "llmutex.h"
 
 #define LL_REF_COUNT_DEBUG 0
 #if LL_REF_COUNT_DEBUG
-#include "llthread.h"			// LLMutexRootPool
+class LLMutex ;
 #endif
 
 //----------------------------------------------------------------------------
@@ -63,7 +63,7 @@ public:
 	inline S32 unref() const
 	{
 		llassert(mRef >= 1);
-		if (0 == --mRef) 
+		if (0 == --mRef)
 		{
 			delete this; 
 			return 0;
@@ -83,10 +83,92 @@ private:
 	mutable S32	mRef; 
 
 #if LL_REF_COUNT_DEBUG
-	mutable LLMutexRootPool mMutex ;
-	mutable AIThreadID mLockedThreadID ;
+	mutable LLMutex  mMutex ;
+	mutable U32  mLockedThreadID ;
 	mutable BOOL mCrashAtUnlock ; 
 #endif
 };
+
+
+//============================================================================
+
+// see llmemory.h for LLPointer<> definition
+
+class LL_COMMON_API LLThreadSafeRefCount
+{
+public:
+	static void initThreadSafeRefCount(); // creates sMutex
+	static void cleanupThreadSafeRefCount(); // destroys sMutex
+
+private:
+	static LLMutex* sMutex;
+
+protected:
+	virtual ~LLThreadSafeRefCount(); // use unref()
+
+public:
+	LLThreadSafeRefCount();
+	LLThreadSafeRefCount(const LLThreadSafeRefCount&);
+	LLThreadSafeRefCount& operator=(const LLThreadSafeRefCount& ref) 
+	{
+		mRef = 0;
+		return *this;
+	}
+
+	void ref()
+	{
+		mRef++; 
+	} 
+
+	void unref()
+	{
+		llassert(mRef >= 1);
+		if ((--mRef) == 0)		// See note in llapr.h on atomic decrement operator return value.  
+		{	
+			// If we hit zero, the caller should be the only smart pointer owning the object and we can delete it.
+			// It is technically possible for a vanilla pointer to mess this up, or another thread to
+			// jump in, find this object, create another smart pointer and end up dangling, but if
+			// the code is that bad and not thread-safe, it's trouble already.
+			delete this;
+		}
+	}
+
+	S32 getNumRefs() const
+	{
+		const S32 currentVal = mRef;
+		return currentVal;
+	}
+
+private: 
+	LLAtomic32< S32	> mRef; 
+};
+
+/**
+ * intrusive pointer support for LLThreadSafeRefCount
+ * this allows you to use boost::intrusive_ptr with any LLThreadSafeRefCount-derived type
+ */
+inline void intrusive_ptr_add_ref(LLThreadSafeRefCount* p) 
+{
+	p->ref();
+}
+
+inline void intrusive_ptr_release(LLThreadSafeRefCount* p) 
+{
+	p->unref(); 
+}
+
+/**
+ * intrusive pointer support
+ * this allows you to use boost::intrusive_ptr with any LLRefCount-derived type
+ */
+inline void intrusive_ptr_add_ref(LLRefCount* p) 
+{
+	p->ref();
+}
+
+inline void intrusive_ptr_release(LLRefCount* p) 
+{
+	p->unref(); 
+}
 
 #endif

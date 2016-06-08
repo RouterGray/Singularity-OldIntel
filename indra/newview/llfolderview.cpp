@@ -308,13 +308,13 @@ BOOL LLFolderView::canFocusChildren() const
 	return FALSE;
 }
 
-static LLFastTimer::DeclareTimer FTM_SORT("Sort Inventory");
+static LLTrace::BlockTimerStatHandle FTM_SORT("Sort Inventory");
 
 void LLFolderView::setSortOrder(U32 order)
 {
 	if (order != mSortOrder)
 	{
-		LLFastTimer t(FTM_SORT);
+		LL_RECORD_BLOCK_TIME(FTM_SORT);
 		
 		mSortOrder = order;
 
@@ -428,7 +428,7 @@ void LLFolderView::setOpenArrangeRecursively(BOOL openitem, ERecurseType recurse
 	mIsOpen = TRUE;
 }
 
-static LLFastTimer::DeclareTimer FTM_ARRANGE("Arrange");
+static LLTrace::BlockTimerStatHandle FTM_ARRANGE("Arrange");
 
 // This view grows and shrinks to enclose all of its children items and folders.
 S32 LLFolderView::arrange( S32* unused_width, S32* unused_height, S32 filter_generation )
@@ -445,7 +445,7 @@ S32 LLFolderView::arrange( S32* unused_width, S32* unused_height, S32 filter_gen
 		}
 	}
 
-	LLFastTimer t2(FTM_ARRANGE);
+	LL_RECORD_BLOCK_TIME(FTM_ARRANGE);
 
 	filter_generation = mFilter->getFirstSuccessGeneration();
 	mMinWidth = 0;
@@ -544,11 +544,11 @@ const std::string LLFolderView::getFilterSubString(BOOL trim)
 	return mFilter->getFilterSubString(trim);
 }
 
-static LLFastTimer::DeclareTimer FTM_FILTER("Filter Inventory");
+static LLTrace::BlockTimerStatHandle FTM_FILTER("Filter Folder View");
 
 void LLFolderView::filter( LLInventoryFilter& filter )
 {
-	LLFastTimer t2(FTM_FILTER);
+	LL_RECORD_BLOCK_TIME(FTM_FILTER);
 	filter.setFilterCount(llclamp(gSavedSettings.getS32("FilterItemsPerFrame"), 1, 5000));
 
 	if (getCompletedFilterGeneration() < filter.getCurrentGeneration())
@@ -736,10 +736,10 @@ BOOL LLFolderView::changeSelection(LLFolderViewItem* selection, BOOL selected)
 	return rv;
 }
 
-static LLFastTimer::DeclareTimer FTM_SANITIZE_SELECTION("Sanitize Selection");
+static LLTrace::BlockTimerStatHandle FTM_SANITIZE_SELECTION("Sanitize Selection");
 void LLFolderView::sanitizeSelection()
 {
-	LLFastTimer _(FTM_SANITIZE_SELECTION);
+	LL_RECORD_BLOCK_TIME(FTM_SANITIZE_SELECTION);
 	// store off current item in case it is automatically deselected
 	// and we want to preserve context
 	LLFolderViewItem* original_selected_item = getCurSelectedItem();
@@ -2109,10 +2109,10 @@ void LLFolderView::removeItemID(const LLUUID& id)
 	mItemMap.erase(id);
 }
 
-LLFastTimer::DeclareTimer FTM_GET_ITEM_BY_ID("Get FolderViewItem by ID");
+LLTrace::BlockTimerStatHandle FTM_GET_ITEM_BY_ID("Get FolderViewItem by ID");
 LLFolderViewItem* LLFolderView::getItemByID(const LLUUID& id)
 {
-	LLFastTimer _(FTM_GET_ITEM_BY_ID);
+	LL_RECORD_BLOCK_TIME(FTM_GET_ITEM_BY_ID);
 	if (id == getListener()->getUUID())
 	{
 		return this;
@@ -2149,20 +2149,20 @@ LLFolderViewFolder* LLFolderView::getFolderByID(const LLUUID& id)
 }
 
 
-static LLFastTimer::DeclareTimer FTM_AUTO_SELECT("Open and Select");
-static LLFastTimer::DeclareTimer FTM_INVENTORY("Inventory");
+static LLTrace::BlockTimerStatHandle FTM_AUTO_SELECT("Open and Select");
+static LLTrace::BlockTimerStatHandle FTM_INVENTORY("Inventory");
 // Main idle routine
 void LLFolderView::doIdle()
 {
 	// If this is associated with the user's inventory, don't do anything
 	// until that inventory is loaded up.
+	LL_RECORD_BLOCK_TIME(FTM_INVENTORY);
+    
 	const LLInventoryPanel *inventory_panel = dynamic_cast<LLInventoryPanel*>(mParentPanel.get());
 	if (inventory_panel && !inventory_panel->getIsViewsInitialized())
 	{
 		return;
 	}
-	
-	LLFastTimer t2(FTM_INVENTORY);
 
 	BOOL debug_filters = gSavedSettings.getBOOL("DebugInventoryFilters");
 	if (debug_filters != getDebugFilters())
@@ -2187,7 +2187,7 @@ void LLFolderView::doIdle()
 	// potentially changed
 	if (mNeedsAutoSelect)
 	{
-		LLFastTimer t3(FTM_AUTO_SELECT);
+		LL_RECORD_BLOCK_TIME(FTM_AUTO_SELECT);
 		// select new item only if a filtered item not currently selected
 		LLFolderViewItem* selected_itemp = mSelectedItems.empty() ? NULL : mSelectedItems.back();
 		if ((selected_itemp && !selected_itemp->getFiltered()) && !mAutoSelectOverride)

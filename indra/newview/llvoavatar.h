@@ -71,7 +71,6 @@ extern const LLUUID ANIM_AGENT_WALK_ADJUST;
 #endif
 //</singu>
 
-class LLAPRFile;
 class LLViewerWearable;
 class LLVoiceVisualizer;
 class LLHUDNameTag;
@@ -1018,8 +1017,6 @@ private:
 	// General
 	//--------------------------------------------------------------------
 public:
-	static void			dumpArchetypeXML_header(LLAPRFile& file, std::string const& archetype_name = "???");
-	static void			dumpArchetypeXML_footer(LLAPRFile& file);
 	void				dumpArchetypeXML(const std::string& prefix, bool group_by_wearables = false);
 	void				dumpArchetypeXML_cont(std::string const& fullpath, bool group_by_wearables);
 	void 				dumpAppearanceMsgParams( const std::string& dump_prefix,

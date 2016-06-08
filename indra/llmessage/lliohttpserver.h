@@ -33,24 +33,12 @@
 
 class LLPumpIO;
 
-// common strings use for populating the context. bascally 'request',
-// 'wildcard', and 'headers'.
-extern const std::string CONTEXT_REQUEST;
-extern const std::string CONTEXT_RESPONSE;
-extern const std::string CONTEXT_VERB;
-extern const std::string CONTEXT_HEADERS;
-extern const std::string HTTP_VERB_GET;
-extern const std::string HTTP_VERB_PUT;
-extern const std::string HTTP_VERB_POST;
-extern const std::string HTTP_VERB_DELETE;
-extern const std::string HTTP_VERB_OPTIONS;
-
 class LLIOHTTPServer
 {
 public:
 	typedef void (*timing_callback_t)(const char* hashed_name, F32 time, void* data);
 
-	static LLHTTPNode& create(LLPumpIO& pump, U16 port);
+	static LLHTTPNode& create(apr_pool_t* pool, LLPumpIO& pump, U16 port);
 	/**< Creates an HTTP wire server on the pump for the given TCP port.
 	 *
 	 *   Returns the root node of the new server.  Add LLHTTPNode instances

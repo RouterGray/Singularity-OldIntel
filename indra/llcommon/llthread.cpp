@@ -3,7 +3,7 @@
  *
  * $LicenseInfo:firstyear=2004&license=viewerlgpl$
  * Second Life Viewer Source Code
- * Copyright (C) 2010, Linden Research, Inc.
+ * Copyright (C) 2010-2013, Linden Research, Inc.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,22 +23,50 @@
  * $/LicenseInfo$
  */
 
-#if LL_GNUC
-// Generate code for inlines from llthread.h (needed for is_main_thread()).
-#pragma implementation "llthread.h"
-#endif
-
 #include "linden_common.h"
 #include "llapr.h"
 
 #include "apr_portable.h"
 
 #include "llthread.h"
+#include "llmutex.h"
 
 #include "lltimer.h"
+#include "lltrace.h"
+#include "lltracethreadrecorder.h"
 
-#if LL_LINUX || LL_SOLARIS
-#include <sched.h>
+#include <chrono>
+
+
+#ifdef LL_WINDOWS
+const DWORD MS_VC_EXCEPTION=0x406D1388;
+
+#pragma pack(push,8)
+typedef struct tagTHREADNAME_INFO
+{
+	DWORD dwType; // Must be 0x1000.
+	LPCSTR szName; // Pointer to name (in user addr space).
+	DWORD dwThreadID; // Thread ID (-1=caller thread).
+	DWORD dwFlags; // Reserved for future use, must be zero.
+} THREADNAME_INFO;
+#pragma pack(pop)
+
+void set_thread_name( DWORD dwThreadID, const char* threadName)
+{
+	THREADNAME_INFO info;
+	info.dwType = 0x1000;
+	info.szName = threadName;
+	info.dwThreadID = dwThreadID;
+	info.dwFlags = 0;
+
+	__try
+	{
+		::RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(DWORD), (ULONG_PTR*)&info );
+	}
+	__except(EXCEPTION_CONTINUE_EXECUTION)
+	{
+	}
+}
 #endif
 
 //----------------------------------------------------------------------------
@@ -61,124 +89,135 @@
 // 
 //----------------------------------------------------------------------------
 
-LLAtomicS32	LLThread::sCount = 0;
-LLAtomicS32	LLThread::sRunning = 0;
-
 LL_COMMON_API void assert_main_thread()
 {
-	if (!AIThreadID::in_main_thread_inline())
+	static boost::thread::id s_thread_id = LLThread::currentID();
+	if (LLThread::currentID() != s_thread_id)
 	{
-		LL_ERRS() << "Illegal execution outside main thread." << LL_ENDL;
+		LL_WARNS() << "Illegal execution from thread id " << LLThread::currentID()
+			<< " outside main thread " << s_thread_id << LL_ENDL;
 	}
 }
 
-//
-// Handed to the APR thread creation function
-//
-void *APR_THREAD_FUNC LLThread::staticRun(apr_thread_t *apr_threadp, void *datap)
+void LLThread::runWrapper()
 {
-#ifdef CWDEBUG
-  	debug::init_thread();
+#ifdef LL_WINDOWS
+	set_thread_name(-1, mName.c_str());
 #endif
 
-	LLThread *threadp = (LLThread *)datap;
-
-	// Initialize thread-local cache of current thread ID (if supported).
-	AIThreadID::set_current_thread_id();
-
-	// Create a thread local data.
-	LLThreadLocalData::create(threadp);
+	// for now, hard code all LLThreads to report to single master thread recorder, which is known to be running on main thread
+	mRecorder = new LLTrace::ThreadRecorder(*LLTrace::get_master_thread_recorder());
 
 	// Run the user supplied function
-	threadp->run();
+	run();
 
-	// Setting mStatus to STOPPED is done non-thread-safe, so it's
-	// possible that the thread is deleted by another thread at
-	// the moment it happens... therefore make a copy here.
-	char const* volatile name = threadp->mName.c_str();
-	
-	// Always make sure that sRunning <= number of threads with status RUNNING,
-	// so do this before changing mStatus (meaning that once we see that we
-	// are STOPPED, then sRunning is also up to date).
-	--sRunning;
+	//LL_INFOS() << "LLThread::staticRun() Exiting: " << threadp->mName << LL_ENDL;
+
+	delete mRecorder;
+	mRecorder = NULL;
 
 	// We're done with the run function, this thread is done executing now.
-	threadp->terminated();
-
-	// Only now print this info [doing that before setting mStatus
-	// to STOPPED makes it much more likely that another thread runs
-	// after the AICurlPrivate::curlthread::AICurlThread::run() function
-	// exits and we actually change this variable (which really SHOULD
-	// have been inside the critical area of the mSignal lock)].
-	LL_DEBUGS() << "LLThread::staticRun() Exiting: " << name << LL_ENDL;
-
-	return NULL;
+	//NB: we are using this flag to sync across threads...we really need memory barriers here
+	mStatus = STOPPED;
 }
 
-
-LLThread::LLThread(std::string const& name) :
-	mPaused(false),
+LLThread::LLThread(const std::string& name, apr_pool_t *poolp) :
+	mPaused(FALSE),
 	mName(name),
-	mAPRThreadp(NULL),
 	mStatus(STOPPED),
-	mThreadLocalData(NULL)
+	mRecorder(NULL)
 {
-	sCount++;
-	llassert(sCount <= 50);
-	mRunCondition = new LLCondition;
+	// Thread creation probably CAN be paranoid about APR being initialized, if necessary
+	if (poolp)
+	{
+		mIsLocalPool = FALSE;
+		mAPRPoolp = poolp;
+	}
+	else
+	{
+		mIsLocalPool = TRUE;
+		apr_pool_create(&mAPRPoolp, NULL); // Create a subpool for this thread
+	}
+	mRunCondition = new LLCondition();
+	mDataLock = new LLMutex();
+	mLocalAPRFilePoolp = NULL;
 }
 
 
 LLThread::~LLThread()
 {
 	shutdown();
+
+	if (mLocalAPRFilePoolp)
+	{
+		delete mLocalAPRFilePoolp;
+		mLocalAPRFilePoolp = NULL;
+	}
 }
 
 void LLThread::shutdown()
 {
-	// Warning!  If you somehow call the thread destructor from itself,
-	// the thread will die in an unclean fashion!
-	if (mAPRThreadp)
+	if (!isStopped())
 	{
-		if (!isStopped())
-		{
-			// The thread isn't already stopped
-			// First, set the flag that indicates that we're ready to die
-			setQuitting();
+		// The thread isn't already stopped
+		// First, set the flag that indicates that we're ready to die
+		setQuitting();
 
-			LL_INFOS() << "LLThread::shutdown() Killing thread " << mName << " Status: " << mStatus << LL_ENDL;
-			// Now wait a bit for the thread to exit
-			// It's unclear whether I should even bother doing this - this destructor
-			// should netver get called unless we're already stopped, really...
-			S32 counter = 0;
-			const S32 MAX_WAIT = 600;
-			while (counter < MAX_WAIT)
+		//LL_INFOS() << "LLThread::~LLThread() Killing thread " << mName << " Status: " << mStatus << LL_ENDL;
+		// Now wait a bit for the thread to exit
+		// It's unclear whether I should even bother doing this - this destructor
+		// should never get called unless we're already stopped, really...
+		S32 counter = 0;
+		const S32 MAX_WAIT = 600;
+		while (counter < MAX_WAIT)
+		{
+			if (isStopped())
 			{
-				if (isStopped())
-				{
-					break;
-				}
-				// Sleep for a tenth of a second
-				ms_sleep(100);
-				yield();
-				counter++;
+				break;
 			}
+			// Sleep for a tenth of a second
+			mThread.try_join_for(boost::chrono::microseconds(100));
+			counter++;
 		}
-
-		if (!isStopped())
-		{
-			// This thread just wouldn't stop, even though we gave it time
-			LL_WARNS() << "LLThread::shutdown() exiting thread before clean exit!" << LL_ENDL;
-			// Put a stake in its heart.
-			apr_thread_exit(mAPRThreadp, -1);
-			return;
-		}
-		mAPRThreadp = NULL;
 	}
-	--sCount;
+
+	if (!isStopped())
+	{
+		// This thread just wouldn't stop, even though we gave it time
+		//LL_WARNS() << "LLThread::~LLThread() exiting thread before clean exit!" << LL_ENDL;
+		// Put a stake in its heart.
+		delete mRecorder;
+
+		boost::thread::native_handle_type thread(mThread.native_handle());
+#if LL_WINDOWS
+		TerminateThread(thread, 0);
+#else
+		pthread_cancel(thread);
+#endif
+		return;
+	}
+
 	delete mRunCondition;
-	mRunCondition = 0;
+	mRunCondition = NULL;
+
+	delete mDataLock;
+	mDataLock = NULL;
+
+	if (mIsLocalPool && mAPRPoolp)
+	{
+		apr_pool_destroy(mAPRPoolp);
+		mAPRPoolp = 0;
+	}
+
+	if (mRecorder)
+	{
+		// missed chance to properly shut down recorder (needs to be done in thread context)
+		// probably due to abnormal thread termination
+		// so just leak it and remove it from parent
+		LLTrace::get_master_thread_recorder()->removeChildRecorder(mRecorder);
+	}
 }
+
 
 void LLThread::start()
 {
@@ -186,22 +225,15 @@ void LLThread::start()
 	
 	// Set thread state to running
 	mStatus = RUNNING;
-	sRunning++;
 
-	apr_status_t status =
-		apr_thread_create(&mAPRThreadp, NULL, staticRun, (void *)this, tldata().mRootPool());
-
-	if(status == APR_SUCCESS)
+	try
 	{	
-		// We won't bother joining
-		apr_thread_detach(mAPRThreadp);
+		mThread = boost::thread(std::bind(&LLThread::runWrapper, this));
 	}
-	else
+	catch (boost::thread_resource_error err)
 	{
-		--sRunning;
 		mStatus = STOPPED;
-		LL_WARNS() << "failed to start thread " << mName << LL_ENDL;
-		ll_apr_warn_status(status);
+		LL_WARNS() << "Failed to start thread: \"" << mName << "\" due to error: " << err.what() << LL_ENDL;
 	}
 }
 
@@ -241,49 +273,53 @@ bool LLThread::runCondition(void)
 // Stop thread execution if requested until unpaused.
 void LLThread::checkPause()
 {
-	mRunCondition->lock();
+	mDataLock->lock();
 
 	// This is in a while loop because the pthread API allows for spurious wakeups.
 	while(shouldSleep())
 	{
+		mDataLock->unlock();
 		mRunCondition->wait(); // unlocks mRunCondition
+		mDataLock->lock();
 		// mRunCondition is locked when the thread wakes up
 	}
 	
- 	mRunCondition->unlock();
+ 	mDataLock->unlock();
 }
 
 //============================================================================
 
 void LLThread::setQuitting()
 {
-	mRunCondition->lock();
+	mDataLock->lock();
 	if (mStatus == RUNNING)
 	{
 		mStatus = QUITTING;
 	}
-	mRunCondition->unlock();
+	mDataLock->unlock();
 	wake();
+}
+
+// static
+boost::thread::id LLThread::currentID()
+{
+	return boost::this_thread::get_id();
 }
 
 // static
 void LLThread::yield()
 {
-#if LL_LINUX || LL_SOLARIS
-	sched_yield(); // annoyingly, apr_thread_yield  is a noop on linux...
-#else
-	apr_thread_yield();
-#endif
+	boost::this_thread::yield();
 }
 
 void LLThread::wake()
 {
-	mRunCondition->lock();
+	mDataLock->lock();
 	if(!shouldSleep())
 	{
 		mRunCondition->signal();
 	}
-	mRunCondition->unlock();
+	mDataLock->unlock();
 }
 
 void LLThread::wakeLocked()
@@ -294,203 +330,54 @@ void LLThread::wakeLocked()
 	}
 }
 
-// The thread private handle to access the LLThreadLocalData instance.
-apr_threadkey_t* LLThreadLocalData::sThreadLocalDataKey;
+//============================================================================
 
-LLThreadLocalData::LLThreadLocalData(char const* name) : mCurlMultiHandle(NULL), mCurlErrorBuffer(NULL), mName(name)
-{
-}
-
-LLThreadLocalData::~LLThreadLocalData()
-{
-  delete mCurlMultiHandle;
-  delete [] mCurlErrorBuffer;
-}
+//----------------------------------------------------------------------------
 
 //static
-void LLThreadLocalData::init(void)
+LLMutex* LLThreadSafeRefCount::sMutex = 0;
+
+//static
+void LLThreadSafeRefCount::initThreadSafeRefCount()
 {
-	// Only do this once.
-	if (sThreadLocalDataKey)
+	if (!sMutex)
 	{
-		return;
+		sMutex = new LLMutex();
 	}
-
-	// This function is called by the main thread (these values are also needed in the next line).
-	AIThreadID::set_main_thread_id();
-	AIThreadID::set_current_thread_id();
-
-	apr_status_t status = apr_threadkey_private_create(&sThreadLocalDataKey, &LLThreadLocalData::destroy, LLAPRRootPool::get()());
-	ll_apr_assert_status(status);   // Or out of memory, or system-imposed limit on the
-									// total number of keys per process {PTHREAD_KEYS_MAX}
-									// has been exceeded.
-
-	// Create the thread-local data for the main thread (this function is called by the main thread).
-	LLThreadLocalData::create(NULL);
-}
-
-// This is called once for every thread when the thread is destructed.
-//static
-void LLThreadLocalData::destroy(void* thread_local_data)
-{
-	delete static_cast<LLThreadLocalData*>(thread_local_data);
 }
 
 //static
-void LLThreadLocalData::create(LLThread* threadp)
+void LLThreadSafeRefCount::cleanupThreadSafeRefCount()
 {
-	LLThreadLocalData* new_tld = new LLThreadLocalData(threadp ? threadp->mName.c_str() : "main thread");
-	if (threadp)
+	delete sMutex;
+	sMutex = NULL;
+}
+
+
+//----------------------------------------------------------------------------
+
+LLThreadSafeRefCount::LLThreadSafeRefCount() :
+	mRef(0)
+{
+}
+
+LLThreadSafeRefCount::LLThreadSafeRefCount(const LLThreadSafeRefCount& src)
+{
+	mRef = 0;
+}
+
+LLThreadSafeRefCount::~LLThreadSafeRefCount()
+{
+	if (mRef != 0)
 	{
-		threadp->mThreadLocalData = new_tld;
+		LL_ERRS() << "deleting non-zero reference" << LL_ENDL;
 	}
-	apr_status_t status = apr_threadkey_private_set(new_tld, sThreadLocalDataKey);
-	llassert_always(status == APR_SUCCESS);
-}
-
-//static
-LLThreadLocalData& LLThreadLocalData::tldata(void)
-{
-	if (!sThreadLocalDataKey)
-	{
-		LLThreadLocalData::init();
-	}
-
-	void* data;
-	apr_status_t status = apr_threadkey_private_get(&data, sThreadLocalDataKey);
-	llassert_always(status == APR_SUCCESS);
-	return *static_cast<LLThreadLocalData*>(data);
 }
 
 //============================================================================
 
-#if defined(NEEDS_MUTEX_IMPL)
-#if defined(USE_WIN32_THREAD)
-LLMutexImpl::LLMutexImpl()
+LLResponder::~LLResponder()
 {
-	InitializeCriticalSection(&mMutexImpl);	//can throw STATUS_NO_MEMORY
-}
-LLMutexImpl::~LLMutexImpl() 
-{
-	DeleteCriticalSection(&mMutexImpl);	//nothrow
-}
-void LLMutexImpl::lock()
-{
-	EnterCriticalSection(&mMutexImpl);	//can throw EXCEPTION_POSSIBLE_DEADLOCK
-}
-void LLMutexImpl::unlock()
-{
-	LeaveCriticalSection(&mMutexImpl);	//nothrow
-}
-bool LLMutexImpl::try_lock()
-{
-	return !!TryEnterCriticalSection(&mMutexImpl);	//nothrow
-}
-LLConditionVariableImpl::LLConditionVariableImpl()
-{
-	InitializeConditionVariable(&mConditionVariableImpl);
-}
-LLConditionVariableImpl::~LLConditionVariableImpl()
-{
-	//There is no DeleteConditionVariable
-}
-void LLConditionVariableImpl::notify_one()
-{
-	WakeConditionVariable(&mConditionVariableImpl);
-}
-void LLConditionVariableImpl::notify_all()
-{
-	WakeAllConditionVariable(&mConditionVariableImpl);
-}
-void LLConditionVariableImpl::wait(LLMutex& lock)
-{
-	LLMutex::ImplAdoptMutex impl_adopted_mutex(lock);
-	SleepConditionVariableCS(&mConditionVariableImpl, &lock.native_handle(), INFINITE);
-}
-#else
-
-void APRExceptionThrower(apr_status_t status)
-{
-	if(status != APR_SUCCESS)
-	{
-		static char buf[256];
-		throw std::logic_error(apr_strerror(status,buf,sizeof(buf)));
-	}
 }
 
-LLMutexImpl::LLMutexImpl(native_pool_type& pool) : mPool(pool), mMutexImpl(NULL)
-{
-	APRExceptionThrower(apr_thread_mutex_create(&mMutexImpl, APR_THREAD_MUTEX_UNNESTED, mPool()));
-}
-LLMutexImpl::~LLMutexImpl() 
-{
-	APRExceptionThrower(apr_thread_mutex_destroy(mMutexImpl));
-	mMutexImpl = NULL;
-}
-void LLMutexImpl::lock()
-{
-	APRExceptionThrower(apr_thread_mutex_lock(mMutexImpl));
-}
-void LLMutexImpl::unlock()
-{
-	APRExceptionThrower(apr_thread_mutex_unlock(mMutexImpl));
-}
-bool LLMutexImpl::try_lock()
-{
-	apr_status_t status = apr_thread_mutex_trylock(mMutexImpl);
-	if(APR_STATUS_IS_EBUSY(status))
-		return false;
-	APRExceptionThrower(status);
-	return true;
-}
-LLConditionVariableImpl::LLConditionVariableImpl(native_pool_type& pool) : mPool(pool), mConditionVariableImpl(NULL)
-{
-	APRExceptionThrower(apr_thread_cond_create(&mConditionVariableImpl, mPool()));
-}
-LLConditionVariableImpl::~LLConditionVariableImpl()
-{
-	APRExceptionThrower(apr_thread_cond_destroy(mConditionVariableImpl));
-}
-void LLConditionVariableImpl::notify_one()
-{
-	APRExceptionThrower(apr_thread_cond_signal(mConditionVariableImpl));
-}
-void LLConditionVariableImpl::notify_all()
-{
-	APRExceptionThrower(apr_thread_cond_broadcast(mConditionVariableImpl));
-}
-void LLConditionVariableImpl::wait(LLMutex& lock)
-{
-	LLMutex::ImplAdoptMutex impl_adopted_mutex(lock);
-	APRExceptionThrower(apr_thread_cond_wait(mConditionVariableImpl, lock.native_handle()));
-}
-#endif
-#endif
-
-LLFastTimer::DeclareTimer FT_WAIT_FOR_MUTEX("LLMutex::lock()");
-void LLMutex::lock_main(LLFastTimer::DeclareTimer* timer)
-{
-	llassert(!isSelfLocked());
-	LLFastTimer ft1(timer ? *timer : FT_WAIT_FOR_MUTEX);
-	LLMutexImpl::lock();
-}
-
-LLFastTimer::DeclareTimer FT_WAIT_FOR_CONDITION("LLCondition::wait()");
-void LLCondition::wait_main()
-{
-	llassert(isSelfLocked());
-	LLFastTimer ft1(FT_WAIT_FOR_CONDITION);
-	LLConditionVariableImpl::wait(*this);
-	llassert(isSelfLocked());
-}
-
-LLFastTimer::DeclareTimer FT_WAIT_FOR_MUTEXLOCK("LLMutexLock::lock()");
-void LLMutexLock::lock()
-{
-	if (mMutex)
-	{
-		mMutex->lock(&FT_WAIT_FOR_MUTEXLOCK);
-	}
-}
-
-//----------------------------------------------------------------------------
+//============================================================================

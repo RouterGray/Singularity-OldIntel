@@ -71,7 +71,6 @@
   <check_box bottom_delta="-20" label="Region Console" name="region_console_btn" follows="left|right" control_name="ToolbarVisibleRegionDebugConsole"/>
   <check_box bottom_delta="-20" label="Fast Timers" name="fast_timers_btn" follows="left|right" control_name="ToolbarVisibleFastTimers"/>
   <check_box bottom_delta="-20" label="Frame Console" name="frame_console_btn" follows="left|right" control_name="ToolbarVisibleFrameConsole"/>
-  <check_box bottom_delta="-20" label="HTTP Console" name="http_console_btn" follows="left|right" control_name="ToolbarVisibleHTTPConsole"/>
   <check_box bottom_delta="-20" label="Texture Console" name="texture_console_btn" follows="left|right" control_name="ToolbarVisibleTextureConsole"/>
   <check_box bottom_delta="-20" label="Texture Category Console" name="texture_category_console_btn" follows="left|right" control_name="ToolbarVisibleTextureCategoryConsole" visibility_control="AuditTexture"/>
   <check_box bottom_delta="-20" label="Texture Size Console" name="texture_size_console_btn" follows="left|right" control_name="ToolbarVisibleTextureSizeConsole" visibility_control="AuditTexture"/>
@@ -82,8 +81,8 @@
   <check_box bottom_delta="-20" label="Favorites" name="favs_btn" follows="left|right" control_name="ToolbarVisibleInventoryFavs"/>
   <check_box bottom_delta="-20" label="Outbox" name="outbox_btn" follows="left|right" control_name="ToolbarVisibleOutbox"/>
   <check_box bottom_delta="-20" label="Preferences" name="preferences_btn" follows="left|right" control_name="ToolbarVisiblePreferences"/>
-  <check_box bottom="-38" label="Joystick Config" name="joystick_btn" follows="left|right" control_name="ToolbarVisibleJoystick" left_delta="160"/>
-  <check_box bottom_delta="-20" label="Autoreplace" name="auto_replace_btn" follows="left|right" control_name="ToolbarVisibleAutoReplace"/>
+  <check_box bottom_delta="-20" label="Joystick Config" name="joystick_btn" follows="left|right" control_name="ToolbarVisibleJoystick"/>
+  <check_box bottom="-38" label="Autoreplace" name="auto_replace_btn" follows="left|right" control_name="ToolbarVisibleAutoReplace" left_delta="160"/>
   <check_box bottom_delta="-20" label="Display Name" name="display_name_btn" follows="left|right" control_name="ToolbarVisibleDisplayName"/>
   <check_box bottom_delta="-20" label="Floater Test" name="floater_test_btn" follows="left|right" control_name="ToolbarVisibleTest"/>
   <check_box bottom_delta="-20" label="Edit UI" name="edit_ui_btn" follows="left|right" control_name="ToolbarVisibleEditUI"/>

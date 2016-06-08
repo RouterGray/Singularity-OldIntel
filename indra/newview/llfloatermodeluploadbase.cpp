@@ -2,42 +2,35 @@
  * @file llfloatermodeluploadbase.cpp
  * @brief LLFloaterUploadModelBase class definition
  *
- * $LicenseInfo:firstyear=2011&license=viewergpl$
- * 
- * Copyright (c) 2011, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2011&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2011, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
- * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
 #include "llviewerprecompiledheaders.h"
 
 #include "llfloatermodeluploadbase.h"
-
-#include "llnotifications.h"
-
 #include "llagent.h"
 #include "llviewerregion.h"
+#include "llnotificationsutil.h"
+#include "llcorehttputil.h"
 
 LLFloaterModelUploadBase::LLFloaterModelUploadBase(const LLSD& key)
 :	LLFloater(key),
@@ -52,15 +45,49 @@ void LLFloaterModelUploadBase::requestAgentUploadPermissions()
 
 	if (!url.empty())
 	{
-		LL_INFOS() << typeid(*this).name() <<"::requestAgentUploadPermissions() requesting for upload model permissions from: "<< url <<LL_ENDL;
-		LLHTTPClient::get(url, new LLUploadModelPremissionsResponder(getPermObserverHandle()));
+		LL_INFOS()<< typeid(*this).name()
+				  << "::requestAgentUploadPermissions() requesting for upload model permissions from: "
+				  << url << LL_ENDL;
+        LLCoros::instance().launch("LLFloaterModelUploadBase::requestAgentUploadPermissionsCoro",
+            boost::bind(&LLFloaterModelUploadBase::requestAgentUploadPermissionsCoro, this, url, getPermObserverHandle()));
 	}
 	else
 	{
 		LLSD args;
 		args["CAPABILITY"] = capability;
-		LLNotifications::instance().add("RegionCapabilityRequestError", args);
+		LLNotificationsUtil::add("RegionCapabilityRequestError", args);
 		// BAP HACK avoid being blocked by broken server side stuff
 		mHasUploadPerm = true;
 	}
+}
+
+void LLFloaterModelUploadBase::requestAgentUploadPermissionsCoro(std::string url,
+    LLHandle<LLUploadPermissionsObserver> observerHandle)
+{
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("MeshUploadFlag", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+
+
+    LLSD result = httpAdapter->getAndSuspend(httpRequest, url);
+
+    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    LLUploadPermissionsObserver* observer = observerHandle.get();
+
+    if (!observer)
+    { 
+        LL_WARNS("MeshUploadFlag") << "Unable to get observer after call to '" << url << "' aborting." << LL_ENDL;
+    }
+
+    if (!status)
+    {
+        observer->setPermissonsErrorStatus(status.getStatus(), status.getMessage());
+        return;
+    }
+
+    result.erase(LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS);
+    observer->onPermissionsReceived(result);
 }

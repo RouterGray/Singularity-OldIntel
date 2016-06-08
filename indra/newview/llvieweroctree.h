@@ -69,7 +69,9 @@ S32 AABBSphereIntersectR2(const LLVector4a& min, const LLVector4a& max, const LL
 S32 AABBSphereIntersect(const LLVector3& min, const LLVector3& max, const LLVector3 &origin, const F32 &rad);
 S32 AABBSphereIntersectR2(const LLVector3& min, const LLVector3& max, const LLVector3 &origin, const F32 &radius_squared);
 
-class LLViewerOctreeEntry : public LLRefCount
+//defines data needed for octree of an entry
+//LL_ALIGN_PREFIX(16)
+class LLViewerOctreeEntry : public LLRefCount, public LLTrace::MemTrackable<LLViewerOctreeEntry, 16>
 {
 	friend class LLViewerOctreeEntryData;
 
@@ -172,8 +174,11 @@ protected:
 	static  U32                           sCurVisible; // Counter for what value of mVisible means currently visible
 };//LL_ALIGN_POSTFIX(16);
 
+
+//defines an octree group for an octree node, which contains multiple entries.
+//LL_ALIGN_PREFIX(16)
 class LLViewerOctreeGroup
-:	public LLOctreeListener<LLViewerOctreeEntry>
+:	public LLOctreeListener<LLViewerOctreeEntry>, public LLTrace::MemTrackable<LLViewerOctreeGroup, 16>
 {
 	friend class LLViewerOctreeCull;
 protected:
@@ -196,6 +201,7 @@ public:
 
 	LLViewerOctreeGroup(OctreeNode* node);
 	LLViewerOctreeGroup(const LLViewerOctreeGroup& rhs)
+	: LLTrace::MemTrackable<LLViewerOctreeGroup, 16>("LLViewerOctreeGroup")
 	{
 		*this = rhs;
 	}
@@ -261,7 +267,8 @@ protected:
 	S32 mAnyVisible; //latest visible to any camera
 	S32 mVisible[LLViewerCamera::NUM_CAMERAS];
 
-};
+};//LL_ALIGN_POSTFIX(16);
+
 //octree group which has capability to support occlusion culling
 //LL_ALIGN_PREFIX(16)
 class LLOcclusionCullingGroup : public LLViewerOctreeGroup
@@ -334,8 +341,8 @@ protected:
 	U32	mOcclusionQuery[LLViewerCamera::NUM_CAMERAS];
 
 public:
-	static std::set<U32> sPendingQueries; //pending occlusion queries
-};
+	static std::set<U32> sPendingQueries;
+};//LL_ALIGN_POSTFIX(16);
 
 class LLViewerOctreePartition
 {
@@ -400,6 +407,17 @@ protected:
 protected:
 	LLCamera *mCamera;
 	S32 mRes;
+};
+
+//scan the octree, output the info of each node for debug use.
+class LLViewerOctreeDebug : public OctreeTraveler
+{
+public:
+	virtual void processGroup(LLViewerOctreeGroup* group);
+	virtual void visit(const OctreeNode* branch);
+
+public:
+	static BOOL sInDebug;
 };
 
 #endif

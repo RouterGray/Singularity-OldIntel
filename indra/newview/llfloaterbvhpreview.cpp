@@ -11,7 +11,7 @@
  * ("GPL"), unless you have obtained a separate licensing agreement
  * ("Other License"), formally executed by you and Linden Lab.  Terms of
  * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * version 2.1 of the License only.
  * 
  * There are special exceptions to the terms and conditions of the GPL as
  * it is applied to this Source Code. View the full text of the exception
@@ -39,7 +39,6 @@
 #include "lleconomy.h"
 #include "llnotificationsutil.h"
 #include "llvfile.h"
-#include "llapr.h"
 #include "llstring.h"
 
 #include "llagent.h"
@@ -290,21 +289,19 @@ BOOL LLFloaterBvhPreview::postBuild()
 		// loading a bvh file
 
 		// now load bvh file
-		S32 file_size;
-		
-		LLAPRFile infile(mFilenameAndPath, LL_APR_RB, &file_size);
-		
-		if (!infile.getFileHandle())
+		llifstream infstream(mFilenameAndPath, std::ios::in | std::ios::binary);
+		if (!infstream.good())
 		{
 			LL_WARNS() << "Can't open BVH file:" << mFilename << LL_ENDL;	
 		}
 		else
 		{
-			char*	file_buffer;
-
-			file_buffer = new char[file_size + 1];
-
-			if (file_size == infile.read(file_buffer, file_size))
+			infstream.seekg(0, std::ios::end);
+			S32 file_size = (S32) infstream.tellg();
+			infstream.seekg(0, std::ios::beg);
+			char* file_buffer = new char[file_size + 1];
+			infstream.read(file_buffer, file_size);
+			if (file_size == infstream.gcount())
 			{
 				file_buffer[file_size] = '\0';
 				LL_INFOS() << "Loading BVH file " << mFilename << LL_ENDL;
@@ -323,7 +320,7 @@ BOOL LLFloaterBvhPreview::postBuild()
 				}
 			}
 
-			infile.close() ;
+			infstream.close();
 			delete[] file_buffer;
 
 			// <edit> moved everything bvh from below
@@ -388,10 +385,10 @@ BOOL LLFloaterBvhPreview::postBuild()
 	// <edit>
 	else if(exten == "animatn")
 	{
-		S32 file_size;
-		LLAPRFile raw_animatn(mFilenameAndPath, LL_APR_RB, &file_size);
+		S32 file_size = LLFile::size(mFilenameAndPath);
+		llifstream raw_animatn(mFilenameAndPath, std::ios::in | std::ios::binary);
 
-		if (!raw_animatn.getFileHandle())
+		if (!raw_animatn.good())
 		{
 			LL_WARNS() << "Can't open animatn file:" << mFilename << LL_ENDL;	
 		}
@@ -400,8 +397,8 @@ BOOL LLFloaterBvhPreview::postBuild()
 			char*	file_buffer;
 
 			file_buffer = new char[file_size + 1];
-
-			if (file_size == raw_animatn.read(file_buffer, file_size))
+			raw_animatn.read(file_buffer, file_size);
+			if (raw_animatn.good())
 			{
 				file_buffer[file_size] = '\0';
 				LL_INFOS() << "Loading animatn file " << mFilename << LL_ENDL;

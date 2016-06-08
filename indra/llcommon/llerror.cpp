@@ -47,10 +47,9 @@
 #include "lllivefile.h"
 #include "llsd.h"
 #include "llsdserialize.h"
+#include "llsingleton.h"
 #include "llstl.h"
 #include "lltimer.h"
-
-#include "aithreadsafe.h"
 
 namespace {
 #if LL_WINDOWS
@@ -120,6 +119,7 @@ namespace {
 				LL_INFOS() << "Error setting log file to " << filename << LL_ENDL;
 			}
 			mWantsTime = true;
+            mWantsTags = true;
 		}
 		
 		~RecordToFile()
@@ -172,18 +172,7 @@ namespace {
 					break;
 				}
 			}
-#ifdef CWDEBUG
-			// Include normal logging in libcwd's message processing.
-			// This takes care of prefixing with thread ID's, locking
-			// and allows us to (temporarily) turn off normal logging
-			// output.
-			Dout(dc::viewer, message);
-#else
 			fprintf(stderr, "%s\n", message.c_str());
-#endif
-#if LL_WINDOWS
-			fflush(stderr); //Now using a buffer. flush is required.
-#endif
 			if (ANSI_YES == mUseANSI) colorANSI("0"); // reset
 		}
 	
@@ -372,9 +361,10 @@ namespace
 	typedef std::vector<LLError::RecorderPtr> Recorders;
 	typedef std::vector<LLError::CallSite*> CallSiteVector;
 
-	class Globals
+	class Globals : public LLSingleton<Globals>
 	{
 	public:
+		Globals();
 
 		std::ostringstream messageStream;
 		bool messageStreamInUse;
@@ -382,16 +372,8 @@ namespace
 		void addCallSite(LLError::CallSite&);
 		void invalidateCallSites();
 
-		static AIThreadSafeSimple<Globals>& get();
-			// return the one instance of the globals
-
 	private:
 		CallSiteVector callSites;
-		
-		friend class AIThreadSafeSimpleDC<Globals>;		// Calls constructor.
-		friend class AIThreadSafeSimple<Globals>;		// Calls destructor.
-		
-		Globals();
 	};
 
 	Globals::Globals()
@@ -416,18 +398,6 @@ namespace
 		}
 		
 		callSites.clear();
-	}
-	
-	AIThreadSafeSimple<Globals>& Globals::get()
-	{
-		/* This pattern, of returning a reference to a static function
-		   variable, is to ensure that this global is constructed before
-		   it is used, no matter what the global initializeation sequence
-		   is.
-		   See C++ FAQ Lite, sections 10.12 through 10.14
-		*/
-		static AIThreadSafeSimpleDCRootPool<Globals>* ts_globals_ptr = new AIThreadSafeSimpleDCRootPool<Globals>;
-		return *ts_globals_ptr;
 	}
 }
 
@@ -466,10 +436,10 @@ namespace LLError
 
 	typedef LLPointer<SettingsConfig> SettingsConfigPtr;
 
-	class Settings
+	class Settings : public LLSingleton<Settings>
 	{
 	public:
-		static AIThreadSafeSimple<Settings>& get();
+		Settings();
 
 		SettingsConfigPtr getSettingsConfig();
 		
@@ -478,10 +448,6 @@ namespace LLError
 		void restore(SettingsStoragePtr pSettingsStorage);
 		
 	private:
-		friend class AIThreadSafeBits<Settings>;		// Calls destructor.
-		friend class AIThreadSafeSimpleDC<Settings>;	// Calls constructor.
-		Settings();
-		
 		SettingsConfigPtr mSettingsConfig;
 	};
 	
@@ -510,14 +476,9 @@ namespace LLError
 	}
 
 	Settings::Settings()
-		: mSettingsConfig(new SettingsConfig())
+		: LLSingleton<Settings>(),
+		mSettingsConfig(new SettingsConfig())
 	{
-	}
-	
-	AIThreadSafeSimple<Settings>& Settings::get()
-	{
-		static AIThreadSafeSimpleDCRootPool<Settings>* ts_globals_ptr = new AIThreadSafeSimpleDCRootPool<Settings>;
-		return *ts_globals_ptr;
 	}
 	
 	SettingsConfigPtr Settings::getSettingsConfig()
@@ -527,7 +488,7 @@ namespace LLError
 	
 	void Settings::reset()
 	{
-		AIAccess<Globals>(Globals::get())->invalidateCallSites();
+		Globals::getInstance()->invalidateCallSites();
 		mSettingsConfig = new SettingsConfig();
 	}
 	
@@ -540,7 +501,7 @@ namespace LLError
 	
 	void Settings::restore(SettingsStoragePtr pSettingsStorage)
 	{
-		AIAccess<Globals>(Globals::get())->invalidateCallSites();
+		Globals::getInstance()->invalidateCallSites();
 		SettingsConfigPtr newSettingsConfig(dynamic_cast<SettingsConfig *>(pSettingsStorage.get()));
 		mSettingsConfig = newSettingsConfig;
 	}
@@ -600,7 +561,7 @@ namespace LLError
 			mFunctionString += std::string(mFunction) + ":";
 			for (size_t i = 0; i < mTagCount; i++)
 			{
-				mTagString += std::string("#") + mTags[i] + ((i == mTagCount - 1) ? "" : " ");
+				mTagString += std::string("#") + mTags[i] + ((i == mTagCount - 1) ? "" : ",");
 			}
 		}
 	}
@@ -646,7 +607,7 @@ namespace
 	
 	void commonInit(const std::string& dir, bool log_to_stderr = true)
 	{
-		AIAccess<LLError::Settings>(LLError::Settings::get())->reset();
+		LLError::Settings::getInstance()->reset();
 		
 		LLError::setDefaultLevel(LLError::LEVEL_INFO);
 		LLError::setFatalFunction(LLError::crashAndLoop);
@@ -699,64 +660,69 @@ namespace LLError
 		commonInit(dir, log_to_stderr);
 	}
 
-	void setPrintLocation(AIAccess<Settings> const& settings_w, bool print)
-	{
-		settings_w->getSettingsConfig()->mPrintLocation = print;
-	}
-
 	void setPrintLocation(bool print)
 	{
-		setPrintLocation(AIAccess<Settings>(Settings::get()), print);
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+		s->mPrintLocation = print;
 	}
 
 	void setFatalFunction(const FatalFunction& f)
 	{
-		AIAccess<Settings>(Settings::get())->getSettingsConfig()->mCrashFunction = f;
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+		s->mCrashFunction = f;
 	}
 
     FatalFunction getFatalFunction()
     {
-		return AIAccess<Settings>(Settings::get())->getSettingsConfig()->mCrashFunction;
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+        return s->mCrashFunction;
     }
 
 	void setTimeFunction(TimeFunction f)
 	{
-		AIAccess<Settings>(Settings::get())->getSettingsConfig()->mTimeFunction = f;
-	}
-
-	void setDefaultLevel(AIAccess<Settings> const& settings_w, ELevel level)
-	{
-		AIAccess<Globals>(Globals::get())->invalidateCallSites();
-		settings_w->getSettingsConfig()->mDefaultLevel = level;
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+		s->mTimeFunction = f;
 	}
 
 	void setDefaultLevel(ELevel level)
 	{
-		setDefaultLevel(AIAccess<Settings>(Settings::get()), level);
+		Globals::getInstance()->invalidateCallSites();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+		s->mDefaultLevel = level;
+	}
+
+	ELevel getDefaultLevel()
+	{
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+		return s->mDefaultLevel;
 	}
 
 	void setFunctionLevel(const std::string& function_name, ELevel level)
 	{
-		AIAccess<Globals>(Globals::get())->invalidateCallSites();
-		AIAccess<Settings>(Settings::get())->getSettingsConfig()->mFunctionLevelMap[function_name] = level;
+		Globals::getInstance()->invalidateCallSites();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+		s->mFunctionLevelMap[function_name] = level;
 	}
 
 	void setClassLevel(const std::string& class_name, ELevel level)
 	{
-		AIAccess<Globals>(Globals::get())->invalidateCallSites();
-		AIAccess<Settings>(Settings::get())->getSettingsConfig()->mClassLevelMap[class_name] = level;
+		Globals::getInstance()->invalidateCallSites();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+		s->mClassLevelMap[class_name] = level;
 	}
 
 	void setFileLevel(const std::string& file_name, ELevel level)
 	{
-		AIAccess<Globals>(Globals::get())->invalidateCallSites();
-		AIAccess<Settings>(Settings::get())->getSettingsConfig()->mFileLevelMap[file_name] = level;
+		Globals::getInstance()->invalidateCallSites();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+		s->mFileLevelMap[file_name] = level;
 	}
 
 	void setTagLevel(const std::string& tag_name, ELevel level)
 	{
-		AIAccess<Globals>(Globals::get())->invalidateCallSites();
-		AIAccess<Settings>(Settings::get())->getSettingsConfig()->mTagLevelMap[tag_name] = level;
+		Globals::getInstance()->invalidateCallSites();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
+		s->mTagLevelMap[tag_name] = level;
 	}
 
 	LLError::ELevel decodeLevel(std::string name)
@@ -800,9 +766,8 @@ namespace LLError
 {
 	void configure(const LLSD& config)
 	{
-		AIAccess<Settings> settings_w(Settings::get());
-		AIAccess<Globals>(Globals::get())->invalidateCallSites();
-		SettingsConfigPtr s = settings_w->getSettingsConfig();
+		Globals::getInstance()->invalidateCallSites();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
 
 		s->mFunctionLevelMap.clear();
 		s->mClassLevelMap.clear();
@@ -810,8 +775,8 @@ namespace LLError
 		s->mTagLevelMap.clear();
 		s->mUniqueLogMessages.clear();
 		
-		setPrintLocation(settings_w, config["print-location"]);
-		setDefaultLevel(settings_w, decodeLevel(config["default-level"]));
+		setPrintLocation(config["print-location"]);
+		setDefaultLevel(decodeLevel(config["default-level"]));
 		
 		LLSD sets = config["settings"];
 		LLSD::array_const_iterator a, end;
@@ -874,35 +839,25 @@ namespace LLError
 		return mWantsFunctionName;
 	}
 
-	void addRecorder(AIAccess<Settings> const& settings_w, RecorderPtr recorder)
+	void addRecorder(RecorderPtr recorder)
 	{
 		if (!recorder)
 		{
 			return;
 		}
-		SettingsConfigPtr s = settings_w->getSettingsConfig();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
 		s->mRecorders.push_back(recorder);
 	}
 	
-	void addRecorder(RecorderPtr recorder)
-	{
-		addRecorder(AIAccess<Settings>(Settings::get()), recorder);
-	}
-
-	void removeRecorder(AIAccess<Settings> const& settings_w, RecorderPtr recorder)
+	void removeRecorder(RecorderPtr recorder)
 	{
 		if (!recorder)
 		{
 			return;
 		}
-		SettingsConfigPtr s = settings_w->getSettingsConfig();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
 		s->mRecorders.erase(std::remove(s->mRecorders.begin(), s->mRecorders.end(), recorder),
 							s->mRecorders.end());
-	}
-
-	void removeRecorder(RecorderPtr recorder)
-	{
-		removeRecorder(AIAccess<Settings>(Settings::get()), recorder);
 	}
 }
 
@@ -910,8 +865,7 @@ namespace LLError
 {
 	void logToFile(const std::string& file_name)
 	{
-		AIAccess<Settings> settings_w(Settings::get());
-		SettingsConfigPtr s = settings_w->getSettingsConfig();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
 
 		removeRecorder(s->mFileRecorder);
 		s->mFileRecorder.reset();
@@ -933,8 +887,7 @@ namespace LLError
 	
 	void logToFixedBuffer(LLLineBuffer* fixedBuffer)
 	{
-		AIAccess<Settings> settings_w(Settings::get());
-		SettingsConfigPtr s = settings_w->getSettingsConfig();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
 
 		removeRecorder(s->mFixedBufferRecorder);
 		s->mFixedBufferRecorder.reset();
@@ -951,18 +904,17 @@ namespace LLError
 
 	std::string logFileName()
 	{
-		AIAccess<Settings> settings_w(Settings::get());
-		SettingsConfigPtr s = settings_w->getSettingsConfig();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
 		return s->mFileRecorderFileName;
 	}
 }
 
 namespace
 {
-	void writeToRecorders(AIAccess<LLError::Settings>& settings_w, const LLError::CallSite& site, const std::string& message, bool show_location = true, bool show_time = true, bool show_tags = true, bool show_level = true, bool show_function = true)
+	void writeToRecorders(const LLError::CallSite& site, const std::string& message, bool show_location = true, bool show_time = true, bool show_tags = true, bool show_level = true, bool show_function = true)
 	{
 		LLError::ELevel level = site.mLevel;
-		LLError::SettingsConfigPtr s = settings_w->getSettingsConfig();
+		LLError::SettingsConfigPtr s = LLError::Settings::getInstance()->getSettingsConfig();
 	
 		for (Recorders::const_iterator i = s->mRecorders.begin();
 			i != s->mRecorders.end();
@@ -984,12 +936,17 @@ namespace
 
 			if (show_level && r->wantsLevel())
 				{
-				message_stream << site.mLevelString << " ";
+				message_stream << site.mLevelString;
 				}
 				
 			if (show_tags && r->wantsTags())
 			{
-				message_stream << site.mTagString << " ";
+				message_stream << site.mTagString;
+			}
+			if ((show_level && r->wantsLevel())||
+                (show_tags && r->wantsTags()))
+            {
+                message_stream << " ";
 			}
 
 			if (show_function && r->wantsFunctionName())
@@ -1004,23 +961,21 @@ namespace
 	}
 }
 
-
-LLGlobalMutex gLogMutex;
-LLGlobalMutex gCallStacksLogMutex;
+LLMutex gLogMutex;
+LLMutex gCallStacksLogMutex;
 
 namespace {
 	bool checkLevelMap(const LevelMap& map, const std::string& key,
 						LLError::ELevel& level)
 	{
-		bool stop_checking;
 		LevelMap::const_iterator i = map.find(key);
 		if (i == map.end())
 		{
-			return stop_checking = false;
+			return false;
 		}
 		
 			level = i->second;
-		return stop_checking = true;
+		return true;
 	}
 	
 	bool checkLevelMap(	const LevelMap& map, 
@@ -1063,12 +1018,6 @@ namespace {
 	LogLock::LogLock()
 		: mLocked(false), mOK(false)
 	{
-		if (!gLogMutex.isInitalized())
-		{
-			mOK = true;
-			return;
-		}
-		
 		const int MAX_RETRIES = 5;
 		for (int attempts = 0; attempts < MAX_RETRIES; ++attempts)
 		{
@@ -1109,16 +1058,12 @@ namespace LLError
 			return false;
 		}
 		
-		AIAccess<Settings> settings_w(Settings::get());
-		SettingsConfigPtr s = settings_w->getSettingsConfig();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
 		
 		s->mShouldLogCallCounter++;
 		
 		const std::string& class_name = className(site.mClassInfo);
-		std::string function_name;
-		if (site.mFunction)
-		{
-			function_name = functionName(site.mFunction);
+		std::string function_name = functionName(site.mFunction);
 #if LL_LINUX
 			// gross, but typeid comparison seems to always fail here with gcc4.1
 			if (0 != strcmp(site.mClassInfo.name(), typeid(NoClassInfo).name()))
@@ -1128,7 +1073,6 @@ namespace LLError
 			{
 				function_name = class_name + "::" + function_name;
 			}
-		}
 
 		ELevel compareLevel = s->mDefaultLevel;
 
@@ -1144,7 +1088,7 @@ namespace LLError
 			: false);
 
 		site.mCached = true;
-		AIAccess<Globals>(Globals::get())->addCallSite(site);
+		Globals::getInstance()->addCallSite(site);
 		return site.mShouldLog = site.mLevel >= compareLevel;
 	}
 
@@ -1154,7 +1098,7 @@ namespace LLError
 		LogLock lock;
 		if (lock.ok())
 		{
-			AIAccess<Globals> g(Globals::get());
+			Globals* g = Globals::getInstance();
 
 			if (!g->messageStreamInUse)
 			{
@@ -1184,7 +1128,7 @@ namespace LLError
 		   message[127] = '\0' ;
 	   }
 	   
-	   AIAccess<Globals> g(Globals::get());
+	   Globals* g = Globals::getInstance();
        if (out == &g->messageStream)
        {
            g->messageStream.clear();
@@ -1206,27 +1150,24 @@ namespace LLError
 			return;
 		}
 		
-		std::string message = out->str();
-		{
-			AIAccess<Globals> g(Globals::get());
-			if (out == &g->messageStream)
-			{
-				g->messageStream.clear();
-				g->messageStream.str("");
-				g->messageStreamInUse = false;
-			}
-			else
-			{
-				delete out;
-			}
-		}
+		Globals* g = Globals::getInstance();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
 
-		AIAccess<Settings> settings_w(Settings::get());
-		SettingsConfigPtr s = settings_w->getSettingsConfig();
+		std::string message = out->str();
+		if (out == &g->messageStream)
+		{
+			g->messageStream.clear();
+			g->messageStream.str("");
+			g->messageStreamInUse = false;
+		}
+		else
+		{
+			delete out;
+		}
 		
 		if (site.mLevel == LEVEL_ERROR)
 		{
-			writeToRecorders(settings_w, site, "error", true, true, true, false, false);
+			writeToRecorders(site, "error", true, true, true, false, false);
 		}
 		
 		std::ostringstream message_stream;
@@ -1271,7 +1212,7 @@ namespace LLError
 		
 		message_stream << message;
 		
-		writeToRecorders(settings_w, site, message_stream.str(), true, true, true, true, need_function);
+		writeToRecorders(site, message_stream.str());
 		
 		if (site.mLevel == LEVEL_ERROR  &&  s->mCrashFunction)
 		{
@@ -1284,12 +1225,12 @@ namespace LLError
 {
 	SettingsStoragePtr saveAndResetSettings()
 	{
-		return AIAccess<Settings>(Settings::get())->saveAndReset();
+		return Settings::getInstance()->saveAndReset();
 	}
 	
 	void restoreSettings(SettingsStoragePtr pSettingsStorage)
 	{
-		return AIAccess<Settings>(Settings::get())->restore(pSettingsStorage);
+		return Settings::getInstance()->restore(pSettingsStorage);
 	}
 
 	std::string removePrefix(std::string& s, const std::string& p)
@@ -1335,8 +1276,7 @@ namespace LLError
 
 	int shouldLogCallCount()
 	{
-		AIAccess<Settings> settings_w(Settings::get());
-		SettingsConfigPtr s = settings_w->getSettingsConfig();
+		SettingsConfigPtr s = Settings::getInstance()->getSettingsConfig();
 		return s->mShouldLogCallCounter;
 	}
 
@@ -1346,9 +1286,6 @@ namespace LLError
 #endif
 	void crashAndLoop(const std::string& message)
 	{
-#ifdef CWDEBUG
-		DoutFatal(dc::core, message);
-#else
 		// Now, we go kaboom!
 		int* make_me_crash = NULL;
 
@@ -1361,7 +1298,6 @@ namespace LLError
 		
 		// this is an attempt to let Coverity and other semantic scanners know that this function won't be returning ever.
 		exit(EXIT_FAILURE);
-#endif
 	}
 #if LL_WINDOWS
 		#pragma optimize("", on)
@@ -1415,12 +1351,6 @@ namespace LLError
 	CallStacksLogLock::CallStacksLogLock()
 		: mLocked(false), mOK(false)
 	{
-		if (!gCallStacksLogMutex.isInitalized())
-		{
-			mOK = true;
-			return;
-		}
-		
 		const int MAX_RETRIES = 5;
 		for (int attempts = 0; attempts < MAX_RETRIES; ++attempts)
 		{

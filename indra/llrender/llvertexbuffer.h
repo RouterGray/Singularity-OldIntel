@@ -34,6 +34,7 @@
 #include "v4coloru.h"
 #include "llstrider.h"
 #include "llrender.h"
+#include "lltrace.h"
 #include <set>
 #include <vector>
 #include <list>
@@ -93,8 +94,7 @@ public:
 
 //============================================================================
 // base class 
-class LLPrivateMemoryPool;
-class LLVertexBuffer : public LLRefCount
+class LLVertexBuffer : public LLRefCount, public LLTrace::MemTrackable<LLVertexBuffer>
 {
 public:
 	class MappedRegion
@@ -108,7 +108,8 @@ public:
 	};
 
 	LLVertexBuffer(const LLVertexBuffer& rhs)
-		: mUsage(rhs.mUsage)
+	:	LLTrace::MemTrackable<LLVertexBuffer>("LLVertexBuffer"),
+		mUsage(rhs.mUsage)
 	{
 		*this = rhs;
 	}
@@ -123,6 +124,7 @@ public:
 
 	static LLVBOPool sStreamVBOPool;
 	static LLVBOPool sDynamicVBOPool;
+	static LLVBOPool sDynamicCopyVBOPool;
 	static LLVBOPool sStreamIBOPool;
 	static LLVBOPool sDynamicIBOPool;
 
@@ -326,9 +328,6 @@ protected:
 	void waitFence() const;
 
 	static S32 determineUsage(S32 usage);
-
-private:
-	static LLPrivateMemoryPool* sPrivatePoolp;
 
 public:
 	static S32 sCount;

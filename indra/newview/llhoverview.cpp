@@ -732,7 +732,8 @@ void LLHoverView::updateText()
 	if (retrieving_data)
 	{
 		// Keep doing this twice per second, until all data was retrieved.
-		mLastTextHoverObjectTimer.start(DELAY_BEFORE_REFRESH_TIP);
+		mLastTextHoverObjectTimer.start();
+		mLastTextHoverObjectTimer.resetWithExpiry(DELAY_BEFORE_REFRESH_TIP);
 	}
 	//</singu>
 }

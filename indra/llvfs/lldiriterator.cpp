@@ -25,6 +25,8 @@
  */
 
 #include "lldiriterator.h"
+
+#include "fix_macros.h"
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 

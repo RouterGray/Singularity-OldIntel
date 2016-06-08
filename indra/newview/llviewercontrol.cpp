@@ -78,11 +78,7 @@
 #include "llrender.h"
 #include "lldrawpoolwlsky.h"
 #include "llwlparammanager.h"
-#include "aistatemachine.h"
-#include "aithreadsafe.h"
 #include "lldrawpoolbump.h"
-#include "aicurl.h"
-#include "aihttptimeoutpolicy.h"
 
 void load_default_bindings(bool zqsd);
 
@@ -90,7 +86,7 @@ void load_default_bindings(bool zqsd);
 BOOL 				gHackGodmode = FALSE;
 #endif
 
-AIThreadSafeDC<settings_map_type> gSettings;
+settings_map_type gSettings;
 LLControlGroup gSavedSettings("Global");	// saved at end of session
 LLControlGroup gSavedPerAccountSettings("PerAccount"); // saved at end of session
 LLControlGroup gColors("Colors");	// saved at end of session
@@ -128,13 +124,6 @@ static bool handleTerrainScaleChanged(const LLSD& inputvalue)
 {
 	LLSD newvalue = 1.f / inputvalue.asReal();
 	LLDrawPoolTerrain::sDetailScale = newvalue.asReal();
-	return true;
-}
-
-bool handleStateMachineMaxTimeChanged(const LLSD& newvalue)
-{
-	F32 StateMachineMaxTime = newvalue.asFloat();
-	AIEngine::setMaxCount(StateMachineMaxTime);
 	return true;
 }
 
@@ -332,12 +321,6 @@ static bool handleVideoMemoryChanged(const LLSD& newvalue)
 static bool handleBandwidthChanged(const LLSD& newvalue)
 {
 	gViewerThrottle.setMaxBandwidth((F32) newvalue.asReal());
-	return true;
-}
-
-static bool handleHTTPBandwidthChanged(const LLSD& newvalue)
-{
-	AIPerService::setHTTPThrottleBandwidth((F32) newvalue.asReal());
 	return true;
 }
 
@@ -711,7 +694,6 @@ void settings_setup_listeners()
 	gSavedSettings.getControl("RenderTreeLODFactor")->getSignal()->connect(boost::bind(&handleTreeLODChanged, _2));
 	gSavedSettings.getControl("RenderFlexTimeFactor")->getSignal()->connect(boost::bind(&handleFlexLODChanged, _2));
 	gSavedSettings.getControl("ThrottleBandwidthKBPS")->getSignal()->connect(boost::bind(&handleBandwidthChanged, _2));
-	gSavedSettings.getControl("HTTPThrottleBandwidth")->getSignal()->connect(boost::bind(&handleHTTPBandwidthChanged, _2));
 	gSavedSettings.getControl("RenderGamma")->getSignal()->connect(boost::bind(&handleGammaChanged, _2));
 	gSavedSettings.getControl("RenderFogRatio")->getSignal()->connect(boost::bind(&handleFogRatioChanged, _2));
 	gSavedSettings.getControl("RenderMaxPartCount")->getSignal()->connect(boost::bind(&handleMaxPartCountChanged, _2));
@@ -828,7 +810,6 @@ void settings_setup_listeners()
 	gSavedSettings.getControl("AudioLevelMic")->getSignal()->connect(boost::bind(&handleVoiceClientPrefsChanged, _2));
 	gSavedSettings.getControl("LipSyncEnabled")->getSignal()->connect(boost::bind(&handleVoiceClientPrefsChanged, _2));	
 	gSavedSettings.getControl("VelocityInterpolate")->getSignal()->connect(boost::bind(&handleVelocityInterpolate, _2));
-	gSavedSettings.getControl("StateMachineMaxTime")->getSignal()->connect(boost::bind(&handleStateMachineMaxTimeChanged, _2));
 
 	gSavedSettings.getControl("CloudsEnabled")->getSignal()->connect(boost::bind(&handleCloudSettingsChanged, _2));
 	gSavedSettings.getControl("SkyUseClassicClouds")->getSignal()->connect(boost::bind(&handleCloudSettingsChanged, _2));
@@ -838,25 +819,6 @@ void settings_setup_listeners()
 	gSavedSettings.getControl("AscentAvatarXModifier")->getSignal()->connect(boost::bind(&handleAscentAvatarModifier, _2));
 	gSavedSettings.getControl("AscentAvatarYModifier")->getSignal()->connect(boost::bind(&handleAscentAvatarModifier, _2));
 	gSavedSettings.getControl("AscentAvatarZModifier")->getSignal()->connect(boost::bind(&handleAscentAvatarModifier, _2));
-
-	gSavedSettings.getControl("CurlMaxTotalConcurrentConnections")->getSignal()->connect(boost::bind(&AICurlInterface::handleCurlMaxTotalConcurrentConnections, _2));
-	gSavedSettings.getControl("CurlConcurrentConnectionsPerService")->getSignal()->connect(boost::bind(&AICurlInterface::handleCurlConcurrentConnectionsPerService, _2));
-	gSavedSettings.getControl("NoVerifySSLCert")->getSignal()->connect(boost::bind(&AICurlInterface::handleNoVerifySSLCert, _2));
-
-	gSavedSettings.getControl("CurlTimeoutDNSLookup")->getValidateSignal()->connect(boost::bind(&validateCurlTimeoutDNSLookup, _2));
-	gSavedSettings.getControl("CurlTimeoutDNSLookup")->getSignal()->connect(boost::bind(&handleCurlTimeoutDNSLookup, _2));
-	gSavedSettings.getControl("CurlTimeoutConnect")->getValidateSignal()->connect(boost::bind(&validateCurlTimeoutConnect, _2));
-	gSavedSettings.getControl("CurlTimeoutConnect")->getSignal()->connect(boost::bind(&handleCurlTimeoutConnect, _2));
-	gSavedSettings.getControl("CurlTimeoutReplyDelay")->getValidateSignal()->connect(boost::bind(&validateCurlTimeoutReplyDelay, _2));
-	gSavedSettings.getControl("CurlTimeoutReplyDelay")->getSignal()->connect(boost::bind(&handleCurlTimeoutReplyDelay, _2));
-	gSavedSettings.getControl("CurlTimeoutLowSpeedLimit")->getValidateSignal()->connect(boost::bind(&validateCurlTimeoutLowSpeedLimit, _2));
-	gSavedSettings.getControl("CurlTimeoutLowSpeedLimit")->getSignal()->connect(boost::bind(&handleCurlTimeoutLowSpeedLimit, _2));
-	gSavedSettings.getControl("CurlTimeoutLowSpeedTime")->getValidateSignal()->connect(boost::bind(&validateCurlTimeoutLowSpeedTime, _2));
-	gSavedSettings.getControl("CurlTimeoutLowSpeedTime")->getSignal()->connect(boost::bind(&handleCurlTimeoutLowSpeedTime, _2));
-	gSavedSettings.getControl("CurlTimeoutMaxTransaction")->getValidateSignal()->connect(boost::bind(&validateCurlTimeoutMaxTransaction, _2));
-	gSavedSettings.getControl("CurlTimeoutMaxTransaction")->getSignal()->connect(boost::bind(&handleCurlTimeoutMaxTransaction, _2));
-	gSavedSettings.getControl("CurlTimeoutMaxTotalDelay")->getValidateSignal()->connect(boost::bind(&validateCurlTimeoutMaxTotalDelay, _2));
-	gSavedSettings.getControl("CurlTimeoutMaxTotalDelay")->getSignal()->connect(boost::bind(&handleCurlTimeoutMaxTotalDelay, _2));
 
     // [Ansariel: Display name support]
 	gSavedSettings.getControl("PhoenixNameSystem")->getSignal()->connect(boost::bind(&handlePhoenixNameSystemChanged, _2));

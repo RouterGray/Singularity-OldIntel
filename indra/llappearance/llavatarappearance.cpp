@@ -271,10 +271,6 @@ void LLAvatarAppearance::initInstance()
 		}
 	}
 
-	if (gNoRender)
-	{
-		return;
-	}
 	buildCharacter();
 
 }
@@ -766,12 +762,6 @@ void LLAvatarAppearance::buildCharacter()
 	BOOL status = loadAvatar();
 	stop_glerror();
 
-	if (gNoRender)
-	{
-		// Still want to load the avatar skeleton so visual parameters work.
-		return;
-	}
-
 // 	gPrintMessagesThisFrame = TRUE;
 	LL_DEBUGS() << "Avatar load took " << timer.getElapsedTimeF32() << " seconds." << LL_ENDL;
 
@@ -846,14 +836,9 @@ void LLAvatarAppearance::buildCharacter()
 
 }
 
-//-----------------------------------------------------------------------------
-// loadAvatar()
-//-----------------------------------------------------------------------------
-//static LLFastTimer::DeclareTimer FTM_LOAD_AVATAR("Load Avatar");
-
 BOOL LLAvatarAppearance::loadAvatar()
 {
-// 	LLFastTimer t(FTM_LOAD_AVATAR);
+// 	LL_RECORD_BLOCK_TIME(FTM_LOAD_AVATAR);
 	
 	// avatar_skeleton.xml
 	if( !buildSkeleton(sAvatarSkeletonInfo) )

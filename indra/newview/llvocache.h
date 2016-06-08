@@ -46,7 +46,7 @@ class LLVOCacheEntry
 {
 public:
 	LLVOCacheEntry(U32 local_id, U32 crc, LLDataPackerBinaryBuffer &dp);
-	LLVOCacheEntry(LLAPRFile* apr_file);
+	LLVOCacheEntry(llifstream& infile);
 	LLVOCacheEntry();
 	~LLVOCacheEntry();
 
@@ -56,7 +56,7 @@ public:
 	S32 getCRCChangeCount() const	{ return mCRCChangeCount; }
 
 	void dump() const;
-	BOOL writeToFile(LLAPRFile* apr_file) const;
+	BOOL writeToFile(llofstream& outfile) const;
 	void assignCRC(U32 crc, LLDataPackerBinaryBuffer &dp);
 	LLDataPackerBinaryBuffer *getDP(U32 crc);
 	void recordHit();
@@ -120,10 +120,10 @@ public:
 	void removeCache(ELLPath location) ;
 
 	void readFromCache(U64 handle, const LLUUID& id, LLVOCacheEntry::vocache_entry_map_t& cache_entry_map) ;
-	void writeToCache(U64 handle, const LLUUID& id, const LLVOCacheEntry::vocache_entry_map_t& cache_entry_map, BOOL dirty_cache) ;
+	void writeToCache(U64 handle, const LLUUID& id, const LLVOCacheEntry::vocache_entry_map_t& cache_entry_map, BOOL dirty_cache, bool removal_enabled);
 	void removeEntry(U64 handle) ;
 
-	void setReadOnly(BOOL read_only) {mReadOnly = read_only;} 
+	void setReadOnly(bool read_only) {mReadOnly = read_only;} 
 
 private:
 	void setDirNames(ELLPath location);	
@@ -139,9 +139,9 @@ private:
 	BOOL updateEntry(const HeaderEntryInfo* entry);
 	
 private:
-	BOOL                 mEnabled;
-	BOOL                 mInitialized ;
-	BOOL                 mReadOnly ;
+	bool                 mEnabled;
+	bool                 mInitialized ;
+	bool                 mReadOnly ;
 	HeaderMetaInfo       mMetaInfo;
 	U32                  mCacheSize;
 	U32                  mNumEntries;

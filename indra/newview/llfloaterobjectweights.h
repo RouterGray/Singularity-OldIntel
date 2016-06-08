@@ -64,7 +64,7 @@ public:
 	/*virtual*/ void onOpen();
 
 	/*virtual*/ void onWeightsUpdate(const SelectionCost& selection_cost);
-	/*virtual*/ void setErrorStatus(U32 status, const std::string& reason);
+	/*virtual*/ void setErrorStatus(S32 status, const std::string& reason);
 
 	void updateLandImpacts(const LLParcel* parcel);
 	void refresh();

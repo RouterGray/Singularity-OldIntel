@@ -60,7 +60,7 @@ this feature is still a work in progress.
 #include <ctime>
 #include "llviewertexturelist.h"
 #include "llviewerobjectlist.h"
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 #include "llviewermenufile.h"
 #include "llfloaterimagepreview.h"
 #include "llfile.h"
@@ -452,18 +452,12 @@ LocalAssetBrowser::~LocalAssetBrowser()
 
 void LocalAssetBrowser::AddBitmap()
 {
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_IMAGE, "", "image", true);
-	filepicker->run(boost::bind(&LocalAssetBrowser::AddBitmap_continued, filepicker));
-}
-
-void LocalAssetBrowser::AddBitmap_continued(AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getOpenFile(LLFilePicker::FFLOAD_IMAGE))
 		return;
 
 	bool change_happened = false;
-	std::vector<std::string> const& filenames(filepicker->getFilenames());
+	std::vector<std::string> const& filenames(filepicker.getFilenames());
 	for(std::vector<std::string>::const_iterator filename = filenames.begin(); filename != filenames.end(); ++filename)
 	{
 		LocalBitmap unit(*filename);

@@ -65,7 +65,8 @@
 #include "llvfile.h"
 #include "llvfs.h"
 
-#include "llassetuploadresponders.h"
+#include "llviewerassetupload.h"
+#include "llcorehttputil.h"
 
 #include "hippogridmanager.h"
 #include "llfloatersnapshot.h"
@@ -234,38 +235,15 @@ void LLFloaterPostcard::onClose(bool app_quitting)
 	destroy();
 }
 
-class LLSendPostcardResponder : public LLAssetUploadResponder
+LLResourceUploadInfo::ptr_t fake_resource_upload_info(const std::string name)
 {
-private:
-	int mSnapshotIndex;
-
-public:
-	LLSendPostcardResponder(const LLSD &post_data,
-							const LLUUID& vfile_id,
-							LLAssetType::EType asset_type,
-							int index) :
-	    LLAssetUploadResponder(post_data, vfile_id, asset_type),
-		mSnapshotIndex(index)
-	{	
-	}
-	// *TODO define custom uploadFailed here so it's not such a generic message
-	/*virtual*/ void uploadComplete(const LLSD& content)
-	{
-		// we don't care about what the server returns from this post, just clean up the UI
-		LLFloaterSnapshot::savePostcardDone(true, mSnapshotIndex);
-	}
-	/*virtual*/ void uploadFailure(const LLSD& content)
-	{
-		LLAssetUploadResponder::uploadFailure(content);
-		LLFloaterSnapshot::savePostcardDone(false, mSnapshotIndex);
-	}
-	/*virtual*/ void httpFailure(void)
-	{
-		LLAssetUploadResponder::httpFailure();
-		LLFloaterSnapshot::savePostcardDone(false, mSnapshotIndex);
-	}
-	/*virtual*/ char const* getName(void) const { return "LLSendPostcardResponder"; }
-};
+	return LLResourceUploadInfo::ptr_t(new LLResourceUploadInfo(LLTransactionID(), LLAssetType::AT_NONE, name, LLStringUtil::null, 0, LLFolderType::FT_NONE, LLInventoryType::IT_NONE, 0, 0, 0, 0));
+}
+void LLFloaterPostcard::uploadPostcardFailure(LLSD content, const std::string& name, int mSnapshotIndex)
+{
+	LLViewerAssetUpload::HandleUploadError(LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(content), content[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_CONTENT], fake_resource_upload_info(name));
+	LLFloaterSnapshot::savePostcardDone(false, mSnapshotIndex);
+}
 
 // static
 void LLFloaterPostcard::onClickSend(void* data)
@@ -421,7 +399,7 @@ void LLFloaterPostcard::sendPostcard()
 		body["name"] = childGetValue("name_form").asString();
 		body["subject"] = childGetValue("subject_form").asString();
 		body["msg"] = childGetValue("msg_form").asString();
-		LLHTTPClient::post(url, body, new LLSendPostcardResponder(body, mAssetID, LLAssetType::AT_IMAGE_JPEG, mSnapshotIndex));
+		LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(url, body, boost::bind(LLFloaterSnapshot::savePostcardDone, true, mSnapshotIndex), boost::bind(LLFloaterPostcard::uploadPostcardFailure, _1, "postcard image", mSnapshotIndex));
 	} 
 	else
 	{

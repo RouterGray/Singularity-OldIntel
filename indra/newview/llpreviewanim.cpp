@@ -40,11 +40,12 @@
 #include "llvoavatarself.h"
 #include "llagent.h"          // gAgent
 #include "llkeyframemotion.h"
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 #include "lllineeditor.h"
 #include "lluictrlfactory.h"
 #include "lluictrlfactory.h"
 // <edit>
+#include "llfilepicker.h"
 #include "llviewerwindow.h" // for alert
 #include "llappviewer.h" // gStaticVFS
 // </edit>
@@ -398,17 +399,10 @@ void LLPreviewAnim::gotAssetForSave(LLVFS *vfs,
 
 	// Write it back out...
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(LLDir::getScrubbedFileName(self->getItem()->getName()) + ".animatn", FFSAVE_ANIMATN);
-	filepicker->run(boost::bind(&LLPreviewAnim::gotAssetForSave_continued, buffer, size, filepicker));
-}
-
-// static
-void LLPreviewAnim::gotAssetForSave_continued(char* buffer, S32 size, AIFilePicker* filepicker)
-{
-	if (filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (filepicker.getSaveFile(LLFilePicker::FFSAVE_ANIMATN, LLDir::getScrubbedFileName(self->getItem()->getName()) + ".animatn"))
 	{
-		std::string filename = filepicker->getFilename();
+		std::string filename = filepicker.getFirstFile();
 		std::ofstream export_file(filename.c_str(), std::ofstream::binary);
 		export_file.write(buffer, size);
 		export_file.close();

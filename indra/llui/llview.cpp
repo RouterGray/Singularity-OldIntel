@@ -1601,11 +1601,12 @@ BOOL LLView::hasChild(const std::string& childname, BOOL recurse) const
 //-----------------------------------------------------------------------------
 // getChildView()
 //-----------------------------------------------------------------------------
-static LLFastTimer::DeclareTimer FTM_FIND_VIEWS("Find Widgets");
+
+static LLTrace::BlockTimerStatHandle FTM_FIND_VIEWS("Find Widgets");
 
 LLView* LLView::getChildView(const std::string& name, BOOL recurse, BOOL create_if_missing) const
 {
-	LLFastTimer ft(FTM_FIND_VIEWS);
+	LL_RECORD_BLOCK_TIME(FTM_FIND_VIEWS);
 	//richard: should we allow empty names?
 	//if(name.empty())
 	//	return NULL;

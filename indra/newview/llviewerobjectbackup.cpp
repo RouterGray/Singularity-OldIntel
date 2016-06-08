@@ -34,9 +34,9 @@
 #include <sstream>
 
 #include "llcallbacklist.h"
+#include "llcorehttputil.h"
 #include "lldir.h"
 #include "lleconomy.h"
-#include "llhttpclient.h"
 #include "llinventorydefines.h"
 #include "llimagej2c.h"
 #include "lllfsthread.h"
@@ -49,7 +49,8 @@
 
 #include "llagent.h"
 #include "llappviewer.h" 
-#include "llassetuploadresponders.h"
+#include "llviewerassetupload.h"
+#include "llfilepicker.h"
 #include "llinventoryfunctions.h"
 #include "llinventorymodel.h"	// for gInventory
 #include "llmaterialmgr.h"
@@ -75,96 +76,80 @@ LLUUID LL_TEXTURE_INVISIBLE      = LLUUID("38b86f85-2575-52a9-a531-23108d8da837"
 LLUUID LL_TEXTURE_TRANSPARENT    = LLUUID("8dcd4a48-2d37-4909-9f78-f7a9eb4ef903");
 LLUUID LL_TEXTURE_MEDIA          = LLUUID("8b5fec65-8d8d-9dc5-cda8-8fdf2716e361");
 
-class ImportObjectResponder: public LLNewAgentInventoryResponder
+static void uploadComplete(const LLSD& content, const LLSD& mPostData)
 {
-protected:
-	LOG_CLASS(ImportObjectResponder);
-
-public:
-	ImportObjectResponder(const LLSD& post_data, const LLUUID& vfile_id,
-						  LLAssetType::EType asset_type)
-	: LLNewAgentInventoryResponder(post_data, vfile_id, asset_type)
+	LLObjectBackup* self = LLObjectBackup::findInstance();
+	if (!self)
 	{
+		LL_WARNS() << "Import aborted, LLObjectBackup instance gone !"
+			<< LL_ENDL;
+		// remove the "Uploading..." message
+		LLUploadDialog::modalUploadFinished();
+		return;
 	}
 
-	//virtual 
-	virtual void uploadComplete(const LLSD& content)
-	{
-		LLObjectBackup* self = LLObjectBackup::findInstance();
-		if (!self)
-		{
-			LL_WARNS() << "Import aborted, LLObjectBackup instance gone !"
-					<< LL_ENDL;
-			// remove the "Uploading..." message
-			LLUploadDialog::modalUploadFinished();
-			return;
-		}
+	LLAssetType::EType asset_type = LLAssetType::lookup(mPostData["asset_type"].asString());
+	LLInventoryType::EType inv_type = LLInventoryType::lookup(mPostData["inventory_type"].asString());
 
-		LLAssetType::EType asset_type = LLAssetType::lookup(mPostData["asset_type"].asString());
-		LLInventoryType::EType inv_type = LLInventoryType::lookup(mPostData["inventory_type"].asString());
-
-		// Update L$ and ownership credit information
-		// since it probably changed on the server
-		if (asset_type == LLAssetType::AT_TEXTURE ||
+	// Update L$ and ownership credit information
+	// since it probably changed on the server
+	if (asset_type == LLAssetType::AT_TEXTURE ||
 			asset_type == LLAssetType::AT_SOUND ||
 			asset_type == LLAssetType::AT_ANIMATION)
-		{
-			LLMessageSystem* msg = gMessageSystem;
-			msg->newMessageFast(_PREHASH_MoneyBalanceRequest);
-			msg->nextBlockFast(_PREHASH_AgentData);
-			msg->addUUIDFast(_PREHASH_AgentID, gAgentID);
-			msg->addUUIDFast(_PREHASH_SessionID, gAgentSessionID);
-			msg->nextBlockFast(_PREHASH_MoneyData);
-			msg->addUUIDFast(_PREHASH_TransactionID, LLUUID::null);
-			gAgent.sendReliableMessage();
-		}
+	{
+		LLMessageSystem* msg = gMessageSystem;
+		msg->newMessageFast(_PREHASH_MoneyBalanceRequest);
+		msg->nextBlockFast(_PREHASH_AgentData);
+		msg->addUUIDFast(_PREHASH_AgentID, gAgentID);
+		msg->addUUIDFast(_PREHASH_SessionID, gAgentSessionID);
+		msg->nextBlockFast(_PREHASH_MoneyData);
+		msg->addUUIDFast(_PREHASH_TransactionID, LLUUID::null);
+		gAgent.sendReliableMessage();
+	}
 
-		// Actually add the upload to viewer inventory
-		LL_INFOS() << "Adding " << content["new_inventory_item"].asUUID() << " "
-				<< content["new_asset"].asUUID() << " to inventory." << LL_ENDL;
-		if (mPostData["folder_id"].asUUID().notNull())
+	// Actually add the upload to viewer inventory
+	LL_INFOS() << "Adding " << content["new_inventory_item"].asUUID() << " "
+		<< content["new_asset"].asUUID() << " to inventory." << LL_ENDL;
+	if (mPostData["folder_id"].asUUID().notNull())
+	{
+		LLPermissions perm;
+		U32 next_owner_perm;
+		perm.init(gAgentID, gAgentID, LLUUID::null, LLUUID::null);
+		if (mPostData["inventory_type"].asString() == "snapshot")
 		{
-			LLPermissions perm;
-			U32 next_owner_perm;
-			perm.init(gAgentID, gAgentID, LLUUID::null, LLUUID::null);
-			if (mPostData["inventory_type"].asString() == "snapshot")
-			{
-				next_owner_perm = PERM_ALL;
-			}
-			else
-			{
-				next_owner_perm = PERM_MOVE | PERM_TRANSFER;
-			}
-			perm.initMasks(PERM_ALL, PERM_ALL, PERM_NONE, PERM_NONE, next_owner_perm);
-			S32 creation_date_now = time_corrected();
-			LLPointer<LLViewerInventoryItem> item;
-			item = new LLViewerInventoryItem(content["new_inventory_item"].asUUID(),
-										mPostData["folder_id"].asUUID(),
-										perm,
-										content["new_asset"].asUUID(),
-										asset_type, inv_type,
-										mPostData["name"].asString(),
-										mPostData["description"].asString(),
-										LLSaleInfo::DEFAULT,
-										LLInventoryItemFlags::II_FLAGS_NONE,
-										creation_date_now);
-			gInventory.updateItem(item);
-			gInventory.notifyObservers();
+			next_owner_perm = PERM_ALL;
 		}
 		else
 		{
-			LL_WARNS() << "Can't find a folder to put it into" << LL_ENDL;
+			next_owner_perm = PERM_MOVE | PERM_TRANSFER;
 		}
-
-		// remove the "Uploading..." message
-		LLUploadDialog::modalUploadFinished();
-
-		self->updateMap(content["new_asset"].asUUID());
-		self->uploadNextAsset();
+		perm.initMasks(PERM_ALL, PERM_ALL, PERM_NONE, PERM_NONE, next_owner_perm);
+		S32 creation_date_now = time_corrected();
+		LLPointer<LLViewerInventoryItem> item;
+		item = new LLViewerInventoryItem(content["new_inventory_item"].asUUID(),
+				mPostData["folder_id"].asUUID(),
+				perm,
+				content["new_asset"].asUUID(),
+				asset_type, inv_type,
+				mPostData["name"].asString(),
+				mPostData["description"].asString(),
+				LLSaleInfo::DEFAULT,
+				LLInventoryItemFlags::II_FLAGS_NONE,
+				creation_date_now);
+		gInventory.updateItem(item);
+		gInventory.notifyObservers();
+	}
+	else
+	{
+		LL_WARNS() << "Can't find a folder to put it into" << LL_ENDL;
 	}
 
-	/*virtual*/ char const* getName(void) const { return "importResponder"; }
-};
+	// remove the "Uploading..." message
+	LLUploadDialog::modalUploadFinished();
+
+	self->updateMap(content["new_asset"].asUUID());
+	self->uploadNextAsset();
+}
 
 class BackupCacheReadResponder : public LLTextureCache::ReadResponder
 {
@@ -380,21 +365,15 @@ void LLObjectBackup::exportObject()
 	LLSelectMgr::getInstance()->getSelection()->ref();
 
 	// Open the file save dialog
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open("", FFSAVE_XML);
-	filepicker->run(boost::bind(&LLObjectBackup::exportObject_continued, this, filepicker));
-}
-
-void LLObjectBackup::exportObject_continued(AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getSaveFile(LLFilePicker::FFSAVE_XML))
 	{
 		// User canceled save.
 		LLSelectMgr::getInstance()->getSelection()->unref();
 		return;
 	}
 
-	mFileName = filepicker->getFilename();
+	mFileName = filepicker.getFirstFile();
 	mFolder = gDirUtilp->getDirName(mFileName);
 
 	mNonExportedTextures = TEXTURE_OK;
@@ -1084,20 +1063,14 @@ void LLObjectBackup::importObject(bool upload)
 	setDefaultTextures();
 
 	// Open the file open dialog
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_XML, "", "import");
-	filepicker->run(boost::bind(&LLObjectBackup::importObject_continued, this, filepicker));
-}
-
-void LLObjectBackup::importObject_continued(AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getOpenFile(LLFilePicker::FFLOAD_XML))
 	{
 		// User canceled save.
 		return;
 	}
 
-	std::string file_name = filepicker->getFilename();
+	std::string file_name = filepicker.getFirstFile();
 	mFolder = gDirUtilp->getDirName(file_name);
 	llifstream import_file(file_name);
 	LLSDSerialize::fromXML(mLLSD, import_file);
@@ -1610,8 +1583,8 @@ void myupload_new_resource(const LLTransactionID &tid,
 		LLSDSerialize::toXML(body, llsdxml);
 		LL_DEBUGS("ObjectBackup") << "posting body to capability: "
 								  << llsdxml.str() << LL_ENDL;
-		LLHTTPClient::post(url, body,
-						   new ImportObjectResponder(body, uuid, asset_type));
+		LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(url, body,
+			boost::bind(uploadComplete, _1, body));
 	}
 	else
 	{
@@ -1649,17 +1622,17 @@ void LLObjectBackup::uploadNextAsset()
 	tid.generate();
 	uuid = tid.makeAssetID(gAgent.getSecureSessionID());
 
-	S32 file_size;
-	LLAPRFile outfile(filename, LL_APR_RB, &file_size);
-	if (outfile.getFileHandle())
+	llifstream outfile(filename);
+	if (outfile.good())
 	{
 		const S32 buf_size = 65536;	
 		U8 copy_buf[buf_size];
 		LLVFile file(gVFS, uuid,  LLAssetType::AT_TEXTURE, LLVFile::WRITE);
-		file.setMaxSize(file_size);
-		while ((file_size = outfile.read(copy_buf, buf_size)))
+		file.setMaxSize(LLFile::size(filename));
+		while (outfile.good())
 		{
-			file.write(copy_buf, file_size);
+			outfile.read((char*)copy_buf, buf_size);
+			file.write(copy_buf, outfile.gcount());
 		}
 		outfile.close();
 	}

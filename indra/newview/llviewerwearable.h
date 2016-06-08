@@ -29,9 +29,9 @@
 
 #include "llwearable.h"
 #include "llavatarappearancedefines.h"
+#include "llextendedstatus.h"
 
 class LLVOAvatar;
-class LLAPRFile;
 
 class LLViewerWearable : public LLWearable
 {
@@ -67,13 +67,10 @@ public:
 
 	/*virtual*/ EImportResult	importStream( std::istream& input_stream, LLAvatarAppearance* avatarp );
 
-	// Singu extension.
-#if 0
-	AIArchetype getArchetype(void) const;
-#endif
-
 	void				setParamsToDefaults();
 	void				setTexturesToDefaults();
+	void				setVolatile(BOOL is_volatile) { mVolatile = is_volatile; } // TRUE when doing preview renders, some updates will be suppressed.
+	BOOL				getVolatile() { return mVolatile; }
 
 	/*virtual*/ const LLUUID		getDefaultTextureImageID(LLAvatarAppearanceDefines::ETextureIndex index) const;
 
@@ -89,7 +86,7 @@ public:
 	/*virtual*/ void				saveValues();
 
 	// Something happened that requires the wearable's label to be updated (e.g. worn/unworn).
-	void				setUpdated() const;
+	/*virtual*/void		setUpdated() const;
 
 	// the wearable was worn. make sure the name and description of the wearable object matches the LLViewerInventoryItem,
 	// not the wearable asset itself.
@@ -101,6 +98,8 @@ public:
 protected:
 	LLAssetID			mAssetID;
 	LLTransactionID		mTransactionID;
+
+	BOOL 				mVolatile; // True when rendering preview images. Can suppress some updates.
 
 	LLUUID				mItemID;  // ID of the inventory item in the agent's inventory	
 };

@@ -63,10 +63,7 @@
 #include <vector>
 #include <deque>
 #include <boost/iterator/iterator_facade.hpp>
-#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
-#define BOOST_FUNCTION_HPP_INCLUDED
-#endif
 #include <boost/static_assert.hpp>
 
 namespace LLTreeIter

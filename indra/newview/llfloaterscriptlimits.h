@@ -33,6 +33,8 @@
 #include "llhost.h"
 #include "llpanel.h"
 #include "llremoteparcelrequest.h"
+#include "lleventcoro.h"
+#include "llcoros.h"
 
 class LLPanelScriptLimitsInfo;
 class LLTabContainer;
@@ -80,70 +82,6 @@ protected:
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// Responders
-/////////////////////////////////////////////////////////////////////////////
-class AIHTTPTimeoutPolicy;
-
-extern AIHTTPTimeoutPolicy fetchScriptLimitsRegionInfoResponder_timeout;
-class fetchScriptLimitsRegionInfoResponder: public LLHTTPClient::ResponderWithResult
-{
-	public:
-		fetchScriptLimitsRegionInfoResponder(const LLSD& info) : mInfo(info) {};
-
-		void httpSuccess(void);
-		void httpFailure(void);
-	public:
-		/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return fetchScriptLimitsRegionInfoResponder_timeout; }
-		/*virtual*/ char const* getName(void) const { return "fetchScriptLimitsRegionInfoResponder"; }
-	protected:
-		LLSD mInfo;
-};
-
-extern AIHTTPTimeoutPolicy fetchScriptLimitsRegionSummaryResponder_timeout;
-class fetchScriptLimitsRegionSummaryResponder: public LLHTTPClient::ResponderWithResult
-{
-	public:
-		fetchScriptLimitsRegionSummaryResponder(const LLSD& info) : mInfo(info) {};
-
-		void httpSuccess(void);
-		void httpFailure(void);
-	public:
-		/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return fetchScriptLimitsRegionSummaryResponder_timeout; }
-		/*virtual*/ char const* getName(void) const { return "fetchScriptLimitsRegionSummaryResponder"; }
-	protected:
-		LLSD mInfo;
-};
-
-extern AIHTTPTimeoutPolicy fetchScriptLimitsRegionDetailsResponder_timeout;
-class fetchScriptLimitsRegionDetailsResponder: public LLHTTPClient::ResponderWithResult
-{
-	public:
-		fetchScriptLimitsRegionDetailsResponder(const LLSD& info) : mInfo(info) {};
-
-		void httpSuccess(void);
-		void httpFailure(void);
-	public:
-		/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return fetchScriptLimitsRegionDetailsResponder_timeout; }
-		/*virtual*/ char const* getName(void) const { return "fetchScriptLimitsRegionDetailsResponder"; }
-	protected:
-		LLSD mInfo;
-};
-
-extern AIHTTPTimeoutPolicy fetchScriptLimitsAttachmentInfoResponder_timeout;
-class fetchScriptLimitsAttachmentInfoResponder: public LLHTTPClient::ResponderWithResult
-{
-	public:
-		fetchScriptLimitsAttachmentInfoResponder() {};
-
-		void httpSuccess(void);
-		void httpFailure(void);
-	public:
-		/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return fetchScriptLimitsAttachmentInfoResponder_timeout; }
-		/*virtual*/ char const* getName(void) const { return "fetchScriptLimitsAttachmentInfoResponder"; }
-	protected:
-};
-
-/////////////////////////////////////////////////////////////////////////////
 // Memory panel
 /////////////////////////////////////////////////////////////////////////////
 
@@ -183,27 +121,27 @@ private:
 	LLSD mContent;
 	LLUUID mParcelId;
 	bool mGotParcelMemoryUsed;
-	bool mGotParcelMemoryUsedDetails;
 	bool mGotParcelMemoryMax;
 	S32 mParcelMemoryMax;
 	S32 mParcelMemoryUsed;
-	S32 mParcelMemoryUsedDetails;
 
 	bool mGotParcelURLsUsed;
-	bool mGotParcelURLsUsedDetails;
 	bool mGotParcelURLsMax;
 	S32 mParcelURLsMax;
 	S32 mParcelURLsUsed;
-	S32 mParcelURLsUsedDetails;
 
 	std::vector<LLSD> mObjectListItems;
+
+    void getLandScriptResourcesCoro(std::string url);
+    void getLandScriptSummaryCoro(std::string url);
+    void getLandScriptDetailsCoro(std::string url);
 
 protected:
 
 // LLRemoteParcelInfoObserver interface:
 /*virtual*/ void processParcelInfo(const LLParcelData& parcel_data);
 /*virtual*/ void setParcelID(const LLUUID& parcel_id);
-/*virtual*/ void setErrorStatus(U32 status, const std::string& reason);
+/*virtual*/ void setErrorStatus(S32 status, const std::string& reason);
 
 	static void onClickRefresh(void* userdata);
 	static void onClickHighlight(void* userdata);
@@ -221,17 +159,11 @@ public:
 	LLPanelScriptLimitsAttachment()
 		:	LLPanelScriptLimitsInfo(),
 		mGotAttachmentMemoryUsed(false),
-		mGotAttachmentMemoryUsedDetails(false),
-		mGotAttachmentMemoryMax(false),
 		mAttachmentMemoryMax(0),
 		mAttachmentMemoryUsed(0),
-		mAttachmentMemoryUsedDetails(0),
 		mGotAttachmentURLsUsed(false),
-		mGotAttachmentURLsUsedDetails(false),
-		mGotAttachmentURLsMax(false),
 		mAttachmentURLsMax(0),
-		mAttachmentURLsUsed(0),
-		mAttachmentURLsUsedDetails(0)
+		mAttachmentURLsUsed(0)
 		{};
 
 	~LLPanelScriptLimitsAttachment()
@@ -248,20 +180,15 @@ public:
 	void clearList();
 
 private:
+    void getAttachmentLimitsCoro(std::string url);
 
 	bool mGotAttachmentMemoryUsed;
-	bool mGotAttachmentMemoryUsedDetails;
-	bool mGotAttachmentMemoryMax;
 	S32 mAttachmentMemoryMax;
 	S32 mAttachmentMemoryUsed;
-	S32 mAttachmentMemoryUsedDetails;
 
 	bool mGotAttachmentURLsUsed;
-	bool mGotAttachmentURLsUsedDetails;
-	bool mGotAttachmentURLsMax;
 	S32 mAttachmentURLsMax;
 	S32 mAttachmentURLsUsed;
-	S32 mAttachmentURLsUsedDetails;
 
 protected:
 

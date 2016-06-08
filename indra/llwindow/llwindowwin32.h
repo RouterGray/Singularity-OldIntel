@@ -28,9 +28,7 @@
 #define LL_LLWINDOWWIN32_H
 
 // Limit Windows API to small and manageable set.
-#define WIN32_LEAN_AND_MEAN
-#include <winsock2.h>
-#include <windows.h>
+#include "llwin32headerslean.h"
 
 #include "llwindow.h"
 #include "llwindowcallbacks.h"
@@ -87,6 +85,7 @@ public:
 	/*virtual*/ void gatherInput();
 	/*virtual*/ void delayInputProcessing();
 	/*virtual*/ void swapBuffers();
+	/*virtual*/ void restoreGLContext() {};
 
 	// handy coordinate space conversion routines
 	/*virtual*/ BOOL convertCoords(LLCoordScreen from, LLCoordWindow *to);

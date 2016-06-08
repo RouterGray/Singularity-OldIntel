@@ -72,7 +72,6 @@
 #include "message.h"
 #include "object_flags.h"
 #include "lltimer.h"
-#include "timing.h"
 #include "llviewermenu.h"
 #include "llmediaentry.h"
 #include "raytrace.h"
@@ -90,7 +89,7 @@
 #include "llmaniptranslate.h"
 #include "llface.h"
 #include "llfeaturemanager.h"
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 #include "llfloatercamera.h"
 #include "llfloaterchat.h"
 #include "llfloaterchatterbox.h"
@@ -3047,8 +3046,8 @@ void LLViewerWindow::moveCursorToCenter()
 // event processing.
 void LLViewerWindow::updateUI()
 {
-	static LLFastTimer::DeclareTimer ftm("Update UI");
-	LLFastTimer t(ftm);
+	static LLTrace::BlockTimerStatHandle ftm("Update UI");
+	LL_RECORD_BLOCK_TIME(ftm);
 
 	static std::string last_handle_msg;
 	// animate layout stacks so we have up to date rect for world view
@@ -4397,67 +4396,52 @@ BOOL LLViewerWindow::mousePointOnLandGlobal(const S32 x, const S32 y, LLVector3d
 }
 
 // Saves an image to the harddrive as "SnapshotX" where X >= 1.
-void LLViewerWindow::saveImageNumbered(LLPointer<LLImageFormatted> image, int index)
+BOOL LLViewerWindow::saveImageNumbered(LLPointer<LLImageFormatted> image, int index)
 {
 	if (!image)
 	{
 		LLFloaterSnapshot::saveLocalDone(false, index);
-		return;
+		return FALSE;
 	}
 
-	ESaveFilter pick_type;
+	LLFilePicker::ESaveFilter pick_type;
 	std::string extension("." + image->getExtension());
 	if (extension == ".j2c")
-		pick_type = FFSAVE_J2C;
+		pick_type = LLFilePicker::FFSAVE_J2C;
 	else if (extension == ".bmp")
-		pick_type = FFSAVE_BMP;
+		pick_type = LLFilePicker::FFSAVE_BMP;
 	else if (extension == ".jpg")
-		pick_type = FFSAVE_JPEG;
+		pick_type = LLFilePicker::FFSAVE_JPEG;
 	else if (extension == ".png")
-		pick_type = FFSAVE_PNG;
+		pick_type = LLFilePicker::FFSAVE_PNG;
 	else if (extension == ".tga")
-		pick_type = FFSAVE_TGA;
+		pick_type = LLFilePicker::FFSAVE_TGA;
 	else
-		pick_type = FFSAVE_ALL; // ???
+		pick_type = LLFilePicker::FFSAVE_ALL; // ???
 	
 	// Get a base file location if needed.
 	if (!isSnapshotLocSet())
 	{
 		std::string proposed_name( sSnapshotBaseName );
 
-		// AIFilePicker will append an appropriate extension to the proposed name, based on the ESaveFilter constant passed in.
+		// getSaveFile will append an appropriate extension to the proposed name, based on the ESaveFilter constant passed in.
 
 		// pick a directory in which to save
-		AIFilePicker* filepicker = AIFilePicker::create();				// Deleted in LLViewerWindow::saveImageNumbered_continued1
-		filepicker->open(proposed_name, pick_type, "", "snapshot");
-		filepicker->run(boost::bind(&LLViewerWindow::saveImageNumbered_continued1, this, image, extension, filepicker, index));
-		return;
-	}
+		LLFilePicker& picker = LLFilePicker::instance();
+		if (!picker.getSaveFile(pick_type, proposed_name))
+		{
+			// Clicked cancel
+			LLFloaterSnapshot::saveLocalDone(false, index);
+			return FALSE;
+		}
 
-	// LLViewerWindow::sSnapshotBaseName and LLViewerWindow::sSnapshotDir already known. Go straight to saveImageNumbered_continued2.
-	saveImageNumbered_continued2(image, extension, index);
-}
-
-void LLViewerWindow::saveImageNumbered_continued1(LLPointer<LLImageFormatted> image, std::string const& extension, AIFilePicker* filepicker, int index)
-{
-	if (filepicker->hasFilename())
-	{
 		// Copy the directory + file name
-		std::string filepath = filepicker->getFilename();
+		std::string filepath = picker.getFirstFile();
 
 		LLViewerWindow::sSnapshotBaseName = gDirUtilp->getBaseFileName(filepath, true);
 		LLViewerWindow::sSnapshotDir = gDirUtilp->getDirName(filepath);
-
-		saveImageNumbered_continued2(image, extension, index);
 	}
-	else
-	{
-		LLFloaterSnapshot::saveLocalDone(false, index);
-	}
-}
 
-void LLViewerWindow::saveImageNumbered_continued2(LLPointer<LLImageFormatted> image, std::string const& extension, int index)
-{
 	// Look for an unused file name
 	std::string filepath;
 	S32 i = 1;
@@ -4477,15 +4461,11 @@ void LLViewerWindow::saveImageNumbered_continued2(LLPointer<LLImageFormatted> im
 	}
 	while( -1 != err );  // search until the file is not found (i.e., stat() gives an error).
 
-	if (image->save(filepath))
-	{
-		playSnapshotAnimAndSound();
-		LLFloaterSnapshot::saveLocalDone(true, index);
-	}
-	else
-	{
-		LLFloaterSnapshot::saveLocalDone(false, index);
-	}
+	LL_INFOS() << "Saving snapshot to " << filepath << LL_ENDL;
+	bool success = image->save(filepath);
+	if (success) playSnapshotAnimAndSound();
+	LLFloaterSnapshot::saveLocalDone(success, index);
+	return success;
 }
 
 void LLViewerWindow::resetSnapshotLoc()
@@ -4876,7 +4856,7 @@ bool LLViewerWindow::rawRawSnapshot(LLImageRaw *raw,
 	// Center the buffer.
 	buffer_x_offset = llfloor(((window_width - unscaled_image_buffer_x) * scale_factor) / 2.f);
 	buffer_y_offset = llfloor(((window_height - unscaled_image_buffer_y) * scale_factor) / 2.f);
-	Dout(dc::snapshot, "rawRawSnapshot(" << image_width << ", " << image_height << ", " << snapshot_aspect << "): image_buffer_x = " << image_buffer_x << "; image_buffer_y = " << image_buffer_y);
+	LL_DEBUGS("DCSnapshot") << "rawRawSnapshot(" << image_width << ", " << image_height << ", " << snapshot_aspect << "): image_buffer_x = " << image_buffer_x << "; image_buffer_y = " << image_buffer_y << LL_ENDL;
 
 	bool error = !(image_buffer_x > 0 && image_buffer_y > 0);
 	if (!error)
@@ -4901,7 +4881,7 @@ bool LLViewerWindow::rawRawSnapshot(LLImageRaw *raw,
 	BOOL is_tiling = scale_factor > 1.f;
 	if (is_tiling)
 	{
-		Dout(dc::warning, "USING TILING FOR SNAPSHOT!");
+		LL_DEBUGS("DCSnapshot") << "USING TILING FOR SNAPSHOT!" << LL_ENDL;
 		send_agent_pause();
 		if (show_ui || !hide_hud)
 		{

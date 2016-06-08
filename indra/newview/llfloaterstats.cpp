@@ -266,18 +266,6 @@ void LLFloaterStats::buildStats()
 	stat_barp = net_statviewp->addStat("UDP Packets Out", &(LLViewerStats::getInstance()->mPacketsOutStat), "DebugStatModePacketsOut");
 	stat_barp->setUnitLabel("/sec");
 
-	stat_barp = net_statviewp->addStat("HTTP Textures", &(LLViewerStats::getInstance()->mHTTPTextureKBitStat), "DebugStatModeHTTPTexture");
-	stat_barp->setUnitLabel(" kbps");
-	stat_barp->mMinBar = 0.f;
-	stat_barp->mMaxBar = gSavedSettings.getF32("HTTPThrottleBandwidth");
-	stat_barp->mMaxBar *= llclamp(2.0 - (stat_barp->mMaxBar - 400.f) / 3600.f, 1.0, 2.0);	// Allow for overshoot (allow more for low bandwidth values).
-	stat_barp->mTickSpacing = 1.f;
-	while (stat_barp->mTickSpacing < stat_barp->mMaxBar / 8)
-	  stat_barp->mTickSpacing *= 2.f;
-	stat_barp->mLabelSpacing = 2 * stat_barp->mTickSpacing;
-	stat_barp->mPerSec = FALSE;
-	stat_barp->mDisplayMean = FALSE;
-
 	stat_barp = net_statviewp->addStat("UDP Textures", &(LLViewerStats::getInstance()->mUDPTextureKBitStat), "DebugStatModeUDPTexture");
 	stat_barp->setUnitLabel(" kbps");
 	stat_barp->mMinBar = 0.f;

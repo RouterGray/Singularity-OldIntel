@@ -48,7 +48,6 @@
 #include "llweb.h"
 #include "llcapabilityprovider.h"
 #include "llmatrix4a.h"					// LLMatrix4a
-#include "llhttpclient.h"
 
 // Surface id's
 #define LAND  1
@@ -69,7 +68,6 @@ class LLVOCache;
 class LLVOCacheEntry;
 class LLSpatialPartition;
 class LLEventPump;
-class LLCapabilityListener;
 class LLDataPacker;
 class LLDataPackerBinaryBuffer;
 class LLHost;
@@ -271,13 +269,14 @@ public:
 
 	// Get/set named capability URLs for this region.
 	void setSeedCapability(const std::string& url);
-	void failedSeedCapability();
 	S32 getNumSeedCapRetries();
 	void setCapability(const std::string& name, const std::string& url);
 	void setCapabilityDebug(const std::string& name, const std::string& url);
 	bool isCapabilityAvailable(const std::string& name) const;
 	// implements LLCapabilityProvider
     virtual std::string getCapability(const std::string& name) const;
+    std::string getCapabilityDebug(const std::string& name) const;
+
 
 	// has region received its final (not seed) capability list?
 	bool capabilitiesReceived() const;
@@ -286,10 +285,6 @@ public:
 
 	static bool isSpecialCapabilityName(const std::string &name);
 	void logActiveCapabilities() const;
-
-    /// Get LLEventPump on which we listen for capability requests
-    /// (https://wiki.lindenlab.com/wiki/Viewer:Messaging/Messaging_Notes#Capabilities)
-    LLEventPump& getCapAPI() const;
 
     /// implements LLCapabilityProvider
 	/*virtual*/ const LLHost& getHost() const;
@@ -332,7 +327,7 @@ public:
 	bool simulatorFeaturesReceived() const;
 	boost::signals2::connection setSimulatorFeaturesReceivedCallback(const caps_received_signal_t::slot_type& cb);
 
-	void getSimulatorFeatures(LLSD& info);	
+	void getSimulatorFeatures(LLSD& info) const;
 	void setSimulatorFeatures(const LLSD& info);
 
 	
@@ -430,10 +425,12 @@ public:
 	std::vector<U32> mMapAvatars;
 	uuid_vec_t mMapAvatarIDs;
 
+	static BOOL sVOCacheCullingEnabled; //vo cache culling enabled or not.
 
 	LLFrameTimer &	getRenderInfoRequestTimer()			{ return mRenderInfoRequestTimer;		};
 private:
 	LLViewerRegionImpl * mImpl;
+	LLFrameTimer         mRegionTimer;
 
 	F32			mWidth;			// Width of region on a side (meters)
 	U64			mHandle;

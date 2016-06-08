@@ -33,8 +33,9 @@
 #include "linden_common.h"
 #include "llstreamingaudio_fmodstudio.h"
 
+#include "llsd.h"
 #include "llmath.h"
-#include "llthread.h"
+#include "llmutex.h"
 
 #include "fmod.hpp"
 #include "fmod_errors.h"
@@ -68,7 +69,7 @@ protected:
 	std::string mInternetStreamURL;
 };
 
-LLGlobalMutex gWaveDataMutex;	//Just to be extra strict.
+LLMutex gWaveDataMutex;	//Just to be extra strict.
 const U32 WAVE_BUFFER_SIZE = 1024;
 U32 gWaveBufferMinSize = 0;
 F32 gWaveDataBuffer[WAVE_BUFFER_SIZE] = { 0.f };
@@ -95,7 +96,7 @@ FMOD_RESULT F_CALLBACK waveDataCallback(FMOD_DSP_STATE *dsp_state, float *inbuff
 	}
 
 	{
-		LLMutexLock lock(gWaveDataMutex);
+		LLMutexLock lock(&gWaveDataMutex);
 
 		for (U32 i = length; i > 0; --i)
 		{
@@ -529,7 +530,7 @@ bool LLStreamingAudio_FMODSTUDIO::getWaveData(float* arr, S32 count, S32 stride/
 	{
 		U32 buff_size;
 		{
-			LLMutexLock lock(gWaveDataMutex);
+			LLMutexLock lock(&gWaveDataMutex);
 			gWaveBufferMinSize = count;
 			buff_size = gWaveDataBufferSize;
 			if (!buff_size)

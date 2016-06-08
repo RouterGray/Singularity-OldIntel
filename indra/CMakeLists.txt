@@ -28,11 +28,11 @@ if (NOT CMAKE_BUILD_TYPE)
 endif (NOT CMAKE_BUILD_TYPE)
 
 add_subdirectory(cmake)
-add_subdirectory(${LIBS_OPEN_PREFIX}aistatemachine)
 add_subdirectory(${LIBS_OPEN_PREFIX}llaudio)
 add_subdirectory(${LIBS_OPEN_PREFIX}llappearance)
 add_subdirectory(${LIBS_OPEN_PREFIX}llcharacter)
 add_subdirectory(${LIBS_OPEN_PREFIX}llcommon)
+add_subdirectory(${LIBS_OPEN_PREFIX}llcorehttp)
 add_subdirectory(${LIBS_OPEN_PREFIX}llimage)
 add_subdirectory(${LIBS_OPEN_PREFIX}libopenjpeg)
 add_subdirectory(${LIBS_OPEN_PREFIX}libhacd)
@@ -57,9 +57,8 @@ add_subdirectory(${LIBS_OPEN_PREFIX}llplugin)
 add_subdirectory(${LIBS_OPEN_PREFIX}llui)
 
 # viewer plugins directory
-add_subdirectory(${LIBS_OPEN_PREFIX}plugins)
+add_subdirectory(${LIBS_OPEN_PREFIX}media_plugins)
 
-add_subdirectory(${VIEWER_PREFIX}newview/statemachine)
 add_subdirectory(${VIEWER_PREFIX}newview)
 add_dependencies(viewer singularity-bin)
 

@@ -36,9 +36,11 @@
 #include "llsdutil.h"
 #include "llui.h"
 #include "llviewerobjectlist.h"
+#include "llviewerregion.h"
 #include "llvoavatar.h"
 #include "llvoicechannel.h"
 #include "llworld.h"
+#include "llcorehttputil.h"
 
 #include "rlvhandler.h"
 
@@ -272,50 +274,6 @@ bool LLSpeakersDelayActionsStorage::isTimerStarted(const LLUUID& speaker_id)
 {
 	return (mActionTimersMap.size() > 0) && (mActionTimersMap.find(speaker_id) != mActionTimersMap.end());
 }
-
-//
-// ModerationResponder
-//
-
-class ModerationResponder : public LLHTTPClient::ResponderIgnoreBody
-{
-public:
-	ModerationResponder(const LLUUID& session_id)
-	{
-		mSessionID = session_id;
-	}
-
-protected:
-	virtual void httpFailure()
-	{
-		LL_WARNS() << dumpResponse() << LL_ENDL;
-
-		if ( gIMMgr )
-		{
-			LLFloaterIMPanel* floaterp = gIMMgr->findFloaterBySession(mSessionID);
-			if (!floaterp) return;
-
-			//403 == you're not a mod
-			//should be disabled if you're not a moderator
-			if ( 403 == mStatus )
-			{
-				floaterp->showSessionEventError(
-					"mute",
-					"not_a_mod_error");
-			}
-			else
-			{
-				floaterp->showSessionEventError(
-					"mute",
-					"generic_request_error");
-			}
-		}
-	}
-	/*virtual*/ char const* getName(void) const { return "ModerationResponder"; }
-
-private:
-	LLUUID mSessionID;
-};
 
 //
 // LLSpeakerMgr
@@ -620,11 +578,14 @@ void LLSpeakerMgr::updateSpeakerList()
 	setSpeaker(gAgentID, "", LLSpeaker::STATUS_VOICE_ACTIVE, LLSpeaker::SPEAKER_AGENT);
 }
 
-void LLSpeakerMgr::setSpeakerNotInChannel(LLSpeaker* speakerp)
+void LLSpeakerMgr::setSpeakerNotInChannel(LLPointer<LLSpeaker> speakerp)
 {
-	speakerp->mStatus = LLSpeaker::STATUS_NOT_IN_CHANNEL;
-	speakerp->mDotColor = INACTIVE_COLOR;
-	mSpeakerDelayRemover->setActionTimer(speakerp->mID);
+	if  (speakerp.notNull())
+	{
+		speakerp->mStatus = LLSpeaker::STATUS_NOT_IN_CHANNEL;
+		speakerp->mDotColor = INACTIVE_COLOR;
+		mSpeakerDelayRemover->setActionTimer(speakerp->mID);
+	}
 }
 
 bool LLSpeakerMgr::removeSpeaker(const LLUUID& speaker_id)
@@ -889,7 +850,8 @@ void LLIMSpeakerMgr::toggleAllowTextChat(const LLUUID& speaker_id)
 	//current value represents ability to type, so invert
 	data["params"]["mute_info"]["text"] = !speakerp->mModeratorMutedText;
 
-	LLHTTPClient::post(url, data, new ModerationResponder(getSessionID()));
+    LLCoros::instance().launch("LLIMSpeakerMgr::moderationActionCoro",
+        boost::bind(&LLIMSpeakerMgr::moderationActionCoro, this, url, data));
 }
 
 void LLIMSpeakerMgr::moderateVoiceParticipant(const LLUUID& avatar_id, bool unmute)
@@ -913,10 +875,52 @@ void LLIMSpeakerMgr::moderateVoiceParticipant(const LLUUID& avatar_id, bool unmu
 	data["params"]["mute_info"] = LLSD::emptyMap();
 	data["params"]["mute_info"]["voice"] = !unmute;
 
-	LLHTTPClient::post(
-		url,
-		data,
-		new ModerationResponder(getSessionID()));
+    LLCoros::instance().launch("LLIMSpeakerMgr::moderationActionCoro",
+        boost::bind(&LLIMSpeakerMgr::moderationActionCoro, this, url, data));
+}
+
+void LLIMSpeakerMgr::moderationActionCoro(std::string url, LLSD action)
+{
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("moderationActionCoro", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+    LLCore::HttpOptions::ptr_t httpOpts = LLCore::HttpOptions::ptr_t(new LLCore::HttpOptions);
+
+    httpOpts->setWantHeaders(true);
+
+    LLUUID sessionId = action["session-id"];
+
+    LLSD result = httpAdapter->postAndSuspend(httpRequest, url, action, httpOpts);
+
+    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    if (!status)
+    {
+		if ( gIMMgr )
+		{
+			LLFloaterIMPanel* floaterp = gIMMgr->findFloaterBySession(sessionId);
+			if (!floaterp) return;
+			//403 == you're not a mod
+			//should be disabled if you're not a moderator
+			if (status == LLCore::HttpStatus(HTTP_FORBIDDEN))
+			{
+				floaterp->showSessionEventError(
+					"mute",
+					"not_a_mod_error"
+					);
+			}
+			else
+			{
+				floaterp->showSessionEventError(
+					"mute",
+					"generic_request_error"
+					);
+			}
+		}
+		return;
+	}
 }
 
 void LLIMSpeakerMgr::moderateVoiceAllParticipants( bool unmute_everyone )
@@ -955,7 +959,8 @@ void LLIMSpeakerMgr::moderateVoiceSession(const LLUUID& session_id, bool disallo
 	data["params"]["update_info"]["moderated_mode"] = LLSD::emptyMap();
 	data["params"]["update_info"]["moderated_mode"]["voice"] = disallow_voice;
 
-	LLHTTPClient::post(url, data, new ModerationResponder(session_id));
+    LLCoros::instance().launch("LLIMSpeakerMgr::moderationActionCoro",
+        boost::bind(&LLIMSpeakerMgr::moderationActionCoro, this, url, data));
 }
 
 void LLIMSpeakerMgr::forceVoiceModeratedMode(bool should_be_muted)
@@ -1048,8 +1053,8 @@ void LLLocalSpeakerMgr::updateSpeakerList()
 	for (speaker_map_t::iterator speaker_it = mSpeakers.begin(); speaker_it != mSpeakers.end(); ++speaker_it)
 	{
 		LLUUID speaker_id = speaker_it->first;
-		LLSpeaker* speakerp = speaker_it->second;
-		if (speakerp && speakerp->mStatus == LLSpeaker::STATUS_TEXT_ONLY)
+		LLPointer<LLSpeaker> speakerp = speaker_it->second;
+		if (speakerp.notNull() && speakerp->mStatus == LLSpeaker::STATUS_TEXT_ONLY)
 		{
 			LLVOAvatar* avatarp = gObjectList.findAvatar(speaker_id);
 			if (!avatarp || dist_vec_squared(avatarp->getPositionAgent(), gAgent.getPositionAgent()) > CHAT_NORMAL_RADIUS * CHAT_NORMAL_RADIUS)

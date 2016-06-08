@@ -44,7 +44,7 @@
 // <edit>
 #include "llfloaterblacklist.h"
 // </edit>
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 
 // newview includes
 #include "lfsimfeaturehandler.h"
@@ -127,10 +127,10 @@
 #include "llfloaternotificationsconsole.h"
 
 // <edit>
+#include "llcorehttputil.h"
 #include "llfloatermessagelog.h"
 #include "shfloatermediaticker.h"
 #include "llpacketring.h"
-#include "aihttpview.h"
 // </edit>
 
 #include "scriptcounter.h"
@@ -178,8 +178,6 @@ void handle_test_load_url(void*);
 //
 // Evil hackish imported globals
 
-class AIHTTPView;
-
 void add_wave_listeners();
 void add_dae_listeners();
 void add_radar_listeners();
@@ -191,7 +189,6 @@ extern BOOL gDebugWindowProc;
 extern BOOL gDebugTextEditorTips;
 extern BOOL gShowOverlayTitle;
 extern BOOL gOcclusionCull;
-extern AIHTTPView* gHttpView;
 extern LLMenuGL* sScrollListMenus[1];
 //
 // Globals
@@ -455,7 +452,6 @@ void menu_toggle_attached_lights(void* user_data);
 void menu_toggle_attached_particles(void* user_data);
 
 void handle_dump_archetype_xml(void *);
-void handle_dump_archetype_xml_continued(LLVOAvatar* avatar, AIFilePicker* filepicker);
 
 void region_change();
 void parse_simulator_features();
@@ -794,13 +790,6 @@ void init_client_menu(LLMenuGL* menu)
 									   	'6', MASK_CONTROL|MASK_SHIFT ) );
 		}
 
-		sub->addChild(new LLMenuItemCheckGL("HTTP Console", 
-										&toggle_visibility,
-										NULL,
-										&get_visibility,
-										(void*)gHttpView,
-									   	'7', MASK_CONTROL|MASK_SHIFT ) );
-
 		sub->addChild(new LLMenuItemCheckGL("Region Debug Console", handle_singleton_toggle<LLFloaterRegionDebugConsole>, NULL, handle_singleton_check<LLFloaterRegionDebugConsole>,NULL,'`', MASK_CONTROL|MASK_SHIFT));
 
 		sub->addChild(new LLMenuItemCheckGL("Fast Timers", 
@@ -1110,21 +1099,14 @@ void init_debug_world_menu(LLMenuGL* menu)
 	menu->createJumpKeys();
 }
 
-static void handle_export_menus_to_xml_continued(AIFilePicker* filepicker);
 void handle_export_menus_to_xml(void*)
 {
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open("", FFSAVE_XML);
-	filepicker->run(boost::bind(&handle_export_menus_to_xml_continued, filepicker));
-}
-
-static void handle_export_menus_to_xml_continued(AIFilePicker* filepicker)
-{
-	if(!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getSaveFile(LLFilePicker::FFSAVE_XML))
 	{
 		return;
 	}
-	llofstream out(filepicker->getFilename());
+	llofstream out(filepicker.getFirstFile());
 	LLXMLNodePtr node = gMenuBarView->getXML();
 	node->writeToOstream(out);
 	out.close();
@@ -3977,7 +3959,7 @@ void print_packets_lost(void*)
 
 void drop_packet(void*)
 {
-	gMessageSystem->mPacketRing->dropPackets(1);
+	gMessageSystem->mPacketRing.dropPackets(1);
 }
 
 
@@ -4329,21 +4311,15 @@ void handle_dump_archetype_xml(void *)
 	}
 
 	std::string file_name = avatar->getFullname() + (avatar->isSelf() ? "_s" : "_o") + "?000.xml";
-	std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_LOGS, "");
+	// Singu TODO: Filepicker default paths
+	//std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_LOGS, "");
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(file_name, FFSAVE_XML, default_path, "archetype");
-	filepicker->run(boost::bind(&handle_dump_archetype_xml_continued, avatar, filepicker));
-};
-
-void handle_dump_archetype_xml_continued(LLVOAvatar* avatar, AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (filepicker.getSaveFile(LLFilePicker::FFSAVE_XML, file_name))
 	{
-		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
-	avatar->dumpArchetypeXML_cont(filepicker->getFilename(), false);
+	avatar->dumpArchetypeXML_cont(filepicker.getFirstFile(), false);
 }
 
 // HACK for easily testing new avatar geometry
@@ -7957,12 +7933,12 @@ void init_meshes_and_morphs_menu()
 	menu->createJumpKeys();
 }
 
-static void handle_mesh_save_llm_continued(void* data, AIFilePicker* filepicker);
 void handle_mesh_save_llm(void* data)
 {
 	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
 	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
-	std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
+	// Singu TODO: Filepicker default paths
+	//std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
 
 	if (!mesh_name)
 	{
@@ -7970,21 +7946,12 @@ void handle_mesh_save_llm(void* data)
 		return;
 	}
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(*mesh_name, FFSAVE_ALL, default_path, "mesh_llm");
-	filepicker->run(boost::bind(&handle_mesh_save_llm_continued, data, filepicker));
-}
-
-static void handle_mesh_save_llm_continued(void* data, AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getSaveFile(LLFilePicker::FFSAVE_ALL, *mesh_name))
 	{
-		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
-	std::string selected_filename = filepicker->getFilename();
-	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
-	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
+	std::string selected_filename = filepicker.getFirstFile();
 
 	LL_INFOS() << "Selected " << selected_filename << " for mesh " << *mesh_name <<LL_ENDL;
 
@@ -8031,7 +7998,6 @@ static void handle_mesh_save_llm_continued(void* data, AIFilePicker* filepicker)
 	fclose(fp);
 }
 
-static void handle_mesh_save_current_obj_continued(void* data, AIFilePicker* filepicker);
 void handle_mesh_save_current_obj(void* data)
 {
 	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
@@ -8044,23 +8010,15 @@ void handle_mesh_save_current_obj(void* data)
 	}
 
 	std::string file_name = *mesh_name + "_current.obj";
-	std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
+	// Singu TODO: Filepicker default paths
+	//std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(file_name, FFSAVE_ALL, default_path, "mesh_obj");
-	filepicker->run(boost::bind(&handle_mesh_save_current_obj_continued, data, filepicker));
-}
-
-static void handle_mesh_save_current_obj_continued(void* data, AIFilePicker* filepicker)
-{
-	if(!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getSaveFile(LLFilePicker::FFSAVE_ALL, file_name))
 	{
-		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
-	std::string selected_filename = filepicker->getFilename();
-	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*)data;
-	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
+	std::string selected_filename = filepicker.getFirstFile();
 
 	LL_INFOS() << "Selected " << selected_filename << " for mesh " << *mesh_name <<LL_ENDL;
 
@@ -8080,7 +8038,6 @@ static void handle_mesh_save_current_obj_continued(void* data, AIFilePicker* fil
 	fclose(fp);
 }
 
-static void handle_mesh_save_obj_continued(void* data, AIFilePicker* filepicker);
 void handle_mesh_save_obj(void* data)
 {
 	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
@@ -8093,23 +8050,15 @@ void handle_mesh_save_obj(void* data)
 	}
 
 	std::string file_name = *mesh_name + ".obj";
-	std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
+	// Singu TODO: Filepicker default paths
+	//std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(file_name, FFSAVE_ALL, default_path, "mesh_obj");
-	filepicker->run(boost::bind(&handle_mesh_save_obj_continued, data, filepicker));
-}
-
-static void handle_mesh_save_obj_continued(void* data, AIFilePicker* filepicker)
-{
-	if(!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getSaveFile(LLFilePicker::FFSAVE_ALL, file_name))
 	{
-		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
-	std::string selected_filename = filepicker->getFilename();
-	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
-	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
+	std::string selected_filename = filepicker.getFirstFile();
 
 	LL_INFOS() << "Selected " << selected_filename << " for mesh " << *mesh_name <<LL_ENDL;
 
@@ -8125,12 +8074,12 @@ static void handle_mesh_save_obj_continued(void* data, AIFilePicker* filepicker)
 	fclose(fp);
 }
 
-static void handle_mesh_load_obj_continued(void* data, AIFilePicker* filepicker);
 void handle_mesh_load_obj(void* data)
 {
 	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
 	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
-	std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
+	// Singu TODO: Filepicker default paths
+	//std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
 
 	if (!mesh_name)
 	{
@@ -8138,21 +8087,12 @@ void handle_mesh_load_obj(void* data)
 		return;
 	}
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_ALL, default_path, "mesh_obj");
-	filepicker->run(boost::bind(&handle_mesh_load_obj_continued, data, filepicker));
-}
-
-static void handle_mesh_load_obj_continued(void* data, AIFilePicker* filepicker)
-{
-	if(!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getOpenFile(LLFilePicker::FFLOAD_ALL))
 	{
-		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
-	std::string selected_filename = filepicker->getFilename();
-	LLPolyMeshSharedData* mesh_shared = (LLPolyMeshSharedData*) data;
-	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
+	std::string selected_filename = filepicker.getFirstFile();
 
 	LL_INFOS() << "Selected " << selected_filename << " for mesh " << *mesh_name <<LL_ENDL;
 
@@ -8169,7 +8109,6 @@ static void handle_mesh_load_obj_continued(void* data, AIFilePicker* filepicker)
 	fclose(fp);
 }
 
-static void handle_morph_save_obj_continued(void* data, AIFilePicker* filepicker);
 void handle_morph_save_obj(void* data)
 {
 	LLPolyMorphData* morph_data = (LLPolyMorphData*) data;
@@ -8186,22 +8125,15 @@ void handle_morph_save_obj(void* data)
 	LL_INFOS() << "Save morph OBJ " << morph_name << " of mesh " << *mesh_name <<LL_ENDL;
 
 	std::string file_name = *mesh_name + "." + morph_name + ".obj";
-	std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
+	// Singu TODO: Filepicker default paths
+	//std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(file_name, FFSAVE_ALL, default_path, "mesh_obj");
-	filepicker->run(boost::bind(&handle_morph_save_obj_continued, data, filepicker));
-}
-
-static void handle_morph_save_obj_continued(void* data, AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getSaveFile(LLFilePicker::FFSAVE_ALL, file_name))
 	{
-		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
-	std::string selected_filename = filepicker->getFilename();
-	LLPolyMorphData* morph_data = (LLPolyMorphData*)data;
+	std::string selected_filename = filepicker.getFirstFile();
 
 	LL_INFOS() << "Selected " << selected_filename << LL_ENDL;
 
@@ -8216,14 +8148,14 @@ static void handle_morph_save_obj_continued(void* data, AIFilePicker* filepicker
 	fclose(fp);
 }
 
-static void handle_morph_load_obj_continued(void* data, AIFilePicker* filepicker);
 void handle_morph_load_obj(void* data)
 {
 	LLPolyMorphData* morph_data = (LLPolyMorphData*) data;
 	LLPolyMeshSharedData* mesh_shared = morph_data->mMesh;
 	std::string const* mesh_name = LLPolyMesh::getSharedMeshName(mesh_shared);
 	std::string const& morph_name = morph_data->getName();
-	std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
+	// Singu TODO: Filepicker default paths
+	//std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_CHARACTER, "");
 
 	if (!mesh_name)
 	{
@@ -8233,21 +8165,12 @@ void handle_morph_load_obj(void* data)
 
 	LL_INFOS() << "Load morph OBJ " << morph_name << " of mesh " << *mesh_name <<LL_ENDL;
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_ALL, default_path, "mesh_obj");
-	filepicker->run(boost::bind(&handle_morph_load_obj_continued, data, filepicker));
-}
-
-static void handle_morph_load_obj_continued(void* data, AIFilePicker* filepicker)
-{
-	if(!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getOpenFile(LLFilePicker::FFLOAD_ALL))
 	{
-		LL_WARNS() << "No file" << LL_ENDL;
 		return;
 	}
-	std::string selected_filename = filepicker->getFilename();
-	LLPolyMorphData* morph_data = (LLPolyMorphData*) data;
-	LLPolyMeshSharedData* mesh_shared = morph_data->mMesh;
+	std::string selected_filename = filepicker.getFirstFile();
 
 	LL_INFOS() << "Selected " << selected_filename <<LL_ENDL;
 
@@ -8410,7 +8333,6 @@ const LLRect LLViewerMenuHolderGL::getMenuRect() const
 	return LLRect(0, getRect().getHeight() - MENU_BAR_HEIGHT, getRect().getWidth(), STATUS_BAR_HEIGHT);
 }
 
-static void handle_save_to_xml_continued(LLFloater* frontmost, AIFilePicker* filepicker);
 void handle_save_to_xml(void*)
 {
 	LLFloater* frontmost = gFloaterView->getFrontmost();
@@ -8430,33 +8352,20 @@ void handle_save_to_xml(void*)
 	LLStringUtil::replaceChar(default_name, ':', '_');
 	LLStringUtil::replaceChar(default_name, '"', '_');
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(default_name, FFSAVE_XML);
-	filepicker->run(boost::bind(&handle_save_to_xml_continued, frontmost, filepicker));
-}
-
-static void handle_save_to_xml_continued(LLFloater* frontmost, AIFilePicker* filepicker)
-{
-	if (filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (filepicker.getSaveFile(LLFilePicker::FFSAVE_XML, default_name))
 	{
-		std::string filename = filepicker->getFilename();
+		std::string filename = filepicker.getFirstFile();
 		LLUICtrlFactory::getInstance()->saveToXML(frontmost, filename);
 	}
 }
 
-static void handle_load_from_xml_continued(AIFilePicker* filepicker);
 void handle_load_from_xml(void*)
 {
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_XML);
-	filepicker->run(boost::bind(&handle_load_from_xml_continued, filepicker));
-}
-
-static void handle_load_from_xml_continued(AIFilePicker* filepicker)
-{
-	if (filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (filepicker.getOpenFile(LLFilePicker::FFLOAD_XML))
 	{
-		std::string filename = filepicker->getFilename();
+		std::string filename = filepicker.getFirstFile();
 		LLFloater* floater = new LLFloater("sample_floater");
 		LLUICtrlFactory::getInstance()->buildFloater(floater, filename);
 	}
@@ -9654,5 +9563,5 @@ void custom_selected(void* user_data)
 
 	menuAction["selection"] = selection;
 
-	LLHTTPClient::post(url, menuAction, new LLHTTPClient::ResponderIgnore);
+	LLCoreHttpUtil::HttpCoroutineAdapter::messageHttpPost(url, menuAction, "CustomMenuAction Success", "CustomMenuAction Failure");
 }

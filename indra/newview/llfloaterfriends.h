@@ -118,9 +118,7 @@ private:
 	void onClickAddFriend();
 /*
 	void onClickExport();
-	void onClickExport_continued(class AIFilePicker* filepicker);
 	void onClickImport();
-	void onClickImport_filepicker_continued(AIFilePicker* filepicker);
 */
 public:
 	static void FriendImportState(LLUUID id, bool accepted);

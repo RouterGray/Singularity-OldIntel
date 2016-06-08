@@ -51,7 +51,6 @@
 #include "llxfermanager.h"
 #include "message.h"
 #include "object_flags.h"
-#include "timing.h"
 
 #include "llaudiosourcevo.h"
 #include "llagent.h"
@@ -97,9 +96,11 @@
 #include "llviewernetwork.h"
 #include "llvowlsky.h"
 #include "llmanip.h"
+#include "lltrans.h"
+#include "llsdutil.h"
 #include "llmediaentry.h"
-
-// [RLVa:KB]
+#include "llvocache.h"
+// [RLVa:KB] - Checked: 2011-05-22 (RLVa-1.3.1a)
 #include "rlvhandler.h"
 #include "rlvlocks.h"
 // [/RLVa:KB]
@@ -123,13 +124,13 @@ F64Seconds	LLViewerObject::sMaxUpdateInterpolationTime(3.0);		// For motion inte
 F64Seconds	LLViewerObject::sPhaseOutUpdateInterpolationTime(2.0);	// For motion interpolation: after Y seconds with no updates, taper off motion prediction
 
 
-static LLFastTimer::DeclareTimer FTM_CREATE_OBJECT("Create Object");
+static LLTrace::BlockTimerStatHandle FTM_CREATE_OBJECT("Create Object");
 
 // static
 LLViewerObject *LLViewerObject::createObject(const LLUUID &id, const LLPCode pcode, LLViewerRegion *regionp)
 {
 	LLViewerObject *res = NULL;
-	LLFastTimer t1(FTM_CREATE_OBJECT);
+	LL_RECORD_BLOCK_TIME(FTM_CREATE_OBJECT);
 	
 	switch (pcode)
 	{
@@ -202,7 +203,8 @@ LLViewerObject *LLViewerObject::createObject(const LLUUID &id, const LLPCode pco
 }
 
 LLViewerObject::LLViewerObject(const LLUUID &id, const LLPCode pcode, LLViewerRegion *regionp, BOOL is_global)
-:	LLPrimitive(),
+:	LLTrace::MemTrackable<LLViewerObject>("LLViewerObject"),
+	LLPrimitive(),
 	mChildList(),
 	mID(id),
 	mLocalID(0),
@@ -526,11 +528,6 @@ void LLViewerObject::initVOClasses()
 	// Initialized shared class stuff first.
 	LLVOAvatar::initClass();
 	LLVOTree::initClass();
-	if (gNoRender)
-	{
-		// Don't init anything else in drone mode
-		return;
-	}
 	LL_INFOS() << "Viewer Object size: " << sizeof(LLViewerObject) << LL_ENDL;
 	LLVOGrass::initClass();
 	LLVOWater::initClass();
@@ -942,6 +939,8 @@ U32 LLViewerObject::processUpdateMessage(LLMessageSystem *mesgsys,
 					 const EObjectUpdateType update_type,
 					 LLDataPacker *dp)
 {
+	LL_DEBUGS_ONCE("SceneLoadTiming") << "Received viewer object data" << LL_ENDL;
+
 	U32 retval = 0x0;
 	
 	// If region is removed from the list it is also deleted.
@@ -4204,21 +4203,21 @@ S32 LLViewerObject::setTETexture(const U8 te, const LLUUID& uuid)
 {
 	// Invalid host == get from the agent's sim
 	LLViewerFetchedTexture *image = LLViewerTextureManager::getFetchedTexture(
-		uuid, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost::invalid);
+		uuid, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost());
 	return setTETextureCore(te,image);
 }
 
 S32 LLViewerObject::setTENormalMap(const U8 te, const LLUUID& uuid)
 {
 	LLViewerFetchedTexture *image = (uuid == LLUUID::null) ? NULL : LLViewerTextureManager::getFetchedTexture(
-		uuid, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost::invalid);
+		uuid, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost());
 	return setTENormalMapCore(te, image);
 }
 
 S32 LLViewerObject::setTESpecularMap(const U8 te, const LLUUID& uuid)
 {
 	LLViewerFetchedTexture *image = (uuid == LLUUID::null) ? NULL : LLViewerTextureManager::getFetchedTexture(
-		uuid, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost::invalid);
+		uuid, FTT_DEFAULT, TRUE, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, LLHost());
 	return setTESpecularMapCore(te, image);
 }
 

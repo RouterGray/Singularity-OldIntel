@@ -45,28 +45,7 @@
 #include "llview.h"
 #include "ascentprefschat.h"
 #include "llviewercontrol.h"
-#include "llhttpclient.h"
-#include "llbufferstream.h"
-
-class lggDicDownloadFloater;
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy emeraldDicDownloader_timeout;
-
-class EmeraldDicDownloader : public LLHTTPClient::ResponderWithCompleted
-{
-public:
-	EmeraldDicDownloader(lggDicDownloadFloater* spanel, std::string sname);
-	~EmeraldDicDownloader() { }
-	/*virtual*/ void completedRaw(
-		const LLChannelDescriptors& channels,
-		const buffer_ptr_t& buffer);
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return emeraldDicDownloader_timeout; }
-	/*virtual*/ char const* getName(void) const { return "EmeraldDicDownloader"; }
-private:
-	lggDicDownloadFloater* panel;
-	std::string name;
-};
-
+#include "llcorehttputil.h"
 
 class lggDicDownloadFloater : public LLFloater, public LLFloaterSingleton<lggDicDownloadFloater>
 {
@@ -121,6 +100,20 @@ void lggDicDownloadFloater::setData(std::vector<std::string> shortNames, std::ve
 	}
 }
 
+void onDownloadSuccess(lggDicDownloadFloater* floater, const std::string& name, const LLSD& content)
+{
+	std::string dicpath(gDirUtilp->getExpandedFilename(LL_PATH_USER_SETTINGS, "dictionaries", name.c_str()));
+	llofstream ostr(dicpath, std::ios::binary);
+	ostr << content[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_RAW]; // Singu TODO: Test this... later, though, too much to do.
+	ostr.close();
+	if (floater)
+	{
+		if (floater->empanel)
+			floater->empanel->refresh();
+		floater->close();
+	}
+}
+
 void lggDicDownloadFloater::onClickDownload(void* data)
 {
 	lggDicDownloadFloater* self = (lggDicDownloadFloater*)data;
@@ -133,9 +126,10 @@ void lggDicDownloadFloater::onClickDownload(void* data)
 			if (!comboBox->getSelectedItemLabel().empty())
 			{
 				std::string newDict(self->sNames[comboBox->getCurrentIndex()]);
-				LLHTTPClient::get(gSavedSettings.getString("SpellDownloadURL")+newDict+".aff", new EmeraldDicDownloader(self,newDict+".aff"));
-				LLHTTPClient::get(gSavedSettings.getString("SpellDownloadURL")+newDict+".dic", new EmeraldDicDownloader(NULL,newDict+".dic"));
-				
+				const std::string& url(gSavedSettings.getString("SpellDownloadURL"));
+				LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpGet(url+newDict+".aff", boost::bind(onDownloadSuccess, self,newDict+".aff", _1));
+				LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpGet(url+newDict+".dic", boost::bind(onDownloadSuccess, nullptr, newDict+".dic", _1));
+
 				LLButton* button = self->getChild<LLButton>("Emerald_dic_download");
 				if (button)
 				{
@@ -157,41 +151,3 @@ void LggDicDownload::show(BOOL showin, std::vector<std::string> shortNames, std:
 	}
 }
 
-EmeraldDicDownloader::EmeraldDicDownloader(lggDicDownloadFloater* spanel, std::string sname)
-	:
-	panel(spanel),
-	name(sname)
-{
-}
-
-
-void EmeraldDicDownloader::completedRaw(LLChannelDescriptors const& channels, buffer_ptr_t const& buffer)
-{
-	if (!isGoodStatus(mStatus))
-	{
-		return;
-	}
-	LLBufferStream istr(channels, buffer.get());
-	std::string dicpath(gDirUtilp->getExpandedFilename(LL_PATH_USER_SETTINGS, "dictionaries", name.c_str()));
-
-	llofstream ostr(dicpath, std::ios::binary);
-
-	while (istr.good() && ostr.good())
-	{
-		ostr << istr.rdbuf();
-	}
-	ostr.close();
-	if (panel)
-	{
-        if (panel->empanel)
-        {
-    		panel->empanel->refresh();
-        }
-        else
-        {
-            LL_INFOS() << "completedRaw(): No empanel to refresh()!" << LL_ENDL;
-        }
-
-		panel->close();
-	}
-}

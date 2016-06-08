@@ -126,7 +126,7 @@ class LL_COMMON_API AISyncKey
 	  }
 	  else
 	  {
-		mFrameTimer.reset(sSyncKeyExpirationTime);
+		mFrameTimer.resetWithExpiry(sSyncKeyExpirationTime);
 	  }
 	}
 

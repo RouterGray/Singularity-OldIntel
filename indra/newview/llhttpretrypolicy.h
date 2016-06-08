@@ -30,7 +30,11 @@
 #include "lltimer.h"
 #include "llthread.h"
 
-class AIHTTPReceivedHeaders;
+#include "llhttpconstants.h"
+
+// For compatibility with new core http lib.
+#include "httpresponse.h"
+#include "httpheaders.h"
 
 // This is intended for use with HTTP Clients/Responders, but is not
 // specifically coupled with those classes.
@@ -44,11 +48,16 @@ public:
 
 	virtual void onSuccess() = 0;
 	// Call once after an HTTP failure to update state.
-	virtual void onFailure(S32 status, const AIHTTPReceivedHeaders& headers) = 0;
+	virtual void onFailure(S32 status, const LLSD& headers) = 0;
+
+	virtual void onFailure(const LLCore::HttpResponse *response) = 0;
 
 	virtual bool shouldRetry(F32& seconds_to_wait) const = 0;
 
 	virtual void reset() = 0;
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-06-27 (Catznip-3.7)
+	virtual void cancelRetry() = 0;
+// [/SL:KB]
 };
 
 // Very general policy with geometric back-off after failures,
@@ -62,23 +71,32 @@ public:
 	void onSuccess();
 
 	void reset();
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-06-27 (Catznip-3.7)
+	/*virtual*/ void cancelRetry();
+// [/SL:KB]
 	
 	// virtual
-	void onFailure(S32 status, const AIHTTPReceivedHeaders& headers);
+	void onFailure(S32 status, const LLSD& headers);
+	// virtual
+	void onFailure(const LLCore::HttpResponse *response);
 	// virtual
 	bool shouldRetry(F32& seconds_to_wait) const;
 
+    static bool getSecondsUntilRetryAfter(const std::string& retry_after, F32& seconds_to_wait);
+
 protected:
 	void init();
-	bool getRetryAfter(const AIHTTPReceivedHeaders& headers, F32& retry_header_time);
+	bool getRetryAfter(const LLSD& headers, F32& retry_header_time);
+	bool getRetryAfter(const LLCore::HttpHeaders::ptr_t &headers, F32& retry_header_time);
 	void onFailureCommon(S32 status, bool has_retry_header_time, F32 retry_header_time);
 
 private:
-	F32 mMinDelay; // delay never less than this value
-	F32 mMaxDelay; // delay never exceeds this value
-	F32 mBackoffFactor; // delay increases by this factor after each retry, up to mMaxDelay.
-	U32 mMaxRetries; // maximum number of times shouldRetry will return true.
-	F32 mDelay; // current delay.
+
+	const F32 mMinDelay; // delay never less than this value
+	const F32 mMaxDelay; // delay never exceeds this value
+	const F32 mBackoffFactor; // delay increases by this factor after each retry, up to mMaxDelay.
+	const U32 mMaxRetries; // maximum number of times shouldRetry will return true.
+	F32 mDelay; // current default delay.
 	U32 mRetryCount; // number of times shouldRetry has been called.
 	LLTimer mRetryTimer; // time until next retry.
 	bool mShouldRetry; // Becomes false after too many retries, or the wrong sort of status received, etc.

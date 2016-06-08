@@ -384,7 +384,7 @@ void LLPanel::setBorderVisible(BOOL b)
 	}
 }
 
-LLFastTimer::DeclareTimer FTM_PANEL_CONSTRUCTION("Panel Construction");
+LLTrace::BlockTimerStatHandle FTM_PANEL_CONSTRUCTION("Panel Construction");
 // virtual
 LLXMLNodePtr LLPanel::getXML(bool save_children) const
 {
@@ -440,7 +440,7 @@ LLView* LLPanel::fromXML(LLXMLNodePtr node, LLView* parent, LLUICtrlFactory *fac
 	node->getAttributeString("name", name);
 
 	LLPanel* panelp = factory->createFactoryPanel(name);
-	LLFastTimer _(FTM_PANEL_CONSTRUCTION);
+	LL_RECORD_BLOCK_TIME(FTM_PANEL_CONSTRUCTION);
 	// Fall back on a default panel, if there was no special factory.
 	if (!panelp)
 	{

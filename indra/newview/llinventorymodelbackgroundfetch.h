@@ -29,7 +29,11 @@
 
 #include "llsingleton.h"
 #include "lluuid.h"
-#include "aicurlperservice.h"
+#include "httpcommon.h"
+#include "httprequest.h"
+#include "httpoptions.h"
+#include "httpheaders.h"
+#include "httphandler.h"
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Class LLInventoryModelBackgroundFetch
@@ -80,17 +84,13 @@ private:
 	BOOL mRecursiveLibraryFetchStarted;
 	BOOL mAllFoldersFetched;
 
-	BOOL mBackgroundFetchActive;		// TRUE if LLInventoryModelBackgroundFetch::backgroundFetchCB is being called from idle().
+	BOOL mBackgroundFetchActive;
 	bool mFolderFetchActive;
 	S32 mFetchCount;
-	BOOL mTimelyFetchPending;
-	S32  mNumFetchRetries;
 
-	AIPerServicePtr mPerServicePtr;		// Pointer to the AIPerService corresponding to the FetchInventory2 capability.
 
 	LLFrameTimer mFetchTimer;
 	F32 mMinTimeBetweenFetches;
-	F32 mMaxTimeBetweenFetches;
 
 	struct FetchQueueInfo
 	{
@@ -99,6 +99,7 @@ private:
 			  mIsCategory(is_category),
 			  mRecursive(recursive)
 		{}
+
 		LLUUID mUUID;
 		bool mIsCategory;
 		BOOL mRecursive;

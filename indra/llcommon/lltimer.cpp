@@ -39,7 +39,6 @@
 #	error "architecture not supported"
 #endif
 
-
 //
 // Locally used constants
 //

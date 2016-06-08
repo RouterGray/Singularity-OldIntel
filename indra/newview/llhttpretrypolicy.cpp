@@ -27,38 +27,20 @@
 #include "llviewerprecompiledheaders.h"
 
 #include "llhttpretrypolicy.h"
-#include "llhttpstatuscodes.h"
-#include "aihttpheaders.h"
 
-// for curl_getdate() (apparently parsing RFC 1123 dates is hard)
-#include <curl/curl.h>
-
-// Parses 'Retry-After' header contents and returns seconds until retry should occur.
-bool getSecondsUntilRetryAfter(const std::string& retry_after, F32& seconds_to_wait)
+namespace
 {
-	// *TODO:  This needs testing!   Not in use yet.
-	// Examples of Retry-After headers:
-	// Retry-After: Fri, 31 Dec 1999 23:59:59 GMT
-	// Retry-After: 120
-
-	// Check for number of seconds version, first:
-	char* end = 0;
-	// Parse as double
-	double seconds = std::strtod(retry_after.c_str(), &end);
-	if (end != 0 && *end == 0)
+    // Moved from httpconstants.h... only used in this file.
+    bool isHttpServerErrorStatus(S32 status)
 	{
-		// Successful parse
-		seconds_to_wait = (F32)seconds;
-		return true;
-	}
+        // Status 499 is sometimes used for re-interpreted status 2xx errors.
+        // Allow retry of these, since we don't have enough information in this
+        // context to know if this will always fail.
+        if (HTTP_INTERNAL_ERROR == status) return true;
 
-	// Parse rfc1123 date.
-	time_t date = curl_getdate(retry_after.c_str(), NULL);
-	if (-1 == date) return false;
-
-	seconds_to_wait = (F64)date - LLTimer::getTotalSeconds();
-
-	return true;
+        // Check for status 5xx.
+        return((500 <= status) && (status < 600));
+    }
 }
 
 LLAdaptiveRetryPolicy::LLAdaptiveRetryPolicy(F32 min_delay, F32 max_delay, F32 backoff_factor, U32 max_retries, bool retry_on_4xx):
@@ -83,10 +65,33 @@ void LLAdaptiveRetryPolicy::reset()
 	init();
 }
 
-bool LLAdaptiveRetryPolicy::getRetryAfter(const AIHTTPReceivedHeaders& headers, F32& retry_header_time)
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-06-27 (Catznip-3.7)
+// virtual
+void LLAdaptiveRetryPolicy::cancelRetry()
 {
-	AIHTTPReceivedHeaders::range_type results;
-	return headers.getValues("retry-after", results) && getSecondsUntilRetryAfter(results.first->second, retry_header_time);
+	// This relies on the current implementation where mShouldRetry is set to true only on initialization
+	mShouldRetry = false;
+}
+// [/SL:KB]
+
+bool LLAdaptiveRetryPolicy::getRetryAfter(const LLSD& headers, F32& retry_header_time)
+{
+	return (headers.has(HTTP_IN_HEADER_RETRY_AFTER)
+			&& getSecondsUntilRetryAfter(headers[HTTP_IN_HEADER_RETRY_AFTER].asStringRef(), retry_header_time));
+}
+
+bool LLAdaptiveRetryPolicy::getRetryAfter(const LLCore::HttpHeaders::ptr_t &headers, F32& retry_header_time)
+{
+	if (headers)
+	{
+		const std::string *retry_value = headers->find(HTTP_IN_HEADER_RETRY_AFTER.c_str()); 
+		if (retry_value && 
+			getSecondsUntilRetryAfter(*retry_value, retry_header_time))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void LLAdaptiveRetryPolicy::onSuccess()
@@ -94,13 +99,20 @@ void LLAdaptiveRetryPolicy::onSuccess()
 	init();
 }
 
-void LLAdaptiveRetryPolicy::onFailure(S32 status, const AIHTTPReceivedHeaders& headers)
+void LLAdaptiveRetryPolicy::onFailure(S32 status, const LLSD& headers)
 {
 	F32 retry_header_time;
 	bool has_retry_header_time = getRetryAfter(headers,retry_header_time);
 	onFailureCommon(status, has_retry_header_time, retry_header_time);
 }
   
+void LLAdaptiveRetryPolicy::onFailure(const LLCore::HttpResponse *response)
+{
+	F32 retry_header_time;
+	const LLCore::HttpHeaders::ptr_t headers = response->getHeaders();
+	bool has_retry_header_time = getRetryAfter(headers,retry_header_time);
+	onFailureCommon(response->getStatus().getType(), has_retry_header_time, retry_header_time);
+}
 
 void LLAdaptiveRetryPolicy::onFailureCommon(S32 status, bool has_retry_header_time, F32 retry_header_time)
 {
@@ -126,8 +138,7 @@ void LLAdaptiveRetryPolicy::onFailureCommon(S32 status, bool has_retry_header_ti
 		LL_INFOS() << "Too many retries " << mRetryCount << ", will not retry" << LL_ENDL;
 		mShouldRetry = false;
 	}
-
-	if (!mRetryOn4xx && !(status == HTTP_INTERNAL_ERROR_OTHER || ((500 <= status) && (status < 600))))
+	if (!mRetryOn4xx && !isHttpServerErrorStatus(status))
 	{
 		LL_INFOS() << "Non-server error " << status << ", will not retry" << LL_ENDL;
 		mShouldRetry = false;
@@ -153,3 +164,34 @@ bool LLAdaptiveRetryPolicy::shouldRetry(F32& seconds_to_wait) const
 	seconds_to_wait = mShouldRetry ? (F32) mRetryTimer.getRemainingTimeF32() : F32_MAX;
 	return mShouldRetry;
 }
+
+// Moved from httpconstants.  Only used by this file.
+// Parses 'Retry-After' header contents and returns seconds until retry should occur.
+/*static*/
+bool LLAdaptiveRetryPolicy::getSecondsUntilRetryAfter(const std::string& retry_after, F32& seconds_to_wait)
+{
+    // *TODO:  This needs testing!   Not in use yet.
+    // Examples of Retry-After headers:
+    // Retry-After: Fri, 31 Dec 1999 23:59:59 GMT
+    // Retry-After: 120
+
+    // Check for number of seconds version, first:
+    char* end = 0;
+    // Parse as double
+    double seconds = std::strtod(retry_after.c_str(), &end);
+    if (end != 0 && *end == 0)
+    {
+        // Successful parse
+        seconds_to_wait = (F32)seconds;
+        return true;
+    }
+
+    // Parse rfc1123 date.
+    time_t date = curl_getdate(retry_after.c_str(), NULL);
+    if (-1 == date) return false;
+
+    seconds_to_wait = (F64)date - LLTimer::getTotalSeconds();
+
+    return true;
+}
+

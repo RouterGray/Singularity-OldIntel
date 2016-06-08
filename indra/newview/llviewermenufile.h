@@ -35,10 +35,11 @@
 
 #include "llassettype.h"
 #include "llinventorytype.h"
+#include "llfilepicker.h"
+
+#include "llviewerassetupload.h"
 // <edit>
 #include "llviewerinventory.h"
-
-#include "statemachine/aifilepicker.h"
 
 class NewResourceItemCallback : public LLInventoryCallback
 {
@@ -47,6 +48,7 @@ class NewResourceItemCallback : public LLInventoryCallback
 // </edit>
 
 class LLTransactionID;
+
 
 void init_menu_file();
 
@@ -79,6 +81,11 @@ bool upload_new_resource(const LLTransactionID &tid,
 						 LLAssetStorage::LLStoreAssetCallback callback,
 						 S32 expected_upload_cost,
 						 void *userdata);
+
+bool upload_new_resource(
+    LLResourceUploadInfo::ptr_t &uploadInfo,
+    LLAssetStorage::LLStoreAssetCallback callback = NULL,
+    void *userdata = NULL);
 
 // The default callback functions, called when 'callback' == NULL (for normal and temporary uploads).
 // user_data must be a LLResourceData allocated with new (or NULL).
@@ -118,9 +125,9 @@ public:
 
 	std::string mFile; 
 
-	ELoadFilter mFilter;
+	LLFilePicker::ELoadFilter mFilter;
 
-	LLFilePickerThread(ELoadFilter filter)
+	LLFilePickerThread(LLFilePicker::ELoadFilter filter)
 	:	LLThread("file picker"), mFilter(filter)
 	{
 	}

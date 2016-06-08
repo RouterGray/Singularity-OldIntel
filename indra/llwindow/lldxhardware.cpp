@@ -219,10 +219,10 @@ void get_wstring(IDxDiagContainer* containerp, const WCHAR* wszPropName, WCHAR* 
 		switch( var.vt )
 		{
 			case VT_UI4:
-				swprintf(wszPropValue, outputSize, L"%d", var.ulVal);	/* Flawfinder: ignore */
+				swprintf( wszPropValue, L"%d", var.ulVal );	/* Flawfinder: ignore */
 				break;
 			case VT_I4:
-				swprintf(wszPropValue, outputSize, L"%d", var.lVal);	/* Flawfinder: ignore */
+				swprintf( wszPropValue, L"%d", var.lVal );	/* Flawfinder: ignore */
 				break;
 			case VT_BOOL:
 				wcscpy( wszPropValue, (var.boolVal) ? L"true" : L"false" );	/* Flawfinder: ignore */
@@ -449,13 +449,7 @@ BOOL LLDXHardware::getInfo(BOOL vram_only)
 	BOOL ok = FALSE;
     HRESULT       hr;
 
-    hr = CoInitialize(NULL);
-	if (FAILED(hr))
-	{
-		LL_WARNS() << "COM initialization failure!" << LL_ENDL;
-		gWriteDebug("COM initialization failure!\n");
-		return ok;
-	}
+    CoInitialize(NULL);
 
     IDxDiagProvider *dx_diag_providerp = NULL;
     IDxDiagContainer *dx_diag_rootp = NULL;
@@ -507,6 +501,8 @@ BOOL LLDXHardware::getInfo(BOOL vram_only)
             goto LCleanup;
 		}
 
+		HRESULT hr;
+
 		// Get display driver information
 		LL_DEBUGS("AppInit") << "dx_diag_rootp->GetChildContainer" << LL_ENDL;
 		hr = dx_diag_rootp->GetChildContainer(L"DxDiag_DisplayDevices", &devices_containerp);
@@ -527,7 +523,7 @@ BOOL LLDXHardware::getInfo(BOOL vram_only)
 
 		WCHAR deviceID[512];
 
-		get_wstring(device_containerp, L"szDeviceID", deviceID, 512);
+		get_wstring(device_containerp, TEXT("szDeviceID"), deviceID, 512);
 
 		if (SUCCEEDED(GetVideoMemoryViaWMI(deviceID, &vram)))
 		{
@@ -713,13 +709,7 @@ LLSD LLDXHardware::getDisplayInfo()
 	LLTimer hw_timer;
     HRESULT       hr;
 	LLSD ret;
-    hr = CoInitialize(NULL);
-	if (FAILED(hr))
-	{
-		LL_WARNS() << "COM initialization failure!" << LL_ENDL;
-		gWriteDebug("COM initialization failure!\n");
-		return ret;
-	}
+    CoInitialize(NULL);
 
     IDxDiagProvider *dx_diag_providerp = NULL;
     IDxDiagContainer *dx_diag_rootp = NULL;
@@ -769,6 +759,8 @@ LLSD LLDXHardware::getDisplayInfo()
 		{
             goto LCleanup;
 		}
+
+		HRESULT hr;
 
 		// Get display driver information
 		LL_INFOS() << "dx_diag_rootp->GetChildContainer" << LL_ENDL;

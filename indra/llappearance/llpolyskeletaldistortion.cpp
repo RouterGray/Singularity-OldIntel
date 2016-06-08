@@ -27,19 +27,13 @@
 //-----------------------------------------------------------------------------
 // Header Files
 //-----------------------------------------------------------------------------
-#include "linden_common.h"
-//#include "llcommon.h"
-//#include "llmemory.h"
+#include "llpreprocessor.h"
+#include "llerror.h"
 #include "llavatarappearance.h"
 #include "llavatarjoint.h"
 #include "llpolymorph.h"
-//#include "llviewercontrol.h"
-//#include "llxmltree.h"
-//#include "llvoavatar.h"
 #include "llwearable.h"
-//#include "lldir.h"
-//#include "llvolume.h"
-//#include "llendianswizzle.h"
+#include "llfasttimer.h"
 
 #include "llpolyskeletaldistortion.h"
 
@@ -199,11 +193,11 @@ BOOL LLPolySkeletalDistortion::setInfo(LLPolySkeletalDistortionInfo *info)
 //-----------------------------------------------------------------------------
 // apply()
 //-----------------------------------------------------------------------------
-static LLFastTimer::DeclareTimer FTM_POLYSKELETAL_DISTORTION_APPLY("Skeletal Distortion");
+static LLTrace::BlockTimerStatHandle FTM_POLYSKELETAL_DISTORTION_APPLY("Skeletal Distortion");
 
 void LLPolySkeletalDistortion::apply( ESex avatar_sex )
 {
-	LLFastTimer t(FTM_POLYSKELETAL_DISTORTION_APPLY);
+	LL_RECORD_BLOCK_TIME(FTM_POLYSKELETAL_DISTORTION_APPLY);
 
         F32 effective_weight = ( getSex() & avatar_sex ) ? mCurWeight : getDefaultWeight();
 
@@ -218,6 +212,8 @@ void LLPolySkeletalDistortion::apply( ESex avatar_sex )
 		LLVector3 newScale = joint->getScale();
 		LLVector3 scaleDelta = iter->second;
 		newScale = newScale + (effective_weight * scaleDelta) - (mLastWeight * scaleDelta);
+				//An aspect of attached mesh objects (which contain joint offsets) that need to be cleaned up when detached
+				// needed? // joint->storeScaleForReset( newScale );				
 		joint->setScale(newScale);
 	}
 

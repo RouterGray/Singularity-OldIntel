@@ -35,7 +35,9 @@
 
 const char* fallbackEngineInfoLLImageJ2CImpl()
 {
-	static std::string version_string = std::string("OpenJPEG: ") + opj_version();
+	static std::string version_string =
+		std::string("OpenJPEG: " /*OPENJPEG_VERSION ", Runtime: "*/)
+		+ opj_version();
 	return version_string.c_str();
 }
 
@@ -105,6 +107,17 @@ LLImageJ2COJ::~LLImageJ2COJ()
 {
 }
 
+BOOL LLImageJ2COJ::initDecode(LLImageJ2C &base, LLImageRaw &raw_image, int discard_level, int* region)
+{
+	// No specific implementation for this method in the OpenJpeg case
+	return FALSE;
+}
+
+BOOL LLImageJ2COJ::initEncode(LLImageJ2C &base, LLImageRaw &raw_image, int blocks_size, int precincts_size, int levels)
+{
+	// No specific implementation for this method in the OpenJpeg case
+	return FALSE;
+}
 
 BOOL LLImageJ2COJ::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 decode_time, S32 first_channel, S32 max_channel_count)
 {
@@ -168,19 +181,7 @@ BOOL LLImageJ2COJ::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 decod
 	opj_setup_decoder(dinfo, &parameters);
 
 	/* open a byte stream */
-#if 0
-	std::vector<U8> data(base.getData(), base.getData()+base.getDataSize());
-	S32 size = data.size();
-	if (data[size-1] == 0xFF) {
-		data.push_back((U8)0xD9);
-	} else if (data[size-2] != 0xFF || data[size-1] != 0xD9) {
-		data.push_back((U8)0xFF);
-		data.push_back((U8)0xD9);
-	}
-	cio = opj_cio_open((opj_common_ptr)dinfo, &data[0], data.size());
-#else
 	cio = opj_cio_open((opj_common_ptr)dinfo, base.getData(), base.getDataSize());
-#endif
 
 	/* decode the stream and fill the image structure */
 	image = opj_decode(dinfo, cio);
@@ -199,20 +200,11 @@ BOOL LLImageJ2COJ::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 decod
 	// dereference the array.
 	if(!image || !image->numcomps)
 	{
-		LL_WARNS("Texture") << "ERROR -> decodeImpl: failed to decode image!" << LL_ENDL;
+		LL_DEBUGS("Texture") << "ERROR -> decodeImpl: failed to decode image!" << LL_ENDL;
 		if (image)
 		{
 			opj_image_destroy(image);
 		}
-#if 0
-		std::stringstream filename;
-		filename << "err" << (int)base.getRawDiscardLevel() << "_" << rand() << ".jp2";
-		FILE* file = fopen(filename.str().c_str(), "wb");
-		if (file) {
-			fwrite(base.getData(), base.getDataSize(), 1, file);
-			fclose(file);
-		}
-#endif
 		base.decodeFailed();
 		return TRUE; // done
 	}
@@ -222,9 +214,11 @@ BOOL LLImageJ2COJ::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 decod
 	{
 		if (image->comps[i].factor != base.getRawDiscardLevel())
 		{
-			LL_WARNS("Texture") <<  "Expected discard level not reached!" << LL_ENDL;			
 			// if we didn't get the discard level we're expecting, fail
-			opj_image_destroy(image);
+			if (image)
+			{
+				opj_image_destroy(image);
+			}
 			base.decodeFailed();
 			return TRUE;
 		}
@@ -232,12 +226,11 @@ BOOL LLImageJ2COJ::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 decod
 	
 	if(image->numcomps <= first_channel)
 	{
-		LL_WARNS("Texture") << "trying to decode more channels than are present in image: numcomps: " << image->numcomps << " first_channel: " << first_channel << LL_ENDL;
+		LL_WARNS() << "trying to decode more channels than are present in image: numcomps: " << image->numcomps << " first_channel: " << first_channel << LL_ENDL;
 		if (image)
 		{
 			opj_image_destroy(image);
 		}
-
 		base.decodeFailed();
 		return TRUE;
 	}
@@ -283,9 +276,11 @@ BOOL LLImageJ2COJ::decodeImpl(LLImageJ2C &base, LLImageRaw &raw_image, F32 decod
 		}
 		else // Some rare OpenJPEG versions have this bug.
 		{
-			LL_WARNS("Texture") << "ERROR -> decodeImpl: failed to decode image! (NULL comp data - OpenJPEG bug)" << LL_ENDL;
-			opj_image_destroy(image);
-			
+			LL_DEBUGS("Texture") << "ERROR -> decodeImpl: failed to decode image! (NULL comp data - OpenJPEG bug)" << LL_ENDL;
+			if (image)
+			{
+				opj_image_destroy(image);
+			}
 			base.decodeFailed();
 			return TRUE; // done
 		}
@@ -418,7 +413,7 @@ BOOL LLImageJ2COJ::encodeImpl(LLImageJ2C &base, const LLImageRaw &raw_image, con
 	if (!bSuccess)
 	{
 		opj_cio_close(cio);
-		LL_WARNS("Texture") << "Failed to encode image." << LL_ENDL;
+		LL_DEBUGS("Texture") << "Failed to encode image." << LL_ENDL;
 		return FALSE;
 	}
 	codestream_length = cio_tell(cio);
@@ -581,7 +576,6 @@ BOOL LLImageJ2COJ::getMetadata(LLImageJ2C &base)
 	img_components = image->numcomps;
 	width = image->x1 - image->x0;
 	height = image->y1 - image->y0;
-
 	base.setSize(width, height, img_components);
 
 	/* free image data structure */

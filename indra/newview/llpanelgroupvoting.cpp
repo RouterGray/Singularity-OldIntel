@@ -35,6 +35,7 @@
 #include "llpanelgroupvoting.h"
 
 #include "llbutton.h"
+#include "llcorehttputil.h"
 #include "llnotificationsutil.h"
 #include "llradiogroup.h"
 #include "llscrolllistctrl.h"
@@ -46,10 +47,6 @@
 #include "llagent.h"
 #include "llviewercontrol.h"
 #include "llviewerregion.h"
-
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy startGroupVoteResponder_timeout;
-extern AIHTTPTimeoutPolicy groupProposalBallotResponder_timeout;
 
 class LLPanelGroupVoting::impl
 {
@@ -679,74 +676,6 @@ void LLPanelGroupVoting::handleFailure(
 	}
 }
 
-class LLStartGroupVoteResponder : public LLHTTPClient::ResponderWithResult
-{
-public:
-	LLStartGroupVoteResponder(const LLUUID& group_id)
-	{
-		mGroupID = group_id;
-	}
-
-	//If we get back a normal response, handle it here
-	/*virtual*/ void httpSuccess(void)
-	{
-		//Ack'd the proposal initialization, now let's finish up.
-		LLPanelGroupVoting::handleResponse(
-			mGroupID,
-			LLPanelGroupVoting::START_VOTE);
-	}
-
-	//If we get back an error (not found, etc...), handle it here
-	/*virtual*/ void httpFailure(void)
-	{
-		LL_INFOS() << "LLPanelGroupVotingResponder::error "
-			<< mStatus << ": " << mReason << LL_ENDL;
-
-		LLPanelGroupVoting::handleFailure(mGroupID);
-	}
-
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return startGroupVoteResponder_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLStartGroupVoteResponder"; }
-
-private:
-	LLUUID mGroupID;
-};
-
-class LLGroupProposalBallotResponder : public LLHTTPClient::ResponderWithResult
-{
-public:
-	LLGroupProposalBallotResponder(const LLUUID& group_id)
-	{
-		mGroupID = group_id;
-	}
-
-	//If we get back a normal response, handle it here
-	/*virtual*/ void httpSuccess(void)
-	{
-		//Ack'd the proposal initialization, now let's finish up.
-		LLPanelGroupVoting::handleResponse(
-			mGroupID,
-			LLPanelGroupVoting::BALLOT,
-			mContent["voted"].asBoolean());
-	}
-
-	//If we get back an error (not found, etc...), handle it here
-	/*virtual*/ void httpFailure(void)
-	{
-		LL_INFOS() << "LLPanelGroupVotingResponder::error "
-			<< mStatus << ": " << mReason << LL_ENDL;
-
-		LLPanelGroupVoting::handleFailure(mGroupID);
-	}
-
-	//Return out timeout policy.
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return groupProposalBallotResponder_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLGroupProposalBallotResponder"; }
-
-private:
-	LLUUID mGroupID;
-};
-
 void LLPanelGroupVoting::impl::sendStartGroupProposal()
 {
 	if ( !gAgent.hasPowerInGroup(mGroupID, GP_PROPOSAL_START) )
@@ -786,10 +715,11 @@ void LLPanelGroupVoting::impl::sendStartGroupProposal()
 		body["duration"]		= duration_seconds;
 		body["proposal-text"]	= mProposalText->getText();
 
-		LLHTTPClient::post(
+		LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(
 			url,
 			body,
-			new LLStartGroupVoteResponder(mGroupID));
+			boost::bind(LLPanelGroupVoting::handleResponse, mGroupID, START_VOTE, true),
+			boost::bind(LLPanelGroupVoting::handleFailure, mGroupID));
 	}
 	else
 	{	//DEPRECATED!!!!!!!  This is a fallback just in case our backend cap is not there.  Delete this block ASAP!
@@ -832,10 +762,12 @@ void LLPanelGroupVoting::impl::sendGroupProposalBallot(const std::string& vote)
 		body["group-id"]		= mGroupID;
 		body["vote"]	= vote;
 
-		LLHTTPClient::post(
+		boost::function<bool(const LLSD&)> voted = [](const LLSD& content) { return content["voted"].asBoolean(); };
+		LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(
 			url,
 			body,
-			new LLGroupProposalBallotResponder(mGroupID));
+			boost::bind(LLPanelGroupVoting::handleResponse, mGroupID, BALLOT, boost::bind(voted, _1)),
+			boost::bind(LLPanelGroupVoting::handleFailure, mGroupID));
 	}
 	else
 	{	//DEPRECATED!!!!!!!  This is a fallback just in case our backend cap is not there.  Delete this block ASAP!

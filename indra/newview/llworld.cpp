@@ -114,11 +114,6 @@ LLWorld::LLWorld() :
 		mEdgeWaterObjects[i] = NULL;
 	}
 
-	if (gNoRender)
-	{
-		return;
-	}
-
 	LLPointer<LLImageRaw> raw = new LLImageRaw(1,1,4);
 	U8 *default_texture = raw->getData();
 	*(default_texture++) = MAX_WATER_COLOR.mV[0];
@@ -172,6 +167,7 @@ LLViewerRegion* LLWorld::addRegion(const U64 &region_handle, const LLHost &host)
 {
 	LL_INFOS() << "Add region with handle: " << region_handle << " on host " << host << LL_ENDL;
 	LLViewerRegion *regionp = getRegionFromHandle(region_handle);
+	std::string seedUrl;
 	if (regionp)
 	{
 		LLHost old_host = regionp->getHost();
@@ -191,8 +187,11 @@ LLViewerRegion* LLWorld::addRegion(const U64 &region_handle, const LLHost &host)
 		}
 		if (!regionp->isAlive())
 		{
-			LL_WARNS() << "LLWorld::addRegion exists, but isn't alive" << LL_ENDL;
+			LL_WARNS() << "LLWorld::addRegion exists, but isn't alive. Removing old region and creating new" << LL_ENDL;
 		}
+
+		// Save capabilities seed URL
+		seedUrl = regionp->getCapability("Seed");
 
 		// Kill the old host, and then we can continue on and add the new host.  We have to kill even if the host
 		// matches, because all the agent state for the new camera is completely different.
@@ -235,6 +234,11 @@ LLViewerRegion* LLWorld::addRegion(const U64 &region_handle, const LLHost &host)
 	regionp->mCloudLayer.setWidth((F32)mWidth);
 	regionp->mCloudLayer.setWindPointer(&regionp->mWind);
 #endif
+
+	if ( !seedUrl.empty() )
+	{
+		regionp->setCapability("Seed", seedUrl);
+	}
 
 	mRegionList.push_back(regionp);
 	mActiveRegionList.push_back(regionp);
@@ -876,8 +880,8 @@ void LLWorld::updateNetStats()
 	S32 packets_out = gMessageSystem->mPacketsOut - mLastPacketsOut;
 	S32 packets_lost = gMessageSystem->mDroppedPackets - mLastPacketsLost;
 
-	S32 actual_in_bits = gMessageSystem->mPacketRing->getAndResetActualInBits();
-	S32 actual_out_bits = gMessageSystem->mPacketRing->getAndResetActualOutBits();
+	S32 actual_in_bits = gMessageSystem->mPacketRing.getAndResetActualInBits();
+	S32 actual_out_bits = gMessageSystem->mPacketRing.getAndResetActualOutBits();
 	LLViewerStats::getInstance()->mActualInKBitStat.addValue(actual_in_bits/1024.f);
 	LLViewerStats::getInstance()->mActualOutKBitStat.addValue(actual_out_bits/1024.f);
 	LLViewerStats::getInstance()->mKBitStat.addValue(bits/1024.f);
@@ -1354,11 +1358,11 @@ void LLWorld::disconnectRegions()
 	}
 }
 
-static LLFastTimer::DeclareTimer FTM_ENABLE_SIMULATOR("Enable Sim");
+static LLTrace::BlockTimerStatHandle FTM_ENABLE_SIMULATOR("Enable Sim");
 
 void process_enable_simulator(LLMessageSystem *msg, void **user_data)
 {
-	LLFastTimer t(FTM_ENABLE_SIMULATOR);
+	LL_RECORD_BLOCK_TIME(FTM_ENABLE_SIMULATOR);
 
 	if (!gAgent.getRegion())
 		return;
@@ -1437,6 +1441,8 @@ public:
 					<< sim << LL_ENDL;
 			return;
 		}
+		LL_DEBUGS("CrossingCaps") << "Calling setSeedCapability from LLEstablishAgentCommunication::post. Seed cap == "
+				<< input["body"]["seed-capability"] << LL_ENDL;
 		regionp->setSeedCapability(input["body"]["seed-capability"]);
 	}
 };

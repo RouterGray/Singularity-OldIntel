@@ -31,15 +31,17 @@
 #include "llfontgl.h"
 
 // Linden library includes
+#include "llfasttimer.h"
 #include "llfontfreetype.h"
 #include "llfontbitmapcache.h"
 #include "llfontregistry.h"
 #include "llgl.h"
+#include "llimagegl.h"
 #include "llrender.h"
-#include "lltexture.h"
-#include "v4color.h"
 #include "llstl.h"
-#include "llfasttimer.h"
+#include "v4color.h"
+#include "lltexture.h"
+#include "lldir.h"
 
 // Third party library includes
 #include <boost/tokenizer.hpp>
@@ -100,7 +102,7 @@ BOOL LLFontGL::loadFace(const std::string& filename, const F32 point_size, const
 	return mFontFreetype->loadFace(filename, point_size, vert_dpi, horz_dpi, components, is_fallback);
 }
 
-static LLFastTimer::DeclareTimer FTM_RENDER_FONTS("Fonts");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_FONTS("Fonts");
 
 S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, const LLRect& rect, const LLColor4 &color, HAlign halign, VAlign valign, U8 style, 
 					 ShadowType shadow, S32 max_chars, F32* right_x, BOOL use_embedded, BOOL use_ellipses) const
@@ -130,7 +132,7 @@ S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, const LLRect& rect
 S32 LLFontGL::render(const LLWString &wstr, S32 begin_offset, F32 x, F32 y, const LLColor4 &color, HAlign halign, VAlign valign, U8 style, 
 					 ShadowType shadow, S32 max_chars, S32 max_pixels, F32* right_x, BOOL use_embedded, BOOL use_ellipses) const
 {
-	LLFastTimer _(FTM_RENDER_FONTS);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_FONTS);
 
 	if(!sDisplayFont) //do not display texts
 	{

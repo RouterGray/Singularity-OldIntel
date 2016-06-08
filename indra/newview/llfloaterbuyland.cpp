@@ -62,9 +62,8 @@
 #include "llweb.h"
 #include "llwindow.h"
 #include "llworld.h"
-#include "llxmlrpcresponder.h"
+#include "llxmlrpctransaction.h"
 #include "llviewernetwork.h"
-#include "llhttpclient.h"
 #include "roles_constants.h"
 
 #include "hippogridmanager.h"
@@ -160,7 +159,7 @@ private:
 		TransactionBuy,
 		TransactionNone
 	};
-	boost::intrusive_ptr<XMLRPCResponder> mResponder;
+	LLXMLRPCTransaction* mTransaction;
 	TransactionType		 mTransactionType;
 	
 	LLViewerParcelMgr::ParcelBuyInfo*	mParcelBuyInfo;
@@ -319,6 +318,8 @@ LLFloaterBuyLandUI::~LLFloaterBuyLandUI()
 {
 	LLViewerParcelMgr::getInstance()->removeObserver(&mParcelSelectionObserver);
 	LLViewerParcelMgr::getInstance()->deleteParcelBuy(&mParcelBuyInfo);
+	
+	delete mTransaction;
 }
 
 // virtual
@@ -640,7 +641,7 @@ void LLFloaterBuyLandUI::updateWebSiteInfo()
 	S32 askBillableArea = mIsForGroup ? 0 : mParcelBillableArea;
 	S32 askCurrencyBuy = mCurrency.getAmount();
 	
-	if (mResponder && mTransactionType == TransactionPreflight
+	if (mTransaction && mTransactionType == TransactionPreflight
 	&&  mPreflightAskBillableArea == askBillableArea
 	&&  mPreflightAskCurrencyBuy == askCurrencyBuy)
 	{
@@ -669,6 +670,7 @@ void LLFloaterBuyLandUI::updateWebSiteInfo()
 	keywordArgs.appendString(
 		"secureSessionId",
 		gAgent.getSecureSessionID().asString());
+	keywordArgs.appendString("language", LLUI::getLanguage());
 	keywordArgs.appendInt("billableArea", mPreflightAskBillableArea);
 	keywordArgs.appendInt("currencyBuy", mPreflightAskCurrencyBuy);
 	
@@ -681,7 +683,7 @@ void LLFloaterBuyLandUI::updateWebSiteInfo()
 void LLFloaterBuyLandUI::finishWebSiteInfo()
 {
 	
-	LLXMLRPCValue result = mResponder->responseValue();
+	LLXMLRPCValue result = mTransaction->responseValue();
 
 	mSiteValid = result["success"].asBool();
 	if (!mSiteValid)
@@ -757,6 +759,7 @@ void LLFloaterBuyLandUI::runWebSitePrep(const std::string& password)
 	keywordArgs.appendString(
 		"secureSessionId",
 		gAgent.getSecureSessionID().asString());
+	keywordArgs.appendString("language", LLUI::getLanguage());
 	keywordArgs.appendString("levelId", newLevel);
 	keywordArgs.appendInt("billableArea",
 		mIsForGroup ? 0 : mParcelBillableArea);
@@ -776,7 +779,7 @@ void LLFloaterBuyLandUI::runWebSitePrep(const std::string& password)
 
 void LLFloaterBuyLandUI::finishWebSitePrep()
 {
-	LLXMLRPCValue result = mResponder->responseValue();
+	LLXMLRPCValue result = mTransaction->responseValue();
 
 	bool success = result["success"].asBool();
 	if (!success)
@@ -846,6 +849,9 @@ void LLFloaterBuyLandUI::updateName(const LLUUID& id,
 
 void LLFloaterBuyLandUI::startTransaction(TransactionType type, const LLXMLRPCValue& params)
 {
+	delete mTransaction;
+	mTransaction = NULL;
+
 	mTransactionType = type;
 
 	// Select a URI and method appropriate for the transaction type.
@@ -869,25 +875,29 @@ void LLFloaterBuyLandUI::startTransaction(TransactionType type, const LLXMLRPCVa
 			return;
 	}
 
-	mResponder = new XMLRPCResponder;
-	LLHTTPClient::postXMLRPC(transaction_uri, method, params.getValue(), mResponder);
+	mTransaction = new LLXMLRPCTransaction(
+		transaction_uri,
+		method,
+		params,
+		false /* don't use gzip */
+		);
 }
 
 bool LLFloaterBuyLandUI::checkTransaction()
 {
-	if (!mResponder)
+	if (!mTransaction)
 	{
 		return false;
 	}
 	
-	if (!mResponder->is_finished())
+	if (!mTransaction->process())
 	{
 		return false;
 	}
 
-	if (mResponder->result_code() != CURLE_OK || mResponder->getStatus() < 200 || mResponder->getStatus() >= 400)
+	if (mTransaction->status(NULL) != LLXMLRPCTransaction::StatusComplete)
 	{
-		tellUserError(mResponder->getReason(), mResponder->getURL());
+		tellUserError(mTransaction->statusMessage(), mTransaction->statusURI());
 	}
 	else {
 		switch (mTransactionType)
@@ -898,8 +908,8 @@ bool LLFloaterBuyLandUI::checkTransaction()
 		}
 	}
 	
-	// We're done with this data.
-	mResponder = NULL;
+	delete mTransaction;
+	mTransaction = NULL;
 	
 	return true;
 }
@@ -932,7 +942,7 @@ BOOL LLFloaterBuyLandUI::postBuild()
 
 void LLFloaterBuyLandUI::setParcel(LLViewerRegion* region, LLParcelSelectionHandle parcel)
 {
-	if (mResponder &&  mTransactionType == TransactionBuy)
+	if (mTransaction &&  mTransactionType == TransactionBuy)
 	{
 		// the user is buying, don't change the selection
 		return;
@@ -982,7 +992,7 @@ void LLFloaterBuyLandUI::draw()
 // virtual
 BOOL LLFloaterBuyLandUI::canClose()
 {
-	bool can_close = !mResponder && mCurrency.canCancel();
+	bool can_close = (mTransaction ? FALSE : TRUE) && mCurrency.canCancel();
 	if (!can_close)
 	{
 		// explain to user why they can't do this, see DEV-9605
@@ -1298,8 +1308,7 @@ void LLFloaterBuyLandUI::refreshUI()
 	    agrees_to_covenant = check->get();
 	}
 
-	childSetEnabled("buy_btn",
-		mCanBuy && mSiteValid && willHaveEnough && !mResponder && agrees_to_covenant);
+	getChildView("buy_btn")->setEnabled(mCanBuy  &&  mSiteValid  &&  willHaveEnough  &&  !mTransaction && agrees_to_covenant);
 }
 
 void LLFloaterBuyLandUI::startBuyPreConfirm()

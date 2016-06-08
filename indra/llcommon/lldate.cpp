@@ -46,7 +46,6 @@
 
 #define EPOCH_STR "1970-01-01T00:00:00Z"
 static const F64 DATE_EPOCH = 0.0;
-static std::string sPrevLocale = "";
 
 LLDate::LLDate() : mSecondsSinceEpoch(DATE_EPOCH)
 {}
@@ -86,11 +85,11 @@ std::string LLDate::asRFC1123() const
 	return toHTTPDateString (std::string ("%A, %d %b %Y %H:%M:%S GMT"));
 }
 
-LLFastTimer::DeclareTimer FT_DATE_FORMAT("Date Format");
+LLTrace::BlockTimerStatHandle FT_DATE_FORMAT("Date Format");
 
 std::string LLDate::toHTTPDateString(std::string fmt) const
 {
-	LLFastTimer ft1(FT_DATE_FORMAT);
+	LL_RECORD_BLOCK_TIME(FT_DATE_FORMAT);
 	
 	std::time_t locSeconds = (std::time_t) mSecondsSinceEpoch;
 	std::tm * gmt = gmtime (&locSeconds);
@@ -104,14 +103,15 @@ std::string LLDate::toHTTPDateString(std::string fmt) const
 
 std::string LLDate::toHTTPDateString(tm * gmt, std::string fmt)
 {
-	LLFastTimer ft1(FT_DATE_FORMAT);
+	LL_RECORD_BLOCK_TIME(FT_DATE_FORMAT);
 
 	// avoid calling setlocale() unnecessarily - it's expensive.
+	static std::string prev_locale = "";
 	std::string this_locale = LLStringUtil::getLocale();
-	if (this_locale != sPrevLocale)
+	if (this_locale != prev_locale)
 	{
 		setlocale(LC_TIME, this_locale.c_str());
-		sPrevLocale = this_locale;
+		prev_locale = this_locale;
 	}
 
 	// use strftime() as it appears to be faster than std::time_put

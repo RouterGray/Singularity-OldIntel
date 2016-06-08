@@ -52,6 +52,7 @@
 #include "lluictrlfactory.h"
 #include "lldraghandle.h"
 #include "message.h"
+#include "llcorehttputil.h"
 
 //#include "llsdserialize.h"
 
@@ -68,6 +69,11 @@ LLFloaterAvatarPicker* LLFloaterAvatarPicker::show(select_callback_t callback,
 	// *TODO: Use a key to allow this not to be an effective singleton
 	LLFloaterAvatarPicker* floater =
 		getInstance();
+	if (!floater)
+	{
+		LL_WARNS() << "Cannot instantiate avatar picker" << LL_ENDL;
+		return NULL;
+	}
 	floater->open();
 	
 	floater->mSelectionCallback = callback;
@@ -183,6 +189,7 @@ void LLFloaterAvatarPicker::onBtnFind()
 	find();
 }
 
+// Singu Note: We diverge by having this split into two functions.
 static void addAvatarUUID(const LLUUID av_id, uuid_vec_t& avatar_ids, std::vector<LLAvatarName>& avatar_names)
 {
 	if (av_id.notNull())
@@ -488,38 +495,32 @@ BOOL LLFloaterAvatarPicker::visibleItemsSelected() const
 	return FALSE;
 }
 
-class LLAvatarPickerResponder : public LLHTTPClient::ResponderWithCompleted
+/*static*/
+void LLFloaterAvatarPicker::findCoro(std::string url, LLUUID queryID, std::string name)
 {
-	LOG_CLASS(LLAvatarPickerResponder);
-public:
-	LLUUID mQueryID;
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("genericPostCoro", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
 
-	LLAvatarPickerResponder(const LLUUID& id) : mQueryID(id) { }
+    LL_INFOS("HttpCoroutineAdapter", "genericPostCoro") << "Generic POST for " << url << LL_ENDL;
 
-protected:
-	/*virtual*/ void httpCompleted()
+    LLSD result = httpAdapter->getAndSuspend(httpRequest, url);
+
+    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    if (status || (status == LLCore::HttpStatus(HTTP_BAD_REQUEST)))
 	{
-		//std::ostringstream ss;
-		//LLSDSerialize::toPrettyXML(content, ss);
-		//LL_INFOS() << ss.str() << LL_ENDL;
-
-		// in case of invalid characters, the avatar picker returns a 400
-		// just set it to process so it displays 'not found'
-		if (isGoodStatus(mStatus) || mStatus == 400)
+		LLFloaterAvatarPicker* floater =
+			LLFloaterAvatarPicker::instanceExists() ? LLFloaterAvatarPicker::getInstance() : nullptr;
+		if (floater)
 		{
-			if (LLFloaterAvatarPicker::instanceExists())
-			{
-				LLFloaterAvatarPicker::getInstance()->processResponse(mQueryID, mContent);
-			}
-		}
-		else
-		{
-			LL_WARNS() << "avatar picker failed " << dumpResponse() << LL_ENDL;
+            result.erase(LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS);
+            floater->processResponse(queryID, result);
 		}
 	}
-
-	/*virtual*/ char const* getName(void) const { return "LLAvatarPickerResponder"; }
-};
+}
 
 void LLFloaterAvatarPicker::find()
 {
@@ -548,7 +549,9 @@ void LLFloaterAvatarPicker::find()
 		std::replace(text.begin(), text.end(), '.', ' ');
 		url += LLURI::escape(text);
 		LL_INFOS() << "avatar picker " << url << LL_ENDL;
-		LLHTTPClient::get(url, new LLAvatarPickerResponder(mQueryID));
+
+        LLCoros::instance().launch("LLFloaterAvatarPicker::findCoro",
+            boost::bind(&LLFloaterAvatarPicker::findCoro, url, mQueryID, LLStringUtil::null));
 	}
 	else
 	{
@@ -856,7 +859,14 @@ bool LLFloaterAvatarPicker::isSelectBtnEnabled()
 			uuid_vec_t avatar_ids;
 			std::vector<LLAvatarName> avatar_names;
 			getSelectedAvatarData(list, avatar_ids, avatar_names);
-			return mOkButtonValidateSignal(avatar_ids);
+			if (avatar_ids.size() >= 1) 
+			{
+				ret_val = mOkButtonValidateSignal.num_slots()?mOkButtonValidateSignal(avatar_ids):true;
+			}
+			else
+			{
+				ret_val = false;
+			}
 		}
 	}
 

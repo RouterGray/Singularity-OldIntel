@@ -35,9 +35,9 @@
 #include "llpanel.h"
 #include <boost/ptr_container/ptr_list.hpp>
 
-// [RLVa:KB]
-#include "rlvhandler.h"
-// [/RLVa:KB]
+// [RLVa:LF]
+#include "rlvdefines.h"
+// [/RLVa:LF]
 
 class LLComboBox;
 class LLSliderCtrl;

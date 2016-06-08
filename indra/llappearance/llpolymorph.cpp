@@ -36,6 +36,7 @@
 #include "llxmltree.h"
 #include "llendianswizzle.h"
 #include "llpolymesh.h"
+#include "llfasttimer.h"
 #include "v2math.h"
 
 //#include "../tools/imdebug/imdebug.h"
@@ -835,7 +836,7 @@ F32	LLPolyMorphTarget::getMaxDistortion()
 //-----------------------------------------------------------------------------
 // apply()
 //-----------------------------------------------------------------------------
-static LLFastTimer::DeclareTimer FTM_APPLY_MORPH_TARGET("Apply Morph");
+static LLTrace::BlockTimerStatHandle FTM_APPLY_MORPH_TARGET("Apply Morph");
 
 void LLPolyMorphTarget::apply( ESex avatar_sex )
 {
@@ -844,7 +845,7 @@ void LLPolyMorphTarget::apply( ESex avatar_sex )
 		return;
 	}
 
-	LLFastTimer t(FTM_APPLY_MORPH_TARGET);
+	LL_RECORD_BLOCK_TIME(FTM_APPLY_MORPH_TARGET);
 
 	mLastSex = avatar_sex;
 

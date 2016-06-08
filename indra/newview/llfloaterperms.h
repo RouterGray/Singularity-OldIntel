@@ -59,24 +59,27 @@ public:
 	void onClickCancel();
 	static void sendInitialPerms();
 	static void updateCap();
+	static void setCapSent(bool cap_sent);
 
-	// Update instantiation of sCategoryNames in the .cpp file to match if you change this!
-	enum Categories
-	{
-		CAT_OBJECTS,
-		CAT_UPLOADS,
-		CAT_SCRIPTS,
-		CAT_NOTECARDS,
-		CAT_GESTURES,
-		CAT_WEARABLES,
-		CAT_LAST
-	};
+// Update instantiation of sCategoryNames in the .cpp file to match if you change this!
+enum Categories
+{
+	CAT_OBJECTS,
+	CAT_UPLOADS,
+	CAT_SCRIPTS,
+	CAT_NOTECARDS,
+	CAT_GESTURES,
+	CAT_WEARABLES,
+	CAT_LAST
+};
 
 private:
 	LLFloaterPermsDefault(const LLSD& seed);
 	void refresh();
 
 	static const std::string sCategoryNames[CAT_LAST];
+    static void updateCapCoro(std::string url);
+
 
 	// cached values only for implementing cancel.
 	bool mShareWithGroup[CAT_LAST];

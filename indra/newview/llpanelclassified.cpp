@@ -50,8 +50,8 @@
 #include "llbutton.h"
 #include "llcheckboxctrl.h"
 #include "llclassifiedflags.h"
-#include "llclassifiedstatsresponder.h"
 #include "llcommandhandler.h" // for classified HTML detail page click tracking
+#include "llcorehttputil.h"
 #include "lllineeditor.h"
 #include "llfloaterclassified.h"
 #include "lltextbox.h"
@@ -110,48 +110,6 @@ public:
 	}
 };
 static LLDispatchClassifiedClickThrough sClassifiedClickThrough;
-
-
-/* Re-expose this if we need to have classified ad HTML detail
-   pages.  JC
-
-// We need to count classified teleport clicks from the search HTML detail pages,
-// so we need have a teleport that also sends a click count message.
-class LLClassifiedTeleportHandler : public LLCommandHandler
-{
-public:
-	// don't allow from external browsers because it moves you immediately
-	LLClassifiedTeleportHandler() : LLCommandHandler("classifiedteleport", true) { }
-
-	bool handle(const LLSD& tokens, const LLSD& queryMap)
-	{
-		// Need at least classified id and region name, so 2 params
-		if (tokens.size() < 2) return false;
-		LLUUID classified_id = tokens[0].asUUID();
-		if (classified_id.isNull()) return false;
-		// *HACK: construct a SLURL to do the teleport
-		std::string url("secondlife:///app/teleport/");
-		// skip the uuid we took off above, rebuild URL
-		// separated by slashes.
-		for (S32 i = 1; i < tokens.size(); ++i)
-		{
-			url += tokens[i].asString();
-			url += "/";
-		}
-		LL_INFOS() << "classified teleport to " << url << LL_ENDL;
-		// *TODO: separately track old search, sidebar, and new search
-		// Right now detail HTML pages count as new search.
-		const bool from_search = true;
-		LLPanelClassifiedInfo::sendClassifiedClickMessage(classified_id, "teleport", from_search);
-		// Invoke teleport
-		LLMediaCtrl* web = NULL;
-		const bool trusted_browser = true;
-		return LLURLDispatcher::dispatch(url, web, trusted_browser);
-	}
-};
-// Creating the object registers with the dispatcher.
-LLClassifiedTeleportHandler gClassifiedTeleportHandler;
-*/
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -551,7 +509,6 @@ std::string LLPanelClassifiedInfo::getClassifiedName()
 	return mNameEditor->getText();
 }
 
-
 void LLPanelClassifiedInfo::sendClassifiedInfoRequest()
 {
 	if (mClassifiedID != mRequestedID)
@@ -572,7 +529,15 @@ void LLPanelClassifiedInfo::sendClassifiedInfoRequest()
 		if (!url.empty())
 		{
 			LL_INFOS() << "Classified stat request via capability" << LL_ENDL;
-			LLHTTPClient::post(url, body, new LLClassifiedStatsResponder(((LLView*)this)->getHandle(), mClassifiedID));
+			LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(url, body,
+				[=](const LLSD& content)
+				{
+					setClickThrough(mClassifiedID,
+						content["teleport_clicks"].asInteger() + content["search_teleport_clicks"].asInteger(),
+						content["map_clicks"].asInteger() + content["search_map_clicks"].asInteger(),
+						content["profile_clicks"].asInteger() + content["search_profile_clicks"].asInteger(),
+						true);
+				});
 		}
 	}
 }
@@ -940,10 +905,11 @@ void LLPanelClassifiedInfo::sendClassifiedClickMessage(const std::string& type)
 	body["parcel_id"] = mParcelID;
 	body["dest_pos_global"] = mPosGlobal.getValue();
 	body["region_name"] = mSimName;
-
 	std::string url = gAgent.getRegion()->getCapability("SearchStatTracking");
-	LL_INFOS() << "LLPanelClassifiedInfo::sendClassifiedClickMessage via capability" << LL_ENDL;
-	LLHTTPClient::post(url, body, new LLHTTPClient::ResponderIgnore);
+	LL_INFOS() << "Sending click msg via capability (url=" << url << ")" << LL_ENDL;
+	LL_INFOS() << "body: [" << body << "]" << LL_ENDL;
+    LLCoreHttpUtil::HttpCoroutineAdapter::messageHttpPost(url, body,
+        "SearchStatTracking Click report sent.", "SearchStatTracking Click report NOT sent.");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

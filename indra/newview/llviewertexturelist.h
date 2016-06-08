@@ -35,6 +35,7 @@
 #include "llui.h"
 #include <list>
 #include <set>
+#include "lluiimage.h"
 
 const U32 LL_IMAGE_REZ_LOSSLESS_CUTOFF = 128;
 
@@ -61,10 +62,9 @@ typedef	void (*LLImageCallback)(BOOL success,
 
 class LLViewerTextureList
 {
-    LOG_CLASS(LLViewerTextureList);
-
 	friend class LLTextureView;
 	friend class LLViewerTextureManager;
+	friend class LLLocalBitmap;
 	
 public:
 	static BOOL createUploadFile(const std::string& filename, const std::string& out_filename, const U8 codec);
@@ -110,6 +110,7 @@ public:
 	void doPrefetchImages();
 
 	void clearFetchingRequests();
+	void setDebugFetching(LLViewerFetchedTexture* tex, S32 debug_level);
 
 	static S32Megabytes getMinVideoRamSetting();
 	static S32Megabytes getMaxVideoRamSetting(bool get_recommended, float mem_multiplier);
@@ -119,6 +120,7 @@ private:
 	F32  updateImagesCreateTextures(F32 max_time);
 	F32  updateImagesFetchTextures(F32 max_time);
 	void updateImagesUpdateStats();
+	F32  updateImagesLoadingFastCache(F32 max_time);
 
 public:
 	void addImage(LLViewerFetchedTexture *image);
@@ -178,6 +180,7 @@ public:
 	image_list_t mLoadingStreamList;
 	image_list_t mCreateTextureList;
 	image_list_t mCallbackList;
+	image_list_t mFastCacheList;
 
 	// Note: just raw pointers because they are never referenced, just compared against
 	std::set<LLViewerFetchedTexture*> mDirtyTextureList;
@@ -209,6 +212,7 @@ public:
 private:
 	static S32 sNumImages;
 	static void (*sUUIDCallback)(void**, const LLUUID &);
+    LOG_CLASS(LLViewerTextureList);
 };
 
 class LLUIImageList : public LLImageProviderInterface, public LLSingleton<LLUIImageList>

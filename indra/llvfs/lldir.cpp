@@ -200,7 +200,7 @@ S32 LLDir::deleteFilesInDir(const std::string &dirname, const std::string &mask)
 
 U32 LLDir::deleteDirAndContents(const std::string& dir_name)
 {
-	//Removes the directory and its contents.  Returns number of files removed.
+    //Removes the directory and its contents.  Returns number of files deleted.
 	
 	U32 num_deleted = 0;
 
@@ -373,7 +373,7 @@ const std::string  LLDir::getCacheDir(bool get_default) const
 	}
 }
 
-#if (defined(_WIN64) || defined(__amd64__) || defined(__x86_64__))
+#if !defined(LL_DARWIN) && (defined(_WIN64) || defined(__amd64__) || defined(__x86_64__))
 #define OS_CACHE_DIR "SingularityViewer64"
 #else
 #define OS_CACHE_DIR "SingularityViewer"

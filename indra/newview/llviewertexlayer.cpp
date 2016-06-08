@@ -1,8 +1,8 @@
 /** 
- * @file lltexlayer.cpp
- * @brief A texture layer. Used for avatars.
+ * @file llviewertexlayer.cpp
+ * @brief Viewer texture layer. Used for avatars.
  *
- * $LicenseInfo:firstyear=2002&license=viewerlgpl$
+ * $LicenseInfo:firstyear=2012&license=viewerlgpl$
  * Second Life Viewer Source Code
  * Copyright (C) 2010, Linden Research, Inc.
  * 
@@ -26,10 +26,10 @@
 
 #include "llviewerprecompiledheaders.h"
 
-#include "lltexlayer.h"
 #include "llviewertexlayer.h"
 
 #include "llagent.h"
+#include "llcorehttputil.h"
 #include "llimagej2c.h"
 #include "llnotificationsutil.h"
 #include "llvfile.h"
@@ -38,7 +38,6 @@
 #include "llglslshader.h"
 #include "llvoavatarself.h"
 #include "pipeline.h"
-#include "llassetuploadresponders.h"
 #include "llviewercontrol.h"
 #include "llviewerstats.h"
 
@@ -193,7 +192,7 @@ BOOL LLViewerTexLayerSetBuffer::needsRender()
 		return FALSE;
 	}
 
-	// Don't render if we are trying to create a shirt texture but aren't wearing a skirt.
+	// Don't render if we are trying to create a skirt texture but aren't wearing a skirt.
 	if (gAgentAvatarp->getBakedTE(getViewerTexLayerSet()) == LLAvatarAppearanceDefines::TEX_SKIRT_BAKED && 
 		!gAgentAvatarp->isWearingWearableType(LLWearableType::WT_SKIRT))
 	{
@@ -361,50 +360,23 @@ BOOL LLViewerTexLayerSetBuffer::requestUpdateImmediate()
 	return result;
 }
 
-class LLSendTexLayerResponder : public LLAssetUploadResponder
+// Baked texture upload completed
+void sendTexLayerComplete(const LLSD& content, LLBakedUploadData* mBakedUploadData)
 {
-	LOG_CLASS(LLSendTexLayerResponder);
-public:
-	LLSendTexLayerResponder(const LLSD& post_data, const LLUUID& vfile_id, LLAssetType::EType asset_type, LLBakedUploadData * baked_upload_data)
-	: LLAssetUploadResponder(post_data, vfile_id, asset_type)
-	, mBakedUploadData(baked_upload_data)
-	{}
+	const std::string& result = content["state"];
+	const LLUUID& new_id = content["new_asset"];
 
-	~LLSendTexLayerResponder()
-	{
-		// mBakedUploadData is normally deleted by calls to LLViewerTexLayerSetBuffer::onTextureUploadComplete() below
-		if (mBakedUploadData)
-		{	// ...but delete it in the case where uploadComplete() is never called
-			delete mBakedUploadData;
-			mBakedUploadData = NULL;
-		}
-	}
+	LL_INFOS() << "result: " << result << " new_id: " << new_id << LL_ENDL;
+	LLViewerTexLayerSetBuffer::onTextureUploadComplete(new_id, (void*) mBakedUploadData, (result == "complete" && mBakedUploadData) ? 0 : -1, LL_EXSTAT_NONE);
+}
 
-	// Baked texture upload completed
-	/*virtual*/ void uploadComplete(const LLSD& content)
-	{
-		const std::string& result = content["state"];
-		const LLUUID& new_id = content["new_asset"];
+void sendTexLayerFailure(const LLSD& content, LLBakedUploadData* mBakedUploadData)
+{
+	LL_INFOS() << content << LL_ENDL;
 
-		LL_INFOS() << "result: " << result << " new_id: " << new_id << LL_ENDL;
-		LLViewerTexLayerSetBuffer::onTextureUploadComplete(new_id, (void*) mBakedUploadData, (result == "complete" && mBakedUploadData) ? 0 : -1, LL_EXSTAT_NONE);
-		mBakedUploadData = NULL;	// deleted in onTextureUploadComplete()
-	}
-
-	/*virtual*/ void httpFailure()
-	{
-		LL_INFOS() << dumpResponse() << LL_ENDL;
-
-		// Invoke the original callback with an error result
-		LLViewerTexLayerSetBuffer::onTextureUploadComplete(LLUUID::null, (void*) mBakedUploadData, -1, LL_EXSTAT_NONE);
-		mBakedUploadData = NULL;	// deleted in onTextureUploadComplete()
-	}
-
-	/*virtual*/ char const* getName() const { return "LLSendTexLayerResponder"; }
-
-private:
-	LLBakedUploadData* mBakedUploadData;
-};
+	// Invoke the original callback with an error result
+	LLViewerTexLayerSetBuffer::onTextureUploadComplete(LLUUID::null, (void*) mBakedUploadData, -1, LL_EXSTAT_NONE);
+}
 
 // Create the baked texture, send it out to the server, then wait for it to come
 // back so we can switch to using it.
@@ -464,7 +436,7 @@ void LLViewerTexLayerSetBuffer::doUpload()
 			BOOL valid = FALSE;
 			LLPointer<LLImageJ2C> integrity_test = new LLImageJ2C;
 			S32 file_size = 0;
-			U8* data = LLVFile::readFile(gVFS, LLImageBase::getPrivatePool(), asset_id, LLAssetType::AT_TEXTURE, &file_size);
+			U8* data = LLVFile::readFile(gVFS, asset_id, LLAssetType::AT_TEXTURE, &file_size);
 			if (data)
 			{
 				valid = integrity_test->validate(data, file_size); // integrity_test will delete 'data'
@@ -491,9 +463,8 @@ void LLViewerTexLayerSetBuffer::doUpload()
 					&& !LLPipeline::sForceOldBakedUpload // toggle debug setting UploadBakedTexOld to change between the new caps method and old method
 					&& (mUploadFailCount < (BAKE_UPLOAD_ATTEMPTS - 1))) // Try last ditch attempt via asset store if cap upload is failing.
 				{
-					LLSD body = LLSD::emptyMap();
 					// The responder will call LLViewerTexLayerSetBuffer::onTextureUploadComplete()
-					LLHTTPClient::post(url, body, new LLSendTexLayerResponder(body, mUploadID, LLAssetType::AT_TEXTURE, baked_upload_data));
+					LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpPost(url, LLSD::emptyMap(), boost::bind(sendTexLayerComplete, _1, baked_upload_data), boost::bind(sendTexLayerFailure, _1, baked_upload_data));
 					LL_INFOS() << "Baked texture upload via capability of " << mUploadID << " to " << url << LL_ENDL;
 				} 
 				else

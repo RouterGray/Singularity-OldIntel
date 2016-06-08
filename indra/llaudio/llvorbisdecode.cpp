@@ -134,10 +134,9 @@ BOOL decode_vorbis_file(LLVFS *vfs, const LLUUID &in_uuid, char *out_fname)
 	}
 
 	// **********************************
-	LLAPRFile outfile ;
-	outfile.open(out_fname,LL_APR_WPB);
+	llfstream outfile = llofstream(out_fname, std::ios::out | std::ios::binary | std::ios::in);
 	// **********************************
-	if (!outfile.getFileHandle())
+	if (!outfile.good())
 	{
 		llwarning("unable to open vorbis destination file for writing",0);
 		return(FALSE);		
@@ -265,12 +264,12 @@ BOOL decode_vorbis_file(LLVFS *vfs, const LLUUID &in_uuid, char *out_fname)
 	ov_clear(&vf);
   
 	// write "data" chunk length
-	outfile.seek(APR_SET,40);
+	outfile.seekp(40, std::ios_base::beg);
 	outfile.write(&data_length,4);
  
 	// write overall "RIFF" length
 	data_length += 36;
-	outfile.seek(APR_SET,4);
+	outfile.seekp(4, std::ios_base::beg);
 	outfile.write(&data_length,1*4);
 
 	// FUCK!!! Vorbis encode/decode messes up loop point transitions (pop)
@@ -283,7 +282,7 @@ BOOL decode_vorbis_file(LLVFS *vfs, const LLUUID &in_uuid, char *out_fname)
 
 	fade_length = llmin((S32)128,(S32)(data_length-36)/8);
 	
-	outfile.seek(APR_SET,44);
+	outfile.seekp(44, std::ios_base::beg);
 	outfile.read(pcmout,2*fade_length);  //read first 16 samples
 
 	samplep = (S16 *)pcmout;
@@ -293,10 +292,10 @@ BOOL decode_vorbis_file(LLVFS *vfs, const LLUUID &in_uuid, char *out_fname)
 		*samplep++ = ((F32)*samplep * ((F32)i/(F32)fade_length));	   
 	}
 	
-	outfile.seek(APR_SET,44);
+	outfile.seekp(44, std::ios_base::beg);
 	outfile.write(pcmout,2*fade_length);  //write back xfaded first 16 samples
 
-	outfile.seek(APR_END,-fade_length*2); 
+	outfile.seekp(-fade_length*2, std::ios_base::end); 
 	outfile.read(pcmout,2*fade_length);  //read last 16 samples
 
 	samplep = (S16 *)pcmout;
@@ -306,7 +305,7 @@ BOOL decode_vorbis_file(LLVFS *vfs, const LLUUID &in_uuid, char *out_fname)
 		*samplep++ = ((F32)*samplep * ((F32)i/(F32)fade_length));	   
 	}
 	
-	outfile.seek(SEEK_END,-fade_length*2); 
+	outfile.seekp(-fade_length*2, std::ios_base::end); 
 	outfile.write(pcmout,2*fade_length);  //write back xfaded last 16 samples
 	// *******************
 	outfile.close();

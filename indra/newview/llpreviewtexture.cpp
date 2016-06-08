@@ -38,7 +38,7 @@
 #include "llavataractions.h"
 #include "llbutton.h"
 #include "llcombobox.h"
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 #include "llfloaterinventory.h"
 #include "llimage.h"
 #include "llinventory.h"
@@ -382,19 +382,16 @@ void LLPreviewTexture::saveAs()
 	if( mLoadingFullImage )
 		return;
 
-	const LLViewerInventoryItem* item = getItem() ;
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(item ? LLDir::getScrubbedFileName(item->getName()) + ".png" : LLStringUtil::null, FFSAVE_IMAGE, "", "image");
-	filepicker->run(boost::bind(&LLPreviewTexture::saveAs_continued, this, item, filepicker));
-}
-
-void LLPreviewTexture::saveAs_continued(LLViewerInventoryItem const* item, AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& file_picker = LLFilePicker::instance();
+	const LLInventoryItem* item = getItem() ;
+	if( !file_picker.getSaveFile( LLFilePicker::FFSAVE_IMAGE, item ? LLDir::getScrubbedFileName(item->getName()+".png") : LLStringUtil::null) )
+	{
+		// User canceled or we failed to acquire save file.
 		return;
+	}
 
 	// remember the user-approved/edited file name.
-	mSaveFileName = filepicker->getFilename();
+	mSaveFileName = file_picker.getFirstFile();
 	mLoadingFullImage = TRUE;
 	getWindow()->incBusyCount();
 
@@ -449,7 +446,7 @@ void LLPreviewTexture::onFileLoadedForSave(BOOL success,
 		}
 		else
 		{
-			self->mSavedFileTimer.reset(SECONDS_TO_SHOW_FILE_SAVED_MSG);
+			self->mSavedFileTimer.resetWithExpiry(SECONDS_TO_SHOW_FILE_SAVED_MSG);
 		}
 
 		self->mSaveFileName.clear();

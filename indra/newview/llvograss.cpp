@@ -265,6 +265,7 @@ void LLVOGrass::initClass()
 void LLVOGrass::cleanupClass()
 {
 	for_each(sSpeciesTable.begin(), sSpeciesTable.end(), DeletePairedPointer());
+	sSpeciesTable.clear();
 }
 
 U32 LLVOGrass::processUpdateMessage(LLMessageSystem *mesgsys,
@@ -437,11 +438,11 @@ LLDrawable* LLVOGrass::createDrawable(LLPipeline *pipeline)
 	return mDrawable;
 }
 
-static LLFastTimer::DeclareTimer FTM_UPDATE_GRASS("Update Grass");
+static LLTrace::BlockTimerStatHandle FTM_UPDATE_GRASS("Update Grass");
 
 BOOL LLVOGrass::updateGeometry(LLDrawable *drawable)
 {
-	LLFastTimer ftm(FTM_UPDATE_GRASS);
+	LL_RECORD_BLOCK_TIME(FTM_UPDATE_GRASS);
 
 	dirtySpatialGroup();
 
@@ -695,11 +696,11 @@ void LLGrassPartition::addGeometryCount(LLSpatialGroup* group, U32& vertex_count
 	}
 }
 
-static LLFastTimer::DeclareTimer FTM_REBUILD_GRASS_VB("Grass VB");
+static LLTrace::BlockTimerStatHandle FTM_REBUILD_GRASS_VB("Grass VB");
 
 void LLGrassPartition::getGeometry(LLSpatialGroup* group)
 {
-	LLFastTimer ftm(FTM_REBUILD_GRASS_VB);
+	LL_RECORD_BLOCK_TIME(FTM_REBUILD_GRASS_VB);
 
 	std::sort(mFaceList.begin(), mFaceList.end(), LLFace::CompareDistanceGreater());
 
@@ -826,7 +827,7 @@ BOOL LLVOGrass::lineSegmentIntersect(const LLVector4a& start, const LLVector4a& 
 
 	LLVector2 tc[4];
 	LLVector3 v[4];
-	// LLVector3 n[4]; // unused!
+	//LLVector3 n[4];
 
 	F32 closest_t = 1.f;
 

@@ -30,10 +30,7 @@
 
 #include <vector>
 #include <list>
-#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
-#define BOOST_FUNCTION_HPP_INCLUDED
-#endif
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_enum.hpp>

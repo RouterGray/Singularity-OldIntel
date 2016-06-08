@@ -54,10 +54,8 @@ LLShaderMgr * LLShaderMgr::sInstance = NULL;
 
 LLShaderMgr::LLShaderMgr()
 {
-	{
-		const std::string dumpdir = gDirUtilp->getExpandedFilename(LL_PATH_LOGS,"shader_dump")+gDirUtilp->getDirDelimiter();
-		gDirUtilp->deleteDirAndContents(dumpdir);
-	}
+	const std::string dumpdir = gDirUtilp->getExpandedFilename(LL_PATH_LOGS,"shader_dump")+gDirUtilp->getDirDelimiter();
+	gDirUtilp->deleteDirAndContents(dumpdir);
 }
 
 
@@ -915,12 +913,12 @@ GLhandleARB LLShaderMgr::loadShaderFile(const std::string& filename, S32 & shade
 		LLFile::mkdir(maindir+="class" + llformat("%i",gpu_class) + delim);					//..shader_dump/class1/
 		LLFile::mkdir(maindir+=filename.substr(0,filename.find_last_of("/")+1));			//..shader_dump/class1/windlight/
 
-		LLAPRFile file(maindir + shader_name + (ret ? "" : llformat("_FAILED(%i)",error)) + ".glsl", LL_APR_W);
-		file.write(ostr.str().c_str(),ostr.str().length());
+		llofstream file(maindir + shader_name + (ret ? "" : llformat("_FAILED(%i)",error)) + ".glsl");
+		file << ostr.str();
 		if(!error_str.empty())
 		{
-			LLAPRFile file2(maindir + shader_name + "_ERROR.txt", LL_APR_W);
-			file2.write(error_str.c_str(),error_str.length());
+			llofstream file2(maindir + shader_name + "_ERROR.txt");
+			file2 << error_str;
 		}
 	}
 	stop_glerror();

@@ -27,6 +27,7 @@
 #define LLPOINTER_H
 
 #include "llerror.h"	// *TODO: consider eliminating this
+#include "llmutex.h"
 
 //----------------------------------------------------------------------------
 // RefCount objects should generally only be accessed by way of LLPointer<>'s

@@ -548,7 +548,7 @@ LLDrawable* LLVOTree::createDrawable(LLPipeline *pipeline)
 const S32 LEAF_INDICES = 24;
 const S32 LEAF_VERTICES = 16;
 
-static LLFastTimer::DeclareTimer FTM_UPDATE_TREE("Update Tree");
+static LLTrace::BlockTimerStatHandle FTM_UPDATE_TREE("Update Tree");
 
 void LLVOTree::resetVertexBuffers()
 {
@@ -557,7 +557,7 @@ void LLVOTree::resetVertexBuffers()
 
 BOOL LLVOTree::updateGeometry(LLDrawable *drawable)
 {
-	LLFastTimer ftm(FTM_UPDATE_TREE);
+	LL_RECORD_BLOCK_TIME(FTM_UPDATE_TREE);
 
 	for(std::vector<LLPointer<LLDrawInfo> >::iterator iter = mDrawList.begin(); iter != mDrawList.end(); iter++)
 	{

@@ -35,14 +35,9 @@
 
 #include "llbutton.h"
 #include "lluictrlfactory.h"
-#include "llviewercontrol.h"
-#include "lliconctrl.h"
-#include "lloverlaybar.h"
-#include "lltextbox.h"
 #include "llcombobox.h"
 #include "llsliderctrl.h"
 #include "llcheckboxctrl.h"
-#include "llstartup.h"
 
 #include "llfloaterwindlight.h"
 #include "llfloaterwater.h"
@@ -51,11 +46,16 @@
 #include "llagentcamera.h"
 #include "lldaycyclemanager.h"
 #include "llenvmanager.h"
+#include "llviewercontrol.h"
 #include "llviewerregion.h"
 #include "llvoavatarself.h"
 #include "llwaterparammanager.h"
 #include "llwlparamset.h"
 #include "llwlparammanager.h"
+
+ // [RLVa:LF]
+#include "rlvhandler.h"
+ // [/RLVa:LF]
 
 // Hover funcs
 void syncFromPreferenceSetting(LLSliderCtrl* sldrCtrl);

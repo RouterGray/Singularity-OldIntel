@@ -2,31 +2,25 @@
  * @file llwlhandlers.cpp
  * @brief Various classes which handle Windlight-related messaging
  *
- * $LicenseInfo:firstyear=2009&license=viewergpl$
- * 
- * Copyright (c) 2009, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2009&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2011, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
@@ -38,6 +32,7 @@
 #include "llviewerregion.h"
 #include "llenvmanager.h"
 #include "llnotificationsutil.h"
+#include "llcorehttputil.h"
 
 /****
  * LLEnvironmentRequest
@@ -87,51 +82,59 @@ bool LLEnvironmentRequest::doRequest()
 		return false;
 	}
 
+    std::string coroname =
+        LLCoros::instance().launch("LLEnvironmentRequest::environmentRequestCoro",
+        boost::bind(&LLEnvironmentRequest::environmentRequestCoro, url));
+
 	LL_INFOS("WindlightCaps") << "Requesting region windlight settings via " << url << LL_ENDL;
-	LLHTTPClient::get(url, new LLEnvironmentRequestResponder());
 	return true;
 }
 
-/****
- * LLEnvironmentRequestResponder
- ****/
-int LLEnvironmentRequestResponder::sCount = 0; // init to 0
+S32 LLEnvironmentRequest::sLastRequest = 0;
 
-LLEnvironmentRequestResponder::LLEnvironmentRequestResponder()
+//static 
+void LLEnvironmentRequest::environmentRequestCoro(std::string url)
 {
-	mID = ++sCount;
-}
-/*virtual*/ void LLEnvironmentRequestResponder::httpSuccess(void)
-{
-	LL_INFOS("WindlightCaps") << "Received region windlight settings" << LL_ENDL;
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    S32 requestId = ++LLEnvironmentRequest::sLastRequest;
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t 
+            httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("EnvironmentRequest", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
 
-	if (mID != sCount)
+    LLSD result = httpAdapter->getAndSuspend(httpRequest, url);
+
+    if (requestId != LLEnvironmentRequest::sLastRequest)
 	{
 		LL_INFOS("WindlightCaps") << "Got superseded by another responder; ignoring..." << LL_ENDL;
+        return;
 	}
-	else if (!gAgent.getRegion() || gAgent.getRegion()->getRegionID().isNull())
+
+    LLSD httpResults = result["http_result"];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+    if (!status)
 	{
-		LL_WARNS("WindlightCaps") << "Ignoring responder. Current region is invalid." << LL_ENDL;
+        LL_WARNS("WindlightCaps") << "Got an error, not using region windlight... " << LL_ENDL;
+        LLEnvManagerNew::getInstance()->onRegionSettingsResponse(LLSD());
+        return;
 	}
-	else if (mContent[0]["regionID"].asUUID().isNull())
+    result = result["content"];
+    LL_INFOS("WindlightCaps") << "Received region windlight settings" << LL_ENDL;
+
+    LLUUID regionId;
+    if (gAgent.getRegion())
 	{
-		LL_WARNS("WindlightCaps") << "Ignoring responder. Response from invalid region." << LL_ENDL;
+        regionId = gAgent.getRegion()->getRegionID();
 	}
-	else if (mContent[0]["regionID"].asUUID() != gAgent.getRegion()->getRegionID())
+
+    if ((result[0]["regionID"].asUUID() != regionId) && regionId.notNull())
 	{
 		LL_WARNS("WindlightCaps") << "Not in the region from where this data was received (wanting "
-			<< gAgent.getRegion()->getRegionID() << " but got " << mContent[0]["regionID"].asUUID()
+            << regionId << " but got " << result[0]["regionID"].asUUID()
 			<< ") - ignoring..." << LL_ENDL;
+        return;
 	}
-	else
-	{
-		LLEnvManagerNew::getInstance()->onRegionSettingsResponse(mContent);
-	}
-}
-/*virtual*/ void LLEnvironmentRequestResponder::httpFailure(void)
-{
-	LL_INFOS("WindlightCaps") << "Got an error, not using region windlight..." << LL_ENDL;
-	LLEnvManagerNew::getInstance()->onRegionSettingsResponse(LLSD());
+
+    LLEnvManagerNew::getInstance()->onRegionSettingsResponse(result);
 }
 
 /****
@@ -167,44 +170,84 @@ bool LLEnvironmentApply::initiateRequest(const LLSD& content)
 
 	LL_INFOS("WindlightCaps") << "Sending windlight settings to " << url << LL_ENDL;
 	LL_DEBUGS("WindlightCaps") << "content: " << content << LL_ENDL;
-	LLHTTPClient::post(url, content, new LLEnvironmentApplyResponder());
+
+    std::string coroname =
+        LLCoros::instance().launch("LLEnvironmentApply::environmentApplyCoro",
+        boost::bind(&LLEnvironmentApply::environmentApplyCoro, url, content));
 	return true;
 }
 
-/****
- * LLEnvironmentApplyResponder
- ****/
-/*virtual*/ void LLEnvironmentApplyResponder::httpSuccess(void)
+void LLEnvironmentApply::environmentApplyCoro(std::string url, LLSD content)
 {
-	if (mContent["regionID"].asUUID() != gAgent.getRegion()->getRegionID())
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("EnvironmentApply", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+
+    LLSD result = httpAdapter->postAndSuspend(httpRequest, url, content);
+
+    LLSD notify; // for error reporting.  If there is something to report to user this will be defined.
+    /*
+     * Expecting reply from sim in form of:
+     * {
+     *   regionID : uuid,
+     *   messageID: uuid,
+     *   success : true
+     * }
+     * or
+     * {
+     *   regionID : uuid,
+     *   success : false,
+     *   fail_reason : string
+     * }
+     */
+
+    do // while false.  
+    {  // Breaks from loop in the case of an error.
+
+        LLSD httpResults = result["http_result"];
+        LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+        if (!status)
+        {
+            LL_WARNS("WindlightCaps") << "Couldn't apply windlight settings to region! " << LL_ENDL;
+
+            std::stringstream msg;
+            msg << status.toString() << " (Code " << status.toTerseString() << ")";
+            notify = LLSD::emptyMap();
+            notify["FAIL_REASON"] = msg.str();
+            break;
+        }
+
+        if (!result.has("regionID"))
+		{
+            notify = LLSD::emptyMap();
+            notify["FAIL_REASON"] = "Missing regionID, malformed response";
+            break;
+        } 
+        else if (result["regionID"].asUUID() != gAgent.getRegion()->getRegionID())
+        {
+            // note that there is no report to the user in this failure case.
+			LL_WARNS("WindlightCaps") << "No longer in the region where data was sent (currently "
+                << gAgent.getRegion()->getRegionID() << ", reply is from " << result["regionID"].asUUID()
+				<< "); ignoring..." << LL_ENDL;
+            break;
+		}
+        else if (!result["success"].asBoolean())
+		{
+            LL_WARNS("WindlightCaps") << "Region couldn't apply windlight settings!  " << LL_ENDL;
+            notify = LLSD::emptyMap();
+            notify["FAIL_REASON"] = result["fail_reason"].asString();
+            break;
+		}
+
+        LL_DEBUGS("WindlightCaps") << "Success in applying windlight settings to region " << result["regionID"].asUUID() << LL_ENDL;
+        LLEnvManagerNew::instance().onRegionSettingsApplyResponse(true);
+
+    } while (false);
+
+    if (!notify.isUndefined())
 	{
-		LL_WARNS("WindlightCaps") << "No longer in the region where data was sent (currently "
-			<< gAgent.getRegion()->getRegionID() << ", reply is from " << mContent["regionID"].asUUID()
-			<< "); ignoring..." << LL_ENDL;
-		return;
-	}
-	else if (mContent["success"].asBoolean())
-	{
-		LL_DEBUGS("WindlightCaps") << "Success in applying windlight settings to region " << mContent["regionID"].asUUID() << LL_ENDL;
-		LLEnvManagerNew::instance().onRegionSettingsApplyResponse(true);
-	}
-	else
-	{
-		LL_WARNS("WindlightCaps") << "Region couldn't apply windlight settings!  Reason from sim: " << mContent["fail_reason"].asString() << LL_ENDL;
-		LLSD args(LLSD::emptyMap());
-		args["FAIL_REASON"] = mContent["fail_reason"].asString();
-		LLNotificationsUtil::add("WLRegionApplyFail", args);
+        LLNotificationsUtil::add("WLRegionApplyFail", notify);
 		LLEnvManagerNew::instance().onRegionSettingsApplyResponse(false);
 	}
-}
-/*virtual*/ void LLEnvironmentApplyResponder::httpFailure(void)
-{
-	std::stringstream msg;
-	msg << mReason << " (Code " << mStatus << ")";
-
-	LL_WARNS("WindlightCaps") << "Couldn't apply windlight settings to region!  Reason: " << msg.str() << LL_ENDL;
-
-	LLSD args(LLSD::emptyMap());
-	args["FAIL_REASON"] = msg.str();
-	LLNotificationsUtil::add("WLRegionApplyFail", args);
 }

@@ -61,12 +61,18 @@ using namespace llsd;
 #	include <sys/sysctl.h>
 #	include <sys/utsname.h>
 #	include <stdint.h>
-#	include <Carbon/Carbon.h>
+#	include <CoreServices/CoreServices.h>
 #   include <stdexcept>
 #	include <mach/host_info.h>
 #	include <mach/mach_host.h>
 #	include <mach/task.h>
 #	include <mach/task_info.h>
+
+// disable warnings about Gestalt calls being deprecated
+// until Apple get's on the ball and provides an alternative
+//
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #elif LL_LINUX
 #	include <errno.h>
 #	include <sys/utsname.h>
@@ -1166,7 +1172,6 @@ public:
         mConnection(LLEventPumps::instance()
                     .obtain("mainloop")
 					.listen("FrameWatcher", std::bind(&FrameWatcher::tick, this, std::placeholders::_1))),
-
         // Initializing mSampleStart to an invalid timestamp alerts us to skip
         // trying to compute framerate on the first call.
         mSampleStart(-1),
@@ -1268,7 +1273,7 @@ public:
                     << " seconds ";
         }
 
-	std::streamsize precision = LL_CONT.precision(); // <alchemy/>
+	S32 precision = LL_CONT.precision();
 
         LL_CONT << std::fixed << std::setprecision(1) << framerate << '\n'
                 << LLMemoryInfo();
@@ -1311,7 +1316,11 @@ BOOL gunzip_file(const std::string& srcfile, const std::string& dstfile)
 	LLFILE *dst = NULL;
 	S32 bytes = 0;
 	tmpfile = dstfile + ".t";
+#if LL_WINDOWS
+	src = gzopen_w(utf8str_to_utf16str(srcfile).c_str(), "rb");
+#else
 	src = gzopen(srcfile.c_str(), "rb");
+#endif
 	if (! src) goto err;
 	dst = LLFile::fopen(tmpfile, "wb");		/* Flawfinder: ignore */
 	if (! dst) goto err;
@@ -1345,7 +1354,11 @@ BOOL gzip_file(const std::string& srcfile, const std::string& dstfile)
 	LLFILE *src = NULL;
 	S32 bytes = 0;
 	tmpfile = dstfile + ".t";
+#if LL_WINDOWS
+	dst = gzopen_w(utf8str_to_utf16str(tmpfile).c_str(), "wb");		/* Flawfinder: ignore */
+#else
 	dst = gzopen(tmpfile.c_str(), "wb");		/* Flawfinder: ignore */
+#endif
 	if (! dst) goto err;
 	src = LLFile::fopen(srcfile, "rb");		/* Flawfinder: ignore */
 	if (! src) goto err;
@@ -1378,3 +1391,10 @@ BOOL gzip_file(const std::string& srcfile, const std::string& dstfile)
 	if (dst != NULL) gzclose(dst);
 	return retval;
 }
+
+#if LL_DARWIN
+// disable warnings about Gestalt calls being deprecated
+// until Apple get's on the ball and provides an alternative
+//
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif

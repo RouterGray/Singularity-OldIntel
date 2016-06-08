@@ -36,6 +36,7 @@
 #include <fstream>
 
 #include "llkeywords.h"
+#include "llfasttimer.h"
 #include "lltexteditor.h"
 #include "llstl.h"
 #include <boost/tokenizer.hpp>
@@ -353,13 +354,13 @@ LLColor3 LLKeywords::readColor( const std::string& s )
 	return LLColor3( r, g, b );
 }
 
-LLFastTimer::DeclareTimer FTM_SYNTAX_COLORING("Syntax Coloring");
+LLTrace::BlockTimerStatHandle FTM_SYNTAX_COLORING("Syntax Coloring");
 
 // Walk through a string, applying the rules specified by the keyword token list and
 // create a list of color segments.
 void LLKeywords::findSegments(std::vector<LLTextSegmentPtr>* seg_list, const LLWString& wtext, const LLColor4 &defaultColor)
 {
-	LLFastTimer ft(FTM_SYNTAX_COLORING);
+	LL_RECORD_BLOCK_TIME(FTM_SYNTAX_COLORING);
 	seg_list->clear();
 
 	if( wtext.empty() )

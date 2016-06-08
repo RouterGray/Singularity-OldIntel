@@ -45,9 +45,6 @@
 			<string name="done_text">
 				Fatto
 			</string>
-			<string name="redirect_404_url">
-				http://secondlife.com/app/search/notfound.html
-			</string>
 			<string name="default_search_page">
 				&quot;http://secondlife.com/app/search/index.php?&quot;
 			</string>
@@ -201,9 +198,6 @@
 			</string>
 			<string name="done_text">
 				Fatto
-			</string>
-			<string name="redirect_404_url">
-				http://secondlife.com/app/search/notfound.html
 			</string>
 			<string name="default_search_page">
 				&quot;http://secondlife.com/app/showcase/index.php?&quot;
@@ -400,9 +394,6 @@ Per acquistare direttamente, visita la terra e clicca sul nome del terreno nella
 			</string>
 			<string name="done_text">
 				Fatto
-			</string>
-			<string name="redirect_404_url">
-				http://secondlife.com/app/search/notfound.html
 			</string>
 			<string name="default_search_page">
 				&quot;http://secondlife.com/app/search/index_groups.php?&quot;

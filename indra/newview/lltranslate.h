@@ -2,127 +2,98 @@
 * @file lltranslate.h
 * @brief Human language translation class and JSON response receiver.
 *
-* $LicenseInfo:firstyear=2009&license=viewergpl$
-*
-* Copyright (c) 2009, Linden Research, Inc.
-*
-* Second Life Viewer Source Code
-* The source code in this file ("Source Code") is provided by Linden Lab
-* to you under the terms of the GNU General Public License, version 2.0
-* ("GPL"), unless you have obtained a separate licensing agreement
-* ("Other License"), formally executed by you and Linden Lab. Terms of
-* the GPL can be found in doc/GPL-license.txt in this distribution, or
-* online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
-*
-* There are special exceptions to the terms and conditions of the GPL as
-* it is applied to this Source Code. View the full text of the exception
-* in the file doc/FLOSS-exception.txt in this software distribution, or
-* online at
-* http://secondlifegrid.net/programs/open_source/licensing/flossexception
-*
-* By copying, modifying or distributing this software, you acknowledge
-* that you have read and understood your obligations described above,
-* and agree to abide by those obligations.
-*
-* ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
-* WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
-* COMPLETENESS OR PERFORMANCE.
-* $/LicenseInfo$
-*/
+ * $LicenseInfo:firstyear=2009&license=viewerlgpl$
+ * Second Life Viewer Source Code
+ * Copyright (C) 2010, Linden Research, Inc.
+ * 
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
+ * $/LicenseInfo$
+ */
 
 #ifndef LL_LLTRANSLATE_H
 #define LL_LLTRANSLATE_H
 
-#include "llhttpclient.h"
 #include "llbufferstream.h"
-#include "json/reader.h"
+#include <boost/function.hpp>
 
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy translationReceiver_timeout;
+namespace Json
+{
+    class Value;
+}
 
+class LLTranslationAPIHandler;
+/**
+ * Entry point for machine translation services.
+ *
+ * Basically, to translate a string, we need to know the URL
+ * of a translation service, have a valid API for the service
+ * and be given the target language.
+ *
+ * Callers specify the string to translate and the target language,
+ * LLTranslate takes care of the rest.
+ *
+ * API keys for translation are taken from saved settings.
+ */
 class LLTranslate
 {
+	LOG_CLASS(LLTranslate);
+
 public :
-	class TranslationReceiver : public LLHTTPClient::ResponderWithResult
-	{
-	protected:
-		TranslationReceiver(const std::string &fromLang, const std::string &toLang)
-			: m_fromLang(fromLang),
-			m_toLang(toLang)
-		{
-		}
 
-		virtual void handleResponse(const std::string &translation, const std::string &recognizedLang) {}
-		virtual void handleFailure() {};
+	typedef enum e_service {
+		SERVICE_BING,
+		SERVICE_GOOGLE,
+	} EService;
 
-	public:
-		~TranslationReceiver()
-		{
-		}
+    typedef boost::function<void(EService, bool)> KeyVerificationResult_fn;
+    typedef boost::function<void(std::string , std::string )> TranslationSuccess_fn;
+    typedef boost::function<void(int, std::string)> TranslationFailure_fn;
 
-		/*virtual*/ void httpFailure(void)
-		{
-			LL_WARNS("Translate") << "URL Request error: " << reason << LL_ENDL;
-			handleFailure();
-		}
+	/**
+	 * Translate given text.
+	 *
+	 * @param receiver   Object to pass translation result to.
+	 * @param from_lang  Source language. Leave empty for auto-detection.
+	 * @param to_lang    Target language.
+	 * @param mesg       Text to translate.
+	 */
+    static void translateMessage(const std::string &from_lang, const std::string &to_lang, const std::string &mesg, TranslationSuccess_fn success, TranslationFailure_fn failure);
 
-		/*virtual*/ void completedRaw(
-			LLChannelDescriptors const& channels,
-			LLIOPipe::buffer_ptr_t const& buffer)
-		{
-			LLBufferStream istr(channels, buffer.get());
+    /**
+	 * Verify given API key of a translation service.
+	 *
+	 * @param receiver  Object to pass verification result to.
+	 * @param key       Key to verify.
+	 */
+    static void verifyKey(EService service, const std::string &key, KeyVerificationResult_fn fnc);
 
-			std::stringstream strstrm;
-			strstrm << istr.rdbuf();
-			const std::string result = strstrm.str();
-
-			std::string translation;
-			std::string detectedLanguage;
-
-			if (!parseGoogleTranslate(result, translation, detectedLanguage))
-			{
-				handleFailure();
-				return;
-			}
-
-			// Fix up the response
-			stringReplaceAll( translation, "&lt;","<");
-			stringReplaceAll( translation, "&gt;",">");
-			stringReplaceAll( translation, "&quot;","\"");
-			stringReplaceAll( translation, "&#39;","'");
-			stringReplaceAll( translation, "&amp;","&");
-			stringReplaceAll( translation, "&apos;","'");
-
-			handleResponse(translation, detectedLanguage);
-		}
-
-		/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return translationReceiver_timeout; }
-
-	protected:
-		const std::string m_toLang;
-		const std::string m_fromLang;
-	};
-
-	static void translateMessage(LLHTTPClient::ResponderPtr &result, const std::string &fromLang, const std::string &toLang, const std::string &mesg);
-	static float m_GoogleTimeout;
+	/**
+	 * @return translation target language
+	 */
 	static std::string getTranslateLanguage();
 
+	/**
+	 * @return true if translation is configured properly.
+	 */
+	static bool isTranslationConfigured();
+
 private:
-	static void getTranslateUrl(std::string &translateUrl, const std::string &fromLang, const std::string &toLang, const std::string &text);
-	static void stringReplaceAll(std::string& context, const std::string& from, const std::string& to);
-	static BOOL parseGoogleTranslate(const std::string result, std::string &translation, std::string &detectedLanguage);
-
-	static AIHTTPHeaders m_Header;
-	static const char* m_GoogleURL;
-	static const char* m_GoogleLangSpec;
-	static const char* m_AcceptHeader;
-	static const char* m_AcceptType;
-	static const char* m_AgentHeader;
-	static const char* m_UserAgent;
-
-	static const char* m_GoogleData;
-	static const char* m_GoogleTranslation;
-	static const char* m_GoogleLanguage;
+	static LLTranslationAPIHandler& getPreferredHandler();
+	static LLTranslationAPIHandler& getHandler(EService service);
 };
 
 #endif

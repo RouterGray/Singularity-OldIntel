@@ -2,31 +2,25 @@
  * @file llimage.h
  * @brief Object for managing images and their textures.
  *
- * $LicenseInfo:firstyear=2000&license=viewergpl$
- * 
- * Copyright (c) 2000-2009, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2000&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2010, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
@@ -35,24 +29,40 @@
 
 #include "lluuid.h"
 #include "llstring.h"
-#include "llthread.h"
-#include "aithreadsafe.h"
+#include "llpointer.h"
+#include "lltrace.h"
 
 const S32 MIN_IMAGE_MIP =  2; // 4x4, only used for expand/contract power of 2
 const S32 MAX_IMAGE_MIP = 11; // 2048x2048
+
+// *TODO : Use MAX_IMAGE_MIP as max discard level and modify j2c management so that the number 
+// of levels is read from the header's file, not inferred from its size.
 const S32 MAX_DISCARD_LEVEL = 5;
+
+// JPEG2000 size constraints
+// Those are declared here as they are germane to other image constraints used in the viewer
+// and declared right here. Some come from the JPEG2000 spec, some conventions specific to SL.
+const S32 MAX_DECOMPOSITION_LEVELS = 32;	// Number of decomposition levels cannot exceed 32 according to jpeg2000 spec
+const S32 MIN_DECOMPOSITION_LEVELS = 5;		// the SL viewer will *crash* trying to decode images with fewer than 5 decomposition levels (unless image is small that is)
+const S32 MAX_PRECINCT_SIZE = 2048;			// No reason to be bigger than MAX_IMAGE_SIZE 
+const S32 MIN_PRECINCT_SIZE = 4;			// Can't be smaller than MIN_BLOCK_SIZE
+const S32 MAX_BLOCK_SIZE = 64;				// Max total block size is 4096, hence 64x64 when using square blocks
+const S32 MIN_BLOCK_SIZE = 4;				// Min block dim is 4 according to jpeg2000 spec
+const S32 MIN_LAYER_SIZE = 2000;			// Size of the first quality layer (after header). Must be > to FIRST_PACKET_SIZE!!
+const S32 MAX_NB_LAYERS = 64;				// Max number of layers we'll entertain in SL (practical limit)
 
 const S32 MIN_IMAGE_SIZE = (1<<MIN_IMAGE_MIP); // 4, only used for expand/contract power of 2
 const S32 MAX_IMAGE_SIZE = (1<<MAX_IMAGE_MIP); // 2048
 const S32 MIN_IMAGE_AREA = MIN_IMAGE_SIZE * MIN_IMAGE_SIZE;
 const S32 MAX_IMAGE_AREA = MAX_IMAGE_SIZE * MAX_IMAGE_SIZE;
 const S32 MAX_IMAGE_COMPONENTS = 8;
-const S32 MAX_IMAGE_DATA_SIZE = MAX_IMAGE_AREA * MAX_IMAGE_COMPONENTS;
+const S32 MAX_IMAGE_DATA_SIZE = MAX_IMAGE_AREA * MAX_IMAGE_COMPONENTS; //2048 * 2048 * 8 = 16 MB
 
 // Note!  These CANNOT be changed without modifying simulator code
 // *TODO: change both to 1024 when SIM texture fetching is deprecated
 const S32 FIRST_PACKET_SIZE = 600;
 const S32 MAX_IMG_PACKET_SIZE = 1000;
+const S32 HTTP_PACKET_SIZE = 1496;
 
 // Base classes for images.
 // There are two major parts for the image:
@@ -61,7 +71,6 @@ const S32 MAX_IMG_PACKET_SIZE = 1000;
 class LLImageFormatted;
 class LLImageRaw;
 class LLColor4U;
-class LLPrivateMemoryPool;
 
 typedef enum e_image_codec
 {
@@ -82,21 +91,28 @@ typedef enum e_image_codec
 class LLImage
 {
 public:
-	static void initClass();
+	static void initClass(bool use_new_byte_range = false, S32 minimal_reverse_byte_range_percent = 75);
 	static void cleanupClass();
 
 	static const std::string& getLastError();
 	static void setLastError(const std::string& message);
 	
+	static bool useNewByteRange() { return sUseNewByteRange; }
+    static S32  getReverseByteRangePercent() { return sMinimalReverseByteRangePercent; }
+	
 protected:
 	static LLMutex* sMutex;
 	static std::string sLastErrorMessage;
+	static bool sUseNewByteRange;
+    static S32  sMinimalReverseByteRangePercent;
 };
 
 //============================================================================
 // Image base class
 
-class LLImageBase : public LLThreadSafeRefCount
+class LLImageBase 
+:	public LLThreadSafeRefCount,
+	public LLTrace::MemTrackable<LLImageBase>
 {
 protected:
 	virtual ~LLImageBase();
@@ -113,8 +129,6 @@ public:
 	virtual void deleteData();
 	virtual U8* allocateData(S32 size = -1);
 	virtual U8* reallocateData(S32 size = -1);
-	static void deleteData(U8* data) { FREE_MEM(sPrivatePoolp, data); }
-	U8* release() { U8* data = mData; mData = NULL; mDataSize = 0; return data; }	// Same as deleteData(), but returns old data. Call deleteData(old_data) to free it.
 
 	virtual void dump();
 	virtual void sanityCheck();
@@ -146,9 +160,8 @@ public:
 
 	static EImageCodec getCodecFromExtension(const std::string& exten);
 	
-	static void createPrivatePool() ;
-	static void destroyPrivatePool() ;
-	static LLPrivateMemoryPool* getPrivatePool() {return sPrivatePoolp;}
+	//static LLTrace::MemStatHandle sMemStat;
+
 private:
 	U8 *mData;
 	S32 mDataSize;
@@ -160,8 +173,6 @@ private:
 
 	bool mBadBufferAllocation ;
 	bool mAllowOverSize ;
-
-	static LLPrivateMemoryPool* sPrivatePoolp ;
 };
 
 // Raw representation of an image (used for textures, and other uncompressed formats
@@ -192,12 +203,14 @@ public:
 
 	void verticalFlip();
 
+    static S32 biasedDimToPowerOfTwo(S32 curr_dim, S32 max_dim = MAX_IMAGE_SIZE);
+    static S32 expandDimToPowerOfTwo(S32 curr_dim, S32 max_dim = MAX_IMAGE_SIZE);
+    static S32 contractDimToPowerOfTwo(S32 curr_dim, S32 min_dim = MIN_IMAGE_SIZE);
 	void expandToPowerOfTwo(S32 max_dim = MAX_IMAGE_SIZE, BOOL scale_image = TRUE);
 	void contractToPowerOfTwo(S32 max_dim = MAX_IMAGE_SIZE, BOOL scale_image = TRUE);
 	void biasedScaleToPowerOfTwo(S32 target_width, S32 target_height, S32 max_dim = MAX_IMAGE_SIZE);
-	void biasedScaleToPowerOfTwo(S32 max_dim = MAX_IMAGE_SIZE) { biasedScaleToPowerOfTwo(getWidth(), getHeight(), max_dim); }
+	void biasedScaleToPowerOfTwo(S32 max_dim = MAX_IMAGE_SIZE);
 	BOOL scale( S32 new_width, S32 new_height, BOOL scale_image = TRUE );
-	//BOOL scaleDownWithoutBlending( S32 new_width, S32 new_height) ;
 
 	// Fill the buffer with a constant color
 	void fill( const LLColor4U& color );
@@ -257,26 +270,8 @@ protected:
 	void setDataAndSize(U8 *data, S32 width, S32 height, S8 components) ;
 
 public:
-	static AIThreadSafeSimpleDC<S32> sGlobalRawMemory;
+	static S32 sGlobalRawMemory;
 	static S32 sRawImageCount;
-
-	static S32 sRawImageCachedCount;
-	S32 mCacheEntries;
-	void setInCache(bool in_cache)
-	{
-		if(in_cache)
-		{
-			if(!mCacheEntries)
-				sRawImageCachedCount++;
-			mCacheEntries++;
-		}
-		else if(mCacheEntries)
-		{
-			mCacheEntries--;
-			if(!mCacheEntries)
-				sRawImageCachedCount--;
-		}
-	}
 };
 
 // Compressed representation of image.
@@ -333,19 +328,22 @@ public:
 	BOOL isDecoded()  const { return mDecoded ? TRUE : FALSE; }
 	void setDiscardLevel(S8 discard_level) { mDiscardLevel = discard_level; }
 	S8 getDiscardLevel() const { return mDiscardLevel; }
+	S8 getLevels() const { return mLevels; }
+	void setLevels(S8 nlevels) { mLevels = nlevels; }
 
 	// setLastError needs to be deferred for J2C images since it may be called from a DLL
 	virtual void resetLastError();
 	virtual void setLastError(const std::string& message, const std::string& filename = std::string());
 	
 protected:
-	BOOL copyData(U8 *data, S32 size);
+	BOOL copyData(U8 *data, S32 size); // calls updateData()
 	
 protected:
 	S8 mCodec;
 	S8 mDecoding;
 	S8 mDecoded;  // unused, but changing LLImage layout requires recompiling static Mac/Linux libs. 2009-01-30 JC
-	S8 mDiscardLevel;
+	S8 mDiscardLevel;	// Current resolution level worked on. 0 = full res, 1 = half res, 2 = quarter res, etc...
+	S8 mLevels;			// Number of resolution levels in that image. Min is 1. 0 means unknown.
 	
 public:
 	static S32 sGlobalFormattedMemory;

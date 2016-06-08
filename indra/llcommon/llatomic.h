@@ -1,59 +1,49 @@
 /** 
- * @file llatomic.h
- * @brief Definition of LLAtomic
- *
- * $LicenseInfo:firstyear=2004&license=viewergpl$
+ * @file llatmomic.h
+ * @brief Base classes for atomics.
  * 
- * Copyright (c) 2004-2009, Linden Research, Inc.
- * Copyright (c) 2012, Aleric Inglewood
- * 
+ * $LicenseInfo:firstyear=2014&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2012, Linden Research, Inc.
+ * Copyright (C) 2014, Alchemy Development Group
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
-#ifndef LL_LLATOMIC_H
-#define LL_LLATOMIC_H
+#pragma once
 
-#define USE_BOOST_ATOMIC
+#define LL_BOOST_ATOMICS 1
 
 //Internal definitions
 #define NEEDS_APR_ATOMICS do_not_define_manually_thanks
 #undef NEEDS_APR_ATOMICS
 
-#if defined(USE_BOOST_ATOMIC)
-#include "boost/version.hpp"
-#endif
-
 //Prefer boost over stl over apr.
 
-#if defined(USE_BOOST_ATOMIC) && (BOOST_VERSION >= 105300)
-#include "boost/atomic.hpp"
-template<typename T>
-struct impl_atomic_type { typedef boost::atomic<T> type; };
-#elif defined(USE_STD_ATOMIC)
+#if LL_BOOST_ATOMICS
+#include <boost/version.hpp>
+#include <boost/atomic.hpp>
+template<typename Type>
+struct impl_atomic_type { typedef boost::atomic<Type> type; };
+#elif LL_STD_ATOMICS
 #include <atomic>
-template<typename T>
-struct impl_atomic_type { typedef std::atomic<T> type; };
+template<typename Type>
+struct impl_atomic_type { typedef std::atomic<Type> type; };
 #else
 #include "apr_atomic.h"
 #define NEEDS_APR_ATOMICS
@@ -70,7 +60,9 @@ public:
 	void operator-=(Type x) { apr_atomic_sub32(&mData, static_cast<apr_uint32_t>(x)); }
 	void operator+=(Type x) { apr_atomic_add32(&mData, static_cast<apr_uint32_t>(x)); }
 	Type operator++(int) { return apr_atomic_inc32(&mData); } // Type++
-	bool operator--() { return apr_atomic_dec32(&mData); } // Returns (--Type != 0)
+	Type operator++() { return apr_atomic_inc32(&mData); } // ++Type
+	Type operator--(int) { return apr_atomic_dec32(&mData); } // Type--
+	Type operator--() { return apr_atomic_dec32(&mData); } // --Type
 	
 private:
 	apr_uint32_t mData;
@@ -90,7 +82,9 @@ public:
 	void operator-=(Type x) { mData -= x; }
 	void operator+=(Type x) { mData += x; }
 	Type operator++(int) { return mData++; } // Type++
-	bool operator--() { return --mData; } // Returns (--Type != 0)
+	Type operator++() { return ++mData; } // ++Type
+	Type operator--(int) { return mData--; } // Type--
+	Type operator--() { return --mData; } // --Type
 
 private:
 	typename impl_atomic_type<Type>::type mData;
@@ -99,5 +93,3 @@ private:
 
 typedef LLAtomic32<U32> LLAtomicU32;
 typedef LLAtomic32<S32> LLAtomicS32;
-
-#endif

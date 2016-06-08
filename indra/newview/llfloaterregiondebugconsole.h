@@ -31,11 +31,8 @@
 #include <boost/signals2.hpp>
 
 #include "llfloater.h"
-#include "llhttpclient.h"
 
 class LLTextEditor;
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy floaterRegionDebugConsole_timeout;
 
 typedef boost::signals2::signal<
 	void (const std::string& output)> console_reply_signal_t;
@@ -58,6 +55,10 @@ public:
 
  private:
 	void onReplyReceived(const std::string& output);
+
+    void onAsyncConsoleError(LLSD result);
+    void onConsoleError(LLSD result);
+    void onConsoleSuccess(LLSD result);
 
 	boost::signals2::connection mReplySignalConnection;
 };

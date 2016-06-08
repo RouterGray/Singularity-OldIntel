@@ -29,6 +29,7 @@
 // a notification to the screen, so define this lightweight public interface
 // to avoid including the heavyweight llnotifications.h
 
+#include "lluuid.h"
 #include "llnotificationptr.h"
 #include "aialert.h"
 

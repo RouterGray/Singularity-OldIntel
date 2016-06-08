@@ -37,7 +37,7 @@
 
 #include "llfloatermodelpreview.h"
 
-#include "aifilepicker.h"
+#include "llfilepicker.h"
 
 #include "llagent.h"
 #include "llbutton.h"
@@ -450,17 +450,11 @@ void LLFloaterModelPreview::loadModel(S32 lod)
 {
 	mModelPreview->mLoading = true;
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_COLLADA, "", "mesh");
-	filepicker->run(boost::bind(&LLFloaterModelPreview::loadModel_continued, this, filepicker, lod));
-}
-
-void LLFloaterModelPreview::loadModel_continued(AIFilePicker* filepicker, S32 lod)
-{
+	LLFilePicker& filepicker = LLFilePicker::instance();
 	std::string filename;
-	if (filepicker->hasFilename())				// User did not click Cancel?
+	if (filepicker.getOpenFile(LLFilePicker::FFLOAD_COLLADA))		// User did not click Cancel?
 	{
-		filename = filepicker->getFilename();
+		filename = filepicker.getFirstFile();
 
 		const U32 lod_high = LLModel::LOD_HIGH;
 		for (S32 lod = 0; lod <= lod_high; ++lod)
@@ -647,6 +641,11 @@ void LLFloaterModelPreview::onLODParamCommit(S32 lod, bool enforce_tri_limit)
 void LLFloaterModelPreview::draw()
 {
 	LLFloater::draw();
+
+    if (!mModelPreview)
+    {
+        return;
+    }
 
 	mModelPreview->update();
 
@@ -2932,7 +2931,7 @@ void LLModelPreview::updateStatusMessages()
 
 		if (lod == mPreviewLOD)
 		{
-			mFMP->childSetText("lod_status_message_text", mFMP->getString(message));
+			mFMP->childSetValue("lod_status_message_text", mFMP->getString(message));
 			icon = mFMP->getChild<LLIconCtrl>("lod_status_message_icon");
 			icon->setImage(img);
 		}
@@ -3131,6 +3130,7 @@ void LLModelPreview::updateStatusMessages()
 		}
 	}
 
+
 	LLCtrlSelectionInterface* iface = fmp->childGetSelectionInterface("physics_lod_combo");
 	S32 which_mode = 0;
 	S32 file_mode = 1;
@@ -3203,12 +3203,12 @@ void LLModelPreview::updateLodControls(S32 lod)
 		fmp->mLODMode[lod] = 0;
 		for (U32 i = 0; i < num_file_controls; ++i)
 		{
-			mFMP->childShow(file_controls[i] + lod_name[lod]);
+			mFMP->childSetVisible(file_controls[i] + lod_name[lod], true);
 		}
 
 		for (U32 i = 0; i < num_lod_controls; ++i)
 		{
-			mFMP->childHide(lod_controls[i] + lod_name[lod]);
+			mFMP->childSetVisible(lod_controls[i] + lod_name[lod], false);
 		}
 	}
 	else if (lod_mode == USE_LOD_ABOVE) // use LoD above
@@ -3216,12 +3216,12 @@ void LLModelPreview::updateLodControls(S32 lod)
 		fmp->mLODMode[lod] = 2;
 		for (U32 i = 0; i < num_file_controls; ++i)
 		{
-			mFMP->childHide(file_controls[i] + lod_name[lod]);
+			mFMP->childSetVisible(file_controls[i] + lod_name[lod], false);
 		}
 
 		for (U32 i = 0; i < num_lod_controls; ++i)
 		{
-			mFMP->childHide(lod_controls[i] + lod_name[lod]);
+			mFMP->childSetVisible(lod_controls[i] + lod_name[lod], false);
 		}
 
 		if (lod < LLModel::LOD_HIGH)
@@ -3246,13 +3246,14 @@ void LLModelPreview::updateLodControls(S32 lod)
 
 		for (U32 i = 0; i < num_file_controls; ++i)
 		{
-			mFMP->childHide(file_controls[i] + lod_name[lod]);
+			mFMP->getChildView(file_controls[i] + lod_name[lod])->setVisible(false);
 		}
 
 		for (U32 i = 0; i < num_lod_controls; ++i)
 		{
-			mFMP->childShow(lod_controls[i] + lod_name[lod]);
+			mFMP->getChildView(lod_controls[i] + lod_name[lod])->setVisible(true);
 		}
+
 
 		LLSpinCtrl* threshold = mFMP->getChild<LLSpinCtrl>("lod_error_threshold_" + lod_name[lod]);
 		LLSpinCtrl* limit = mFMP->getChild<LLSpinCtrl>("lod_triangle_limit_" + lod_name[lod]);
@@ -3304,6 +3305,7 @@ void LLModelPreview::genBuffers(S32 lod, bool include_skin_weights)
 	U32 tri_count = 0;
 	U32 vertex_count = 0;
 	U32 mesh_count = 0;
+
 
 	LLModelLoader::model_list* model = NULL;
 
@@ -4124,6 +4126,7 @@ BOOL LLModelPreview::render()
 						for (U32 i = 0; i < mVertexBuffer[mPreviewLOD][model].size(); ++i)
 						{
 							LLVertexBuffer* buffer = mVertexBuffer[mPreviewLOD][model][i];
+
 							const LLVolumeFace& face = model->getVolumeFace(i);
 							LLStrider<LLVector4a> weight;
 							buffer->getWeight4Strider(weight);
@@ -4456,7 +4459,7 @@ void LLFloaterModelPreview::handleModelPhysicsFeeReceived()
 	mUploadBtn->setEnabled(isModelUploadAllowed());
 }
 
-void LLFloaterModelPreview::setModelPhysicsFeeErrorStatus(U32 status, const std::string& reason)
+void LLFloaterModelPreview::setModelPhysicsFeeErrorStatus(S32 status, const std::string& reason)
 {
 	LL_WARNS() << "LLFloaterModelPreview::setModelPhysicsFeeErrorStatus(" << status << " : " << reason << ")" << LL_ENDL;
 	doOnIdleOneTime(boost::bind(&LLFloaterModelPreview::toggleCalculateButton, this, true));
@@ -4551,7 +4554,7 @@ void LLFloaterModelPreview::onPermissionsReceived(const LLSD& result)
 	getChild<LLTextBox>("warning_message")->setVisible(!mHasUploadPerm);
 }
 
-void LLFloaterModelPreview::setPermissonsErrorStatus(U32 status, const std::string& reason)
+void LLFloaterModelPreview::setPermissonsErrorStatus(S32 status, const std::string& reason)
 {
 	LL_WARNS() << "LLFloaterModelPreview::setPermissonsErrorStatus(" << status << " : " << reason << ")" << LL_ENDL;
 

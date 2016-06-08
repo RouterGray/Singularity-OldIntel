@@ -586,7 +586,7 @@ U8 LLPrimitive::pCodeToLegacy(const LLPCode pcode)
 
 
 // static
-// Don't crash or llerrs here!  This function is used for debug strings.
+// Don't crash or LL_ERRS() here!  This function is used for debug strings.
 std::string LLPrimitive::pCodeToString(const LLPCode pcode)
 {
 	std::string pcode_string;
@@ -1358,7 +1358,6 @@ S32 LLPrimitive::applyParsedTEMessage(LLTEContents& tec)
 		retval |= setTEBumpShinyFullbright(i, tec.bump[i]);
 		retval |= setTEMediaTexGen(i, tec.media_flags[i]);
 		retval |= setTEGlow(i, (F32)tec.glow[i] / (F32)0xFF);
-		
                 retval |= setTEMaterialID(i, tec.material_ids[i]);
 		
 		coloru = LLColor4U(tec.colors + 4*i);

@@ -54,7 +54,7 @@
 // [/RLVa:KB]
 
 //For pick import and export - RK
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 #include "hippogridmanager.h"
 #include "llsdserialize.h"
 
@@ -223,17 +223,11 @@ void LLPanelPick::initNewPick()
 //Imports a new pick from an xml - RK
 void LLPanelPick::importNewPick(void (*callback)(void*, bool), void* data)
 {
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_XML, "", "export");
-	filepicker->run(boost::bind(&LLPanelPick::importNewPick_continued, this, callback, data, filepicker));
-}
-
-void LLPanelPick::importNewPick_continued(void (*callback)(void*, bool), void* data, AIFilePicker* filepicker)
-{
+	LLFilePicker& filepicker = LLFilePicker::instance();
 	bool result = false;
-	if (filepicker->hasFilename())
+	if (filepicker.getOpenFile(LLFilePicker::FFLOAD_XML))
 	{
-		llifstream importer(filepicker->getFilename());
+		llifstream importer(filepicker.getFirstFile());
 		LLSD data;
 		LLSDSerialize::fromXMLDocument(data, importer);
 		LLSD file_data = data["Data"];
@@ -257,14 +251,8 @@ void LLPanelPick::importNewPick_continued(void (*callback)(void*, bool), void* d
 //Exports a pick to an XML - RK
 void LLPanelPick::exportPick()
 {
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open("", FFSAVE_XML, "", "export");
-	filepicker->run(boost::bind(&LLPanelPick::exportPick_continued, this, filepicker));
-}
-
-void LLPanelPick::exportPick_continued(AIFilePicker* filepicker)
-{
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getSaveFile(LLFilePicker::FFSAVE_XML))
 		return;
 
 	LLSD header;
@@ -284,7 +272,7 @@ void LLPanelPick::exportPick_continued(AIFilePicker* filepicker)
 	file["Data"] = datas;
 
 	// Create a file stream and write to it
-	llofstream export_file(filepicker->getFilename());
+	llofstream export_file(filepicker.getFirstFile());
 	LLSDSerialize::toPrettyXML(file, export_file);
 	// Open the file save dialog
 	export_file.close();

@@ -34,8 +34,8 @@ class LLVOAvatar;
 #include "lliosocket.h"
 #include "v3math.h"
 #include "llframetimer.h"
-#include "llviewerregion.h"
 #include "llcallingcard.h"   // for LLFriendObserver
+#include "llsecapi.h"
 #include "llcontrol.h"
 
 // devices
@@ -106,6 +106,8 @@ public:
 
 	virtual bool isVoiceWorking() const = 0; // connected to a voice server and voice channel
 
+    virtual void setHidden(bool hidden)=0;  //  Hides the user from voice.
+
 	virtual const LLVoiceVersionInfo& getVersion()=0;
 
 	/////////////////////
@@ -126,6 +128,7 @@ public:
 	// This returns true when it's safe to bring up the "device settings" dialog in the prefs.
 	// i.e. when the daemon is running and connected, and the device lists are populated.
 	virtual bool deviceSettingsAvailable()=0;
+	virtual bool deviceSettingsUpdated() = 0;
 
 	// Requery the vivox daemon for the current list of input/output devices.
 	// If you pass true for clearCurrentList, deviceSettingsAvailable() will be false until the query has completed
@@ -153,7 +156,7 @@ public:
 	virtual void setNonSpatialChannel(const std::string &uri,
 									  const std::string &credentials)=0;
 
-	virtual void setSpatialChannel(const std::string &uri,
+	virtual bool setSpatialChannel(const std::string &uri,
 								   const std::string &credentials)=0;
 
 	virtual void leaveNonSpatialChannel()=0;
@@ -212,7 +215,7 @@ public:
 	//@{
 	virtual BOOL isSessionTextIMPossible(const LLUUID& id)=0;
 	virtual BOOL isSessionCallBackPossible(const LLUUID& id)=0;
-	virtual BOOL sendTextMessage(const LLUUID& participant_id, const std::string& message)=0;
+	//virtual BOOL sendTextMessage(const LLUUID& participant_id, const std::string& message)=0;
 	virtual void endUserIMSession(const LLUUID &uuid)=0;
 	//@}
 
@@ -333,6 +336,7 @@ public:
 	// This returns true when it's safe to bring up the "device settings" dialog in the prefs.
 	// i.e. when the daemon is running and connected, and the device lists are populated.
 	bool deviceSettingsAvailable();
+	bool deviceSettingsUpdated();	// returns true when the device list has been updated recently.
 
 	// Requery the vivox daemon for the current list of input/output devices.
 	// If you pass true for clearCurrentList, deviceSettingsAvailable() will be false until the query has completed
@@ -342,6 +346,7 @@ public:
 
 	void setCaptureDevice(const std::string& name);
 	void setRenderDevice(const std::string& name);
+    void setHidden(bool hidden);
 
 	const LLVoiceDeviceList& getCaptureDevices();
 	const LLVoiceDeviceList& getRenderDevices();
@@ -350,7 +355,7 @@ public:
 	// Channel stuff
 	//
 
-	// returns true if the user is currently in a proximal (local spatial) channel.
+	// returns true iff the user is currently in a proximal (local spatial) channel.
 	// Note that gestures should only fire if this returns true.
 	bool inProximalChannel();
 	void setNonSpatialChannel(
@@ -428,7 +433,7 @@ public:
 	//@{
 	BOOL isSessionTextIMPossible(const LLUUID& id);
 	BOOL isSessionCallBackPossible(const LLUUID& id);
-	BOOL sendTextMessage(const LLUUID& participant_id, const std::string& message);
+	//BOOL sendTextMessage(const LLUUID& participant_id, const std::string& message) const {return true;} ;
 	void endUserIMSession(const LLUUID &uuid);
 	//@}
 

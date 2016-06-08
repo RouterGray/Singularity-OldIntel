@@ -77,6 +77,7 @@ public:
 	/*virtual*/ void delayInputProcessing() {};
 	/*virtual*/ void swapBuffers();
 
+
 	// handy coordinate space conversion routines
 	/*virtual*/ BOOL convertCoords(LLCoordScreen from, LLCoordWindow *to) { return FALSE; };
 	/*virtual*/ BOOL convertCoords(LLCoordWindow from, LLCoordScreen *to) { return FALSE; };
@@ -102,18 +103,6 @@ public:
 	virtual ~LLWindowHeadless();
 
 private:
-};
-
-class LLSplashScreenHeadless : public LLSplashScreen
-{
-public:
-	LLSplashScreenHeadless() {};
-	virtual ~LLSplashScreenHeadless() {};
-
-	/*virtual*/ void showImpl() {};
-	/*virtual*/ void updateImpl(const std::string& mesg) {};
-	/*virtual*/ void hideImpl() {};
-
 };
 
 #endif //LL_LLWINDOWHEADLESS_H

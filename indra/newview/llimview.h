@@ -38,6 +38,8 @@
 #include "lluuid.h"
 #include "llvoicechannel.h"
 
+#include "llcoros.h"
+#include "lleventcoro.h"
 
 class LLFloaterChatterBox;
 class LLFloaterIMPanel;

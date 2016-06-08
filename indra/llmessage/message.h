@@ -48,11 +48,10 @@
 #include "llstringtable.h"
 #include "llcircuit.h"
 #include "lltimer.h"
-//#include "llpacketring.h"
+#include "llpacketring.h"
 #include "llhost.h"
-//#include "llhttpclient.h"
 #include "llhttpnode.h"
-#include "llpacketack.h"
+//#include "llpacketack.h"
 #include "llsingleton.h"
 #include "message_prehash.h"
 #include "llstl.h"
@@ -60,12 +59,7 @@
 #include "llmessagesenderinterface.h"
 
 #include "llstoredmessage.h"
-
-class LLPacketRing;
-namespace
-{
-	class LLFnPtrResponder;
-}
+#include "boost/function.hpp"
 
 const U32 MESSAGE_MAX_STRINGS_LENGTH = 64;
 const U32 MESSAGE_NUMBER_OF_HASH_BUCKETS = 8192;
@@ -161,7 +155,6 @@ const F32Seconds LL_MAX_LOST_TIMEOUT(5.f);				// Maximum amount of time before c
 const S32 MAX_MESSAGE_COUNT_NUM = 1024;
 
 // Forward declarations
-class LLCircuit;
 class LLVector3;
 class LLVector4;
 class LLVector3d;
@@ -216,7 +209,7 @@ class LLMessageSystem : public LLMessageSenderInterface
 	LLHost				mUntrustedInterface;
 
  public:
-	LLPacketRing*				mPacketRing;
+	LLPacketRing				mPacketRing;
 	LLReliablePacketParams			mReliablePacketParams;
 
 	// Set this flag to TRUE when you want *very* verbose logs.
@@ -340,7 +333,7 @@ public:
 	bool addCircuitCode(U32 code, const LLUUID& session_id);
 
 	BOOL	poll(F32 seconds); // Number of seconds that we want to block waiting for data, returns if data was received
-	BOOL	checkMessages(S64 frame_count = 0);
+	BOOL	checkMessages( S64 frame_count = 0 );
 	void	processAcks(F32 collect_time = 0.f);
 
 	BOOL	isMessageFast(const char *msg);
@@ -499,7 +492,6 @@ public:
 		void (*callback)(void **,S32), 
 		void ** callback_data);
 
-	LLFnPtrResponder* createResponder(const std::string& name);
 	S32		sendMessage(const LLHost &host);
 	S32		sendMessage(const U32 circuit);
 private:
@@ -662,8 +654,8 @@ public:
 	S32		getSize(const char *blockname, S32 blocknum, const char *varname) const;
 
 	void	resetReceiveCounts();				// resets receive counts for all message types to 0
-	void	dumpReceiveCounts();				// dumps receive count for each message type to llinfos
-	void	dumpCircuitInfo();					// Circuit information to llinfos
+	void	dumpReceiveCounts();				// dumps receive count for each message type to LL_INFOS()
+	void	dumpCircuitInfo();					// Circuit information to LL_INFOS()
 
 	BOOL	isClear() const;					// returns mbSClear;
 	S32 	flush(const LLHost &host);
@@ -750,6 +742,9 @@ public:
 	void receivedMessageFromTrustedSender();
 	
 private:
+    typedef boost::function<void(S32)>  UntrustedCallback_t;
+    void sendUntrustedSimulatorMessageCoro(std::string url, std::string message, LLSD body, UntrustedCallback_t callback);
+
 
 	bool mLastMessageFromTrustedMessageService;
 	

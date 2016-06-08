@@ -8,10 +8,8 @@ set(cmake_SOURCE_FILES
     CMakeLists.txt
 
     00-Common.cmake
-    AIStateMachine.cmake
     APR.cmake
     Audio.cmake
-    BasicPluginBase.cmake
     Boost.cmake
     BuildVersion.cmake
     CARes.cmake
@@ -87,7 +85,6 @@ set(cmake_SOURCE_FILES
     Python.cmake
     QuickTimePlugin.cmake
     RunBuildTest.cmake
-    StateMachine.cmake
     TemplateCheck.cmake
     Tut.cmake
     UI.cmake

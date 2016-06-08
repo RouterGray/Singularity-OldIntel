@@ -40,7 +40,7 @@
 #include "llpanel.h"
 #include "lluuid.h"
 #include "lltabcontainer.h"
-#include "llnotificationcontext.h"
+#include "llnotifications.h"
 #include "llnotificationptr.h"
 #include <set>
 

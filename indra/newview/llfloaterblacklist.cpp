@@ -16,7 +16,7 @@
 #include "llagent.h"
 #include "llviewerobjectlist.h"
 #include "llviewerwindow.h"
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 
 LLFloaterBlacklist* LLFloaterBlacklist::sInstance;
 
@@ -172,8 +172,8 @@ void LLFloaterBlacklist::addEntry(LLUUID key, LLSD data)
 				LLUUID sound_id=LLUUID(key);
 				gVFS->removeFile(sound_id,LLAssetType::AT_SOUND);
 				std::string wav_path= gDirUtilp->getExpandedFilename(LL_PATH_CACHE,sound_id.asString()) + ".dsf";
-				if(LLAPRFile::isExist(wav_path, LL_APR_RPB))
-					LLAPRFile::remove(wav_path);
+				if(LLFile::isfile(wav_path))
+					LLFile::remove(wav_path);
 				if(gAudiop)
 					gAudiop->removeAudioData(sound_id);
 			}
@@ -287,17 +287,10 @@ void LLFloaterBlacklist::saveToDisk()
 //static
 void LLFloaterBlacklist::onClickSave(void* user_data)
 {
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open("untitled.blacklist", FFSAVE_BLACKLIST);
-	filepicker->run(boost::bind(&LLFloaterBlacklist::onClickSave_continued, filepicker));
-}
-
-//static
-void LLFloaterBlacklist::onClickSave_continued(AIFilePicker* filepicker)
-{
-	if (filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (filepicker.getSaveFile(LLFilePicker::FFSAVE_BLACKLIST, "untitled.blacklist"))
 	{
-		std::string file_name = filepicker->getFilename();
+		std::string file_name = filepicker.getFirstFile();
 		llofstream export_file(file_name);
 		LLSD data;
 		for(std::map<LLUUID,LLSD>::iterator iter = blacklist_entries.begin(); iter != blacklist_entries.end(); ++iter)
@@ -312,16 +305,10 @@ void LLFloaterBlacklist::onClickSave_continued(AIFilePicker* filepicker)
 //static
 void LLFloaterBlacklist::onClickLoad(void* user_data)
 {
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_BLACKLIST);
-	filepicker->run(boost::bind(&LLFloaterBlacklist::onClickLoad_continued, filepicker));
-}
-
-void LLFloaterBlacklist::onClickLoad_continued(AIFilePicker* filepicker)
-{
-	if (filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (filepicker.getOpenFile(LLFilePicker::FFLOAD_BLACKLIST))
 	{
-		std::string file_name = filepicker->getFilename();
+		std::string file_name = filepicker.getFirstFile();
 		llifstream xml_file(file_name);
 		if(!xml_file.is_open()) return;
 		LLSD data;

@@ -34,7 +34,6 @@
 
 #include "llimview.h"
 
-#include "llhttpclient.h"
 #include "llhttpnode.h"
 #include "llnotifications.h"
 #include "llnotificationsutil.h"
@@ -62,19 +61,151 @@
 #include "rlvcommon.h"
 // [/RLVa:KB]
 
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy viewerChatterBoxInvitationAcceptResponder_timeout;
-
+void startConfrenceCoro(std::string url, LLUUID tempSessionId, LLUUID creatorId, LLUUID otherParticipantId, LLSD agents);
+void chatterBoxInvitationCoro(std::string url, LLUUID sessionId, LLIMMgr::EInvitationType invitationType);
+void start_deprecated_conference_chat(const LLUUID& temp_session_id, const LLUUID& creator_id, const LLUUID& other_participant_id, const LLSD& agents_to_invite);
 //
 // Globals
 //
 LLIMMgr* gIMMgr = NULL;
+
 
 //
 // Helper Functions
 //
 std::string formatted_time(const time_t& the_time);
 LLVOAvatar* find_avatar_from_object(const LLUUID& id);
+
+
+void startConfrenceCoro(std::string url,
+    LLUUID tempSessionId, LLUUID creatorId, LLUUID otherParticipantId, LLSD agents)
+{
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("TwitterConnect", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+
+    LLSD postData;
+    postData["method"] = "start conference";
+    postData["session-id"] = tempSessionId;
+    postData["params"] = agents;
+
+    LLSD result = httpAdapter->postAndSuspend(httpRequest, url, postData);
+
+    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    if (!status)
+    {
+        LL_WARNS("LLIMModel") << "Failed to start conference" << LL_ENDL;
+        //try an "old school" way.
+        // *TODO: What about other error status codes?  4xx 5xx?
+        if (status == LLCore::HttpStatus(HTTP_BAD_REQUEST))
+        {
+            start_deprecated_conference_chat(
+                tempSessionId,
+                creatorId,
+                otherParticipantId,
+                agents);
+        }
+
+        //else throw an error back to the client?
+        //in theory we should have just have these error strings
+        //etc. set up in this file as opposed to the IMMgr,
+        //but the error string were unneeded here previously
+        //and it is not worth the effort switching over all
+        //the possible different language translations
+    }
+}
+
+void chatterBoxInvitationCoro(std::string url, LLUUID sessionId, LLIMMgr::EInvitationType invitationType)
+{
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("TwitterConnect", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+
+    LLSD postData;
+    postData["method"] = "accept invitation";
+    postData["session-id"] = sessionId;
+
+    LLSD result = httpAdapter->postAndSuspend(httpRequest, url, postData);
+
+    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    if (!gIMMgr)
+    {
+        LL_WARNS("") << "Global IM Manager is NULL" << LL_ENDL;
+        return;
+    }
+
+    if (!status)
+    {
+        LL_WARNS("LLIMModel") << "Bad HTTP response in chatterBoxInvitationCoro" << LL_ENDL;
+        //throw something back to the viewer here?
+
+        gIMMgr->clearPendingAgentListUpdates(sessionId);
+        gIMMgr->clearPendingInvitation(sessionId);
+
+        if (status == LLCore::HttpStatus(HTTP_NOT_FOUND))
+        {
+            static const std::string error_string("session_does_not_exist_error");
+			if (LLFloaterIMPanel* floater = gIMMgr->findFloaterBySession(sessionId))
+			{
+				floater->showSessionStartError(error_string);
+			}
+        }
+        return;
+    }
+
+    result.erase(LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS);
+	LLFloaterIMPanel* floater = gIMMgr->findFloaterBySession(sessionId);
+	LLIMSpeakerMgr* speakerMgr = floater ? floater->getSpeakerManager() : NULL;
+    if (speakerMgr)
+    {
+        //we've accepted our invitation
+        //and received a list of agents that were
+        //currently in the session when the reply was sent
+        //to us.  Now, it is possible that there were some agents
+        //to slip in/out between when that message was sent to us
+        //and now.
+
+        //the agent list updates we've received have been
+        //accurate from the time we were added to the session
+        //but unfortunately, our base that we are receiving here
+        //may not be the most up to date.  It was accurate at
+        //some point in time though.
+        speakerMgr->setSpeakers(result);
+
+        //we now have our base of users in the session
+        //that was accurate at some point, but maybe not now
+        //so now we apply all of the updates we've received
+        //in case of race conditions
+        speakerMgr->updateSpeakers(gIMMgr->getPendingAgentListUpdates(sessionId));
+    }
+
+    if (LLIMMgr::INVITATION_TYPE_VOICE == invitationType)
+    {
+        gIMMgr->startCall(sessionId, LLVoiceChannel::INCOMING_CALL);
+    }
+
+    if ((invitationType == LLIMMgr::INVITATION_TYPE_VOICE
+        || invitationType == LLIMMgr::INVITATION_TYPE_IMMEDIATE)
+        && floater)
+    {
+		// always open IM window when connecting to voice
+		if (floater->getParent() == gFloaterView)
+			floater->open();
+		else
+			LLFloaterChatterBox::showInstance(TRUE);
+    }
+
+    gIMMgr->clearPendingAgentListUpdates(sessionId);
+    gIMMgr->clearPendingInvitation(sessionId);
+
+}
+
 
 LLColor4 agent_chat_color(const LLUUID& id, const std::string& name, bool local_chat)
 {
@@ -114,102 +245,6 @@ bool block_conference(const LLUUID& id)
 	if (block == 2) return !LLAvatarActions::isFriend(id);
 	return block;
 }
-
-
-class LLViewerChatterBoxInvitationAcceptResponder : public LLHTTPClient::ResponderWithResult
-{
-public:
-	LLViewerChatterBoxInvitationAcceptResponder(
-		const LLUUID& session_id,
-		LLIMMgr::EInvitationType invitation_type)
-	{
-		mSessionID = session_id;
-		mInvitiationType = invitation_type;
-	}
-
-	/*virtual*/ void httpSuccess(void)
-	{
-		if ( gIMMgr)
-		{
-			LLFloaterIMPanel* floater = gIMMgr->findFloaterBySession(mSessionID);
-			LLIMSpeakerMgr* speaker_mgr = floater ? floater->getSpeakerManager() : NULL;
-			if (speaker_mgr)
-			{
-				//we've accepted our invitation
-				//and received a list of agents that were
-				//currently in the session when the reply was sent
-				//to us.  Now, it is possible that there were some agents
-				//to slip in/out between when that message was sent to us
-				//and now.
-
-				//the agent list updates we've received have been
-				//accurate from the time we were added to the session
-				//but unfortunately, our base that we are receiving here
-				//may not be the most up to date.  It was accurate at
-				//some point in time though.
-				speaker_mgr->setSpeakers(mContent);
-
-				//we now have our base of users in the session
-				//that was accurate at some point, but maybe not now
-				//so now we apply all of the udpates we've received
-				//in case of race conditions
-				speaker_mgr->updateSpeakers(gIMMgr->getPendingAgentListUpdates(mSessionID));
-			}
-
-			if (LLIMMgr::INVITATION_TYPE_VOICE == mInvitiationType)
-			{
-				gIMMgr->startCall(mSessionID, LLVoiceChannel::INCOMING_CALL);
-			}
-
-			if ((mInvitiationType == LLIMMgr::INVITATION_TYPE_VOICE
-				|| mInvitiationType == LLIMMgr::INVITATION_TYPE_IMMEDIATE)
-				&& floater)
-			{
-				// always open IM window when connecting to voice
-				if (floater->getParent() == gFloaterView)
-					floater->open();
-				else
-					LLFloaterChatterBox::showInstance(TRUE);
-			}
-
-			gIMMgr->clearPendingAgentListUpdates(mSessionID);
-			gIMMgr->clearPendingInvitation(mSessionID);
-		}
-	}
-
-	/*virtual*/ void httpFailure(void)
-	{
-		LL_WARNS() << "LLViewerChatterBoxInvitationAcceptResponder error [status:"
-				<< mStatus << "]: " << mReason << LL_ENDL;
-		//throw something back to the viewer here?
-		if ( gIMMgr )
-		{
-			gIMMgr->clearPendingAgentListUpdates(mSessionID);
-			gIMMgr->clearPendingInvitation(mSessionID);
-
-			LLFloaterIMPanel* floaterp = gIMMgr->findFloaterBySession(mSessionID);
-
-			if ( floaterp )
-			{
-				if ( 404 == mStatus )
-				{
-					std::string error_string;
-					error_string = "session_does_not_exist_error";
-
-					floaterp->showSessionStartError(error_string);
-				}
-			}
-		}
-	}
-
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return viewerChatterBoxInvitationAcceptResponder_timeout; }
-	/*virtual*/ char const* getName(void) const { return "LLViewerChatterBoxInvitationAcceptResponder"; }
-
-private:
-	LLUUID mSessionID;
-	LLIMMgr::EInvitationType mInvitiationType;
-};
-
 
 // the other_participant_id is either an agent_id, a group_id, or an inventory
 // folder item_id (collection of calling cards)
@@ -294,15 +329,9 @@ bool inviteUserResponse(const LLSD& notification, const LLSD& response)
 				std::string url = gAgent.getRegion()->getCapability(
 					"ChatSessionRequest");
 
-				LLSD data;
-				data["method"] = "accept invitation";
-				data["session-id"] = session_id;
-				LLHTTPClient::post(
-					url,
-					data,
-					new LLViewerChatterBoxInvitationAcceptResponder(
-						session_id,
-						inv_type));
+                LLCoros::instance().launch("chatterBoxInvitationCoro",
+                    boost::bind(&chatterBoxInvitationCoro, url,
+                    session_id, inv_type));
 			}
 		}
 		break;
@@ -332,10 +361,9 @@ bool inviteUserResponse(const LLSD& notification, const LLSD& response)
 			LLSD data;
 			data["method"] = "decline invitation";
 			data["session-id"] = session_id;
-			LLHTTPClient::post(
-				url,
-				data,
-				new LLHTTPClient::ResponderIgnore);
+            LLCoreHttpUtil::HttpCoroutineAdapter::messageHttpPost(url, data, 
+                "Invitation declined.", 
+                "Invitation decline failed.");
 		}
 	}
 
@@ -1480,11 +1508,6 @@ public:
 			//just like a normal IM
 			//this is just replicated code from process_improved_im
 			//and should really go in it's own function -jwolk
-			if (gNoRender)
-			{
-				return;
-			}
-			LLChat chat;
 
 			std::string message = message_params["message"].asString();
 			std::string name = message_params["from_name"].asString();
@@ -1496,7 +1519,8 @@ public:
 			time_t timestamp =
 				(time_t) message_params["timestamp"].asInteger();
 
-			bool is_do_not_disturb = gAgent.isDoNotDisturb();
+			BOOL is_do_not_disturb = gAgent.isDoNotDisturb();
+			LLChat chat;
 			BOOL is_muted = LLMuteList::getInstance()->isMuted(
 				from_id,
 				name,
@@ -1602,24 +1626,13 @@ public:
 
 			if ( url != "" )
 			{
-				LLSD data;
-				data["method"] = "accept invitation";
-				data["session-id"] = session_id;
-				LLHTTPClient::post(
-					url,
-					data,
-					new LLViewerChatterBoxInvitationAcceptResponder(
-						session_id,
-						LLIMMgr::INVITATION_TYPE_INSTANT_MESSAGE));
+                LLCoros::instance().launch("chatterBoxInvitationCoro",
+                    boost::bind(&chatterBoxInvitationCoro, url,
+                    session_id, LLIMMgr::INVITATION_TYPE_INSTANT_MESSAGE));
 			}
 		} //end if invitation has instant message
 		else if ( input["body"].has("voice") )
 		{
-			if (gNoRender)
-			{
-				return;
-			}
-
 			if(!LLVoiceClient::getInstance()->voiceEnabled())
 			{
 				// Don't display voice invites unless the user has voice enabled.

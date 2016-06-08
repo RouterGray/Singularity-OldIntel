@@ -96,7 +96,7 @@ S32 LLDrawPoolAlpha::getNumPostDeferredPasses()
 
 void LLDrawPoolAlpha::beginPostDeferredPass(S32 pass) 
 { 
-	LLFastTimer t(FTM_RENDER_ALPHA);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_ALPHA);
 
 	if (pass == 0)
 	{
@@ -173,7 +173,7 @@ void LLDrawPoolAlpha::renderPostDeferred(S32 pass)
 
 void LLDrawPoolAlpha::beginRenderPass(S32 pass)
 {
-	LLFastTimer t(FTM_RENDER_ALPHA);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_ALPHA);
 	
 	simple_shader = &gObjectSimpleProgram[1<<SHD_ALPHA_MASK_BIT | LLPipeline::sUnderWaterRender<<SHD_WATER_BIT];
 	fullbright_shader = &gObjectFullbrightProgram[1<<SHD_ALPHA_MASK_BIT | LLPipeline::sUnderWaterRender<<SHD_WATER_BIT];
@@ -192,7 +192,7 @@ void LLDrawPoolAlpha::beginRenderPass(S32 pass)
 
 void LLDrawPoolAlpha::endRenderPass( S32 pass )
 {
-	LLFastTimer t(FTM_RENDER_ALPHA);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_ALPHA);
 	LLRenderPass::endRenderPass(pass);
 
 	if(mVertexShaderLevel > 0)	//Singu Note: Unbind if shaders are enabled at all, not just windlight atmospherics..
@@ -203,7 +203,7 @@ void LLDrawPoolAlpha::endRenderPass( S32 pass )
 
 void LLDrawPoolAlpha::render(S32 pass)
 {
-	LLFastTimer t(FTM_RENDER_ALPHA);
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_ALPHA);
 
 	LLGLSPipelineAlpha gls_pipeline_alpha;
 
@@ -354,8 +354,8 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, S32 pass)
 
 			bool draw_glow_for_this_partition = !depth_only && mVertexShaderLevel > 0; // no shaders = no glow.
 
-			static LLFastTimer::DeclareTimer FTM_RENDER_ALPHA_GROUP_LOOP("Alpha Group");
-			LLFastTimer t(FTM_RENDER_ALPHA_GROUP_LOOP);
+			static LLTrace::BlockTimerStatHandle FTM_RENDER_ALPHA_GROUP_LOOP("Alpha Group");
+			LL_RECORD_BLOCK_TIME(FTM_RENDER_ALPHA_GROUP_LOOP);
 
 			bool disable_cull = is_particle_or_hud_particle;
 			LLGLDisable cull(disable_cull ? GL_CULL_FACE : 0);
@@ -523,9 +523,9 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, S32 pass)
 					}
 				}
 
-				static LLFastTimer::DeclareTimer FTM_RENDER_ALPHA_PUSH("Alpha Push Verts");
+				static LLTrace::BlockTimerStatHandle FTM_RENDER_ALPHA_PUSH("Alpha Push Verts");
 				{
-					LLFastTimer t(FTM_RENDER_ALPHA_PUSH);
+					LL_RECORD_BLOCK_TIME(FTM_RENDER_ALPHA_PUSH);
 
 					gGL.blendFunc((LLRender::eBlendFactor) params.mBlendFuncSrc, (LLRender::eBlendFactor) params.mBlendFuncDst, mAlphaSFactor, mAlphaDFactor);
 					// Singu Note: If using shaders, pull the attribute mask from it, else used passed base mask.

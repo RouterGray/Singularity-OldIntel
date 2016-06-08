@@ -51,6 +51,7 @@ class LLMediaCtrl :
 {
 	LOG_CLASS(LLMediaCtrl);
 public:
+
 	struct Params : public LLInitParam::Block<Params, LLPanel::Params> 
 	{
 		Optional<std::string>	start_url;
@@ -102,10 +103,11 @@ public:
 		virtual BOOL handleToolTip(S32 x, S32 y, std::string& msg, LLRect* sticky_rect_screen);
 
 		// navigation
-		void navigateTo( std::string url_in, std::string mime_type = "");
+		void navigateTo( std::string url_in, std::string mime_type = "", bool clean_browser = false);
 		void navigateBack();
 		void navigateHome();
 		void navigateForward();	
+		void navigateStop();
 		void navigateToLocalPage( const std::string& subdir, const std::string& filename_in );
 		bool canNavigateBack();
 		bool canNavigateForward();
@@ -127,9 +129,6 @@ public:
 
 		// Clear the browser cache when the instance gets loaded
 		void clearCache();
-
-		void set404RedirectUrl( std::string redirect_url );
-		void clr404RedirectUrl();
 
 		// accessor/mutator for flag that indicates if frequent updates to texture happen
 		bool getFrequentUpdates() { return mFrequentUpdates; };
@@ -204,7 +203,8 @@ public:
 				mHidingInitialLoad,
 				mClearCache,
 				mHoverTextChanged,
-				mDecoupleTextureSize;
+				mDecoupleTextureSize,
+				mUpdateScrolls;
 
 		std::string mHomePageUrl,
 					mHomePageMimeType,

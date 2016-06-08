@@ -581,7 +581,7 @@ void LLFloaterAO::init()
 						if(!item->getAssetUUID().isNull())
 						{
 							LLUUID* new_uuid = new LLUUID(configncitem);
-							LLHost source_sim = LLHost::invalid;
+							LLHost source_sim;
 							invfolderid = item->getParentUUID();
 							gAssetStorage->getInvItemAsset(source_sim,
 															gAgent.getID(),

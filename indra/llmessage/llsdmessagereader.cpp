@@ -53,7 +53,7 @@ LLSDMessageReader::~LLSDMessageReader()
 
 LLSD getLLSD(const LLSD& input, const char* block, const char* var, S32 blocknum)
 {
-	// babbage: log error to llerrs if variable not found to mimic
+	// babbage: log error to LL_ERRS() if variable not found to mimic
 	// LLTemplateMessageReader::getData behaviour
 	if(NULL == block)
 	{
@@ -276,7 +276,7 @@ S32 getElementSize(const LLSD& llsd)
 	case LLSD::TypeReal:
 		return sizeof(F64);
 	case LLSD::TypeString:
-		return llsd.asString().size();
+		return llsd.size();
 	case LLSD::TypeUUID:
 		return sizeof(LLUUID);
 	case LLSD::TypeDate:

@@ -2,31 +2,25 @@
  * @file llviewermedia.h
  * @brief Client interface to the media engine
  *
- * $LicenseInfo:firstyear=2007&license=viewergpl$
- * 
- * Copyright (c) 2007-2009, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2007&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2010, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
@@ -46,8 +40,9 @@
 #include "llnotificationptr.h"
 
 #include "llurl.h"
-
-#include "llviewerpluginmanager.h"
+#include "lleventcoro.h"
+#include "llcoros.h"
+#include "llcorehttputil.h"
 
 class LLViewerMediaImpl;
 class LLUUID;
@@ -159,7 +154,7 @@ public:
 	static void removeCookie(const std::string &name, const std::string &domain, const std::string &path = std::string("/") );
 	
 	static void openIDSetup(const std::string &openid_url, const std::string &openid_token);
-	static void openIDCookieResponse(const std::string &cookie);
+	static void openIDCookieResponse(const std::string& url, const std::string &cookie);
 	
 	static void proxyWindowOpened(const std::string &target, const std::string &uuid);
 	static void proxyWindowClosed(const std::string &uuid);
@@ -169,12 +164,17 @@ public:
 
 	static void setOnlyAudibleMediaTextureID(const LLUUID& texture_id);
 
-	static class AIHTTPHeaders getHeaders();
+	static LLSD getHeaders();
+    static LLCore::HttpHeaders::ptr_t getHttpHeaders();
 
 private:
-	static void setOpenIDCookie();
+	static bool parseRawCookie(const std::string raw_cookie, std::string& name, std::string& value, std::string& path, bool& httponly, bool& secure);
+	static void setOpenIDCookie(const std::string& url);
 	static void onTeleportFinished();
 	
+    static void openIDSetupCoro(std::string openidUrl, std::string openidToken);
+    static void getOpenIDCookieCoro(std::string url);
+
 	static LLPluginCookieStore *sCookieStore;
 	static LLURL sOpenIDURL;
 	static std::string sOpenIDCookie;
@@ -183,13 +183,12 @@ private:
 
 // Implementation functions not exported into header file
 class LLViewerMediaImpl
-	:	public LLViewerPluginManager, public LLMouseHandler, public LLPluginClassMediaOwner, public LLViewerMediaEventEmitter, public LLEditMenuHandler
+	:	public LLMouseHandler, public LLRefCount, public LLPluginClassMediaOwner, public LLViewerMediaEventEmitter, public LLEditMenuHandler
 {
 	LOG_CLASS(LLViewerMediaImpl);
 public:
 	
 	friend class LLViewerMedia;
-	friend class LLMimeDiscoveryResponder;
 	
 	LLViewerMediaImpl(
 		const LLUUID& texture_id,
@@ -209,7 +208,7 @@ public:
 	bool initializeMedia(const std::string& mime_type);
 	bool initializePlugin(const std::string& media_type);
 	void loadURI();
-	LLPluginClassMedia* getMediaPlugin() const { return (LLPluginClassMedia*)mPluginBase; }
+	LLPluginClassMedia* getMediaPlugin() { return mMediaSource; }
 	void setSize(int width, int height);
 
 	void showNotification(LLNotificationPtr notify);
@@ -235,7 +234,7 @@ public:
 	void mouseUp(const LLVector2& texture_coords, MASK mask, S32 button = 0);
 	void mouseMove(const LLVector2& texture_coords, MASK mask);
     void mouseDoubleClick(const LLVector2& texture_coords, MASK mask);
-	void mouseDoubleClick(S32 x,S32 y, MASK mask, S32 button = 0);
+	void mouseDoubleClick(S32 x, S32 y, MASK mask, S32 button = 0);
 	void scrollWheel(S32 x, S32 y, MASK mask);
 	void mouseCapture();
 	
@@ -244,7 +243,7 @@ public:
 	void navigateReload();
 	void navigateHome();
 	void unload();
-	void navigateTo(const std::string& url, const std::string& mime_type = "", bool rediscover_type = false, bool server_request = false);
+	void navigateTo(const std::string& url, const std::string& mime_type = "", bool rediscover_type = false, bool server_request = false, bool clean_browser = false);
 	void navigateInternal();
 	void navigateStop();
 	bool handleKeyHere(KEY key, MASK mask);
@@ -301,7 +300,7 @@ public:
 	void setTarget(const std::string& target) { mTarget = target; }
 	
 	// utility function to create a ready-to-use media instance from a desired media type.
-	static LLPluginClassMedia* newSourceFromMediaType(std::string media_type, LLPluginClassMediaOwner *owner /* may be NULL */, S32 default_width, S32 default_height, const std::string target = LLStringUtil::null);
+	static LLPluginClassMedia* newSourceFromMediaType(std::string media_type, LLPluginClassMediaOwner *owner /* may be NULL */, S32 default_width, S32 default_height, const std::string target = LLStringUtil::null, bool clean_browser = false);
 
 	// Internally set our desired browser user agent string, including
 	// the Second Life version and skin name.  Used because we can
@@ -374,18 +373,8 @@ public:
 	
 	F64 getCPUUsage() const;
 	
-	typedef enum 
-	{
-		PRIORITY_UNLOADED,	// media plugin isn't even loaded.
-		PRIORITY_HIDDEN,	// media is not being displayed or is out of view, don't need to do graphic updates, but may still update audio, playhead, etc.
-		PRIORITY_SLIDESHOW,	// media is in the far distance, updates very infrequently
-		PRIORITY_LOW,		// media is in the distance, may be rendered at reduced size
-		PRIORITY_NORMAL,	// normal (default) priority
-		PRIORITY_HIGH		// media has user focus and/or is taking up most of the screen
-	}EPriority;
-
-	void setPriority(EPriority priority);
-	EPriority getPriority() { return mPriority; };
+	void setPriority(LLPluginClassMedia::EPriority priority);
+	LLPluginClassMedia::EPriority getPriority() { return mPriority; };
 
 	void setLowPrioritySizeLimit(int size);
 
@@ -436,6 +425,7 @@ private:
 	
 private:
 	// a single media url with some data and an impl.
+	LLPluginClassMedia* mMediaSource;
 	F64		mZoomFactor;
 	LLUUID mTextureId;
 	bool  mMovieImageHasMips;
@@ -461,7 +451,7 @@ private:
 	F64 mInterest;
 	bool mUsedInUI;
 	bool mHasFocus;
-	EPriority mPriority;
+	LLPluginClassMedia::EPriority mPriority;
 	bool mNavigateRediscoverType;
 	bool mNavigateServerRequest;
 	bool mMediaSourceFailed;
@@ -475,7 +465,6 @@ private:
 	S32 mProximity;
 	F64 mProximityDistance;
 	F64 mProximityCamera;
-	LLMimeDiscoveryResponder *mMimeTypeProbe;
 	bool mMediaAutoPlay;
 	std::string mMediaEntryURL;
 	bool mInNearbyMediaList;	// used by LLPanelNearbyMedia::refreshList() for performance reasons
@@ -486,10 +475,16 @@ private:
 	bool mTrustedBrowser;
 	std::string mTarget;
 	LLNotificationPtr mNotification;
+    bool mCleanBrowser;     // force the creation of a clean browsing target with full options enabled
+    static std::vector<std::string> sMimeTypesFailed;
 
 private:
 	BOOL mIsUpdated ;
 	std::list< LLVOVolume* > mObjectList ;
+
+    void mimeDiscoveryCoro(std::string url);
+    LLCoreHttpUtil::HttpCoroutineAdapter::wptr_t mMimeProbe;
+    bool mCanceling;
 
 private:
 	LLViewerMediaTexture *updatePlaceholderImage();

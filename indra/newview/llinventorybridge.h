@@ -180,7 +180,6 @@ protected:
 	virtual void buildDisplayName() const {}
 };
 
-class AIFilePicker;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Class LLInvFVBridgeBuilder
 //
@@ -226,7 +225,6 @@ public:
 	virtual bool hasChildren() const { return FALSE; }
 	virtual BOOL isUpToDate() const { return TRUE; }
 	virtual LLUIImagePtr getIconOverlay() const;
-	static void showFloaterImagePreview(LLInventoryItem* item, AIFilePicker* filepicker);
 
 	LLViewerInventoryItem* getItem() const;
 

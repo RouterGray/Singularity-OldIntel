@@ -4,7 +4,7 @@
  *
  * $LicenseInfo:firstyear=2001&license=viewerlgpl$
  * Second Life Viewer Source Code
- * Copyright (C) 2010, Linden Research, Inc.
+ * Copyright (C) 2012-2013, Linden Research, Inc.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,8 +37,8 @@
 #include "llimageworker.h"
 #include "llrender.h"
 
-#include "aicurlperservice.h"
 #include "llappviewer.h"
+#include "llmeshrepository.h"
 #include "llselectmgr.h"
 #include "llviewertexlayer.h"
 #include "lltexturecache.h"
@@ -65,15 +65,6 @@ LLTextureSizeView *gTextureCategoryView = NULL;
 
 //static
 std::set<LLViewerFetchedTexture*> LLTextureView::sDebugImages;
-
-// Forward declaration.
-namespace AICurlInterface {
-  U32 getNumHTTPCommands(void);
-  U32 getNumHTTPQueued(void);
-  U32 getNumHTTPAdded(void);
-  U32 getNumHTTPRunning(void);
-  size_t getHTTPBandwidth(void);
-} // namespace AICurlInterface
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -242,14 +233,14 @@ void LLTextureBar::draw()
 	// State
 	// Hack: mirrored from lltexturefetch.cpp
 	struct { const std::string desc; LLColor4 color; } fetch_state_desc[] = {
-		{ "-?-", LLColor4::red },	// INVALID
+		{ "---", LLColor4::red },	// INVALID
 		{ "INI", LLColor4::white },	// INIT
 		{ "DSK", LLColor4::cyan },	// LOAD_FROM_TEXTURE_CACHE
 		{ "DSK", LLColor4::blue },	// CACHE_POST
 		{ "NET", LLColor4::green },	// LOAD_FROM_NETWORK
 		{ "SIM", LLColor4::green },	// LOAD_FROM_SIMULATOR
-		{ "REQ", LLColor4::magenta },// SEND_UDP_REQ
-		{ "UDP", LLColor4::cyan },	// WAIT_UDP_REQ
+		{ "HTW", LLColor4::green },	// WAIT_HTTP_RESOURCE
+		{ "HTW", LLColor4::green },	// WAIT_HTTP_RESOURCE2
 		{ "REQ", LLColor4::yellow },// SEND_HTTP_REQ
 		{ "HTP", LLColor4::green },	// WAIT_HTTP_REQ
 		{ "DEC", LLColor4::yellow },// DECODE_IMAGE
@@ -262,7 +253,7 @@ void LLTextureBar::draw()
 		{ "FUL", LLColor4::green }, // LAST_STATE+2
 		{ "BAD", LLColor4::red }, // LAST_STATE+3
 		{ "MIS", LLColor4::red }, // LAST_STATE+4
-		{ "-!-", LLColor4::white }, // LAST_STATE+5
+		{ "---", LLColor4::white }, // LAST_STATE+5
 	};
 	const S32 fetch_state_desc_size = (S32)LL_ARRAY_SIZE(fetch_state_desc);
 	S32 state =
@@ -375,39 +366,8 @@ void LLTextureBar::draw()
 		
 		// draw the image size at the end
 		{
-			std::string boost_lvl("UNKNOWN");
-			switch(mImagep->getBoostLevel())
-			{
-#define BOOST_LVL(type) case LLGLTexture::BOOST_##type: boost_lvl="B_"#type; break;
-#define CAT_LVL(type) case LLGLTexture::type: boost_lvl=#type; break;
-				BOOST_LVL(NONE)
-				BOOST_LVL(AVATAR_BAKED)
-				BOOST_LVL(AVATAR)
-				BOOST_LVL(CLOUDS)
-				BOOST_LVL(SCULPTED)
-				BOOST_LVL(HIGH)
-				BOOST_LVL(BUMP)
-				BOOST_LVL(TERRAIN)
-				BOOST_LVL(SELECTED)
-				BOOST_LVL(AVATAR_BAKED_SELF)
-				BOOST_LVL(AVATAR_SELF)
-				BOOST_LVL(SUPER_HIGH)
-				BOOST_LVL(HUD)
-				BOOST_LVL(ICON)
-				BOOST_LVL(UI)
-				BOOST_LVL(PREVIEW)
-				BOOST_LVL(MAP)
-				BOOST_LVL(MAP_VISIBLE)
-				CAT_LVL(LOCAL)
-				CAT_LVL(AVATAR_SCRATCH_TEX)
-				CAT_LVL(DYNAMIC_TEX)
-				CAT_LVL(MEDIA)
-				CAT_LVL(OTHER)
-				CAT_LVL(MAX_GL_IMAGE_CATEGORY)
-				default:;
-			};
-			std::string num_str = llformat("%4dx%4d (%+d) %7d %s", mImagep->getWidth(), mImagep->getHeight(),
-				mImagep->getDiscardLevel(), mImagep->hasGLTexture() ? mImagep->getTextureMemory().value() : 0, boost_lvl.c_str());
+			std::string num_str = llformat("%3dx%3d (%2d) %7d", mImagep->getWidth(), mImagep->getHeight(),
+				mImagep->getDiscardLevel(), mImagep->hasGLTexture() ? mImagep->getTextureMemory().value() : 0);
 			LLFontGL::getFontMonospace()->renderUTF8(num_str, 0, title_x4, getRect().getHeight(), color,
 											LLFontGL::LEFT, LLFontGL::TOP);
 		}
@@ -583,18 +543,19 @@ void LLGLTexMemBar::draw()
 	
 	std::string text = "";
 	
-	S32 global_raw_memory;
-	{
-		global_raw_memory = *AIAccess<S32>(LLImageRaw::sGlobalRawMemory);
-	}
 	text = llformat("GL Tot: %d/%d MB Bound: %d/%d MB FBO: %d MB Raw Tot: %d MB Bias: %.2f Cache: %.1f/%.1f MB Net Tot Tex: %.1f MB Tot Obj: %.1f MB Tot Htp: %d",
 					total_mem.value(),
 					max_total_mem.value(),
 					bound_mem.value(),
 					max_bound_mem.value(),
 					LLRenderTarget::sBytesAllocated/(1024*1024),
-					global_raw_memory >> 20,	discard_bias,
-					cache_usage, cache_max_usage, total_texture_downloaded, total_object_downloaded, total_http_requests);
+					LLImageRaw::sGlobalRawMemory >> 20,
+					discard_bias,
+					cache_usage,
+					cache_max_usage,
+					total_texture_downloaded,
+					total_object_downloaded,
+					total_http_requests);
 	//, cache_entries, cache_max_entries
 
 	LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*3,
@@ -663,34 +624,41 @@ void LLGLTexMemBar::draw()
 #endif
 	//----------------------------------------------------------------------------
 
-	text = llformat("Textures: %d Fetch: %d(%d) Pkts:%d(%d) Cache R/W: %d/%d LFS:%d IW:%d RAW:%d(%d) HTTP:%d/%d/%d/%d DEC:%d CRE:%d ",
+	text = llformat("Textures: %d Fetch: %d(%d) Pkts:%d(%d) Cache R/W: %d/%d LFS:%d IW:%d Raw:%d HTP:%d DEC:%d CRE:%d ",
 					gTextureList.getNumImages(),
 					LLAppViewer::getTextureFetch()->getNumRequests(), LLAppViewer::getTextureFetch()->getNumDeletes(),
 					LLAppViewer::getTextureFetch()->mPacketCount, LLAppViewer::getTextureFetch()->mBadPacketCount, 
 					LLAppViewer::getTextureCache()->getNumReads(), LLAppViewer::getTextureCache()->getNumWrites(),
 					LLLFSThread::sLocal->getPending(),
 					LLAppViewer::getImageDecodeThread()->getPending(),
-					LLImageRaw::sRawImageCount, LLImageRaw::sRawImageCachedCount,
-					AICurlInterface::getNumHTTPCommands(),
-					AICurlInterface::getNumHTTPQueued(),
-					AICurlInterface::getNumHTTPAdded(),
-					AICurlInterface::getNumHTTPRunning(),
+					LLImageRaw::sRawImageCount,
+					LLAppViewer::getTextureFetch()->getNumHTTPRequests(),
 					LLAppViewer::getImageDecodeThread()->getPending(), 
 					gTextureList.mCreateTextureList.size());
 
+	LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*3,
+											 text_color, LLFontGL::LEFT, LLFontGL::TOP);
+
+	left += LLFontGL::getFontMonospace()->getWidth(text);;
+
+	F32Kilobits bandwidth(LLAppViewer::getTextureFetch()->getTextureBandwidth());
+	F32Kilobits max_bandwidth(gSavedSettings.getF32("ThrottleBandwidthKBPS"));
+	color = bandwidth > max_bandwidth ? LLColor4::red : bandwidth > max_bandwidth*.75f ? LLColor4::yellow : text_color;
+	color[VALPHA] = text_color[VALPHA];
+	text = llformat("BW:%.0f/%.0f",bandwidth.value(), max_bandwidth.value());
+	LLFontGL::getFontMonospace()->renderUTF8(text, 0, left, v_offset + line_height*3,
+											 color, LLFontGL::LEFT, LLFontGL::TOP);
+	
+	// Mesh status line
+	text = llformat("Mesh: Reqs(Tot/Htp/Big): %u/%u/%u Rtr/Err: %u/%u Cread/Cwrite: %u/%u Low/At/High: %d/%d/%d",
+					LLMeshRepository::sMeshRequestCount, LLMeshRepository::sHTTPRequestCount, LLMeshRepository::sHTTPLargeRequestCount,
+					LLMeshRepository::sHTTPRetryCount, LLMeshRepository::sHTTPErrorCount,
+					LLMeshRepository::sCacheReads, LLMeshRepository::sCacheWrites,
+					LLMeshRepoThread::sRequestLowWater, LLMeshRepoThread::sRequestWaterLevel, LLMeshRepoThread::sRequestHighWater);
 	LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*2,
 									 text_color, LLFontGL::LEFT, LLFontGL::TOP);
 
-	left += LLFontGL::getFontMonospace()->getWidth(text);
-	// This bandwidth is averaged over 1 seconds (in bytes/s).
-	size_t const bandwidth = AICurlInterface::getHTTPBandwidth();
-	size_t const max_bandwidth = AIPerService::getHTTPThrottleBandwidth125();
-	color = (bandwidth > max_bandwidth) ? LLColor4::red : ((bandwidth > max_bandwidth * .75f) ? LLColor4::yellow : text_color);
-	color[VALPHA] = text_color[VALPHA];
-	text = llformat("BW:%lu/%lu", bandwidth / 125, max_bandwidth / 125);
-	LLFontGL::getFontMonospace()->renderUTF8(text, 0, left, v_offset + line_height*2,
-											 color, LLFontGL::LEFT, LLFontGL::TOP);
-
+	// Header for texture table columns
 	S32 dx1 = 0;
 	if (LLAppViewer::getTextureFetch()->mDebugPause)
 	{
@@ -907,18 +875,6 @@ void LLTextureView::draw()
 				++debug_count; // for breakpoints
 			}
 			
-#if 0
-			if (imagep->getDontDiscard())
-			{
-				continue;
-			}
-
-			if (imagep->isMissingAsset())
-			{
-				continue;
-			}
-#endif
-
 			F32 pri;
 			if (mOrderFetch)
 			{
@@ -937,7 +893,6 @@ void LLTextureView::draw()
 
 			if (!mOrderFetch)
 			{
-#if 1
 				if (pri < HIGH_PRIORITY && LLSelectMgr::getInstance())
 				{
 					struct f : public LLSelectedTEFunctor
@@ -956,8 +911,7 @@ void LLTextureView::draw()
 						pri += 3*HIGH_PRIORITY;
 					}
 				}
-#endif
-#if 1
+
 				if (pri < HIGH_PRIORITY && (cur_discard< 0 || desired_discard < cur_discard))
 				{
 					LLSelectNode* hover_node = LLSelectMgr::instance().getHoverNode();
@@ -978,8 +932,7 @@ void LLTextureView::draw()
 						}
 					}
 				}
-#endif
-#if 1
+
 				if (pri > 0.f && pri < HIGH_PRIORITY)
 				{
 					if (imagep->mLastPacketTimer.getElapsedTimeF32() < 1.f ||
@@ -988,7 +941,6 @@ void LLTextureView::draw()
 						pri += 1*HIGH_PRIORITY;
 					}
 				}
-#endif
 			}
 			
 	 		if (pri > 0.0f)
@@ -1049,14 +1001,6 @@ void LLTextureView::draw()
 		//sendChildToFront(mAvatarTexBar);
 		
 		reshape(getRect().getWidth(), getRect().getHeight(), TRUE);
-
-		/*
-		  count = gTextureList.getNumImages();
-		  std::string info_string;
-		  info_string = llformat("Global Info:\nTexture Count: %d", count);
-		  mInfoTextp->setText(info_string);
-		*/
-
 
 		for (child_list_const_iter_t child_iter = getChildList()->begin();
 			 child_iter != getChildList()->end(); ++child_iter)

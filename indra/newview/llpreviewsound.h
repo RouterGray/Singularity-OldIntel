@@ -35,8 +35,6 @@
 
 #include "llpreview.h"
 
-class AIFilePicker;
-
 class LLPreviewSound : public LLPreview
 {
 public:
@@ -61,7 +59,6 @@ public:
 									   const LLUUID& asset_uuid,
 									   LLAssetType::EType type,
 									   void* user_data, S32 status, LLExtStat ext_status);
-	static void gotAssetForSave_continued(char* buffer, S32 size, AIFilePicker* filepicker);
 	// </edit>
 
 protected:

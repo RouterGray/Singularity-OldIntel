@@ -54,15 +54,14 @@
 #endif
 
 #include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include "lldaeloader.h"
 #include "llsdserialize.h"
 #include "lljoint.h"
 
 #include "llmatrix4a.h"
-
-#include <boost/regex.hpp>
-#include <boost/algorithm/string/replace.hpp>
 
 std::string colladaVersion[VERSIONTYPE_COUNT+1] = 
 {

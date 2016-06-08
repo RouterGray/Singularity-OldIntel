@@ -53,7 +53,6 @@
 #include "llviewerwearable.h"
 #include "llvoavatarself.h"
 
-#include "statemachine/aifilepicker.h"
 #include "hippogridmanager.h"
 //#include "aixmllindengenepool.h"
 #include "aifile.h"
@@ -307,15 +306,9 @@ void LLFloaterCustomize::setCurrentWearableType( LLWearableType::EType type, boo
 // reX: new function
 void LLFloaterCustomize::onBtnImport()
 {
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(FFLOAD_XML);
-	filepicker->run(boost::bind(&LLFloaterCustomize::onBtnImport_continued, this, filepicker));
-}
-
-void LLFloaterCustomize::onBtnImport_continued(AIFilePicker* filepicker)
-{
 #if 0
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getLoadFile(LLFilePicker::FFLOAD_XML))
 	{
 		// User canceled import.
 		return;
@@ -328,7 +321,7 @@ void LLFloaterCustomize::onBtnImport_continued(AIFilePicker* filepicker)
 	LLWearableType::EType panel_wearable_type = panel_edit_wearable->getType();
 	std::string label = utf8str_tolower(panel_edit_wearable->getLabel());
 
-	std::string const filename = filepicker->getFilename();
+	std::string const filename = filepicker.getFirstFile();
 
 	AIArgs args("[FILE]", gDirUtilp->getBaseFileName(filename));
 
@@ -463,6 +456,7 @@ void LLFloaterCustomize::onBtnImport_continued(AIFilePicker* filepicker)
 // reX: new function
 void LLFloaterCustomize::onBtnExport()
 {
+#if 0
 	// Find the editted wearable.
 	LLPanelEditWearable* panel_edit_wearable = getCurrentWearablePanel();
 	LLViewerWearable* edit_wearable = panel_edit_wearable->getWearable();
@@ -492,24 +486,17 @@ void LLFloaterCustomize::onBtnExport()
 	}
 
 	std::string file_name = edit_wearable->getName() + "_" + gHippoGridManager->getConnectedGrid()->getGridNick() + "_" + edit_wearable->getTypeName() + "?000.xml";
-	std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_LOGS, "");
+	// Singu TODO: LLFilePicker with suggested directories?
+	//std::string default_path = gDirUtilp->getExpandedFilename(LL_PATH_LOGS, "");
 
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(file_name, FFSAVE_XML, default_path, "archetype");
-	filepicker->run(boost::bind(&LLFloaterCustomize::onBtnExport_continued, edit_wearable, filepicker));
-}
-
-//static
-void LLFloaterCustomize::onBtnExport_continued(LLViewerWearable* edit_wearable, AIFilePicker* filepicker)
-{
-#if 0
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (filepicker->getSaveFile(LLFilePicker::FFSAVE_XML, filename))
 	{
 		// User canceled export.
 		return;
 	}
 
-	std::string filename = filepicker->getFilename();
+	std::string filename = filepicker.getFirstFile();
 
 	bool success = false;
 	try

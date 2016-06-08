@@ -44,8 +44,6 @@
 
 // linden library includes
 #include "llbutton.h"
-#include "llhttpclient.h"
-#include "llhttpstatuscodes.h"	// for HTTP_FOUND
 #include "llnotificationsutil.h"
 #include "llradiogroup.h"
 #include "lltextbox.h"
@@ -53,9 +51,7 @@
 #include "lluictrlfactory.h"
 #include "llvfile.h"
 #include "message.h"
-
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy iamHere_timeout;
+#include "llcorehttputil.h"
 
 // static 
 LLFloaterTOS* LLFloaterTOS::sInstance = NULL;
@@ -89,57 +85,6 @@ LLFloaterTOS::LLFloaterTOS(ETOSType type, const std::string & message)
 {
 }
 
-// helper class that trys to download a URL from a web site and calls a method 
-// on parent class indicating if the web server is working or not
-class LLIamHere : public LLHTTPClient::ResponderWithResult
-{
-	private:
-		LLIamHere( LLFloaterTOS* parent ) :
-		   mParent( parent )
-		{}
-
-		LLFloaterTOS* mParent;
-
-	public:
-
-		static boost::intrusive_ptr< LLIamHere > build( LLFloaterTOS* parent )
-		{
-			return boost::intrusive_ptr< LLIamHere >( new LLIamHere( parent ) );
-		};
-		
-		virtual void  setParent( LLFloaterTOS* parentIn )
-		{
-			mParent = parentIn;
-		};
-		
-		/*virtual*/ void httpSuccess(void)
-		{
-			if ( mParent )
-				mParent->setSiteIsAlive( true );
-		};
-
-		/*virtual*/ void httpFailure(void)
-		{
-			if ( mParent )
-			{
-				// *HACK: For purposes of this alive check, 302 Found
-				// (aka Moved Temporarily) is considered alive.  The web site
-				// redirects this link to a "cache busting" temporary URL. JC
-				bool alive = (mStatus == HTTP_FOUND);
-				mParent->setSiteIsAlive( alive );
-			}
-		};
-
-		/*virtual*/  AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return iamHere_timeout; }
-		/*virtual*/ bool pass_redirect_status(void) const { return true; }
-		/*virtual*/ char const* getName(void) const { return "LLIamHere"; }
-};
-
-// this is global and not a class member to keep crud out of the header file
-namespace {
-	boost::intrusive_ptr< LLIamHere > gResponsePtr = 0;
-};
-
 BOOL LLFloaterTOS::postBuild()
 {	
 	childSetAction("Continue", onContinue, this);
@@ -171,8 +116,15 @@ BOOL LLFloaterTOS::postBuild()
 	if ( web_browser )
 	{
 		web_browser->addObserver(this);
-		gResponsePtr = LLIamHere::build( this );
-		LLHTTPClient::get( getString( "real_url" ), gResponsePtr );
+
+
+        std::string url(getString("real_url"));
+
+        LLHandle<LLFloater> handle = getHandle();
+
+        LLCoros::instance().launch("LLFloaterTOS::testSiteIsAliveCoro",
+            boost::bind(&LLFloaterTOS::testSiteIsAliveCoro, handle, url));
+
 	}
 
 	return TRUE;
@@ -195,22 +147,18 @@ void LLFloaterTOS::setSiteIsAlive( bool alive )
 		}
 		else
 		{
+			LL_INFOS("TOS") << "ToS page: ToS page unavailable!" << LL_ENDL;
 			// normally this is set when navigation to TOS page navigation completes (so you can't accept before TOS loads)
 			// but if the page is unavailable, we need to do this now
 			LLCheckBoxCtrl* tos_agreement = getChild<LLCheckBoxCtrl>("agree_chk");
 			tos_agreement->setEnabled( true );
-		};
-	};
+		}
+	}
 }
 
 LLFloaterTOS::~LLFloaterTOS()
 {
-
-	// tell the responder we're not here anymore
-	if ( gResponsePtr )
-		gResponsePtr->setParent( 0 );
-
-	LLFloaterTOS::sInstance = NULL;
+	sInstance = NULL;
 }
 
 // virtual
@@ -274,10 +222,47 @@ void LLFloaterTOS::handleMediaEvent(LLPluginClassMedia* /*self*/, EMediaEvent ev
 		// skip past the loading screen navigate complete
 		if ( ++mLoadCompleteCount == 2 )
 		{
-			LL_INFOS() << "NAVIGATE COMPLETE" << LL_ENDL;
+			LL_INFOS("TOS") << "TOS: NAVIGATE COMPLETE" << LL_ENDL;
 			// enable Agree to TOS radio button now that page has loaded
 			LLCheckBoxCtrl * tos_agreement = getChild<LLCheckBoxCtrl>("agree_chk");
 			tos_agreement->setEnabled( true );
 		}
 	}
 }
+
+void LLFloaterTOS::testSiteIsAliveCoro(LLHandle<LLFloater> handle, std::string url)
+{
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("genericPostCoro", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+    LLCore::HttpOptions::ptr_t httpOpts = LLCore::HttpOptions::ptr_t(new LLCore::HttpOptions);
+
+
+    httpOpts->setWantHeaders(true);
+
+
+    LL_INFOS("testSiteIsAliveCoro") << "Generic POST for " << url << LL_ENDL;
+
+    LLSD result = httpAdapter->getAndSuspend(httpRequest, url);
+
+    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    if (handle.isDead())
+    {
+        LL_WARNS("testSiteIsAliveCoro") << "Dialog canceled before response." << LL_ENDL;
+        return;
+    }
+
+    LLFloaterTOS *that = dynamic_cast<LLFloaterTOS *>(handle.get());
+    
+    if (that)
+        that->setSiteIsAlive(static_cast<bool>(status)); 
+    else
+    {
+        LL_WARNS("testSiteIsAliveCoro") << "Handle was not a TOS floater." << LL_ENDL;
+    }
+}
+
+

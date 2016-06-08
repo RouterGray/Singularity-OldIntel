@@ -41,7 +41,6 @@
 class LLLineEditor;
 class LLTextEditor;
 class LLTextureCtrl;
-class AIFilePicker;
 
 class LLPanelPick : public LLPanel, public LLAvatarPropertiesObserver
 {
@@ -62,9 +61,7 @@ public:
 
 	//Pick import and export - RK
 	void importNewPick(void (*callback)(void*, bool), void* data);
-	void importNewPick_continued(void (*callback)(void*, bool), void* data, AIFilePicker* filepicker);
 	void exportPick();
-	void exportPick_continued(AIFilePicker* filepicker);
 
 	// We need to know the creator id so the database knows which partition
 	// to query for the pick data.

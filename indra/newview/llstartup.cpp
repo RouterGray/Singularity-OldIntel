@@ -56,18 +56,16 @@
 #include "hippogridmanager.h"
 #include "hippolimits.h"
 #include "floaterao.h"
-#include "statemachine/aifilepicker.h"
 #include "lfsimfeaturehandler.h"
 
-#include "llares.h"
 #include "llavatarnamecache.h"
+#include "llexperiencecache.h"
 #include "lllandmark.h"
 #include "llcachename.h"
 #include "lldir.h"
 #include "llerrorcontrol.h"
 #include "llfiltersd2xmlrpc.h"
 #include "llfocusmgr.h"
-#include "llhttpsender.h"
 #include "llimageworker.h"
 
 #include "llloginflags.h"
@@ -131,7 +129,6 @@
 #include "llgroupmgr.h"
 #include "llhudeffecttrail.h"
 #include "llhudmanager.h"
-#include "llhttpclient.h"
 #include "llimagebmp.h"
 #include "llimview.h" // for gIMMgr
 #include "llinventoryfunctions.h"
@@ -229,13 +226,15 @@
 // </edit>
 
 #include "llpathfindingmanager.h"
-#include "llevents.h"
 
 #include "lgghunspell_wrapper.h"
 
 // [RLVa:KB]
 #include "rlvhandler.h"
 // [/RLVa:KB]
+
+#include "llevents.h"
+#include "llexperiencelog.h"
 
 #if LL_WINDOWS
 #include "llwindebug.h"
@@ -339,20 +338,6 @@ void simfeature_debug_update(const std::string& val, const std::string& setting)
 //
 // local classes
 //
-
-namespace
-{
-	class LLNullHTTPSender : public LLHTTPSender
-	{
-		virtual void send(const LLHost& host, 
-						  const std::string& message, const LLSD& body, 
-						  LLHTTPClient::ResponderPtr response) const
-		{
-			LL_WARNS("AppInit") << " attemped to send " << message << " to " << host
-					<< " with null sender" << LL_ENDL;
-		}
-	};
-}
 
 class LLGestureInventoryFetchObserver : public LLInventoryFetchItemsObserver
 {
@@ -528,16 +513,9 @@ bool idle_startup()
 	gViewerWindow->updateUI();
 	LLMortician::updateClass();
 
-	if (gNoRender)
-	{
-		// HACK, skip optional updates if you're running drones
-		//gSkipOptionalUpdate = TRUE;
-	}
-	else
-	{
-		// Update images?
-		gTextureList.updateImages(0.01f);
-	}
+
+	//note: Removing this line will cause incorrect button size in the login screen. -- bao.
+	gTextureList.updateImages(0.01f) ;
 
 	if ( STATE_FIRST == LLStartUp::getStartupState() )
 	{
@@ -626,13 +604,6 @@ bool idle_startup()
 		// Load the throttle settings
 		gViewerThrottle.load();
 
-		if (ll_init_ares() == NULL || !gAres->isInitialized())
-		{
-			std::string diagnostic = "Could not start address resolution system";
-			LL_WARNS("AppInit") << diagnostic << LL_ENDL;
-			LLAppViewer::instance()->earlyExit("LoginFailedNoNetwork", LLSD().with("DIAGNOSTIC", diagnostic));
-		}
-		
 		//
 		// Initialize messaging system
 		//
@@ -646,12 +617,23 @@ bool idle_startup()
 		#if LL_WINDOWS
 			// On the windows dev builds, unpackaged, the message_template.msg 
 			// file will be located in:
-			// indra/build-vc**/newview/<config>/app_settings.
+			// build-vc**/newview/<config>/app_settings
 			if (!found_template)
 			{
 				message_template_path = gDirUtilp->getExpandedFilename(LL_PATH_EXECUTABLE, "app_settings", "message_template.msg");
 				found_template = LLFile::fopen(message_template_path.c_str(), "r");		/* Flawfinder: ignore */
 			}	
+		#elif LL_DARWIN
+			// On Mac dev builds, message_template.msg lives in:
+			// indra/build-*/newview/<config>/Second Life/Contents/Resources/app_settings
+			if (!found_template)
+			{
+				message_template_path =
+					gDirUtilp->getExpandedFilename(LL_PATH_EXECUTABLE,
+												   "../Resources/app_settings",
+												   "message_template.msg");
+				found_template = LLFile::fopen(message_template_path.c_str(), "r");		/* Flawfinder: ignore */
+			}		
 		#endif
 
 		if (found_template)
@@ -665,8 +647,6 @@ bool idle_startup()
 			  {
 			    port = gSavedSettings.getU32("ConnectionPort");
 			  }
-
-			LLHTTPSender::setDefaultSender(new LLNullHTTPSender());
 
 			// TODO parameterize 
 			const F32 circuit_heartbeat_interval = 5;
@@ -759,31 +739,31 @@ bool idle_startup()
 
 
 			F32 dropPercent = gSavedSettings.getF32("PacketDropPercentage");
-			msg->mPacketRing->setDropPercentage(dropPercent);
+			msg->mPacketRing.setDropPercentage(dropPercent);
 
             F32 inBandwidth = gSavedSettings.getF32("InBandwidth"); 
             F32 outBandwidth = gSavedSettings.getF32("OutBandwidth"); 
 			if (inBandwidth != 0.f)
 			{
 				LL_DEBUGS("AppInit") << "Setting packetring incoming bandwidth to " << inBandwidth << LL_ENDL;
-				msg->mPacketRing->setUseInThrottle(TRUE);
-				msg->mPacketRing->setInBandwidth(inBandwidth);
+				msg->mPacketRing.setUseInThrottle(TRUE);
+				msg->mPacketRing.setInBandwidth(inBandwidth);
 			}
 			if (outBandwidth != 0.f)
 			{
 				LL_DEBUGS("AppInit") << "Setting packetring outgoing bandwidth to " << outBandwidth << LL_ENDL;
-				msg->mPacketRing->setUseOutThrottle(TRUE);
-				msg->mPacketRing->setOutBandwidth(outBandwidth);
+				msg->mPacketRing.setUseOutThrottle(TRUE);
+				msg->mPacketRing.setOutBandwidth(outBandwidth);
 			}
 		}
 
 		LL_INFOS("AppInit") << "Message System Initialized." << LL_ENDL;
 		
 		//-------------------------------------------------
-		// Load file- and dirpicker {context, default path} map.
+		// Singu TODO: Load file- and dirpicker {context, default path} map.
 		//-------------------------------------------------
 
-		AIFilePicker::loadFile("filepicker_contexts.xml");
+		//LLFilePicker::loadFile("filepicker_contexts.xml");
 		
 		if (LLTimer::knownBadTimer())
 		{
@@ -1034,8 +1014,6 @@ bool idle_startup()
 			LLTrans::setDefaultArg("[GRID_OWNER]", gHippoGridManager->getConnectedGrid()->getGridOwner());
 			LLScriptEdCore::parseFunctions("lsl_functions_os.xml"); //Singu Note: This appends to the base functions parsed from lsl_functions_sl.xml
 		}
-		// Avination doesn't want the viewer to do bandwidth throttling (it is done serverside, taking UDP into account too).
-		AIPerService::setNoHTTPBandwidthThrottling(gHippoGridManager->getConnectedGrid()->isAvination());
 
 		// create necessary directories
 		// *FIX: these mkdir's should error check
@@ -1057,7 +1035,7 @@ bool idle_startup()
 		// Note: can't store warnings files per account because some come up before login
 		
 		// Overwrite default user settings with user settings								 
-		LLAppViewer::instance()->loadSettingsFromDirectory(AIReadAccess<settings_map_type>(gSettings), "Account");
+		LLAppViewer::instance()->loadSettingsFromDirectory(gSettings, "Account");
 
 		// Need to set the LastLogoff time here if we don't have one.  LastLogoff is used for "Recent Items" calculation
 		// and startup time is close enough if we don't have a real value.
@@ -1321,9 +1299,6 @@ bool idle_startup()
 
 		LL_INFOS() << "Authenticating with " << grid_uri << LL_ENDL;
 
-		// Always write curl I/O debug info for the login attempt.
-		Debug(gCurlIo = dc::curl.is_on() && !dc::curlio.is_on(); if (gCurlIo) dc::curlio.on());
-
 		// TODO if statement here to use web_login_key
 	    // OGPX : which routine would this end up in? the LLSD or XMLRPC, or ....?
 		LLUserAuth::getInstance()->authenticate(
@@ -1440,7 +1415,6 @@ bool idle_startup()
 			{
 				// Yay, login!
 				successful_login = true;
-				Debug(if (gCurlIo) dc::curlio.off());		// Login succeeded: restore dc::curlio to original state.
 				LLPanelLogin::close(); // Singu Note: Actually destroy the login panel here, otherwise user interaction gets lost upon failed login.
 			}
 			else if(login_response == "indeterminate")
@@ -1725,6 +1699,9 @@ bool idle_startup()
 		gAgent.setPositionAgent(agent_start_position_region);
 
 		display_startup();
+		LLStartUp::initExperiences();
+
+		display_startup();
 		LLStartUp::setStartupState( STATE_MULTIMEDIA_INIT );
 		return FALSE;
 	}
@@ -1881,7 +1858,7 @@ bool idle_startup()
 		LL_DEBUGS("AppInit") << "Initializing camera..." << LL_ENDL;
 		gFrameTime    = totalTime();
 		F32 last_time = gFrameTimeSeconds;
-		gFrameTimeSeconds = (S64)(gFrameTime - gStartTime)/SEC_TO_MICROSEC;
+		gFrameTimeSeconds = (S64)(gFrameTime - gStartTime)/1000000.f;
 
 		gFrameIntervalSeconds = gFrameTimeSeconds - last_time;
 		if (gFrameIntervalSeconds < 0.f)
@@ -2759,12 +2736,12 @@ bool idle_startup()
 
 		LLAppViewer::instance()->handleLoginComplete();
 
-		// reset timers now that we are running "logged in" logic
-		LLFastTimer::reset();
 		display_startup();
 
 		llassert(LLPathfindingManager::getInstance() != NULL);
 		LLPathfindingManager::getInstance()->initSystem();
+
+		gAgentAvatarp->sendHoverHeight();
 
 		return TRUE;
 	}
@@ -2772,7 +2749,6 @@ bool idle_startup()
 	LL_WARNS("AppInit") << "Reached end of idle_startup for state " << LLStartUp::getStartupState() << LL_ENDL;
 	return TRUE;
 }
-
 
 //
 // local function definition
@@ -3543,6 +3519,16 @@ void LLStartUp::initNameCache()
 	LLAvatarNameCache::setUseUsernames(!phoenix_name_system || phoenix_name_system == 1 || phoenix_name_system == 3);
 }
 
+
+void LLStartUp::initExperiences()
+{   
+    // Should trigger loading the cache.
+    LLExperienceCache::instance().setCapabilityQuery(
+        boost::bind(&LLAgent::getRegionCapability, &gAgent, _1));
+
+	LLExperienceLog::instance().initialize();
+}
+
 void LLStartUp::cleanupNameCache()
 {
 	LLAvatarNameCache::cleanupClass();
@@ -3609,99 +3595,6 @@ LLSLURL& LLStartUp::getStartSLURL()
 {
 	return sStartSLURL;
 }
-
-/*
-bool LLStartUp::handleSocksProxy(bool reportOK)
-{
-		std::string httpProxyType = gSavedSettings.getString("Socks5HttpProxyType");
-
-		// Determine the http proxy type (if any)
-	if ((httpProxyType.compare("Web") == 0) && gSavedSettings.getBOOL("BrowserProxyEnabled"))
-		{
-			LLHost httpHost;
-			httpHost.setHostByName(gSavedSettings.getString("BrowserProxyAddress"));
-			httpHost.setPort(gSavedSettings.getS32("BrowserProxyPort"));
-			LLSocks::getInstance()->EnableHttpProxy(httpHost,LLPROXY_HTTP);
-		}
-	else if ((httpProxyType.compare("Socks") == 0) && gSavedSettings.getBOOL("Socks5ProxyEnabled"))
-		{
-			LLHost httpHost;
-			httpHost.setHostByName(gSavedSettings.getString("Socks5ProxyHost"));
-		httpHost.setPort(gSavedSettings.getU32("Socks5ProxyPort"));
-			LLSocks::getInstance()->EnableHttpProxy(httpHost,LLPROXY_SOCKS);
-		}
-		else
-		{
-			LLSocks::getInstance()->DisableHttpProxy();
-		}
-	
-	bool use_socks_proxy = gSavedSettings.getBOOL("Socks5ProxyEnabled");
-	if (use_socks_proxy)
-	{	
-
-		// Determine and update LLSocks with the saved authentication system
-		std::string auth_type = gSavedSettings.getString("Socks5AuthType");
-			
-		if (auth_type.compare("None") == 0)
-		{
-			LLSocks::getInstance()->setAuthNone();
-		}
-
-		if (auth_type.compare("UserPass") == 0)
-		{
-			LLSocks::getInstance()->setAuthPassword(gSavedSettings.getString("Socks5Username"),gSavedSettings.getString("Socks5Password"));
-		}
-
-		// Start the proxy and check for errors
-		int status = LLSocks::getInstance()->startProxy(gSavedSettings.getString("Socks5ProxyHost"), gSavedSettings.getU32("Socks5ProxyPort"));
-		LLSD subs;
-		subs["PROXY"] = gSavedSettings.getString("Socks5ProxyHost");
-
-		switch(status)
-		{
-			case SOCKS_OK:
-				if (reportOK == true)
-				{
-					LLNotificationsUtil::add("SOCKS_CONNECT_OK", subs);
-				}
-				return true;
-				break;
-
-			case SOCKS_CONNECT_ERROR: // TCP Fail
-				LLNotificationsUtil::add("SOCKS_CONNECT_ERROR", subs);
-				break;
-
-			case SOCKS_NOT_PERMITTED: // Socks5 server rule set refused connection
-				LLNotificationsUtil::add("SOCKS_NOT_PERMITTED", subs);
-				break;
-					
-			case SOCKS_NOT_ACCEPTABLE: // Selected authentication is not acceptable to server
-				LLNotificationsUtil::add("SOCKS_NOT_ACCEPTABLE", subs);
-				break;
-
-			case SOCKS_AUTH_FAIL: // Authentication failed
-				LLNotificationsUtil::add("SOCKS_AUTH_FAIL", subs);
-				break;
-
-			case SOCKS_UDP_FWD_NOT_GRANTED: // UDP forward request failed
-				LLNotificationsUtil::add("SOCKS_UDP_FWD_NOT_GRANTED", subs);
-				break;
-
-			case SOCKS_HOST_CONNECT_FAILED: // Failed to open a TCP channel to the socks server
-				LLNotificationsUtil::add("SOCKS_HOST_CONNECT_FAILED", subs);
-				break;		
-		}
-
-		return false;
-	}
-	else
-	{
-		LLSocks::getInstance()->stopProxy(); //ensure no UDP proxy is running and its all cleaned up
-	}
-
-	return true;
-}
-*/
 
 /**
  * Read all proxy configuration settings and set up both the HTTP proxy and

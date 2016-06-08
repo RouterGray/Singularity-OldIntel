@@ -403,4 +403,17 @@ const S32 CHAT_CHANNEL_DEBUG = S32_MAX;
 // like llregionflags.h, lllslconstants.h, llagentconstants.h,
 // or create a new one.  JC
 
+
+// DO NOT CHANGE THE SEQUENCE OF THIS LIST!!
+const U8 CLICK_ACTION_NONE = 0;
+const U8 CLICK_ACTION_TOUCH = 0;
+const U8 CLICK_ACTION_SIT = 1;
+const U8 CLICK_ACTION_BUY = 2;
+const U8 CLICK_ACTION_PAY = 3;
+const U8 CLICK_ACTION_OPEN = 4;
+const U8 CLICK_ACTION_PLAY = 5;
+const U8 CLICK_ACTION_OPEN_MEDIA = 6;
+const U8 CLICK_ACTION_ZOOM = 7;
+// DO NOT CHANGE THE SEQUENCE OF THIS LIST!!
+
 #endif

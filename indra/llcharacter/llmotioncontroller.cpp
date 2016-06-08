@@ -36,6 +36,7 @@
 #include "linden_common.h"
 
 #include "llmotioncontroller.h"
+#include "llfasttimer.h"
 #include "llkeyframemotion.h"
 #include "llmath.h"
 #include "lltimer.h"
@@ -477,6 +478,7 @@ BOOL LLMotionController::stopMotionInstance(LLMotion* motion, BOOL stop_immediat
 		return FALSE;
 	}
 
+
 	// If on active list, stop it
 	if (isMotionActive(motion) && !motion->isStopped())
 	{
@@ -577,7 +579,7 @@ void LLMotionController::updateIdleActiveMotions()
 //-----------------------------------------------------------------------------
 // updateMotionsByType()
 //-----------------------------------------------------------------------------
-static LLFastTimer::DeclareTimer FTM_MOTION_ON_UPDATE("Motion onUpdate");
+static LLTrace::BlockTimerStatHandle FTM_MOTION_ON_UPDATE("Motion onUpdate");
 
 void LLMotionController::updateMotionsByType(LLMotion::LLMotionBlendType anim_type)
 {
@@ -737,7 +739,7 @@ void LLMotionController::updateMotionsByType(LLMotion::LLMotionBlendType anim_ty
 
 			// perform motion update
 			{
-				LLFastTimer t(FTM_MOTION_ON_UPDATE);
+				LL_RECORD_BLOCK_TIME(FTM_MOTION_ON_UPDATE);
 				update_result = motionp->onUpdate(mAnimTime - motionp->mActivationTimestamp, last_joint_signature);
 			}
 		}
@@ -925,6 +927,7 @@ void LLMotionController::updateMotions(bool force_update)
 	{
 		// update additive motions
 		updateAdditiveMotions();
+
 		resetJointSignatures();
 
 		// update all regular motions

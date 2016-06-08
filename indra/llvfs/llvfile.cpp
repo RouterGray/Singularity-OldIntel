@@ -30,16 +30,17 @@
 
 #include "llerror.h"
 #include "llthread.h"
-#include "llstat.h"
-#include "llvfs.h"
+#include "lltimer.h"
 #include "llfasttimer.h"
+#include "llmemory.h"
+#include "llvfs.h"
 
 const S32 LLVFile::READ			= 0x00000001;
 const S32 LLVFile::WRITE		= 0x00000002;
 const S32 LLVFile::READ_WRITE	= 0x00000003;  // LLVFile::READ & LLVFile::WRITE
 const S32 LLVFile::APPEND		= 0x00000006;  // 0x00000004 & LLVFile::WRITE
 
-static LLFastTimer::DeclareTimer FTM_VFILE_WAIT("VFile Wait");
+static LLTrace::BlockTimerStatHandle FTM_VFILE_WAIT("VFile Wait");
 
 //----------------------------------------------------------------------------
 LLVFSThread* LLVFile::sVFSThread = NULL;
@@ -104,7 +105,7 @@ BOOL LLVFile::read(U8 *buffer, S32 bytes, BOOL async, F32 priority)
 	// We can't do a read while there are pending async writes
 	waitForLock(VFSLOCK_APPEND);
 	
-	// *FIX: (???)
+	// *FIX: (?)
 	if (async)
 	{
 		mHandle = sVFSThread->read(mVFS, mFileID, mFileType, buffer, mPosition, bytes, threadPri());
@@ -124,7 +125,7 @@ BOOL LLVFile::read(U8 *buffer, S32 bytes, BOOL async, F32 priority)
 }
 
 //static
-U8* LLVFile::readFile(LLVFS *vfs, LLPrivateMemoryPool* poolp, const LLUUID &uuid, LLAssetType::EType type, S32* bytes_read)
+U8* LLVFile::readFile(LLVFS *vfs, const LLUUID &uuid, LLAssetType::EType type, S32* bytes_read)
 {
 	U8 *data;
 	LLVFile file(vfs, uuid, type, LLVFile::READ);
@@ -136,12 +137,12 @@ U8* LLVFile::readFile(LLVFS *vfs, LLPrivateMemoryPool* poolp, const LLUUID &uuid
 	}
 	else
 	{
-		data = (U8*)ALLOCATE_MEM(poolp, file_size);
+		data = (U8*) ll_aligned_malloc<16>(file_size);
 		file.read(data, file_size);	/* Flawfinder: ignore */ 
 		
 		if (file.getLastBytesRead() != (S32)file_size)
 		{
-			FREE_MEM(poolp, data);
+			ll_aligned_free<16>(data);
 			data = NULL;
 			file_size = 0;
 		}
@@ -315,7 +316,7 @@ BOOL LLVFile::setMaxSize(S32 size)
 
 	if (!mVFS->checkAvailable(size))
 	{
-		//LLFastTimer t(FTM_VFILE_WAIT);
+		//LL_RECORD_BLOCK_TIME(FTM_VFILE_WAIT);
 		S32 count = 0;
 		while (sVFSThread->getPending() > 1000)
 		{
@@ -423,7 +424,7 @@ bool LLVFile::isLocked(EVFSLock lock)
 
 void LLVFile::waitForLock(EVFSLock lock)
 {
-	//LLFastTimer t(FTM_VFILE_WAIT);
+	//LL_RECORD_BLOCK_TIME(FTM_VFILE_WAIT);
 	// spin until the lock clears
 	while (isLocked(lock))
 	{

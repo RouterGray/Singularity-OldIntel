@@ -25,6 +25,9 @@
  */
 
 #include "llviewerprecompiledheaders.h"
+
+#include <typeinfo>
+
 #include "llinventorymodel.h"
 
 #include "llaisapi.h"
@@ -38,6 +41,7 @@
 #include "llinventoryobserver.h"
 #include "llinventorypanel.h"
 #include "llnotificationsutil.h"
+#include "llmarketplacefunctions.h"
 #include "llwindow.h"
 #include "llviewercontrol.h"
 #include "llpreview.h" 
@@ -50,9 +54,9 @@
 #include "llvoavatarself.h"
 #include "llgesturemgr.h"
 #include "llsdutil.h"
-#include <typeinfo>
-#include "statemachine/aievent.h"
-
+#include "bufferarray.h"
+#include "bufferstream.h"
+#include "llcorehttputil.h"
 // [RLVa:KB] - Checked: 2011-05-22 (RLVa-1.3.1a)
 #include "rlvhandler.h"
 #include "rlvlocks.h"
@@ -147,9 +151,17 @@ LLInventoryModel::LLInventoryModel()
 	mModifyMask(LLInventoryObserver::ALL),
 	mChangedItemIDs(),
 	mObservers(),
+	mHttpRequestFG(NULL),
+	mHttpRequestBG(NULL),
+	mHttpOptions(),
+	mHttpHeaders(),
+	mHttpPolicyClass(LLCore::HttpRequest::DEFAULT_POLICY_ID),
+	mHttpPriorityFG(0),
+	mHttpPriorityBG(0),
 	mCategoryLock(),
 	mItemLock()
 {}
+
 
 // Destroys the object
 LLInventoryModel::~LLInventoryModel()
@@ -169,6 +181,15 @@ void LLInventoryModel::cleanupInventory()
 		delete observer;
 	}
 	mObservers.clear();
+
+	// Run down HTTP transport
+    mHttpHeaders.reset();
+    mHttpOptions.reset();
+
+	delete mHttpRequestFG;
+	mHttpRequestFG = NULL;
+	delete mHttpRequestBG;
+	mHttpRequestBG = NULL;
 }
 
 // This is a convenience function to check if one object has a parent
@@ -550,61 +571,6 @@ LLUUID LLInventoryModel::findCategoryByName(std::string name)
 	return LLUUID::null;
 }
 
-class LLCreateInventoryCategoryResponder : public LLHTTPClient::ResponderWithResult
-{
-	LOG_CLASS(LLCreateInventoryCategoryResponder);
-public:
-	LLCreateInventoryCategoryResponder(LLInventoryModel* model, 
-									   boost::optional<inventory_func_type> callback):
-		mModel(model),
-		mCallback(callback) 
-	{
-	}
-
-	/*virtual*/ void httpFailure(void)
-	{
-		LL_WARNS(LOG_INV) << "CreateInventoryCategory failed.   status = " << mStatus << ", reason = \"" << mReason << "\"" << LL_ENDL;
-	}
-
-	/*virtual*/ void httpSuccess(void)
-	{
-		//Server has created folder.
-		const LLSD& content = getContent();
-		if (!content.isMap() || !content.has("folder_id"))
-		{
-			failureResult(400, "Malformed response contents", content);
-			return;
-		}
-		LLUUID category_id = content["folder_id"].asUUID();
-		
-		LL_DEBUGS(LOG_INV) << ll_pretty_print_sd(content) << LL_ENDL;
-		// Add the category to the internal representation
-		LLPointer<LLViewerInventoryCategory> cat =
-		new LLViewerInventoryCategory( category_id, 
-									  content["parent_id"].asUUID(),
-									  (LLFolderType::EType)content["type"].asInteger(),
-									  content["name"].asString(), 
-									  gAgent.getID() );
-		cat->setVersion(LLViewerInventoryCategory::VERSION_INITIAL);
-		cat->setDescendentCount(0);
-		LLInventoryModel::LLCategoryUpdate update(cat->getParentUUID(), 1);
-		mModel->accountForUpdate(update);
-		mModel->updateCategory(cat);
-
-		if (mCallback)
-		{
-			mCallback.get()(category_id);
-		}
-
-	}
-
-	/*virtual*/ char const* getName(void) const { return "LLCreateInventoryCategoryResponder"; }
-
-private:
-	boost::optional<inventory_func_type> mCallback;
-	LLInventoryModel* mModel;
-};
-
 // Convenience function to create a new category. You could call
 // updateCategory() with a newly generated UUID category, but this
 // version will take care of details like what the name should be
@@ -612,7 +578,7 @@ private:
 LLUUID LLInventoryModel::createNewCategory(const LLUUID& parent_id,
 										   LLFolderType::EType preferred_type,
 										   const std::string& pname,
-										   boost::optional<inventory_func_type> callback)
+										   inventory_func_type callback)
 {
 	
 	LLUUID id;
@@ -644,7 +610,7 @@ LLUUID LLInventoryModel::createNewCategory(const LLUUID& parent_id,
 	if ( viewer_region )
 		url = viewer_region->getCapability("CreateInventoryCategory");
 	
-	if (!url.empty() && callback.get_ptr())
+	if (!url.empty() && callback)
 	{
 		//Let's use the new capability.
 		
@@ -658,11 +624,8 @@ LLUUID LLInventoryModel::createNewCategory(const LLUUID& parent_id,
 		request["payload"] = body;
 
 		LL_DEBUGS(LOG_INV) << "create category request: " << ll_pretty_print_sd(request) << LL_ENDL;
-		//		viewer_region->getCapAPI().post(request);
-		LLHTTPClient::post(
-			url,
-			body,
-			new LLCreateInventoryCategoryResponder(this, callback) );
+        LLCoros::instance().launch("LLInventoryModel::createNewCategoryCoro",
+            boost::bind(&LLInventoryModel::createNewCategoryCoro, this, url, body, callback));
 
 		return LLUUID::null;
 	}
@@ -689,6 +652,57 @@ LLUUID LLInventoryModel::createNewCategory(const LLUUID& parent_id,
 
 	// return the folder id of the newly created folder
 	return id;
+}
+
+void LLInventoryModel::createNewCategoryCoro(std::string url, LLSD postData, inventory_func_type callback)
+{
+    LLCore::HttpRequest::policy_t httpPolicy(LLCore::HttpRequest::DEFAULT_POLICY_ID);
+    LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t
+        httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("createNewCategoryCoro", httpPolicy));
+    LLCore::HttpRequest::ptr_t httpRequest(new LLCore::HttpRequest);
+    LLCore::HttpOptions::ptr_t httpOpts(new LLCore::HttpOptions);
+    
+
+    httpOpts->setWantHeaders(true);
+
+    LL_INFOS("HttpCoroutineAdapter", "genericPostCoro") << "Generic POST for " << url << LL_ENDL;
+
+    LLSD result = httpAdapter->postAndSuspend(httpRequest, url, postData, httpOpts);
+
+    LLSD httpResults = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS];
+    LLCore::HttpStatus status = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(httpResults);
+
+    if (!status)
+    {
+        LL_WARNS() << "HTTP failure attempting to create category." << LL_ENDL;
+        return;
+    }
+
+    if (!result.has("folder_id"))
+    {
+        LL_WARNS() << "Malformed response contents" << ll_pretty_print_sd(result) << LL_ENDL;
+        return;
+    }
+
+    LLUUID categoryId = result["folder_id"].asUUID();
+
+    // Add the category to the internal representation
+    LLPointer<LLViewerInventoryCategory> cat = new LLViewerInventoryCategory(categoryId,
+        result["parent_id"].asUUID(), (LLFolderType::EType)result["type"].asInteger(),
+        result["name"].asString(), gAgent.getID());
+
+    cat->setVersion(LLViewerInventoryCategory::VERSION_INITIAL);
+    cat->setDescendentCount(0);
+    LLInventoryModel::LLCategoryUpdate update(cat->getParentUUID(), 1);
+    
+    accountForUpdate(update);
+    updateCategory(cat);
+
+    if (callback)
+    {
+        callback(categoryId);
+    }
+
 }
 
 // This is optimized for the case that we just want to know whether a
@@ -1118,7 +1132,7 @@ LLInventoryModel::item_array_t* LLInventoryModel::getUnlockedItemArray(const LLU
 // an existing item with the matching id, or it will add the category.
 void LLInventoryModel::updateCategory(const LLViewerInventoryCategory* cat, U32 mask)
 {
-	if(cat->getUUID().isNull())
+	if(!cat || cat->getUUID().isNull())
 	{
 		return;
 	}
@@ -1132,7 +1146,8 @@ void LLInventoryModel::updateCategory(const LLViewerInventoryCategory* cat, U32 
 	LLPointer<LLViewerInventoryCategory> old_cat = getCategory(cat->getUUID());
 	if(old_cat)
 	{
-		// We already have an old category, modify it's values
+		// We already have an old category, modify its values
+
 		LLUUID old_parent_id = old_cat->getParentUUID();
 		LLUUID new_parent_id = cat->getParentUUID();
 		if(old_parent_id != new_parent_id)
@@ -1509,6 +1524,11 @@ void LLInventoryModel::deleteObject(const LLUUID& id, bool fix_broken_links, boo
 		LLPointer<LLViewerInventoryCategory> cat = (LLViewerInventoryCategory*)((LLInventoryObject*)obj);
 		vector_replace_with_last(*cat_list, cat);
 	}
+    
+    // Note : We need to tell the inventory observers that those things are going to be deleted *before* the tree is cleared or they won't know what to delete (in views and view models)
+	addChangedMask(LLInventoryObserver::REMOVE, id);
+	gInventory.notifyObservers();
+    
 	item_list = getUnlockedItemArray(id);
 	if(item_list)
 	{
@@ -1840,7 +1860,7 @@ void LLInventoryModel::addItem(LLViewerInventoryItem* item)
 // Empty the entire contents
 void LLInventoryModel::empty()
 {
-//	LL_INFOS() << "LLInventoryModel::empty()" << LL_ENDL;
+//	LL_INFOS(LOG_INV) << "LLInventoryModel::empty()" << LL_ENDL;
 	std::for_each(
 		mParentChildCategoryTree.begin(),
 		mParentChildCategoryTree.end(),
@@ -2038,11 +2058,11 @@ bool LLInventoryModel::loadSkeleton(
 		gzip_filename.append(".gz");
 		LLFILE* fp = LLFile::fopen(gzip_filename, "rb");
 		bool remove_inventory_file = false;
-		if (fp)
+		if(fp)
 		{
 			fclose(fp);
 			fp = NULL;
-			if (gunzip_file(gzip_filename, inventory_filename))
+			if(gunzip_file(gzip_filename, inventory_filename))
 			{
 				// we only want to remove the inventory file if it was
 				// gzipped before we loaded, and we successfully
@@ -2080,7 +2100,7 @@ bool LLInventoryModel::loadSkeleton(
 				{
 					continue;
 				}
-				if (cat->getVersion() != tcat->getVersion())
+				else if (cat->getVersion() != tcat->getVersion())
 				{
 					// if the cached version does not match the server version,
 					// throw away the version we have so we can fetch the
@@ -2098,7 +2118,7 @@ bool LLInventoryModel::loadSkeleton(
 			cached_category_count = cached_ids.size();
 			for(cat_set_t::iterator it = temp_cats.begin(); it != temp_cats.end(); ++it)
 			{
-				if (cached_ids.find((*it)->getUUID()) == not_cached_id)
+				if(cached_ids.find((*it)->getUUID()) == not_cached_id)
 				{
 					// this check is performed so that we do not
 					// mark new folders in the skeleton (and not in cache)
@@ -2162,7 +2182,7 @@ bool LLInventoryModel::loadSkeleton(
 					{
 						bad_link_count++;
 						invalid_categories.insert(cit->second);
-						//LL_INFOS() << "link still broken: " << item->getName() << " in folder " << cat->getName() << LL_ENDL;
+						//LL_INFOS(LOG_INV) << "link still broken: " << item->getName() << " in folder " << cat->getName() << LL_ENDL;
 					}
 					else
 					{
@@ -2186,7 +2206,7 @@ bool LLInventoryModel::loadSkeleton(
 		{
 			// go ahead and add everything after stripping the version
 			// information.
-			for (cat_set_t::iterator it = temp_cats.begin(); it != temp_cats.end(); ++it)
+			for(cat_set_t::iterator it = temp_cats.begin(); it != temp_cats.end(); ++it)
 			{
 				LLViewerInventoryCategory *llvic = (*it);
 				llvic->setVersion(NO_VERSION);
@@ -2228,7 +2248,7 @@ bool LLInventoryModel::loadSkeleton(
 			}
 		}
 
-		if (remove_inventory_file)
+		if(remove_inventory_file)
 		{
 			// clean up the gunzipped file.
 			LLFile::remove(inventory_filename);
@@ -2307,7 +2327,7 @@ void LLInventoryModel::buildParentChildMap()
 	{
 		LLViewerInventoryCategory* cat = cats.at(i);
 		catsp = getUnlockedCatArray(cat->getParentUUID());
-		if (catsp &&
+		if(catsp &&
 			// Only the two root folders should be children of null.
 			// Others should go to lost & found.
 			(cat->getParentUUID().notNull() ||
@@ -2344,22 +2364,24 @@ void LLInventoryModel::buildParentChildMap()
 		// plop it into the lost & found.
 		LLFolderType::EType pref = cat->getPreferredType();
 		if(LLFolderType::FT_NONE == pref)
-			{
-				cat->setParent(findCategoryUUIDForType(LLFolderType::FT_LOST_AND_FOUND));
-			}
-			else if(LLFolderType::FT_ROOT_INVENTORY == pref)
-			{
-				// it's the root
-				cat->setParent(LLUUID::null);
-			}
-			else
-			{
-				// it's a protected folder.
-				cat->setParent(gInventory.getRootFolderID());
-			}
-			cat->updateServer(TRUE);
-			catsp = getUnlockedCatArray(cat->getParentUUID());
-			if(catsp)
+		{
+			cat->setParent(findCategoryUUIDForType(LLFolderType::FT_LOST_AND_FOUND));
+		}
+		else if(LLFolderType::FT_ROOT_INVENTORY == pref)
+		{
+			// it's the root
+			cat->setParent(LLUUID::null);
+		}
+		else
+		{
+			// it's a protected folder.
+			cat->setParent(gInventory.getRootFolderID());
+		}
+		// FIXME note that updateServer() fails with protected
+		// types, so this will not work as intended in that case.
+		cat->updateServer(TRUE);
+		catsp = getUnlockedCatArray(cat->getParentUUID());
+		if(catsp)
 		{
 			catsp->push_back(cat);
 		}
@@ -2491,7 +2513,7 @@ void LLInventoryModel::buildParentChildMap()
 			// root of the agent's inv found.
 			// The inv tree is built.
 			mIsAgentInvUsable = true;
-			AIEvent::trigger(AIEvent::LLInventoryModel_mIsAgentInvUsable_true);
+
 			// notifyObservers() has been moved to
 			// llstartup/idle_startup() after this func completes.
 			// Allows some system categories to be created before
@@ -2503,6 +2525,77 @@ void LLInventoryModel::buildParentChildMap()
 	{
 	 	LL_WARNS(LOG_INV) << "model failed validity check!" << LL_ENDL;
 	}
+}
+
+// Would normally do this at construction but that's too early
+// in the process for gInventory.  Have the first requestPost()
+// call set things up.
+void LLInventoryModel::initHttpRequest()
+{
+	if (! mHttpRequestFG)
+	{
+		// Haven't initialized, get to it
+		LLAppCoreHttp & app_core_http(LLAppViewer::instance()->getAppCoreHttp());
+
+		mHttpRequestFG = new LLCore::HttpRequest;
+		mHttpRequestBG = new LLCore::HttpRequest;
+		mHttpOptions = LLCore::HttpOptions::ptr_t(new LLCore::HttpOptions);
+		mHttpOptions->setTransferTimeout(300);
+		mHttpOptions->setUseRetryAfter(true);
+		// mHttpOptions->setTrace(2);		// Do tracing of requests
+        mHttpHeaders = LLCore::HttpHeaders::ptr_t(new LLCore::HttpHeaders);
+		mHttpHeaders->append(HTTP_OUT_HEADER_CONTENT_TYPE, HTTP_CONTENT_LLSD_XML);
+		mHttpHeaders->append(HTTP_OUT_HEADER_ACCEPT, HTTP_CONTENT_LLSD_XML);
+		mHttpPolicyClass = app_core_http.getPolicy(LLAppCoreHttp::AP_INVENTORY);
+	}
+}
+
+void LLInventoryModel::handleResponses(bool foreground)
+{
+	if (foreground && mHttpRequestFG)
+	{
+		mHttpRequestFG->update(0);
+	}
+	else if (! foreground && mHttpRequestBG)
+	{
+		mHttpRequestBG->update(50000L);
+	}
+}
+
+LLCore::HttpHandle LLInventoryModel::requestPost(bool foreground,
+												 const std::string & url,
+												 const LLSD & body,
+												 const LLCore::HttpHandler::ptr_t &handler,
+												 const char * const message)
+{
+	if (! mHttpRequestFG)
+	{
+		// We do the initialization late and lazily as this class is
+		// statically-constructed and not all the bits are ready at
+		// that time.
+		initHttpRequest();
+	}
+	
+	LLCore::HttpRequest * request(foreground ? mHttpRequestFG : mHttpRequestBG);
+	LLCore::HttpHandle handle(LLCORE_HTTP_HANDLE_INVALID);
+		
+	handle = LLCoreHttpUtil::requestPostWithLLSD(request,
+												 mHttpPolicyClass,
+												 (foreground ? mHttpPriorityFG : mHttpPriorityBG),
+												 url,
+												 body,
+												 mHttpOptions,
+												 mHttpHeaders,
+												 handler);
+	if (LLCORE_HTTP_HANDLE_INVALID == handle)
+	{
+		LLCore::HttpStatus status(request->getStatus());
+		LL_WARNS(LOG_INV) << "HTTP POST request failed for " << message
+						  << ", Status: " << status.toTerseString()
+						  << " Reason: '" << status.toString() << "'"
+						  << LL_ENDL;
+	}
+	return handle;
 }
 
 void LLInventoryModel::createCommonSystemCategories()
@@ -2571,7 +2664,7 @@ bool LLInventoryModel::loadFromFile(const std::string& filename,
 	while(!feof(file) && fgets(buffer, MAX_STRING, file)) 
 	{
 		sscanf(buffer, " %126s %126s", keyword, value);	/* Flawfinder: ignore */
-		if (0 == strcmp("inv_cache_version", keyword))
+		if(0 == strcmp("inv_cache_version", keyword))
 		{
 			S32 version;
 			int succ = sscanf(value,"%d",&version);
@@ -2662,8 +2755,7 @@ bool LLInventoryModel::saveToFile(const std::string& filename,
 		return false;
 	}
 
-	fprintf(file, "\tinv_cache_version\t%d\n", sCurrentInvCacheVersion);
-
+	fprintf(file, "\tinv_cache_version\t%d\n",sCurrentInvCacheVersion);
 	S32 count = categories.size();
 	S32 i;
 	for(i = 0; i < count; ++i)
@@ -4008,14 +4100,90 @@ BOOL decompress_file(const char* src_filename, const char* dst_filename)
 }
 #endif
 
-// If we get back a normal response, handle it here
-void  LLInventoryModel::FetchItemHttpHandler::httpSuccess()
+
+///----------------------------------------------------------------------------
+/// Class LLInventoryModel::FetchItemHttpHandler
+///----------------------------------------------------------------------------
+
+LLInventoryModel::FetchItemHttpHandler::FetchItemHttpHandler(const LLSD & request_sd)
+	: LLCore::HttpHandler(),
+	  mRequestSD(request_sd)
+{}
+
+LLInventoryModel::FetchItemHttpHandler::~FetchItemHttpHandler()
+{}
+
+void LLInventoryModel::FetchItemHttpHandler::onCompleted(LLCore::HttpHandle handle,
+														 LLCore::HttpResponse * response)
+{
+	do		// Single-pass do-while used for common exit handling
+	{
+		LLCore::HttpStatus status(response->getStatus());
+		// status = LLCore::HttpStatus(404);				// Dev tool to force error handling
+		if (! status)
+		{
+			processFailure(status, response);
+			break;			// Goto common exit
+		}
+
+		LLCore::BufferArray * body(response->getBody());
+		// body = NULL;									// Dev tool to force error handling
+		if (! body || ! body->size())
+		{
+			LL_WARNS(LOG_INV) << "Missing data in inventory item query." << LL_ENDL;
+			processFailure("HTTP response for inventory item query missing body", response);
+			break;			// Goto common exit
+		}
+
+		// body->write(0, "Garbage Response", 16);		// Dev tool to force error handling
+		LLSD body_llsd;
+		if (! LLCoreHttpUtil::responseToLLSD(response, true, body_llsd))
+		{
+			// INFOS-level logging will occur on the parsed failure
+			processFailure("HTTP response for inventory item query has malformed LLSD", response);
+			break;			// Goto common exit
+		}
+
+		// Expect top-level structure to be a map
+		// body_llsd = LLSD::emptyArray();				// Dev tool to force error handling
+		if (! body_llsd.isMap())
+		{
+			processFailure("LLSD response for inventory item not a map", response);
+			break;			// Goto common exit
+		}
+
+		// Check for 200-with-error failures
+		//
+		// Original Responder-based serivce model didn't check for these errors.
+		// It may be more robust to ignore this condition.  With aggregated requests,
+		// an error in one inventory item might take down the entire request.
+		// So if this instead broke up the aggregated items into single requests,
+		// maybe that would make progress.  Or perhaps there's structured information
+		// that can tell us what went wrong.  Need to dig into this and firm up
+		// the API.
+		//
+		// body_llsd["error"] = LLSD::emptyMap();		// Dev tool to force error handling
+		// body_llsd["error"]["identifier"] = "Development";
+		// body_llsd["error"]["message"] = "You left development code in the viewer";
+		if (body_llsd.has("error"))
+		{
+			processFailure("Inventory application error (200-with-error)", response);
+			break;			// Goto common exit
+		}
+
+		// Okay, process data if possible
+		processData(body_llsd, response);
+	}
+	while (false);
+}
+
+void LLInventoryModel::FetchItemHttpHandler::processData(LLSD & content, LLCore::HttpResponse * response)
 {	
 	start_new_inventory_observer();
 
 #if 0
 	LLUUID agent_id;
-	agent_id = mContent["agent_id"].asUUID();
+	agent_id = content["agent_id"].asUUID();
 	if (agent_id != gAgent.getID())
 	{
 		LL_WARNS(LOG_INV) << "Got a inventory update for the wrong agent: " << agent_id
@@ -4027,7 +4195,7 @@ void  LLInventoryModel::FetchItemHttpHandler::httpSuccess()
 	LLInventoryModel::item_array_t items;
 	LLInventoryModel::update_map_t update;
 	LLUUID folder_id;
-	LLSD content_items(mContent["items"]);
+	LLSD content_items(content["items"]);
 	const S32 count(content_items.size());
 
 	// Does this loop ever execute more than once?
@@ -4045,7 +4213,7 @@ void  LLInventoryModel::FetchItemHttpHandler::httpSuccess()
 
 		if (itemp)
 		{
-			if(titem->getParentUUID() == itemp->getParentUUID())
+			if (titem->getParentUUID() == itemp->getParentUUID())
 			{
 				update[titem->getParentUUID()];
 			}
@@ -4077,10 +4245,26 @@ void  LLInventoryModel::FetchItemHttpHandler::httpSuccess()
 	gInventory.notifyObservers();
 	gViewerWindow->getWindow()->decBusyCount();
 }
-//If we get back an error (not found, etc...), handle it here
-void LLInventoryModel::FetchItemHttpHandler::httpFailure()
+
+
+void LLInventoryModel::FetchItemHttpHandler::processFailure(LLCore::HttpStatus status, LLCore::HttpResponse * response)
 {
-	LL_INFOS() << "FetchItemHttpHandler::error "
-		<< mStatus << ": " << mReason << LL_ENDL;
+	const std::string & ct(response->getContentType());
+	LL_WARNS(LOG_INV) << "Inventory item fetch failure\n"
+					  << "[Status: " << status.toTerseString() << "]\n"
+					  << "[Reason: " << status.toString() << "]\n"
+					  << "[Content-type: " << ct << "]\n"
+					  << "[Content (abridged): "
+					  << LLCoreHttpUtil::responseToString(response) << "]" << LL_ENDL;
+	gInventory.notifyObservers();
+}
+
+void LLInventoryModel::FetchItemHttpHandler::processFailure(const char * const reason, LLCore::HttpResponse * response)
+{
+	LL_WARNS(LOG_INV) << "Inventory item fetch failure\n"
+					  << "[Status: internal error]\n"
+					  << "[Reason: " << reason << "]\n"
+					  << "[Content (abridged): "
+					  << LLCoreHttpUtil::responseToString(response) << "]" << LL_ENDL;
 	gInventory.notifyObservers();
 }

@@ -31,22 +31,24 @@
  */
 
 #include "llviewerprecompiledheaders.h"
-
 #include "llvocache.h"
-
 #include "llerror.h"
 #include "llregionhandle.h"
 #include "llviewercontrol.h"
 
-BOOL check_read(LLAPRFile* apr_file, void* src, S32 n_bytes) 
+BOOL check_read(llifstream& infile, void* src, S32 n_bytes) 
 {
-	return apr_file->read(src, n_bytes) == n_bytes ;
+	infile.read((char*) src, n_bytes);
+	return infile.gcount() == n_bytes ;
 }
 
-BOOL check_write(LLAPRFile* apr_file, void* src, S32 n_bytes) 
+BOOL check_write(llofstream& outfile, void* src, S32 n_bytes) 
 {
-	return apr_file->write(src, n_bytes) == n_bytes ;
+	std::streampos oldpos = outfile.tellp();
+	outfile.write((char*) src, n_bytes);
+	return outfile.good() ? (outfile.tellp() - oldpos) == n_bytes : false;
 }
+
 //---------------------------------------------------------------------------
 // LLVOCacheEntry
 //---------------------------------------------------------------------------
@@ -76,33 +78,35 @@ LLVOCacheEntry::LLVOCacheEntry()
 	mDP.assignBuffer(mBuffer, 0);
 }
 
-LLVOCacheEntry::LLVOCacheEntry(LLAPRFile* apr_file)
+LLVOCacheEntry::LLVOCacheEntry(llifstream& infile)
+
 	: mBuffer(NULL)
 {
 	S32 size = -1;
 	BOOL success;
 
 	mDP.assignBuffer(mBuffer, 0);
-	success = check_read(apr_file, &mLocalID, sizeof(U32));
+	
+	success = check_read(infile, &mLocalID, sizeof(U32));
 	if(success)
 	{
-		success = check_read(apr_file, &mCRC, sizeof(U32));
+		success = check_read(infile, &mCRC, sizeof(U32));
 	}
 	if(success)
 	{
-		success = check_read(apr_file, &mHitCount, sizeof(S32));
+		success = check_read(infile, &mHitCount, sizeof(S32));
 	}
 	if(success)
 	{
-		success = check_read(apr_file, &mDupeCount, sizeof(S32));
+		success = check_read(infile, &mDupeCount, sizeof(S32));
 	}
 	if(success)
 	{
-		success = check_read(apr_file, &mCRCChangeCount, sizeof(S32));
+		success = check_read(infile, &mCRCChangeCount, sizeof(S32));
 	}
 	if(success)
 	{
-		success = check_read(apr_file, &size, sizeof(S32));
+		success = check_read(infile, &size, sizeof(S32));
 
 	// Corruption in the cache entries
 	if ((size > 10000) || (size < 1))
@@ -117,7 +121,7 @@ LLVOCacheEntry::LLVOCacheEntry(LLAPRFile* apr_file)
 	if(success && size > 0)
 	{
 		mBuffer = new U8[size];
-		success = check_read(apr_file, mBuffer, size);
+		success = check_read(infile, mBuffer, size);
 
 		if(success)
 		{
@@ -193,34 +197,34 @@ void LLVOCacheEntry::dump() const
 		<< LL_ENDL;
 }
 
-BOOL LLVOCacheEntry::writeToFile(LLAPRFile* apr_file) const
+BOOL LLVOCacheEntry::writeToFile(llofstream& outfile) const
 {
 	BOOL success;
-	success = check_write(apr_file, (void*)&mLocalID, sizeof(U32));
+	success = check_write(outfile, (void*)&mLocalID, sizeof(U32));
 	if(success)
 	{
-		success = check_write(apr_file, (void*)&mCRC, sizeof(U32));
+		success = check_write(outfile, (void*)&mCRC, sizeof(U32));
 	}
 	if(success)
 	{
-		success = check_write(apr_file, (void*)&mHitCount, sizeof(S32));
+		success = check_write(outfile, (void*)&mHitCount, sizeof(S32));
 	}
 	if(success)
 	{
-		success = check_write(apr_file, (void*)&mDupeCount, sizeof(S32));
+		success = check_write(outfile, (void*)&mDupeCount, sizeof(S32));
 	}
 	if(success)
 	{
-		success = check_write(apr_file, (void*)&mCRCChangeCount, sizeof(S32));
+		success = check_write(outfile, (void*)&mCRCChangeCount, sizeof(S32));
 	}
 	if(success)
 	{
 		S32 size = mDP.getBufferSize();
-		success = check_write(apr_file, (void*)&size, sizeof(S32));
+		success = check_write(outfile, (void*)&size, sizeof(S32));
 	
 		if(success)
 		{
-			success = check_write(apr_file, (void*)mBuffer, size);
+			success = check_write(outfile, (void*)mBuffer, size);
 		}
 	}
 
@@ -358,10 +362,8 @@ void LLVOCache::removeCache()
 		return ;
 	}
 
-	LL_INFOS() << "about to remove the object cache due to some error." << LL_ENDL ;
-
 	std::string mask = "*";
-	LL_INFOS() << "Removing cache at " << mObjectCacheDirName << LL_ENDL;
+	LL_INFOS() << "Removing object cache at " << mObjectCacheDirName << LL_ENDL;
 	gDirUtilp->deleteFilesInDir(mObjectCacheDirName, mask); 
 
 	clearCacheInMemory() ;
@@ -439,7 +441,7 @@ void LLVOCache::removeFromCache(HeaderEntryInfo* entry)
 
 	std::string filename;
 	getObjectCacheFilename(entry->mHandle, filename);
-	LLAPRFile::remove(filename);
+	LLFile::remove(filename);
 	entry->mTime = INVALID_TIME ;
 	updateEntry(entry) ; //update the head file.
 }
@@ -456,12 +458,12 @@ void LLVOCache::readCacheHeader()
 	clearCacheInMemory();	
 
 	bool success = true ;
-	if (LLAPRFile::isExist(mHeaderFileName))
+	if (LLFile::isfile(mHeaderFileName))
 	{
-		LLAPRFile apr_file(mHeaderFileName, APR_READ|APR_BINARY);		
+		llifstream infile(mHeaderFileName, std::ios::in | std::ios::binary);
 		
 		//read the meta element
-		success = check_read(&apr_file, &mMetaInfo, sizeof(HeaderMetaInfo)) ;
+		success = check_read(infile, &mMetaInfo, sizeof(HeaderMetaInfo)) ;
 		
 		if(success)
 		{
@@ -474,7 +476,7 @@ void LLVOCache::readCacheHeader()
 				{
 					entry = new HeaderEntryInfo() ;
 				}
-				success = check_read(&apr_file, entry, sizeof(HeaderEntryInfo));
+				success = check_read(infile, entry, sizeof(HeaderEntryInfo));
 								
 				if(!success) //failed
 				{
@@ -543,17 +545,23 @@ void LLVOCache::writeCacheHeader()
 
 	bool success = true ;
 	{
-		LLAPRFile apr_file(mHeaderFileName, APR_CREATE|APR_WRITE|APR_BINARY);
+		std::ios::openmode flags = std::ios::out | std::ios::binary;
+		if (LLFile::isfile(mHeaderFileName))
+		{
+			flags |= std::ios::in;
+		}
+
+		llofstream outfile(mHeaderFileName, flags);
 
 		//write the meta element
-		success = check_write(&apr_file, &mMetaInfo, sizeof(HeaderMetaInfo)) ;
+		success = check_write(outfile, &mMetaInfo, sizeof(HeaderMetaInfo)) ;
 
 
 		mNumEntries = 0 ;	
 		for(header_entry_queue_t::iterator iter = mHeaderEntryQueue.begin() ; success && iter != mHeaderEntryQueue.end(); ++iter)
 		{
 			(*iter)->mIndex = mNumEntries++ ;
-			success = check_write(&apr_file, (void*)*iter, sizeof(HeaderEntryInfo));
+			success = check_write(outfile, (void*)*iter, sizeof(HeaderEntryInfo));
 		}
 	
 		mNumEntries = mHeaderEntryQueue.size() ;
@@ -564,7 +572,7 @@ void LLVOCache::writeCacheHeader()
 			for(S32 i = mNumEntries ; success && i < MAX_NUM_OBJECT_ENTRIES ; i++)
 			{
 				//fill the cache with the default entry.
-				success = check_write(&apr_file, entry, sizeof(HeaderEntryInfo)) ;			
+				success = check_write(outfile, entry, sizeof(HeaderEntryInfo)) ;
 
 			}
 			delete entry ;
@@ -581,10 +589,10 @@ void LLVOCache::writeCacheHeader()
 
 BOOL LLVOCache::updateEntry(const HeaderEntryInfo* entry)
 {
-	LLAPRFile apr_file(mHeaderFileName, APR_WRITE|APR_BINARY);
-	apr_file.seek(APR_SET, entry->mIndex * sizeof(HeaderEntryInfo) + sizeof(HeaderMetaInfo)) ;
+	llofstream outfile(mHeaderFileName, std::ios::in | std::ios::out | std::ios::binary);
+	outfile.seekp(entry->mIndex * sizeof(HeaderEntryInfo) + sizeof(HeaderMetaInfo));
 
-	return check_write(&apr_file, (void*)entry, sizeof(HeaderEntryInfo)) ;
+	return check_write(outfile, (void*)entry, sizeof(HeaderEntryInfo)) ;
 }
 
 void LLVOCache::readFromCache(U64 handle, const LLUUID& id, LLVOCacheEntry::vocache_entry_map_t& cache_entry_map) 
@@ -607,10 +615,10 @@ void LLVOCache::readFromCache(U64 handle, const LLUUID& id, LLVOCacheEntry::voca
 	{
 		std::string filename;
 		getObjectCacheFilename(handle, filename);
-		LLAPRFile apr_file(filename, APR_READ|APR_BINARY);
+		llifstream infile(filename, std::ios::in | std::ios::binary);
 	
 		LLUUID cache_id ;
-		success = check_read(&apr_file, cache_id.mData, UUID_BYTES) ;
+		success = check_read(infile, cache_id.mData, UUID_BYTES) ;
 	
 		if(success)
 		{		
@@ -623,13 +631,13 @@ void LLVOCache::readFromCache(U64 handle, const LLUUID& id, LLVOCacheEntry::voca
 			if(success)
 			{
 				S32 num_entries;
-				success = check_read(&apr_file, &num_entries, sizeof(S32)) ;
+				success = check_read(infile, &num_entries, sizeof(S32)) ;
 	
 				if(success)
 				{
 					for (S32 i = 0; i < num_entries; i++)
 					{
-						LLVOCacheEntry* entry = new LLVOCacheEntry(&apr_file);
+						LLVOCacheEntry* entry = new LLVOCacheEntry(infile);
 						if (!entry->getLocalID())
 						{
 							LL_WARNS() << "Aborting cache file load for " << filename << ", cache file corruption!" << LL_ENDL;
@@ -669,7 +677,7 @@ void LLVOCache::purgeEntries(U32 size)
 	mNumEntries = mHandleEntryMap.size() ;
 }
 
-void LLVOCache::writeToCache(U64 handle, const LLUUID& id, const LLVOCacheEntry::vocache_entry_map_t& cache_entry_map, BOOL dirty_cache) 
+void LLVOCache::writeToCache(U64 handle, const LLUUID& id, const LLVOCacheEntry::vocache_entry_map_t& cache_entry_map, BOOL dirty_cache, bool removal_enabled) 
 {
 	if(!mEnabled)
 	{
@@ -730,19 +738,23 @@ void LLVOCache::writeToCache(U64 handle, const LLUUID& id, const LLVOCacheEntry:
 	{
 		std::string filename;
 		getObjectCacheFilename(handle, filename);
-		LLAPRFile apr_file(filename, APR_CREATE|APR_WRITE|APR_BINARY);
-	
-		success = check_write(&apr_file, (void*)id.mData, UUID_BYTES) ;
+		std::ios::openmode flags = std::ios::out | std::ios::binary;
+		if (LLFile::isfile(mHeaderFileName))
+		{
+			flags |= std::ios::in;
+		}
+		llofstream outfile(filename, flags);
 
-	
+		success = check_write(outfile, (void*)id.mData, UUID_BYTES) ;
+
 		if(success)
 		{
 			S32 num_entries = cache_entry_map.size() ;
-			success = check_write(&apr_file, &num_entries, sizeof(S32));
+			success = check_write(outfile, &num_entries, sizeof(S32));
 	
 			for (LLVOCacheEntry::vocache_entry_map_t::const_iterator iter = cache_entry_map.begin(); success && iter != cache_entry_map.end(); ++iter)
 			{
-				success = iter->second->writeToFile(&apr_file) ;
+				success = iter->second->writeToFile(outfile) ;
 			}
 		}
 	}

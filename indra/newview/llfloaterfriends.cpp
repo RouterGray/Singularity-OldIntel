@@ -53,9 +53,10 @@
 #include "llsdserialize.h"
 #include "lltextbox.h"
 #include "lluictrlfactory.h"
+#include "llviewercontrol.h"
 #include "llviewerwindow.h"
 
-#include "statemachine/aifilepicker.h"
+#include "llfilepicker.h"
 
 #include "hippogridmanager.h"
 
@@ -652,16 +653,11 @@ void LLPanelFriends::onClickExport()
 {
 	std::string agn;
 	gAgent.getName(agn);
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open(agn + ".friendlist", FFSAVE_ALL);
-	filepicker->run(boost::bind(&LLPanelFriends::onClickExport_continued, this, filepicker));
-}
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getSaveFile(LLFilePicker::FFSAVE_ALL, agn + ".friendlist"))
+		return;
 
-void LLPanelFriends::onClickExport_continued(AIFilePicker* filepicker)
-{
-	if(!filepicker->hasFilename()) return;
-
-	const std::string filename(filepicker->getFilename());
+	const std::string filename(filepicker.getFirstFile());
 	std::vector<LLScrollListItem*> selected = mFriendsList->getAllData();
 
 	LLSD llsd;
@@ -684,23 +680,17 @@ void LLPanelFriends::onClickExport_continued(AIFilePicker* filepicker)
 }
 
 
-void LLPanelFriends::onClickImport(void* user_data)
-{
-	AIFilePicker* filepicker = AIFilePicker::create();
-	filepicker->open();
-	filepicker->run(boost::bind(&LLPanelFriends::onClickImport_filepicker_continued, filepicker));
-}
-
 //THIS CODE IS DESIGNED SO THAT EXP/IMP BETWEEN GRIDS WILL FAIL
 //because assuming someone having the same name on another grid is the same person is generally a bad idea
 //i might add the option to query the user as to intelligently detecting matching names on a alternative grid
 // jcool410
-void LLPanelFriends::onClickImport_filepicker_continued(AIFilePicker* filepicker)
+void LLPanelFriends::onClickImport(void* user_data)
 {
-	if (!filepicker->hasFilename())
+	LLFilePicker& filepicker = LLFilePicker::instance();
+	if (!filepicker.getOpenFile())
 		return;
 
-	std::string filename = filepicker->getFilename();
+	std::string filename = filepicker.getFirstFile();
 	llifstream importer(filename);
 	LLSD data;
 	LLSDSerialize::fromXMLDocument(data, importer);

@@ -30,19 +30,18 @@
 #define LL_LLPUMPIO_H
 
 #include <set>
-#include <boost/shared_ptr.hpp>
 #if LL_LINUX  // needed for PATH_MAX in APR.
 #include <sys/param.h>
 #endif
 
-#include "llaprpool.h"
+#include "apr_pools.h"
 #include "llbuffer.h"
 #include "llframetimer.h"
 #include "lliopipe.h"
 #include "llrun.h"
 
 // Define this to enable use with the APR thread library.
-//#define LL_THREADS_PUMPIO 1
+//#define LL_THREADS_APR 1
 
 // some simple constants to help with timeouts
 extern const F32 DEFAULT_CHAIN_EXPIRY_SECS;
@@ -59,8 +58,9 @@ extern const F32 NEVER_CHAIN_EXPIRY_SECS;
  * <code>pump()</code> on a thread used for IO and call
  * <code>respond()</code> on a thread that is expected to do higher
  * level processing. You can call almost any other method from any
- * thread - see notes for each method for details.
- *
+ * thread - see notes for each method for details. In order for the
+ * threading abstraction to work, you need to call <code>prime()</code>
+ * with a valid apr pool.
  * A pump instance manages much of the state for the pipe, including
  * the list of pipes in the chain, the channel for each element in the
  * chain, the buffer, and if any pipe has marked the stream or process
@@ -79,12 +79,23 @@ public:
 	/**
 	 * @brief Constructor.
 	 */
-	LLPumpIO(void);
+	LLPumpIO(apr_pool_t* pool);
 
 	/**
 	 * @brief Destructor.
 	 */
 	~LLPumpIO();
+
+	/**
+	 * @brief Prepare this pump for usage.
+	 *
+	 * If you fail to call this method prior to use, the pump will
+	 * try to work, but will not come with any thread locking
+	 * mechanisms.
+	 * @param pool The apr pool to use.
+	 * @return Returns true if the pump is primed.
+	 */
+	bool prime(apr_pool_t* pool);
 
 	/**
 	 * @brief Typedef for having a chain of pipes.
@@ -100,9 +111,10 @@ public:
 	 * @param chain The pipes for the chain
 	 * @param timeout The number of seconds in the future to
 	 * expire. Pass in 0.0f to never expire.
+	 * @param has_curl_request The chain contains LLURLRequest if true.
 	 * @return Returns true if anything was added to the pump.
 	 */
-	bool addChain(const chain_t& chain, F32 timeout);
+	bool addChain(const chain_t& chain, F32 timeout, bool has_curl_request = false);
 	
 	/** 
 	 * @brief Struct to associate a pipe with it's buffer io indexes.
@@ -346,7 +358,7 @@ protected:
 		// basic member data
 		bool mInit;
 		bool mEOS;
-		bool mHasExpiration;
+		bool mHasCurlRequest;
 		S32 mLock;
 		LLFrameTimer mTimer;
 		links_t::iterator mHead;
@@ -358,7 +370,6 @@ protected:
 		typedef std::pair<LLIOPipe::ptr_t, apr_pollfd_t> pipe_conditional_t;
 		typedef std::vector<pipe_conditional_t> conditionals_t;
 		conditionals_t mDescriptors;
-		boost::shared_ptr<LLAPRPool> mDescriptorsPool;
 	};
 
 	// All the running chains & info
@@ -377,19 +388,22 @@ protected:
 	callbacks_t mPendingCallbacks;
 	callbacks_t mCallbacks;
 
-	// Memory pool for pollsets & mutexes.
-	LLAPRPool mPool;
-	LLAPRPool mCurrentPool;
+	// memory allocator for pollsets & mutexes.
+	apr_pool_t* mPool;
+	apr_pool_t* mCurrentPool;
 	S32 mCurrentPoolReallocCount;
 
-#if LL_THREADS_PUMPIO
-	LLMutex mChainsMutex;
-	LLMutex mCallbackMutex;
+#if LL_THREADS_APR
+	apr_thread_mutex_t* mChainsMutex;
+	apr_thread_mutex_t* mCallbackMutex;
+#else
+	int* mChainsMutex;
+	int* mCallbackMutex;
 #endif
 
 protected:
-	LLAPRPool& initPool();
-
+	void initialize(apr_pool_t* pool);
+	void cleanup();
 	current_chain_t removeRunningChain(current_chain_t& chain) ;
 	/** 
 	 * @brief Given the internal state of the chains, rebuild the pollset

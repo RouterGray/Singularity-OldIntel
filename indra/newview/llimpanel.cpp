@@ -42,11 +42,11 @@
 #include "llavatarnamecache.h"
 #include "llbutton.h"
 #include "llcombobox.h"
+#include "llcorehttputil.h"
 #include "llfloaterchat.h"
 #include "llfloaterinventory.h"
 #include "llfloaterwebcontent.h" // For web browser display of logs
 #include "llgroupactions.h"
-#include "llhttpclient.h"
 #include "llimview.h"
 #include "llinventory.h"
 #include "llinventoryfunctions.h"
@@ -59,8 +59,9 @@
 #include "lltrans.h"
 #include "lluictrlfactory.h"
 #include "llviewerobjectlist.h"
-#include "llviewertexteditor.h"
+#include "llviewerregion.h"
 #include "llviewerstats.h"
+#include "llviewertexteditor.h"
 #include "llviewerwindow.h"
 #include "llvoicechannel.h"
 
@@ -72,9 +73,6 @@
 // [/RLVa:KB]
 
 BOOL is_agent_mappable(const LLUUID& agent_id); // For map stalkies
-
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy sessionInviteResponder_timeout;
 
 //
 // Constants
@@ -161,49 +159,7 @@ void start_deprecated_conference_chat(
 	delete[] bucket;
 }
 
-class LLStartConferenceChatResponder : public LLHTTPClient::ResponderIgnoreBody
-{
-public:
-	LLStartConferenceChatResponder(
-		const LLUUID& temp_session_id,
-		const LLUUID& creator_id,
-		const LLUUID& other_participant_id,
-		const LLSD& agents_to_invite)
-	{
-		mTempSessionID = temp_session_id;
-		mCreatorID = creator_id;
-		mOtherParticipantID = other_participant_id;
-		mAgents = agents_to_invite;
-	}
-
-	/*virtual*/ void httpFailure()
-	{
-		//try an "old school" way.
-		if ( mStatus == 400 )
-		{
-			start_deprecated_conference_chat(
-				mTempSessionID,
-				mCreatorID,
-				mOtherParticipantID,
-				mAgents);
-		}
-
-		//else throw an error back to the client?
-		//in theory we should have just have these error strings
-		//etc. set up in this file as opposed to the IMMgr,
-		//but the error string were unneeded here previously
-		//and it is not worth the effort switching over all
-		//the possible different language translations
-	}
-	/*virtual*/ char const* getName() const { return "LLStartConferenceChatResponder"; }
-
-private:
-	LLUUID mTempSessionID;
-	LLUUID mCreatorID;
-	LLUUID mOtherParticipantID;
-
-	LLSD mAgents;
-};
+void startConfrenceCoro(std::string url, LLUUID tempSessionId, LLUUID creatorId, LLUUID otherParticipantId, LLSD agents);
 
 // Returns true if any messages were sent, false otherwise.
 // Is sort of equivalent to "does the server need to do anything?"
@@ -242,20 +198,9 @@ bool send_start_session_messages(
 		std::string url(region ? region->getCapability("ChatSessionRequest") : "");
 		if (!url.empty())
 		{
-			LLSD data;
-			data["method"] = "start conference";
-			data["session-id"] = temp_session_id;
-
-			data["params"] = agents;
-
-			LLHTTPClient::post(
-				url,
-				data,
-				new LLStartConferenceChatResponder(
-					temp_session_id,
-					gAgent.getID(),
-					other_participant_id,
-					data["params"]));
+			LLCoros::instance().launch("startConfrenceCoro",
+					boost::bind(&startConfrenceCoro, url,
+						temp_session_id, gAgent.getID(), other_participant_id, agents));
 		}
 		else
 		{
@@ -671,22 +616,6 @@ void LLFloaterIMPanel::draw()
 	LLFloater::draw();
 }
 
-class LLSessionInviteResponder : public LLHTTPClient::ResponderIgnoreBody
-{
-public:
-	LLSessionInviteResponder(const LLUUID& session_id) : mSessionID(session_id) {}
-
-	/*virtual*/ void httpFailure()
-	{
-		LL_WARNS() << "Error inviting all agents to session [status:" << mStatus << "]: " << mReason << LL_ENDL;
-		//throw something back to the viewer here?
-	}
-	/*virtual*/ char const* getName() const { return "LLSessionInviteResponder"; }
-
-private:
-	LLUUID mSessionID;
-};
-
 bool LLFloaterIMPanel::inviteToSession(const std::vector<LLUUID>& ids)
 {
 	LLViewerRegion* region = gAgent.getRegion();
@@ -713,11 +642,8 @@ bool LLFloaterIMPanel::inviteToSession(const std::vector<LLUUID>& ids)
 
 		data["method"] = "invite";
 		data["session-id"] = mSessionUUID;
-		LLHTTPClient::post(
-			url,
-			data,
-			new LLSessionInviteResponder(
-				mSessionUUID));		
+		LLCoreHttpUtil::HttpCoroutineAdapter::messageHttpPost(url, data, 
+				"Invitation sent", "Error inviting agents to session.");
 	}
 	else
 	{
@@ -1114,44 +1040,25 @@ void deliver_message(const std::string& utf8_text,
 					 EInstantMessage dialog)
 {
 	std::string name;
-	bool sent = false;
 	LLAgentUI::buildFullname(name);
 
 	const LLRelationship* info = LLAvatarTracker::instance().getBuddyInfo(other_participant_id);
-
 	U8 offline = (!info || info->isOnline()) ? IM_ONLINE : IM_OFFLINE;
+	// default to IM_SESSION_SEND unless it's nothing special - in which case it's probably an IM to everyone.
+	EInstantMessage new_dialog = dialog == IM_NOTHING_SPECIAL ? dialog : IM_SESSION_SEND;
 
-	if((offline == IM_OFFLINE) && (LLVoiceClient::getInstance()->isOnlineSIP(other_participant_id)))
-	{
-		// User is online through the OOW connector, but not with a regular viewer.  Try to send the message via SLVoice.
-		sent = LLVoiceClient::getInstance()->sendTextMessage(other_participant_id, utf8_text);
-	}
-
-	if(!sent)
-	{
-		// Send message normally.
-
-		// default to IM_SESSION_SEND unless it's nothing special - in
-		// which case it's probably an IM to everyone.
-		U8 new_dialog = dialog;
-
-		if ( dialog != IM_NOTHING_SPECIAL )
-		{
-			new_dialog = IM_SESSION_SEND;
-		}
-		pack_instant_message(
-			gMessageSystem,
-			gAgent.getID(),
-			FALSE,
-			gAgent.getSessionID(),
-			other_participant_id,
-			name.c_str(),
-			utf8_text.c_str(),
-			offline,
-			(EInstantMessage)new_dialog,
-			im_session_id);
-		gAgent.sendReliableMessage();
-	}
+	pack_instant_message(
+		gMessageSystem,
+		gAgent.getID(),
+		FALSE,
+		gAgent.getSessionID(),
+		other_participant_id,
+		name.c_str(),
+		utf8_text.c_str(),
+		offline,
+		new_dialog,
+		im_session_id);
+	gAgent.sendReliableMessage();
 
 	// If there is a mute list and this is not a group chat...
 	if ( LLMuteList::getInstance() )

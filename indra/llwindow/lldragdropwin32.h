@@ -31,7 +31,7 @@
 #ifndef LL_LLDRAGDROP32_H
 #define LL_LLDRAGDROP32_H
 
-#include <windows.h>
+#include "llwin32headerslean.h"
 #include <ole2.h>
 
 class LLDragDropWin32
@@ -54,10 +54,10 @@ class LLDragDropWin32
 #ifndef LL_LLDRAGDROP32_H
 #define LL_LLDRAGDROP32_H
 
-#include <windows.h>
+#include "llwin32headerslean.h"
 #include <ole2.h>
 
-// imposter class that does nothing 
+// impostor class that does nothing 
 class LLDragDropWin32
 {
 	public:

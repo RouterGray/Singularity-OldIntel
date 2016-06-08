@@ -103,7 +103,8 @@ LLFontGlyphInfo::LLFontGlyphInfo(U32 index)
 }
 
 LLFontFreetype::LLFontFreetype()
-:	mFontBitmapCachep(new LLFontBitmapCache),
+:	LLTrace::MemTrackable<LLFontFreetype>("LLFontFreetype"),
+	mFontBitmapCachep(new LLFontBitmapCache),
 	mAscender(0.f),
 	mDescender(0.f),
 	mLineHeight(0.f),
@@ -126,8 +127,10 @@ LLFontFreetype::~LLFontFreetype()
 
 	// Delete glyph info
 	std::for_each(mCharGlyphInfoMap.begin(), mCharGlyphInfoMap.end(), DeletePairedPointer());
+	mCharGlyphInfoMap.clear();
 
-	// mFontBitmapCachep will be cleaned up by LLPointer destructor.
+	delete mFontBitmapCachep;
+	// mFallbackFonts cleaned up by LLPointer destructor
 }
 
 BOOL LLFontFreetype::loadFace(const std::string& filename, const F32 point_size, const F32 vert_dpi, const F32 horz_dpi, const S32 components, BOOL is_fallback)
@@ -188,6 +191,8 @@ BOOL LLFontFreetype::loadFace(const std::string& filename, const F32 point_size,
 	S32 max_char_height = ll_round(0.5f + (y_max - y_min));
 
 	mFontBitmapCachep->init(components, max_char_width, max_char_height);
+	claimMem(mFontBitmapCachep);
+
 
 	if (!mFTFace->charmap)
 	{
@@ -202,6 +207,7 @@ BOOL LLFontFreetype::loadFace(const std::string& filename, const F32 point_size,
 	}
 
 	mName = filename;
+	claimMem(mName);
 	mPointSize = point_size;
 
 	mStyle = LLFontGL::NORMAL;
@@ -478,6 +484,7 @@ void LLFontFreetype::insertGlyphInfo(llwchar wch, LLFontGlyphInfo* gi) const
 	}
 	else
 	{
+		claimMem(gi);
 		mCharGlyphInfoMap[wch] = gi;
 	}
 }
@@ -520,9 +527,15 @@ void LLFontFreetype::reset(F32 vert_dpi, F32 horz_dpi)
 
 void LLFontFreetype::resetBitmapCache()
 {
-	for_each(mCharGlyphInfoMap.begin(), mCharGlyphInfoMap.end(), DeletePairedPointer());
+	for (char_glyph_info_map_t::iterator it = mCharGlyphInfoMap.begin(), end_it = mCharGlyphInfoMap.end();
+		it != end_it;
+		++it)
+	{
+		disclaimMem(it->second);
+		delete it->second;
+	}
 	mCharGlyphInfoMap.clear();
-	
+	disclaimMem(mFontBitmapCachep);
 	mFontBitmapCachep->reset();
 
 	// Adding default glyph is skipped for fallback fonts here as well as in loadFace(). 
@@ -544,7 +557,7 @@ const std::string &LLFontFreetype::getName() const
 	return mName;
 }
 
-const LLPointer<LLFontBitmapCache> LLFontFreetype::getFontBitmapCache() const
+const LLFontBitmapCache* LLFontFreetype::getFontBitmapCache() const
 {
 	return mFontBitmapCachep;
 }
@@ -558,6 +571,7 @@ U8 LLFontFreetype::getStyle() const
 {
 	return mStyle;
 }
+
 void LLFontFreetype::setSubImageLuminanceAlpha(const U32 x, const U32 y, const U32 bitmap_num, const U32 width, const U32 height, const U8 *data, S32 stride) const
 {
 	LLImageRaw *image_raw = mFontBitmapCachep->getImageRaw(bitmap_num);

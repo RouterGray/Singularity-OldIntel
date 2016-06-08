@@ -59,7 +59,6 @@
 #include "llinventorymodel.h"
 #include "llviewerinventory.h"
 #include "llviewerregion.h"
-#include "llassetuploadresponders.h"
 
 #include "v4math.h"
 #include "llviewerdisplay.h"
@@ -205,7 +204,7 @@ bool LLWaterParamManager::loadPresetXML(const std::string& name, std::istream& p
 
 void LLWaterParamManager::loadPresetNotecard(const std::string& name, const LLUUID& asset_id, const LLUUID& inv_id)
 {
-	gAssetStorage->getInvItemAsset(LLHost::invalid,
+	gAssetStorage->getInvItemAsset(LLHost(),
 								   gAgent.getID(),
 								   gAgent.getSessionID(),
 								   gAgent.getID(),
@@ -240,6 +239,8 @@ void LLWaterParamManager::savePreset(const std::string & name)
 // Yes, this function is completely identical to LLWLParamManager::savePresetToNotecard.
 // I feel some refactoring of this whole WindLight thing would be generally beneficial.
 // Damned if I'm going to be the one to do it, though.
+#include "llpreviewnotecard.h"
+#include "llviewerassetupload.h"
 bool LLWaterParamManager::savePresetToNotecard(const std::string & name)
 {
 	if(!hasParamSet(name)) return false;
@@ -282,9 +283,9 @@ bool LLWaterParamManager::savePresetToNotecard(const std::string & name)
 		S32 size = buffer.length() + 1;
 		file.setMaxSize(size);
 		file.write((U8*)buffer.c_str(), size);
-		LLSD body;
-		body["item_id"] = item->getUUID();
-		LLHTTPClient::post(agent_url, body, new LLUpdateAgentInventoryResponder(body, asset_id, LLAssetType::AT_NOTECARD));
+		LLResourceUploadInfo::ptr_t uploadInfo(new LLBufferedAssetUploadInfo(item->getUUID(), LLAssetType::AT_NOTECARD, buffer,
+		                               boost::bind(&LLPreviewNotecard::finishInventoryUpload, _1, _2, _3)));
+		LLViewerAssetUpload::EnqueueInventoryUpload(agent_url, uploadInfo);
 	}
 	else
 	{
@@ -347,7 +348,7 @@ void LLWaterParamManager::applyParams(const LLSD& params, bool interpolate)
 	}
 }
 
-static LLFastTimer::DeclareTimer FTM_UPDATE_WATERPARAM("Update Water Params");
+static LLTrace::BlockTimerStatHandle FTM_UPDATE_WATERPARAM("Update Water Params");
 
 void LLWaterParamManager::updateShaderLinks()
 {
@@ -373,7 +374,7 @@ void LLWaterParamManager::updateShaderLinks()
 
 void LLWaterParamManager::update(LLViewerCamera * cam)
 {
-	LLFastTimer ftm(FTM_UPDATE_WATERPARAM);
+	LL_RECORD_BLOCK_TIME(FTM_UPDATE_WATERPARAM);
 
 	// update the shaders and the menu
 	propagateParameters();

@@ -96,6 +96,7 @@ LLMediaCtrl::LLMediaCtrl( const Params& p) :
 	mStretchToFill( true ),
 	mMaintainAspectRatio ( true ),
 	mDecoupleTextureSize ( false ),
+	mUpdateScrolls( false ),
 	mTextureWidth ( 1024 ),
 	mTextureHeight ( 1024 ),
 	mClearCache(false),
@@ -516,6 +517,16 @@ void LLMediaCtrl::navigateForward()
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+void LLMediaCtrl::navigateStop()
+{
+	if (mMediaSource && mMediaSource->hasMedia())
+	{
+		mMediaSource->getMediaPlugin()->browse_stop();
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
 bool LLMediaCtrl::canNavigateBack()
 {
 	if (mMediaSource)
@@ -551,23 +562,7 @@ void LLMediaCtrl::clearCache()
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-void LLMediaCtrl::set404RedirectUrl( std::string redirect_url )
-{
-	if(mMediaSource && mMediaSource->hasMedia())
-		mMediaSource->getMediaPlugin()->set_status_redirect( 404, redirect_url );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//
-void LLMediaCtrl::clr404RedirectUrl()
-{
-	if(mMediaSource && mMediaSource->hasMedia())
-		mMediaSource->getMediaPlugin()->set_status_redirect(404, "");
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//
-void LLMediaCtrl::navigateTo( std::string url_in, std::string mime_type)
+void LLMediaCtrl::navigateTo( std::string url_in, std::string mime_type, bool clean_browser)
 {
 	// don't browse to anything that starts with secondlife:// or sl://
 	const std::string protocol1 = "secondlife://";
@@ -582,12 +577,9 @@ void LLMediaCtrl::navigateTo( std::string url_in, std::string mime_type)
 	
 	if (ensureMediaSourceExists())
 	{
-		if (mCurrentNavUrl != url_in)
-		{
-			mCurrentNavUrl = url_in;
-			mMediaSource->setSize(mTextureWidth, mTextureHeight);
-			mMediaSource->navigateTo(url_in, mime_type, mime_type.empty());
-		}
+		mCurrentNavUrl = url_in;
+		mMediaSource->setSize(mTextureWidth, mTextureHeight);
+		mMediaSource->navigateTo(url_in, mime_type, mime_type.empty(), false, clean_browser);
 	}
 }
 
@@ -607,9 +599,8 @@ void LLMediaCtrl::navigateToLocalPage( const std::string& subdir, const std::str
 	{
 		mCurrentNavUrl = expanded_filename;
 		mMediaSource->setSize(mTextureWidth, mTextureHeight);
-		mMediaSource->navigateTo(LLWeb::escapeURL(expanded_filename), "text/html", false);
+		mMediaSource->navigateTo(expanded_filename, HTTP_CONTENT_TEXT_HTML, false);
 	}
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -699,7 +690,13 @@ bool LLMediaCtrl::ensureMediaSourceExists()
 			mMediaSource->addObserver( this );
 			mMediaSource->setBackgroundColor( getBackgroundColor() );
 			mMediaSource->setTrustedBrowser(mTrusted);
-			mMediaSource->setPageZoomFactor( LLUI::getScaleFactor().mV[ VX ] );
+
+			F32 scale_factor = LLUI::getScaleFactor().mV[ VX ];
+			if (scale_factor != mMediaSource->getPageZoomFactor())
+			{
+				mMediaSource->setPageZoomFactor( scale_factor );
+				mUpdateScrolls = true;
+			}
 
 			if(mClearCache)
 			{
@@ -735,10 +732,11 @@ LLPluginClassMedia* LLMediaCtrl::getMediaPlugin()
 //
 void LLMediaCtrl::draw()
 {
-	if ( gRestoreGL == 1 )
+	if ( gRestoreGL == 1 || mUpdateScrolls)
 	{
 		LLRect r = getRect();
 		reshape( r.getWidth(), r.getHeight(), FALSE );
+		mUpdateScrolls = false;
 		return;
 	}
 
@@ -784,7 +782,12 @@ void LLMediaCtrl::draw()
 	{
 		gGL.pushUIMatrix();
 		{
-			mMediaSource->setPageZoomFactor( LLUI::getScaleFactor().mV[ VX ] );
+			F32 scale_factor = LLUI::getScaleFactor().mV[ VX ];
+			if (scale_factor != mMediaSource->getPageZoomFactor())
+			{
+				mMediaSource->setPageZoomFactor( scale_factor );
+				mUpdateScrolls = true;
+			}
 
 			// scale texture to fit the space using texture coords
 			gGL.getTexUnit(0)->bind(media_texture);
@@ -831,14 +834,6 @@ void LLMediaCtrl::draw()
 			
 			x_offset = (r.getWidth() - width) / 2;
 			y_offset = (r.getHeight() - height) / 2;		
-
-			/*if (mIgnoreUIScale)
-			{
-				x_offset = ll_round((F32)x_offset * LLUI::getScaleFactor().mV[VX]);
-				y_offset = ll_round((F32)y_offset * LLUI::getScaleFactor().mV[VY]);
-				width = ll_round((F32)width * LLUI::getScaleFactor().mV[VX]);
-				height = ll_round((F32)height * LLUI::getScaleFactor().mV[VY]);
-			}*/
 
 			// draw the browser
 			gGL.setSceneBlendType(LLRender::BT_REPLACE);
@@ -993,24 +988,27 @@ void LLMediaCtrl::handleMediaEvent(LLPluginClassMedia* self, EMediaEvent event)
 			LL_DEBUGS("Media") <<  "Media event:  MEDIA_EVENT_NAVIGATE_ERROR_PAGE" << LL_ENDL;
 			if ( mErrorPageURL.length() > 0 )
 			{
-				navigateTo(mErrorPageURL, "text/html");
+				navigateTo(mErrorPageURL, HTTP_CONTENT_TEXT_HTML);
 			};
 		};
 		break;
 
 		case MEDIA_EVENT_CLICK_LINK_HREF:
 		{
-			LL_DEBUGS("Media") <<  "Media event:  MEDIA_EVENT_CLICK_LINK_HREF, target is \"" << self->getClickTarget() << "\", uri is " << self->getClickURL() << LL_ENDL;
 			// retrieve the event parameters
 			std::string url = self->getClickURL();
 			std::string target = self->getClickTarget();
 			std::string uuid = self->getClickUUID();
+			LL_DEBUGS("Media") << "Media event:  MEDIA_EVENT_CLICK_LINK_HREF, target is \"" << target << "\", uri is " << url << LL_ENDL;
 
 			LLWeb::loadURL(url, target, std::string());
 
-			//LLNotification::Params notify_params("PopupAttempt");
+			// CP: removing this code because we no longer support popups so this breaks the flow.
+			//     replaced with a bare call to LLWeb::LoadURL(...)
+			//LLNotification::Params notify_params;
+			//notify_params.name = "PopupAttempt";
 			//notify_params.payload = LLSD().with("target", target).with("url", url).with("uuid", uuid).with("media_id", mMediaTextureID);
-			//notify_params.functor(boost::bind(&LLMediaCtrl::onPopup, this, _1, _2));
+			//notify_params.functor.function = boost::bind(&LLMediaCtrl::onPopup, this, _1, _2);
 
 			//if (mTrusted)
 			//{

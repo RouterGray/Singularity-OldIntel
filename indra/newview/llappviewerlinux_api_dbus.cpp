@@ -2,43 +2,31 @@
  * @file llappviewerlinux_api_dbus.cpp
  * @brief dynamic DBus symbol-grabbing code
  *
- * $LicenseInfo:firstyear=2008&license=viewergpl$
- * 
- * Copyright (c) 2008-2009, Linden Research, Inc.
- * 
+ * $LicenseInfo:firstyear=2008&license=viewerlgpl$
  * Second Life Viewer Source Code
- * The source code in this file ("Source Code") is provided by Linden Lab
- * to you under the terms of the GNU General Public License, version 2.0
- * ("GPL"), unless you have obtained a separate licensing agreement
- * ("Other License"), formally executed by you and Linden Lab.  Terms of
- * the GPL can be found in doc/GPL-license.txt in this distribution, or
- * online at http://secondlifegrid.net/programs/open_source/licensing/gplv2
+ * Copyright (C) 2010, Linden Research, Inc.
  * 
- * There are special exceptions to the terms and conditions of the GPL as
- * it is applied to this Source Code. View the full text of the exception
- * in the file doc/FLOSS-exception.txt in this software distribution, or
- * online at
- * http://secondlifegrid.net/programs/open_source/licensing/flossexception
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation;
+ * version 2.1 of the License only.
  * 
- * By copying, modifying or distributing this software, you acknowledge
- * that you have read and understood your obligations described above,
- * and agree to abide by those obligations.
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  * 
- * ALL LINDEN LAB SOURCE CODE IS PROVIDED "AS IS." LINDEN LAB MAKES NO
- * WARRANTIES, EXPRESS, IMPLIED OR OTHERWISE, REGARDING ITS ACCURACY,
- * COMPLETENESS OR PERFORMANCE.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * 
+ * Linden Research, Inc., 945 Battery Street, San Francisco, CA  94111  USA
  * $/LicenseInfo$
  */
 
 #if LL_DBUS_ENABLED
 
-#ifdef LL_STANDALONE
-#include <dlfcn.h>
-#include <apr_portable.h>
-#endif
-
 #include "linden_common.h"
-#include "llaprpool.h"
 
 extern "C" {
 #include <dbus/dbus-glib.h>
@@ -47,16 +35,16 @@ extern "C" {
 #include "apr_dso.h"
 }
 
-#define DEBUGMSG(...) LL_DEBUGS() << llformat(__VA_ARGS__) << LL_ENDL
-#define INFOMSG(...) LL_INFOS() << llformat(__VA_ARGS__) << LL_ENDL
-#define WARNMSG(...) LL_WARNS() << llformat(__VA_ARGS__) << LL_ENDL
+#define DEBUGMSG(...) do { LL_DEBUGS() << llformat(__VA_ARGS__) << LL_ENDL; } while(0)
+#define INFOMSG(...) do { LL_INFOS() << llformat(__VA_ARGS__) << LL_ENDL; } while(0)
+#define WARNMSG(...) do { LL_WARNS() << llformat(__VA_ARGS__) << LL_ENDL; } while(0)
 
 #define LL_DBUS_SYM(REQUIRED, DBUSSYM, RTN, ...) RTN (*ll##DBUSSYM)(__VA_ARGS__) = NULL
 #include "llappviewerlinux_api_dbus_syms_raw.inc"
 #undef LL_DBUS_SYM
 
 static bool sSymsGrabbed = false;
-static LLAPRPool sSymDBUSDSOMemoryPool;					// Used for sSymDBUSDSOHandleG (and what it is pointing at?)
+static apr_pool_t *sSymDBUSDSOMemoryPool = NULL;
 static apr_dso_handle_t* sSymDBUSDSOHandleG = NULL;
 
 bool grab_dbus_syms(std::string dbus_dso_name)
@@ -75,19 +63,11 @@ bool grab_dbus_syms(std::string dbus_dso_name)
 #define LL_DBUS_SYM(REQUIRED, DBUSSYM, RTN, ...) do{rv = apr_dso_sym((apr_dso_handle_sym_t*)&ll##DBUSSYM, sSymDBUSDSOHandle, #DBUSSYM); if (rv != APR_SUCCESS) {INFOMSG("Failed to grab symbol: %s", #DBUSSYM); if (REQUIRED) sym_error = true;} else DEBUGMSG("grabbed symbol: %s from %p", #DBUSSYM, (void*)ll##DBUSSYM);}while(0)
 
 	//attempt to load the shared library
-	sSymDBUSDSOMemoryPool.create();
-  
-#ifdef LL_STANDALONE
-    void *dso_handle = dlopen(dbus_dso_name.c_str(), RTLD_NOW | RTLD_GLOBAL);
-    rv = (!dso_handle)?APR_EDSOOPEN:apr_os_dso_handle_put(&sSymDBUSDSOHandle,
-            dso_handle, sSymDBUSDSOMemoryPool());
+	apr_pool_create(&sSymDBUSDSOMemoryPool, NULL);
 
-	if ( APR_SUCCESS == rv )
-#else
 	if ( APR_SUCCESS == (rv = apr_dso_load(&sSymDBUSDSOHandle,
 					       dbus_dso_name.c_str(),
-					       sSymDBUSDSOMemoryPool()) ))
-#endif
+					       sSymDBUSDSOMemoryPool) ))
 	{
 		INFOMSG("Found DSO: %s", dbus_dso_name.c_str());
 
@@ -114,10 +94,6 @@ bool grab_dbus_syms(std::string dbus_dso_name)
 #undef LL_DBUS_SYM
 
 	sSymsGrabbed = rtn;
-	if (!sSymsGrabbed)
-	{
-		sSymDBUSDSOMemoryPool.destroy();
-	}
 	return rtn;
 }
 
@@ -133,7 +109,11 @@ void ungrab_dbus_syms()
 		sSymDBUSDSOHandleG = NULL;
 	}
 
-	sSymDBUSDSOMemoryPool.destroy();
+	if ( sSymDBUSDSOMemoryPool )
+	{
+		apr_pool_destroy(sSymDBUSDSOMemoryPool);
+		sSymDBUSDSOMemoryPool = NULL;
+	}
 
 	// NULL-out all of the symbols we'd grabbed
 #define LL_DBUS_SYM(REQUIRED, DBUSSYM, RTN, ...) do{ll##DBUSSYM = NULL;}while(0)

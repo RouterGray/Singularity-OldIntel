@@ -2066,7 +2066,6 @@ std::map<LLVFSFileSpecifier, LLVFSFileBlock*> LLVFS::getFileList()
 	return mFileList;
 }
 
-#include "llapr.h"
 void LLVFS::dumpFiles()
 {
 	lockData();
@@ -2092,8 +2091,8 @@ void LLVFS::dumpFiles()
 			std::string filename = id.asString() + extension;
 			LL_INFOS() << " Writing " << filename << LL_ENDL;
 			
-			LLAPRFile outfile(filename, LL_APR_WB);
-			outfile.write(&buffer[0], size);
+			llofstream outfile(filename, std::ios::out | std::ios::binary | std::ios::trunc);
+			outfile.write((char*) buffer.data(), size);
 			outfile.close();
 
 			files_extracted++;

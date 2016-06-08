@@ -37,22 +37,17 @@
 #include <sstream>
 #include <iterator>
 
+#include "llcorehttputil.h"
 #include "lldir.h"
 #include "llversioninfo.h"
 #include "llappviewer.h"
 #include "llviewercontrol.h"
-#include "llxmlrpcresponder.h"
 #include "llsdutil.h"
-#include "llhttpclient.h"
+#include "llxmlrpctransaction.h"
 #include "stringize.h"
 
 // NOTE: MUST include these after otherincludes since queue gets redefined!?!!
 #include <xmlrpc-epi/xmlrpc.h>
-
-#include <curl/curl.h>
-#ifdef DEBUG_CURLIO
-#include "debug_libcurl.h"
-#endif
 
 // Don't define PLATFORM_STRING for unknown platforms - they need
 // to get added to the login cgi script, so we want this to cause an
@@ -71,8 +66,9 @@ static const char* PLATFORM_STRING = "sol";
 
 
 LLUserAuth::LLUserAuth() :
-	mLastTransferRateBPS(0),
-	mResult(LLSD())
+	mResult(LLSD()),
+	mTransaction(nullptr),
+	mLastTransferRateBPS(0)
 {
 	mAuthResponse = E_NO_RESPONSE_YET;
 }
@@ -84,7 +80,7 @@ LLUserAuth::~LLUserAuth()
 
 void LLUserAuth::reset()
 {
-	mResponder = NULL;
+	mTransaction = nullptr;
 	mResponses.clear();
 	mResult.clear();
 }
@@ -164,8 +160,7 @@ void LLUserAuth::authenticate(
 	// put the parameters on the request
 	XMLRPC_RequestSetData(request, params);
 
-	mResponder = new XMLRPCResponder;
-	LLHTTPClient::postXMLRPC(auth_uri, request, mResponder);
+	mTransaction = new LLXMLRPCTransaction(auth_uri, request, false);
 
 	LL_INFOS("AppInit", "Authentication") << "LLUserAuth::authenticate: uri=" << auth_uri << LL_ENDL;
 }
@@ -263,8 +258,7 @@ void LLUserAuth::authenticate(
 	XMLRPC_RequestSetData(request, params);
 
 	// Post the XML RPC.
-	mResponder = new XMLRPCResponder;
-	LLHTTPClient::postXMLRPC(auth_uri, request, mResponder);
+	mTransaction = new LLXMLRPCTransaction(auth_uri, request, false);
 	
 	LL_INFOS("AppInit", "Authentication") << "LLUserAuth::authenticate: uri=" << auth_uri << LL_ENDL;
 }
@@ -272,15 +266,17 @@ void LLUserAuth::authenticate(
 
 LLUserAuth::UserAuthcode LLUserAuth::authResponse()
 {
-	if (!mResponder)
+	if (!mTransaction)
 	{
 		return mAuthResponse;
 	}
 	
-	bool done = mResponder->is_finished();
+	bool done = mTransaction->process();
 
+	CURLcode result;
+	auto status = mTransaction->status(reinterpret_cast<int*>(&result));
 	if (!done) {
-		if (mResponder->is_downloading())
+		if (status == LLXMLRPCTransaction::StatusDownloading)
 		{
 			mAuthResponse = E_DOWNLOADING;
 		}
@@ -288,12 +284,11 @@ LLUserAuth::UserAuthcode LLUserAuth::authResponse()
 		return mAuthResponse;
 	}
 	
-	mLastTransferRateBPS = mResponder->transferRate();
-	mErrorMessage = mResponder->getReason();
+	mLastTransferRateBPS = mTransaction->transferRate();
+	mErrorMessage = mTransaction->statusMessage();
 
 	// if curl was ok, parse the download area.
-	CURLcode result = mResponder->result_code();
-	if (is_internal_http_error(mResponder->getStatus()))
+	if (status == LLXMLRPCTransaction::StatusCURLError)
 	{
 		// result can be a meaningless CURLE_OK in the case of an internal error.
 		result = CURLE_FAILED_INIT;		// Just some random error to get the default case below.
@@ -323,7 +318,7 @@ LLUserAuth::UserAuthcode LLUserAuth::authResponse()
 	LL_INFOS("AppInit", "Authentication") << "Processed response: " << result << LL_ENDL;
 
 	// We're done with this data.
-	mResponder = NULL;
+	mTransaction = nullptr;
 
 	return mAuthResponse;
 }
@@ -335,12 +330,12 @@ LLUserAuth::UserAuthcode LLUserAuth::parseResponse()
 	// mOptions. For now, we will only be looking at mResponses, which
 	// will all be string => string pairs.
 	UserAuthcode rv = E_UNHANDLED_ERROR;
-	XMLRPC_REQUEST response = mResponder->response();
+	XMLRPC_REQUEST response = mTransaction->response();
 	if(!response)
 	{
-		U32 status = mResponder->getStatus();
+		auto status = mTransaction->status(nullptr);
 		// Is it an HTTP error?
-		if (!(200 <= status && status < 400))
+		if (!(status > LLXMLRPCTransaction::StatusComplete))
 		{
 			rv = E_HTTP_SERVER_ERROR;
 		}

@@ -39,12 +39,11 @@
 // project includes
 #include "llcheckboxctrl.h"
 #include "llradiogroup.h"
-#include "statemachine/aidirpicker.h"
+#include "lldirpicker.h"
 #include "lluictrlfactory.h"
 #include "llnotificationsutil.h"
 #include "llviewercontrol.h"
 #include "llviewerwindow.h"
-#include "hippogridmanager.h"
 
 #include "llproxy.h"
 
@@ -73,19 +72,10 @@ BOOL LLPanelNetwork::postBuild()
 		ctrl->setCommitCallback(boost::bind(LLPanelNetwork::onClickClearCache, (void*)NULL));
 	}
 	childSetValue("max_bandwidth", gSavedSettings.getF32("ThrottleBandwidthKBPS"));
-	childSetValue("tex_bandwidth", gSavedSettings.getF32("HTTPThrottleBandwidth"));
 	childSetValue("http_textures", gSavedSettings.getBOOL("ImagePipelineUseHTTP"));
 	childSetValue("http_inventory", gSavedSettings.getBOOL("UseHTTPInventory"));
 	childSetValue("connection_port_enabled", gSavedSettings.getBOOL("ConnectionPortEnabled"));
 	childSetValue("connection_port", (F32)gSavedSettings.getU32("ConnectionPort"));
-
-	// If in Avination, hide the texture bandwidth slider, Avination throttles server-side
-	if (gHippoGridManager->getConnectedGrid()->isAvination())
-	{
-		childSetVisible("text_box4", FALSE);
-		childSetVisible("tex_bandwidth", FALSE);
-		childSetVisible("text_box3", FALSE);
-	}
 
 	// Socks 5 proxy settings, commit callbacks
 	childSetCommitCallback("socks5_proxy_enabled", onCommitSocks5ProxyEnabled, this);
@@ -124,7 +114,6 @@ void LLPanelNetwork::apply()
 {
 	gSavedSettings.setU32("CacheSize", childGetValue("cache_size").asInteger());
 	gSavedSettings.setF32("ThrottleBandwidthKBPS", childGetValue("max_bandwidth").asReal());
-	gSavedSettings.setF32("HTTPThrottleBandwidth", childGetValue("tex_bandwidth").asReal());
 	gSavedSettings.setBOOL("ImagePipelineUseHTTP", childGetValue("http_textures"));
 	gSavedSettings.setBOOL("UseHTTPInventory", childGetValue("http_inventory"));
 	gSavedSettings.setBOOL("ConnectionPortEnabled", childGetValue("connection_port_enabled"));
@@ -174,21 +163,14 @@ void LLPanelNetwork::onClickSetCache(void* user_data)
 	std::string cur_name(gSavedSettings.getString("CacheLocation"));
 	std::string proposed_name(cur_name);
 	
-	AIDirPicker* dirpicker = new AIDirPicker(proposed_name, "cachelocation");
-	dirpicker->run(boost::bind(&LLPanelNetwork::onClickSetCache_continued, user_data, dirpicker));
-}
-
-// static
-void LLPanelNetwork::onClickSetCache_continued(void* user_data, AIDirPicker* dirpicker)
-{
-	if (!dirpicker->hasDirname())
+	LLDirPicker& dirpicker = LLDirPicker::instance();
+	if (!dirpicker.getDir(&proposed_name))
 	{
 		return; //Canceled!
 	}
 
 	LLPanelNetwork* self = (LLPanelNetwork*)user_data;
-	std::string cur_name(gSavedSettings.getString("CacheLocation"));
-	std::string dir_name = dirpicker->getDirname();
+	std::string dir_name = dirpicker.getDirName();
 	if (!dir_name.empty() && dir_name != cur_name)
 	{
 		self->childSetText("cache_location", dir_name);

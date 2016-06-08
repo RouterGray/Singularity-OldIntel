@@ -107,8 +107,6 @@
 #include "llui.h"
 #include "llxmlnode.h"
 #include "llnotificationptr.h"
-#include "llnotificationcontext.h"
-#include "aithreadsafe.h"
 
 namespace AIAlert { class Error; }
 
@@ -121,10 +119,51 @@ typedef enum e_notification_priority
 	NOTIFICATION_PRIORITY_CRITICAL
 } ENotificationPriority;
 
+struct NotificationPriorityValues : public LLInitParam::TypeValuesHelper<ENotificationPriority, NotificationPriorityValues>
+{
+	static void declareValues();
+};
+
+class LLNotificationResponderInterface
+{
+public:
+	LLNotificationResponderInterface(){};
+	virtual ~LLNotificationResponderInterface(){};
+
+	virtual void handleRespond(const LLSD& notification, const LLSD& response) = 0;
+
+	virtual LLSD asLLSD() = 0;
+
+	virtual void fromLLSD(const LLSD& params) = 0;
+};
+
 typedef boost::function<void (const LLSD&, const LLSD&)> LLNotificationResponder;
+
+typedef std::shared_ptr<LLNotificationResponderInterface> LLNotificationResponderPtr;
 
 typedef LLFunctorRegistry<LLNotificationResponder> LLNotificationFunctorRegistry;
 typedef LLFunctorRegistration<LLNotificationResponder> LLNotificationFunctorRegistration;
+
+// context data that can be looked up via a notification's payload by the display logic
+// derive from this class to implement specific contexts
+class LLNotificationContext : public LLInstanceTracker<LLNotificationContext, LLUUID>
+{
+public:
+
+	LLNotificationContext() : LLInstanceTracker<LLNotificationContext, LLUUID>(LLUUID::generateNewID())
+	{
+	}
+
+	virtual ~LLNotificationContext() {}
+
+	LLSD asLLSD() const
+	{
+		return getKey();
+	}
+
+private:
+
+};
 
 // Contains notification form data, such as buttons and text fields along with
 // manipulator functions
@@ -235,14 +274,19 @@ private:
 	bool								mInvertSetting;
 };
 
-typedef boost::shared_ptr<LLNotificationForm> LLNotificationFormPtr;
+typedef std::shared_ptr<LLNotificationForm> LLNotificationFormPtr;
 
 
 struct LLNotificationTemplate;
 
 // we want to keep a map of these by name, and it's best to manage them
 // with smart pointers
-typedef boost::shared_ptr<LLNotificationTemplate> LLNotificationTemplatePtr;
+typedef std::shared_ptr<LLNotificationTemplate> LLNotificationTemplatePtr;
+
+
+struct LLNotificationVisibilityRule;
+
+typedef std::shared_ptr<LLNotificationVisibilityRule> LLNotificationVisibilityRulePtr;
 
 /**
  * @class LLNotification
@@ -258,13 +302,13 @@ typedef boost::shared_ptr<LLNotificationTemplate> LLNotificationTemplatePtr;
  */
 class LLNotification  : 
 	boost::noncopyable,
-	public boost::enable_shared_from_this<LLNotification>
+	public std::enable_shared_from_this<LLNotification>
 {
 LOG_CLASS(LLNotification);
 friend class LLNotifications;
-friend struct UpdateItem;
 
 public:
+
 	// parameter object used to instantiate a new notification
 	class Params : public LLParamBlock<Params>
 	{
@@ -616,7 +660,7 @@ typedef std::multimap<std::string, LLNotificationPtr> LLNotificationMap;
 // Abstract base class (interface) for a channel; also used for the master container.
 // This lets us arrange channels into a call hierarchy.
 
-// We maintain a heirarchy of notification channels; events are always started at the top
+// We maintain a hierarchy of notification channels; events are always started at the top
 // and propagated through the hierarchy only if they pass a filter.
 // Any channel can be created with a parent. A null parent (empty string) means it's
 // tied to the root of the tree (the LLNotifications class itself).
@@ -633,10 +677,10 @@ class LLNotificationChannelBase :
 	public boost::signals2::trackable
 {
 	LOG_CLASS(LLNotificationChannelBase);
-	friend struct UpdateItem;
 public:
-	LLNotificationChannelBase(LLNotificationFilter filter, LLNotificationComparator comp) : 
-		mFilter(filter), mItems_sf(comp) 
+	LLNotificationChannelBase(LLNotificationFilter filter) 
+	:	mFilter(filter), 
+		mItems() 
 	{}
 	virtual ~LLNotificationChannelBase() {}
 	// you can also connect to a Channel, so you can be notified of
@@ -650,9 +694,8 @@ public:
 	const LLNotificationFilter& getFilter() { return mFilter; }
 
 protected:
-	AIThreadSafeSimpleDC<LLNotificationSet> mItems_sf;
-	typedef AIAccess<LLNotificationSet> mItems_wat;
-	typedef AIAccessConst<LLNotificationSet> mItems_crat;
+
+	LLNotificationSet mItems;
 	LLStandardSignal mChanged;
 	LLStandardSignal mPassedFilter;
 	LLStandardSignal mFailedFilter;
@@ -664,6 +707,9 @@ protected:
 	virtual void onAdd(LLNotificationPtr p) {}
 	virtual void onDelete(LLNotificationPtr p) {}
 	virtual void onChange(LLNotificationPtr p) {}
+
+	virtual void onFilterPass(LLNotificationPtr p) {}
+	virtual void onFilterFail(LLNotificationPtr p) {}
 
 	bool updateItem(const LLSD& payload, LLNotificationPtr pNotification);
 	LLNotificationFilter mFilter;
@@ -822,8 +868,9 @@ public:
 
 	void add(const LLNotificationPtr pNotif);
 	void cancel(LLNotificationPtr pNotif);
+	void cancelByName(const std::string& name);
 	void update(const LLNotificationPtr pNotif);
-	LLNotificationPtr find(LLUUID const& uuid);
+	LLNotificationPtr find(const LLUUID& uuid);
 	
 	typedef boost::function<void (LLNotificationPtr)> NotificationProcess;
 	void forEachNotification(NotificationProcess process);

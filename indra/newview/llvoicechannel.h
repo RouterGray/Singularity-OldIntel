@@ -27,7 +27,12 @@
 #ifndef LL_VOICECHANNEL_H
 #define LL_VOICECHANNEL_H
 
+#include "llhandle.h"
 #include "llvoiceclient.h"
+#include "lleventcoro.h"
+#include "llcoros.h"
+
+class LLPanel;
 
 class LLVoiceChannel : public LLVoiceClientStatusObserver
 {
@@ -154,6 +159,8 @@ protected:
 	virtual void setState(EState state);
 
 private:
+    void voiceCallCapCoro(std::string url);
+
 	U32 mRetries;
 	BOOL mIsRetrying;
 };

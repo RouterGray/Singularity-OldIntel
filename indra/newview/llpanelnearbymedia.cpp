@@ -360,7 +360,6 @@ LLScrollListItem* LLPanelNearByMedia::addListItem(const LLUUID &id)
 	return new_item;
 }
 
-extern char const* PRIORITYToString(LLViewerMediaImpl::EPriority priority);
 void LLPanelNearByMedia::updateListItem(LLScrollListItem* item, LLViewerMediaImpl* impl)
 {
 	std::string item_name;
@@ -400,7 +399,7 @@ void LLPanelNearByMedia::updateListItem(LLScrollListItem* item, LLViewerMediaImp
 		//			s += llformat("%g/", (float)impl->getApproximateTextureInterest());
 		debug_str += llformat("%g/", (float)(NULL == impl->getSomeObject()) ? 0.0 : impl->getSomeObject()->getPixelArea());
 		
-		debug_str += PRIORITYToString(impl->getPriority());
+		debug_str += LLPluginClassMedia::priorityToString(impl->getPriority());
 		
 		if(impl->hasMedia())
 		{
@@ -913,7 +912,10 @@ void LLPanelNearByMedia::onClickParcelAudioPlay()
 	// playing and updated as they cross to other parcels etc.
 	mParcelAudioAutoStart = true;
 	if (!gAudiop)
+	{
+		LL_WARNS("AudioEngine") << "LLAudioEngine instance doesn't exist!" << LL_ENDL;
 		return;
+	}
 
 	if (LLAudioEngine::AUDIO_PAUSED == gAudiop->isInternetStreamPlaying())
 	{
@@ -933,7 +935,10 @@ void LLPanelNearByMedia::onClickParcelAudioStop()
 	// they explicitly start it again.
 	mParcelAudioAutoStart = false;
 	if (!gAudiop)
+	{
+		LL_WARNS("AudioEngine") << "LLAudioEngine instance doesn't exist!" << LL_ENDL;
 		return;
+	}
 
 	gAudiop->stopInternetStream();
 }
@@ -941,7 +946,10 @@ void LLPanelNearByMedia::onClickParcelAudioStop()
 void LLPanelNearByMedia::onClickParcelAudioPause()
 {
 	if (!gAudiop)
+	{
+		LL_WARNS("AudioEngine") << "LLAudioEngine instance doesn't exist!" << LL_ENDL;
 		return;
+	}
 
 	// 'true' means pause
 	gAudiop->pauseInternetStream(true);

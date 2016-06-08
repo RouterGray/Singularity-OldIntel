@@ -28,6 +28,7 @@
 #include "linden_common.h"
 
 #include "llpidlock.h"
+#include "llapp.h"
 #include "lldir.h"
 #include "llsd.h"
 #include "llsdserialize.h"
@@ -38,23 +39,14 @@
 
 #include <windows.h>
 
-static U32 getPID() {
-	return GetCurrentProcessId();
-}
-
-static bool isProcessAlive(U32 pid)
+bool isProcessAlive(U32 pid)
 {
 	return (bool) GetProcessVersion((DWORD)pid);
 }
 
 #else   //Everyone Else
-#include <unistd.h>
+bool isProcessAlive(U32 pid)
 
-static U32 getPID() {
-	return getpid();
-}
-
-static bool isProcessAlive(U32 pid)
 {   
 	return (bool) kill( (pid_t)pid, 0);
 }
@@ -69,7 +61,7 @@ class LLPidLockFile
 			mAutosave(false),
 			mSaving(false),
 			mWaiting(false),
-			mPID(getPID()),
+			mPID(LLApp::getPid()),
 			mNameTable(NULL),
 			mClean(true)
 		{
@@ -89,7 +81,7 @@ class LLPidLockFile
 		bool mSaving;
 		bool mWaiting;
 		LLFrameTimer mTimer;
-		U32  mPID;
+		S32  mPID;
 		std::string mLockName;
 		std::string mSaveName;
 		LLSD mPIDS_sd;
@@ -105,7 +97,7 @@ LLPidLockFile& LLPidLockFile::instance()
 
 void LLPidLockFile::writeLockFile(LLSD pids)
 {
-	llofstream ofile(mLockName);
+	llofstream ofile(mLockName.c_str());
 
 	if (!LLSDSerialize::toXML(pids,ofile))
 	{
@@ -129,7 +121,7 @@ bool LLPidLockFile::requestLock(LLNameTable<void *> *name_table, bool autosave,
 	LLSD out_pids;
 	out_pids.append( (LLSD::Integer)mPID );
 
-	llifstream ifile(mLockName);
+	llifstream ifile(mLockName.c_str());
 
 	if (ifile.is_open()) 
 	{									//If file exists, we need to decide whether or not to continue.
@@ -165,7 +157,7 @@ bool LLPidLockFile::requestLock(LLNameTable<void *> *name_table, bool autosave,
 
 	if (!mWaiting)				//Not presently waiting to save.  Queue up.
 	{
-		mTimer.reset(timeout);
+		mTimer.resetWithExpiry(timeout);
 		mWaiting=TRUE;
 	}
 
@@ -185,7 +177,7 @@ bool LLPidLockFile::checkLock()
 
 void LLPidLockFile::releaseLock()
 {
-	llifstream ifile(mLockName);
+	llifstream ifile(mLockName.c_str());
 	LLSD in_pids;
 	LLSD out_pids;
 	bool write_file=FALSE;
@@ -197,7 +189,7 @@ void LLPidLockFile::releaseLock()
 		i !=in_pids.endArray();
 		++i)
 	{
-		U32 stored_pid=(*i).asInteger();
+		S32 stored_pid=(*i).asInteger();
 
 		if (stored_pid != mPID && isProcessAlive(stored_pid))
 		{
@@ -277,4 +269,8 @@ void LLPidLock::setClean(bool clean)
 void LLPidLock::setSaveName(std::string savename) 
 { 
 	LLPidLockFile::instance().mSaveName=savename; 
+}
+S32 LLPidLock::getPID()
+{
+    return LLApp::getPid();
 }

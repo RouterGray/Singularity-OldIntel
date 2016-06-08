@@ -56,7 +56,6 @@
 #include "llstl.h"
 #include "lltransfermanager.h"
 #include "llmodularmath.h"
-#include "llpacketring.h"
 
 const S32 PING_START_BLOCK = 3;		// How many pings behind we have to be to consider ourself blocked.
 const S32 PING_RELEASE_BLOCK = 2;	// How many pings behind we have to be to consider ourself unblocked.
@@ -348,7 +347,7 @@ S32 LLCircuitData::resendUnackedPackets(const F64Seconds now)
 
 			packetp->mBuffer[0] |= LL_RESENT_FLAG;  // tag packet id as being a resend	
 
-			gMessageSystem->mPacketRing->sendPacket(packetp->mSocket, 
+			gMessageSystem->mPacketRing.sendPacket(packetp->mSocket, 
 											   (char *)packetp->mBuffer, packetp->mBufferLength, 
 											   packetp->mHost);
 
@@ -438,11 +437,7 @@ LLCircuit::LLCircuit(const F32Seconds circuit_heartbeat_interval, const F32Secon
 LLCircuit::~LLCircuit()
 {
 	// delete pointers in the map.
-	std::for_each(mCircuitData.begin(),
-				  mCircuitData.end(),
-				  llcompose1(
-					  DeletePointerFunctor<LLCircuitData>(),
-					  llselect2nd<circuit_data_map::value_type>()));
+	delete_and_clear(mCircuitData);
 }
 
 LLCircuitData *LLCircuit::addCircuitData(const LLHost &host, TPACKETID in_id)
@@ -1238,17 +1233,6 @@ void LLCircuit::getCircuitRange(
 	first = mCircuitData.upper_bound(key);
 }
 
-// <edit>
-std::vector<LLCircuitData*> LLCircuit::getCircuitDataList()
-{
-	std::vector<LLCircuitData*> list;
-	circuit_data_map::iterator end = mCircuitData.end();
-	for(circuit_data_map::iterator iter = mCircuitData.begin(); iter != end; ++iter)
-		list.push_back((*iter).second);
-	return list;
-}
-// </edit>
-
 TPACKETID LLCircuitData::nextPacketOutID()
 {
 	mPacketsOut++;
@@ -1430,4 +1414,11 @@ void LLCircuitData::setTrusted(BOOL t)
 F32 LLCircuitData::getAgeInSeconds() const
 {
 	return mExistenceTimer.getElapsedTimeF32();
+}
+std::vector<LLCircuitData*> LLCircuit::getCircuitDataList()
+{
+	std::vector<LLCircuitData*> list;
+	for (const auto& item : mCircuitData)
+		list.push_back(item.second);
+	return list;
 }

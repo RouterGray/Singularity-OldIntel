@@ -41,7 +41,6 @@
 
 #include "llnotifications.h"
 #include "aialert.h"
-#include "aistatemachine.h"
 
 #include "../newview/hippogridmanager.h"
 
@@ -50,10 +49,6 @@
 #pragma warning( disable       : 4265 )	// "class has virtual functions, but destructor is not virtual"
 #endif
 #include <boost/regex.hpp>
-
-// Two macros, used to make access to mItems thread-safe, to keep the diff to a minimum.
-#define AILOCK_mItems mItems_wat mItems_w(mItems_sf); LLNotificationSet& mItems(*mItems_w)
-#define AILOCK_const_mItems mItems_crat mItems_r(mItems_sf); LLNotificationSet const& mItems(*mItems_r)
 
 const std::string NOTIFICATION_PERSIST_VERSION = "0.93";
 
@@ -103,7 +98,6 @@ private:
 		output["version"] = NOTIFICATION_PERSIST_VERSION;
 		LLSD& data = output["data"];
 
-		AILOCK_mItems;
 		for (LLNotificationSet::iterator it = mItems.begin(); it != mItems.end(); ++it)
 		{
 			if (!LLNotificationTemplates::instance().templateExists((*it)->getName())) continue;
@@ -161,7 +155,6 @@ private:
 	void onDelete(LLNotificationPtr pNotification)
 	{
 		// we want to keep deleted notifications in our log
-		AILOCK_mItems;
 		mItems.insert(pNotification);
 		
 		return;
@@ -465,7 +458,7 @@ LLSD LLNotification::asLLSD()
 
 void LLNotification::update()
 {
-	LLNotifications::instance().update(shared_from_this());
+	LLNotifications::instance().update(LLNotificationPtr(this));
 }
 
 void LLNotification::updateFrom(LLNotificationPtr other)
@@ -763,7 +756,6 @@ void LLNotificationChannelBase::connectChanged(const LLStandardSignal::slot_type
 	// all of the notifications that are already in the channel
 	// we use a special signal called "load" in case the channel wants to care
 	// only about new notifications
-	AILOCK_mItems;
 	for (LLNotificationSet::iterator it = mItems.begin(); it != mItems.end(); ++it)
 	{
 		slot(LLSD().with("sigtype", "load").with("id", (*it)->id()));
@@ -803,10 +795,7 @@ bool LLNotificationChannelBase::updateItem(const LLSD& payload)
 // internal call, for use in avoiding lookup
 bool LLNotificationChannelBase::updateItem(const LLSD& payload, LLNotificationPtr pNotification)
 {
-	llassert(AIThreadID::in_main_thread());
-
 	std::string cmd = payload["sigtype"];
-	AILOCK_mItems;
 	LLNotificationSet::iterator foundItem = mItems.find(pNotification);
 	bool wasFound = (foundItem != mItems.end());
 	bool passesFilter = mFilter(pNotification);
@@ -929,9 +918,10 @@ LLNotificationChannel::LLNotificationChannel(const std::string& name,
 											 const std::string& parent,
 											 LLNotificationFilter filter, 
 											 LLNotificationComparator comparator) : 
-LLNotificationChannelBase(filter, comparator),
+LLNotificationChannelBase(filter),
 mName(name),
-mParent(parent)
+mParent(parent),
+mComparator(comparator)
 {
 	// store myself in the channel map
 	LLNotifications::instance().addChannel(LLNotificationChannelPtr(this));
@@ -953,7 +943,6 @@ void LLNotificationChannel::setComparator(LLNotificationComparator comparator)
 { 
 	mComparator = comparator; 
 	LLNotificationSet s2(mComparator);
-	AILOCK_mItems;
 	s2.insert(mItems.begin(), mItems.end());
 	mItems.swap(s2);
 	
@@ -963,19 +952,16 @@ void LLNotificationChannel::setComparator(LLNotificationComparator comparator)
 
 bool LLNotificationChannel::isEmpty() const
 {
-	AILOCK_const_mItems;
 	return mItems.empty();
 }
 
 LLNotificationChannel::Iterator LLNotificationChannel::begin()
 {
-	AILOCK_const_mItems;
 	return mItems.begin();
 }
 
 LLNotificationChannel::Iterator LLNotificationChannel::end()
 {
-	AILOCK_const_mItems;
 	return mItems.end();
 }
 
@@ -1001,8 +987,7 @@ std::string LLNotificationChannel::summarize()
 // =========================================================
 // LLNotifications implementation
 // ---
-LLNotifications::LLNotifications() : LLNotificationChannelBase(LLNotificationFilters::includeEverything,
-															   LLNotificationComparators::orderByUUID())
+LLNotifications::LLNotifications() : LLNotificationChannelBase(LLNotificationFilters::includeEverything)
 {
 }
 
@@ -1229,7 +1214,6 @@ LLNotificationTemplates::TemplateNames LLNotificationTemplates::getTemplateNames
 typedef std::map<std::string, std::string> StringMap;
 void replaceSubstitutionStrings(LLXMLNodePtr node, StringMap& replacements)
 {
-	//LL_WARNS() << "replaceSubstitutionStrings" << LL_ENDL;
 	// walk the list of attributes looking for replacements
 	for (LLXMLAttribList::iterator it=node->mAttributes.begin();
 		 it != node->mAttributes.end(); ++it)
@@ -1243,8 +1227,7 @@ void replaceSubstitutionStrings(LLXMLNodePtr node, StringMap& replacements)
 			if (found != replacements.end())
 			{
 				replacement = found->second;
-				//LL_INFOS() << "replaceSubstitutionStrings: value: \"" << value << "\" repl: \"" << replacement << "\"." << LL_ENDL;
-
+				LL_DEBUGS() << "replaceSubstitutionStrings: value: \"" << value << "\" repl: \"" << replacement << "\"." << LL_ENDL;
 				it->second->setValue(replacement);
 			}
 			else
@@ -1475,27 +1458,25 @@ bool LLNotifications::loadNotifications()
 }
 
 // we provide a couple of simple add notification functions so that it's reasonable to create notifications in one line
-LLNotificationPtr LLNotifications::add(const std::string& name, 
-										const LLSD& substitutions, 
-										const LLSD& payload)
+LLNotificationPtr LLNotifications::add(const std::string& name, const LLSD& substitutions, const LLSD& payload)
 {
 	return add(LLNotification::Params(name).substitutions(substitutions).payload(payload));	
 }
 
-LLNotificationPtr LLNotifications::add(const std::string& name, 
-										const LLSD& substitutions, 
-										const LLSD& payload, 
-										const std::string& functor_name)
+LLNotificationPtr LLNotifications::add(const std::string& name, const LLSD& substitutions, const LLSD& payload, const std::string& functor_name)
 {
-	return add(LLNotification::Params(name).substitutions(substitutions).payload(payload).functor_name(functor_name));	
+	return add(LLNotification::Params(name)
+										.substitutions(substitutions)
+										.payload(payload)
+										.functor_name(functor_name));	
 }
 
-LLNotificationPtr LLNotifications::add(const std::string& name, 
-										const LLSD& substitutions, 
-										const LLSD& payload, 
-										LLNotificationFunctorRegistry::ResponseFunctor functor)
+LLNotificationPtr LLNotifications::add(const std::string& name, const LLSD& substitutions, const LLSD& payload, LLNotificationFunctorRegistry::ResponseFunctor functor)
 {
-	return add(LLNotification::Params(name).substitutions(substitutions).payload(payload).functor(functor));	
+	return add(LLNotification::Params(name)
+										.substitutions(substitutions)
+										.payload(payload)
+										.functor(functor));	
 }
 
 // generalized add function that takes a parameter block object for more complex instantiations
@@ -1514,172 +1495,74 @@ LLNotificationPtr LLNotifications::add(AIAlert::Error const& error, int type, un
 	return add(LLNotification::Params((type == AIAlert::modal || error.is_modal()) ? "AIAlertModal" : "AIAlert").substitutions(substitutions));
 }
 
-//--------------------------------------------------------------------------------
-// struct UpdateItem
-//
-// Allow LLNotifications::add, LLNotifications::cancel and LLNotifications::update
-// to be called from any thread.
-
-struct UpdateItem
-{
-  char const* sigtype;
-  LLNotificationPtr pNotif;
-  UpdateItem(char const* st, LLNotificationPtr const& np) : sigtype(st), pNotif(np) { }
-  void doit(void) const;
-};
-
-void UpdateItem::doit(void) const
-{
-  LLNotifications::getInstance()->updateItem(LLSD().with("sigtype", sigtype).with("id", pNotif->id()), pNotif);
-  if (!strcmp(sigtype, "delete"))
-  {
-	pNotif->cancel();
-  }
-}
-
-class UpdateItemSM : public AIStateMachine
-{
-  protected:
-	typedef AIStateMachine direct_base_type;
-
-	enum update_item_state_type {
-	  UpdateItem_idle = direct_base_type::max_state,
-	  UpdateItem_doit
-	};
-
-  public:
-	static state_type const max_state = UpdateItem_doit + 1;
-
-  public:
-	UpdateItemSM(void) : AIStateMachine(CWD_ONLY(true)) { }
-
-	static void add(UpdateItem const& ui);
-
-	/*virtual*/ const char* getName() const { return "UpdateItemSM"; }
-
-  private:
-	static UpdateItemSM* sSelf;
-	typedef std::deque<UpdateItem> updateQueue_type;
-	AIThreadSafeSimpleDC<updateQueue_type> mUpdateQueue;
-	typedef AIAccess<updateQueue_type> mUpdateQueue_wat;
-	typedef AIAccess<updateQueue_type> mUpdateQueue_rat;
-	typedef AIAccessConst<updateQueue_type> mUpdateQueue_crat;
-
-  protected:
-    /*virtual*/ ~UpdateItemSM() { }
-
-  protected:
-    /*virtual*/ void initialize_impl(void) { set_state(UpdateItem_idle); }
-    /*virtual*/ void multiplex_impl(state_type run_state);
-    /*virtual*/ void abort_impl(void) { }
-    /*virtual*/ void finish_impl(void) { }
-    /*virtual*/ char const* state_str_impl(state_type run_state) const;
-};
-
-//static
-UpdateItemSM* UpdateItemSM::sSelf;
-
-void UpdateItemSM::add(UpdateItem const& ui)
-{
-  if (!sSelf)
-  {
-	sSelf = new UpdateItemSM;
-	sSelf->run(NULL, 0, false, true, &gMainThreadEngine);
-  }
-  if (AIThreadID::in_main_thread())
-  {
-	ui.doit();
-	return;
-  }
-  mUpdateQueue_wat mUpdateQueue_w(sSelf->mUpdateQueue);
-  mUpdateQueue_w->push_back(ui);
-  sSelf->advance_state(UpdateItem_doit);
-}
-
-char const* UpdateItemSM::state_str_impl(state_type run_state) const
-{
-  switch(run_state)
-  {
-    // A complete listing of hello_world_state_type.
-    AI_CASE_RETURN(UpdateItem_idle);
-    AI_CASE_RETURN(UpdateItem_doit);
-  }
-  llassert(false);
-  return "UNKNOWN STATE";
-}
-
-void UpdateItemSM::multiplex_impl(state_type run_state)
-{
-  switch(run_state)
-  {
-	case UpdateItem_idle:
-	  idle();
-	  break;
-	case UpdateItem_doit:
-	{
-	  mUpdateQueue_wat mUpdateQueue_w(sSelf->mUpdateQueue);
-	  while (!mUpdateQueue_w->empty())
-	  {
-		UpdateItem const& ui(mUpdateQueue_w->front());
-		ui.doit();
-		mUpdateQueue_w->pop_front();
-	  }
-	  set_state(UpdateItem_idle);
-	  break;
-	}
-  }
-}
-
-// end of UpdateItemSM
-//--------------------------------------------------------------------------------
-
 void LLNotifications::add(const LLNotificationPtr pNotif)
 {
 	if (pNotif == NULL) return;
 
 	// first see if we already have it -- if so, that's a problem
-	AILOCK_mItems;
 	LLNotificationSet::iterator it=mItems.find(pNotif);
 	if (it != mItems.end())
 	{
 		LL_ERRS() << "Notification added a second time to the master notification channel." << LL_ENDL;
 	}
 
-	UpdateItemSM::add(UpdateItem("add", pNotif));
+	updateItem(LLSD().with("sigtype", "add").with("id", pNotif->id()), pNotif);
 }
 
 void LLNotifications::cancel(LLNotificationPtr pNotif)
 {
 	if (pNotif == NULL || pNotif->isCancelled()) return;
 
-	AILOCK_mItems;
 	LLNotificationSet::iterator it=mItems.find(pNotif);
-	if (it == mItems.end())
+	if (it != mItems.end())
 	{
-		LL_ERRS() << "Attempted to delete nonexistent notification " << pNotif->getName() << LL_ENDL;
+		pNotif->cancel();
+		updateItem(LLSD().with("sigtype", "delete").with("id", pNotif->id()), pNotif);
 	}
-	UpdateItemSM::add(UpdateItem("delete", pNotif));
+}
+
+void LLNotifications::cancelByName(const std::string& name)
+{
+	std::vector<LLNotificationPtr> notifs_to_cancel;
+	for (LLNotificationSet::iterator it=mItems.begin(), end_it = mItems.end();
+		it != end_it;
+		++it)
+	{
+		LLNotificationPtr pNotif = *it;
+		if (pNotif->getName() == name)
+		{
+			notifs_to_cancel.push_back(pNotif);
+		}
+	}
+
+	for (std::vector<LLNotificationPtr>::iterator it = notifs_to_cancel.begin(), end_it = notifs_to_cancel.end();
+		it != end_it;
+		++it)
+	{
+		LLNotificationPtr pNotif = *it;
+		pNotif->cancel();
+		updateItem(LLSD().with("sigtype", "delete").with("id", pNotif->id()), pNotif);
+	}
 }
 
 void LLNotifications::update(const LLNotificationPtr pNotif)
 {
-	AILOCK_mItems;
 	LLNotificationSet::iterator it=mItems.find(pNotif);
 	if (it != mItems.end())
 	{
-		UpdateItemSM::add(UpdateItem("change", pNotif));
+		updateItem(LLSD().with("sigtype", "change").with("id", pNotif->id()), pNotif);
 	}
 }
 
 
-LLNotificationPtr LLNotifications::find(LLUUID const& uuid)
+LLNotificationPtr LLNotifications::find(const LLUUID& uuid)
 {
+
 	LLNotificationPtr target = LLNotificationPtr(new LLNotification(uuid));
-	AILOCK_mItems;
 	LLNotificationSet::iterator it=mItems.find(target);
 	if (it == mItems.end())
 	{
-		LL_WARNS() << "Tried to dereference uuid '" << uuid << "' as a notification key but didn't find it." << LL_ENDL;
+		LL_DEBUGS("Notifications") << "Tried to dereference uuid '" << uuid << "' as a notification key but didn't find it." << LL_ENDL;
 		return LLNotificationPtr((LLNotification*)NULL);
 	}
 	else
@@ -1690,7 +1573,6 @@ LLNotificationPtr LLNotifications::find(LLUUID const& uuid)
 
 void LLNotifications::forEachNotification(NotificationProcess process)
 {
-	AILOCK_mItems;
 	std::for_each(mItems.begin(), mItems.end(), process);
 }
 

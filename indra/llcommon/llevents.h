@@ -38,16 +38,8 @@
 #include <vector>
 #include <deque>
 #include <stdexcept>
-#if LL_WINDOWS
-	#pragma warning (push)
-	#pragma warning (disable : 4263) // boost::signals2::expired_slot::what() has const mismatch
-	#pragma warning (disable : 4264) 
-#endif
-#include <boost/signals2.hpp>
-#if LL_WINDOWS
-	#pragma warning (pop)
-#endif
 
+#include <boost/signals2.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -56,10 +48,7 @@
 #include <boost/visit_each.hpp>
 #include <boost/ref.hpp>            // reference_wrapper
 #include <boost/type_traits/is_pointer.hpp>
-#ifndef BOOST_FUNCTION_HPP_INCLUDED
 #include <boost/function.hpp>
-#define BOOST_FUNCTION_HPP_INCLUDED
-#endif
 #include <boost/static_assert.hpp>
 #include "llsd.h"
 #include "llsingleton.h"
@@ -85,7 +74,7 @@
 *****************************************************************************/
 
 /**
- * A boost::signals2 Combiner that stops the first time a handler returns true
+ * A boost::signals Combiner that stops the first time a handler returns true
  * We need this because we want to have our handlers return bool, so that
  * we have the option to cause a handler to stop further processing. The
  * default handler fails when the signal returns a value but has no slots.
@@ -220,6 +209,18 @@ public:
      * an instance without conferring @em ownership.
      */
     LLEventPump& obtain(const std::string& name);
+
+    /**
+     * Find the named LLEventPump instance. If it exists post the message to it.
+     * If the pump does not exist, do nothing.
+     * 
+     * returns the result of the LLEventPump::post. If no pump exists returns false.
+     * 
+     * This is syntactically similar to LLEventPumps::instance().post(name, message),
+     * however if the pump does not already exist it will not be created.
+     */
+    bool post(const std::string&, const LLSD&);
+
     /**
      * Flush all known LLEventPump instances
      */
@@ -241,8 +242,6 @@ private:
      * Unregister a doomed LLEventPump instance (internal)
      */
     void unregister(const LLEventPump&);
-    static bool sDeleted;
-    static void maybe_unregister(const LLEventPump&);
 
 private:
     LLEventPumps();
@@ -501,7 +500,7 @@ public:
         // at the boost::bind object itself before that happens.
         return LLEventDetail::visit_and_connect(name,
                                                 listener,
-                                                boost::bind(&LLEventPump::listen_impl,
+                                                boost::bind(&LLEventPump::listen_invoke,
                                                             this,
                                                             name,
                                                             _1,
@@ -546,13 +545,23 @@ private:
 
     virtual void reset();
 
+
+
 private:
-    virtual LLBoundListener listen_impl(const std::string& name, const LLEventListener&,
-                                        const NameList& after,
-                                        const NameList& before);
+    LLBoundListener listen_invoke(const std::string& name, const LLEventListener& listener,
+        const NameList& after,
+        const NameList& before)
+    {
+        return this->listen_impl(name, listener, after, before);
+    }
+
     std::string mName;
 
 protected:
+    virtual LLBoundListener listen_impl(const std::string& name, const LLEventListener&,
+                                        const NameList& after,
+                                        const NameList& before);
+    
     /// implement the dispatching
     boost::shared_ptr<LLStandardSignal> mSignal;
 
@@ -591,10 +600,39 @@ public:
 };
 
 /*****************************************************************************
+ *   LLEventMailDrop
+ *****************************************************************************/
+/**
+ * LLEventMailDrop is a specialization of LLEventStream. Events are posted normally, 
+ * however if no listeners return that they have handled the event it is placed in 
+ * a queue. Subsequent attaching listeners will receive stored events from the queue 
+ * until a listener indicates that the event has been handled.  In order to receive 
+ * multiple events from a mail drop the listener must disconnect and reconnect.
+ */
+class LL_COMMON_API LLEventMailDrop : public LLEventStream
+{
+public:
+    LLEventMailDrop(const std::string& name, bool tweak = false) : LLEventStream(name, tweak) {}
+    virtual ~LLEventMailDrop() {}
+    
+    /// Post an event to all listeners
+    virtual bool post(const LLSD& event);
+    
+protected:
+    virtual LLBoundListener listen_impl(const std::string& name, const LLEventListener&,
+                                        const NameList& after,
+                                        const NameList& before);
+
+private:
+    typedef std::list<LLSD> EventList;
+    EventList mEventHistory;
+};
+
+/*****************************************************************************
 *   LLEventQueue
 *****************************************************************************/
 /**
- * LLEventQueue isa LLEventPump whose post() method defers calling registered
+ * LLEventQueue is a LLEventPump whose post() method defers calling registered
  * listeners until flush() is called.
  */
 class LL_COMMON_API LLEventQueue: public LLEventPump

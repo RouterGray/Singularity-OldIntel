@@ -32,6 +32,7 @@
 
 #include "llcharacter.h"
 #include "llstring.h"
+#include "llfasttimer.h"
 
 #define SKEL_HEADER "Linden Skeleton 1.0"
 
@@ -126,6 +127,7 @@ LLMotion* LLCharacter::findMotion( const LLUUID &id )
 
 //-----------------------------------------------------------------------------
 // createMotion()
+// NOTE: Always assign the result to a LLPointer!
 //-----------------------------------------------------------------------------
 LLMotion* LLCharacter::createMotion( const LLUUID &id )
 {
@@ -176,9 +178,9 @@ void LLCharacter::requestStopMotion( LLMotion* motion)
 //-----------------------------------------------------------------------------
 // updateMotions()
 //-----------------------------------------------------------------------------
-static LLFastTimer::DeclareTimer FTM_UPDATE_ANIMATION("Update Animation");
-static LLFastTimer::DeclareTimer FTM_UPDATE_HIDDEN_ANIMATION("Update Hidden Anim");
-static LLFastTimer::DeclareTimer FTM_UPDATE_MOTIONS("Update Motions");
+static LLTrace::BlockTimerStatHandle FTM_UPDATE_ANIMATION("Update Animation");
+static LLTrace::BlockTimerStatHandle FTM_UPDATE_HIDDEN_ANIMATION("Update Hidden Anim");
+static LLTrace::BlockTimerStatHandle FTM_UPDATE_MOTIONS("Update Motions");
 
 void LLCharacter::updateMotions(e_update_t update_type)
 {
@@ -194,7 +196,7 @@ void LLCharacter::updateMotions(e_update_t update_type)
 			return;
 		}
 		//</singu>
-		LLFastTimer t(FTM_UPDATE_HIDDEN_ANIMATION);
+		LL_RECORD_BLOCK_TIME(FTM_UPDATE_HIDDEN_ANIMATION);
 		mMotionController.updateMotionsMinimal();
 	}
 	else
@@ -204,7 +206,7 @@ void LLCharacter::updateMotions(e_update_t update_type)
 		// to keep updating if they are synchronized with us, even if they are hidden.
 		mMotionController.hidden(false);
 		//</singu>
-		LLFastTimer t(FTM_UPDATE_ANIMATION);
+		LL_RECORD_BLOCK_TIME(FTM_UPDATE_ANIMATION);
 		// unpause if the number of outstanding pause requests has dropped to the initial one
 		if (mMotionController.isPaused() && mPauseRequest->getNumRefs() == 1)
 		{
@@ -212,7 +214,7 @@ void LLCharacter::updateMotions(e_update_t update_type)
 		}
 		bool force_update = (update_type == FORCE_UPDATE);
 		{
-			LLFastTimer t(FTM_UPDATE_MOTIONS);
+			LL_RECORD_BLOCK_TIME(FTM_UPDATE_MOTIONS);
 			mMotionController.updateMotions(force_update);
 		}
 	}

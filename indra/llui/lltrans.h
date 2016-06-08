@@ -34,6 +34,14 @@
 #define LL_TRANS_H
 
 #include <map>
+#include <set>
+
+#include "llpointer.h"
+#include "llstring.h"
+
+class LLXMLNode;
+
+class LLSD;
 
 /**
  * @brief String template loaded from strings.xml

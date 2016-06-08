@@ -41,8 +41,6 @@
 	#include <arpa/inet.h>
 #endif
 
-LLHost LLHost::invalid(INVALID_PORT,INVALID_HOST_IP_ADDRESS);
-
 LLHost::LLHost(const std::string& ip_and_port)
 {
 	std::string::size_type colon_index = ip_and_port.find(":");
@@ -59,7 +57,7 @@ LLHost::LLHost(const std::string& ip_and_port)
 		mIP = ip_string_to_u32(ip_str.c_str());
 		mPort = atol(port_str.c_str());
 	}
-	mHostNotFound = 0;
+	mHostNotFound = false;
 }
 
 std::string LLHost::getString() const
@@ -106,9 +104,7 @@ std::string LLHost::getHostName() const
 #endif
 		LL_WARNS() << "LLHost::getHostName() : Couldn't find host name for address " << mIP << ", Error: " << err << LL_ENDL;
 		if (err == err_host_not_found)
-		{
-			mHostNotFound = 1;
-		}
+			mHostNotFound = true;
 		return std::string();
 	}
 	else
@@ -137,7 +133,7 @@ BOOL LLHost::setHostByName(const std::string& hostname)
 	if (he)
 	{
 		mIP = *(U32 *)he->h_addr_list[0];
-		mHostNotFound = 0;
+		mHostNotFound = false;
 		return TRUE;
 	}
 	else 

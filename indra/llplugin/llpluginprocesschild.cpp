@@ -33,6 +33,7 @@
 #include "llpluginmessagepipe.h"
 #include "llpluginmessageclasses.h"
 
+static const F32 GOODBYE_SECONDS = 20.0f;
 static const F32 HEARTBEAT_SECONDS = 1.0f;
 static const F32 PLUGIN_IDLE_SECONDS = 1.0f / 100.0f;  // Each call to idle will give the plugin this much time.
 
@@ -40,7 +41,7 @@ LLPluginProcessChild::LLPluginProcessChild()
 {
 	mState = STATE_UNINITIALIZED;
 	mInstance = NULL;
-	mSocket = LLSocket::create(LLSocket::STREAM_TCP);
+	mSocket = LLSocket::create(gAPRPoolp, LLSocket::STREAM_TCP);
 	mSleepTime = PLUGIN_IDLE_SECONDS;	// default: send idle messages at 100Hz
 	mCPUElapsed = 0.0f;
 	mBlockingRequest = false;
@@ -194,34 +195,43 @@ void LLPluginProcessChild::idle(void)
 					}
 				}
 				// receivePluginMessage will transition to STATE_UNLOADING
-			break;
+			    break;
+
+            case STATE_SHUTDOWNREQ:
+                if (mInstance != NULL)
+                {
+                    sendMessageToPlugin(LLPluginMessage("base", "cleanup"));
+                    delete mInstance;
+                    mInstance = NULL;
+                }
+                setState(STATE_UNLOADING);
+                mWaitGoodbye.setTimerExpirySec(GOODBYE_SECONDS);
+                break;
 
 			case STATE_UNLOADING:
-				if(mInstance != NULL)
-				{
-					sendMessageToPlugin(LLPluginMessage("base", "cleanup"));
-					delete mInstance;
-					mInstance = NULL;
-				}
-				setState(STATE_UNLOADED);
-			break;
+                // waiting for goodbye from plugin.
+                if (mWaitGoodbye.hasExpired())
+                {
+                    LL_WARNS() << "Wait for goodbye expired.  Advancing to UNLOADED" << LL_ENDL;
+                    setState(STATE_UNLOADED);
+                }
+			    break;
 			
 			case STATE_UNLOADED:
 				killSockets();
 				setState(STATE_DONE);
-			break;
+			    break;
 
 			case STATE_ERROR:
 				// Close the socket to the launcher
 				killSockets();				
 				// TODO: Where do we go from here?  Just exit()?
 				setState(STATE_DONE);
-			break;
+			    break;
 			
 			case STATE_DONE:
 				// just sit here.
-				LL_WARNS("Plugin") << "Calling LLPluginProcessChild::idle while in STATE_DONE!" << LL_ENDL;
-			break;
+			    break;
 		}
 	
 	} while (idle_again);
@@ -280,11 +290,6 @@ bool LLPluginProcessChild::isDone(void)
 	return result;
 }
 
-// This is the SLPlugin process.
-// This is not part of a DSO.
-//
-// This function is called by SLPlugin to send a message (originating from
-// SLPlugin itself) to the loaded DSO. It calls LLPluginInstance::sendMessage.
 void LLPluginProcessChild::sendMessageToPlugin(const LLPluginMessage &message)
 {
 	if (mInstance)
@@ -304,26 +309,15 @@ void LLPluginProcessChild::sendMessageToPlugin(const LLPluginMessage &message)
 	}
 }
 
-// This is the SLPlugin process (the child process).
-// This is not part of a DSO.
-//
-// This function is called by SLPlugin to send 'message' to the viewer (the parent process).
 void LLPluginProcessChild::sendMessageToParent(const LLPluginMessage &message)
 {
 	std::string buffer = message.generate();
 
 	LL_DEBUGS("Plugin") << "Sending to parent: " << buffer << LL_ENDL;
 
-	// Write the serialized message to the pipe.
 	writeMessageRaw(buffer);
 }
 
-// This is the SLPlugin process (the child process).
-// This is not part of a DSO.
-//
-// This function is called when the serialized message 'message' was received from the viewer.
-// It parses the message and handles LLPLUGIN_MESSAGE_CLASS_INTERNAL.
-// Other message classes are passed on to LLPluginInstance::sendMessage.
 void LLPluginProcessChild::receiveMessageRaw(const std::string &message)
 {
 	// Incoming message from the TCP Socket
@@ -367,6 +361,10 @@ void LLPluginProcessChild::receiveMessageRaw(const std::string &message)
 				mPluginFile = parsed.getValue("file");
 				mPluginDir = parsed.getValue("dir");
 			}
+            else if (message_name == "shutdown_plugin")
+            {
+                setState(STATE_SHUTDOWNREQ);
+            }
 			else if(message_name == "shm_add")
 			{
 				std::string name = parsed.getValue("name");
@@ -460,17 +458,7 @@ void LLPluginProcessChild::receiveMessageRaw(const std::string &message)
 	}
 }
 
-// This is the SLPlugin process.
-// This is not part of a DSO.
-//
-// This function is called from LLPluginInstance::receiveMessage
-// for messages from a loaded DSO that have to be passed to the
-// viewer.
-//
-// It handles the base messages that are responses to messages sent by this
-// class, and passes the rest on to LLPluginMessagePipeOwner::writeMessageRaw
-// to be written to the pipe.
-/* virtual */
+/* virtual */ 
 void LLPluginProcessChild::receivePluginMessage(const std::string &message)
 {
 	LL_DEBUGS("Plugin") << "Received from plugin: " << message << LL_ENDL;
@@ -522,6 +510,10 @@ void LLPluginProcessChild::receivePluginMessage(const std::string &message)
 				// Let the parent know it's loaded and initialized.
 				sendMessageToParent(new_message);
 			}
+            else if (message_name == "goodbye")
+            {
+                setState(STATE_UNLOADED);
+            }
 			else if(message_name == "shm_remove_response")
 			{
 				// Don't pass this message up to the parent
@@ -546,26 +538,6 @@ void LLPluginProcessChild::receivePluginMessage(const std::string &message)
 				{
 					LL_WARNS("Plugin") << "shm_remove_response for unknown memory segment!" << LL_ENDL;
 				}
-			}
-		}
-		else if (message_class == LLPLUGIN_MESSAGE_CLASS_INTERNAL)
-		{
-			bool flush = false;
-			std::string message_name = parsed.getName();
-			if(message_name == "shutdown")
-			{
-				// The plugin is finished.
-				setState(STATE_UNLOADING);
-				flush = true;
-			}
-			else if (message_name == "flush")
-			{
-				flush = true;
-				passMessage = false;
-			}
-			if (flush)
-			{
-				flushMessages();
 			}
 		}
 	}

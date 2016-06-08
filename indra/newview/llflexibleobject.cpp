@@ -47,8 +47,8 @@
 std::vector<LLVolumeImplFlexible*> LLVolumeImplFlexible::sInstanceList;
 std::vector<U32> LLVolumeImplFlexible::sUpdateDelay;
 
-static LLFastTimer::DeclareTimer FTM_FLEXIBLE_REBUILD("Rebuild");
-static LLFastTimer::DeclareTimer FTM_DO_FLEXIBLE_UPDATE("Flexible Update");
+static LLTrace::BlockTimerStatHandle FTM_FLEXIBLE_REBUILD("Rebuild");
+static LLTrace::BlockTimerStatHandle FTM_DO_FLEXIBLE_UPDATE("Flexible Update");
 
 // LLFlexibleObjectData::pack/unpack now in llprimitive.cpp
 
@@ -328,14 +328,14 @@ void LLVolumeImplFlexible::updateRenderRes()
 // updated every time step. In the future, perhaps there could be an 
 // optimization similar to what Havok does for objects that are stationary. 
 //---------------------------------------------------------------------------------
-static LLFastTimer::DeclareTimer FTM_FLEXIBLE_UPDATE("Update Flexies");
+static LLTrace::BlockTimerStatHandle FTM_FLEXIBLE_UPDATE("Update Flexies");
 void LLVolumeImplFlexible::doIdleUpdate()
 {
 	LLDrawable* drawablep = mVO->mDrawable;
 
 	if (drawablep)
 	{
-		//LLFastTimer ftm(FTM_FLEXIBLE_UPDATE);
+		//LL_RECORD_BLOCK_TIME(FTM_FLEXIBLE_UPDATE);
 		
 		//ensure drawable is active
 		drawablep->makeActive();
@@ -407,13 +407,12 @@ inline S32 log2(S32 x)
 
 void LLVolumeImplFlexible::doFlexibleUpdate()
 {
-	LLFastTimer ftm(FTM_DO_FLEXIBLE_UPDATE);
+	LL_RECORD_BLOCK_TIME(FTM_DO_FLEXIBLE_UPDATE);
 	LLVolume* volume = mVO->getVolume();
 	LLPath *path = &volume->getPath();
 	if ((mSimulateRes == 0 || !mInitialized) && mVO->mDrawable->isVisible()) 
 	{
 		BOOL force_update = mSimulateRes == 0 ? TRUE : FALSE;
-
 		doIdleUpdate();
 
 		if (!force_update || !gPipeline.hasRenderDebugFeatureMask(LLPipeline::RENDER_DEBUG_FEATURE_FLEXIBLE))
@@ -428,7 +427,7 @@ void LLVolumeImplFlexible::doFlexibleUpdate()
 		return ;
 	}
 
-	// stinson 11/12/2012: Need to check with davep on the following.
+	// Fix for MAINT-1894
 	// Skipping the flexible update if render res is negative.  If we were to continue with a negative value,
 	// the subsequent S32 num_render_sections = 1<<mRenderRes; code will specify a really large number of
 	// render sections which will then create a length exception in the std::vector::resize() method.
@@ -675,6 +674,7 @@ void LLVolumeImplFlexible::doFlexibleUpdate()
 								LLVector4(z_axis, 0.f),
 								LLVector4(delta_pos, 1.f));
 			
+	LL_CHECK_MEMORY
 	for (i=0; i<=num_render_sections; ++i)
 	{
 		new_point = &path->mPath[i];
@@ -693,14 +693,17 @@ void LLVolumeImplFlexible::doFlexibleUpdate()
 		new_point->mScale.set(newSection[i].mScale.mV[0], newSection[i].mScale.mV[1], 0,1);
 		new_point->mTexT = ((F32)i)/(num_render_sections);
 	}
-
+	LL_CHECK_MEMORY
 	mLastSegmentRotation = parentSegmentRotation;
 }
+
+static LLTrace::BlockTimerStatHandle FTM_FLEXI_PREBUILD("Flexi Prebuild");
 
 void LLVolumeImplFlexible::preRebuild()
 {
 	if (!mUpdated)
 	{
+		LL_RECORD_BLOCK_TIME(FTM_FLEXI_PREBUILD);
 		doFlexibleRebuild();
 	}
 }
@@ -759,7 +762,7 @@ BOOL LLVolumeImplFlexible::doUpdateGeometry(LLDrawable *drawable)
 
 	if (mRenderRes > -1)
 	{
-		LLFastTimer t(FTM_DO_FLEXIBLE_UPDATE);
+		LL_RECORD_BLOCK_TIME(FTM_DO_FLEXIBLE_UPDATE);
 		doFlexibleUpdate();
 	}
 	
@@ -779,7 +782,7 @@ BOOL LLVolumeImplFlexible::doUpdateGeometry(LLDrawable *drawable)
 		volume->mDrawable->setState(LLDrawable::REBUILD_VOLUME);
 		volume->dirtySpatialGroup();
 		{
-			LLFastTimer t(FTM_FLEXIBLE_REBUILD);
+			LL_RECORD_BLOCK_TIME(FTM_FLEXIBLE_REBUILD);
 			doFlexibleRebuild();
 		}
 		volume->genBBoxes(isVolumeGlobal());

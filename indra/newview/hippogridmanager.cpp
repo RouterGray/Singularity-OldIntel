@@ -11,7 +11,7 @@
 #include <lleconomy.h>
 #include <llerror.h>
 #include <llfile.h>
-#include <llhttpclient.h>
+#include "llcorehttputil.h"
 #include <llsdserialize.h>
 #include "lltrans.h"
 #include "llviewercontrol.h"
@@ -371,8 +371,9 @@ void HippoGridInfo::getGridInfo()
 		uri += '/';
 	}
 
-	std::string reply;
-	int result = LLHTTPClient::blockingGetRaw(uri + "get_grid_info", reply);
+	LLSD response = (new LLCoreHttpUtil::HttpCoroutineAdapter("HippoGridManager", LLCore::HttpRequest::DEFAULT_POLICY_ID))->getAndSuspend(LLCore::HttpRequest::ptr_t(new LLCore::HttpRequest), uri + "get_grid_info");
+	int result = LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(response).getStatus();
+	std::string reply = response[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_CONTENT];
 	if (result != HTTP_OK)
 	{
 		char const* xml_desc;
@@ -388,7 +389,6 @@ void HippoGridInfo::getGridInfo()
 				xml_desc = "AIError";
 				break;
 		}
-		// LLHTTPClient::blockingGetRaw puts any error message in the reply.
 		THROW_ALERTC(result, xml_desc, AIArgs("[ERROR]", reply));
 	}
 
@@ -781,7 +781,8 @@ void HippoGridManager::parseUrl()
 
 	// query update server
 	std::string escaped_url = LLWeb::escapeURL(url);
-	LLSD response = LLHTTPClient::blockingGet(url);
+	LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("HippoGridManager", LLCore::HttpRequest::DEFAULT_POLICY_ID));
+	LLSD response = httpAdapter->getAndSuspend(LLCore::HttpRequest::ptr_t(new LLCore::HttpRequest), url);
 
 	// check response, return on error
 	S32 status = response["status"].asInteger();

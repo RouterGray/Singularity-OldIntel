@@ -3,7 +3,6 @@
 project(llimage)
 
 include(00-Common)
-include(LLAddBuildTest)
 include(LLCommon)
 include(LLImage)
 include(LLMath)
@@ -11,6 +10,7 @@ include(LLVFS)
 include(JPEG)
 include(PNG)
 include(ZLIB)
+include(LLAddBuildTest)
 
 include_directories(
     ${LLCOMMON_INCLUDE_DIRS}
@@ -24,7 +24,9 @@ include_directories(
 set(llimage_SOURCE_FILES
     llimage.cpp
     llimagebmp.cpp
+    llimagedimensionsinfo.cpp
     llimagedxt.cpp
+    llimagefilter.cpp
     llimagej2c.cpp
     llimagejpeg.cpp
     llimagepng.cpp
@@ -38,7 +40,9 @@ set(llimage_HEADER_FILES
 
     llimage.h
     llimagebmp.h
+    llimagedimensionsinfo.h
     llimagedxt.h
+    llimagefilter.h
     llimagej2c.h
     llimagejpeg.h
     llimagepng.h

@@ -26,7 +26,7 @@
 
 #include "linden_common.h"
 
-#include <boost/static_assert.hpp>
+#include "llfasttimer.h"
 #include "llsys.h"
 #include "llvertexbuffer.h"
 // #include "llrender.h"
@@ -85,6 +85,7 @@ const U32 LL_VBO_POOL_SEED_COUNT = vbo_block_index(LL_VBO_POOL_MAX_SEED_SIZE);
 //static
 LLVBOPool LLVertexBuffer::sStreamVBOPool(GL_STREAM_DRAW_ARB, GL_ARRAY_BUFFER_ARB);
 LLVBOPool LLVertexBuffer::sDynamicVBOPool(GL_DYNAMIC_DRAW_ARB, GL_ARRAY_BUFFER_ARB);
+LLVBOPool LLVertexBuffer::sDynamicCopyVBOPool(GL_DYNAMIC_COPY_ARB, GL_ARRAY_BUFFER_ARB);
 LLVBOPool LLVertexBuffer::sStreamIBOPool(GL_STREAM_DRAW_ARB, GL_ELEMENT_ARRAY_BUFFER_ARB);
 LLVBOPool LLVertexBuffer::sDynamicIBOPool(GL_DYNAMIC_DRAW_ARB, GL_ELEMENT_ARRAY_BUFFER_ARB);
 
@@ -97,7 +98,6 @@ U32 LLVertexBuffer::sCurVAOName = 1;
 U32 LLVertexBuffer::sAllocatedIndexBytes = 0;
 U32 LLVertexBuffer::sIndexCount = 0;
 
-LLPrivateMemoryPool* LLVertexBuffer::sPrivatePoolp = NULL;
 U32 LLVertexBuffer::sBindCount = 0;
 U32 LLVertexBuffer::sSetCount = 0;
 S32 LLVertexBuffer::sCount = 0;
@@ -407,6 +407,7 @@ void LLVertexBuffer::seedPools()
 { 
 	sStreamVBOPool.seedPool();
 	sDynamicVBOPool.seedPool();
+	sDynamicCopyVBOPool.seedPool();
 	sStreamIBOPool.seedPool();
 	sDynamicIBOPool.seedPool();
 }
@@ -559,8 +560,10 @@ void LLVertexBuffer::setupClientArrays(U32 data_mask)
 }
 
 //static
+static LLTrace::BlockTimerStatHandle FTM_VB_DRAW_ARRAYS("drawArrays");
 void LLVertexBuffer::drawArrays(U32 mode, const std::vector<LLVector3>& pos, const std::vector<LLVector3>& norm)
 {
+	LL_RECORD_BLOCK_TIME(FTM_VB_DRAW_ARRAYS);
 	llassert(!LLGLSLShader::sNoFixedFunction || LLGLSLShader::sCurBoundShaderPtr != NULL);
 	gGL.syncMatrices();
 
@@ -738,6 +741,9 @@ void LLVertexBuffer::drawRange(U32 mode, U32 start, U32 end, U32 count, U32 indi
 	glDrawRangeElements(sGLMode[mode], start, end, count, GL_UNSIGNED_SHORT, 
 		idx);
 	stop_glerror();
+
+	
+
 	placeFence();
 }
 
@@ -787,7 +793,7 @@ void LLVertexBuffer::draw(U32 mode, U32 count, U32 indices_offset) const
 	placeFence();
 }
 
-static LLFastTimer::DeclareTimer FTM_GL_DRAW_ARRAYS("GL draw arrays");
+static LLTrace::BlockTimerStatHandle FTM_GL_DRAW_ARRAYS("GL draw arrays");
 void LLVertexBuffer::drawArrays(U32 mode, U32 first, U32 count) const
 {
 	llassert(!LLGLSLShader::sNoFixedFunction || LLGLSLShader::sCurBoundShaderPtr != NULL);
@@ -823,7 +829,8 @@ void LLVertexBuffer::drawArrays(U32 mode, U32 first, U32 count) const
 	}
 
 	{
-		LLFastTimer t2(FTM_GL_DRAW_ARRAYS);
+		LL_RECORD_BLOCK_TIME(FTM_GL_DRAW_ARRAYS);
+
 		stop_glerror();
 		glDrawArrays(sGLMode[mode], first, count);
 	}
@@ -836,11 +843,6 @@ void LLVertexBuffer::initClass(bool use_vbo, bool no_vbo_mapping)
 {
 	sEnableVBOs = use_vbo && gGLManager.mHasVertexBufferObject;
 	sDisableVBOMapping = sEnableVBOs;// && no_vbo_mapping; //Temporary workaround for vbo mapping being straight up broken
-
-	if (!sPrivatePoolp)
-	{ 
-		sPrivatePoolp = LLPrivateMemoryPoolManager::getInstance()->newPool(LLPrivateMemoryPool::STATIC);
-	}
 }
 
 //static 
@@ -882,12 +884,6 @@ void LLVertexBuffer::cleanupClass()
 	sDynamicIBOPool.cleanup();
 	sStreamVBOPool.cleanup();
 	sDynamicVBOPool.cleanup();
-
-	if(sPrivatePoolp)
-	{
-		LLPrivateMemoryPoolManager::getInstance()->deletePool(sPrivatePoolp);
-		sPrivatePoolp = NULL;
-	}
 }
 
 //----------------------------------------------------------------------------
@@ -931,7 +927,8 @@ S32 LLVertexBuffer::determineUsage(S32 usage)
 	return ret_usage;
 }
 
-LLVertexBuffer::LLVertexBuffer(U32 typemask, S32 usage) :
+LLVertexBuffer::LLVertexBuffer(U32 typemask, S32 usage) 
+:	LLTrace::MemTrackable<LLVertexBuffer>("LLVertexBuffer"),
 	LLRefCount(),
 
 	mNumVerts(0),
@@ -1068,7 +1065,9 @@ void LLVertexBuffer::waitFence() const
 
 void LLVertexBuffer::genBuffer(U32 size)
 {
+	disclaimMem(mSize);
 	mSize = vbo_block_size(size);
+	claimMem(mSize);
 
 	if (mUsage == GL_STREAM_DRAW_ARB)
 	{
@@ -1156,8 +1155,10 @@ void LLVertexBuffer::createGLBuffer(U32 size)
 	{
 		static int gl_buffer_idx = 0;
 		mGLBuffer = ++gl_buffer_idx;
-		mMappedData = (U8*)ALLOCATE_MEM(sPrivatePoolp, size);
+		mMappedData = (U8*) ll_aligned_malloc_16(size);
+		disclaimMem(mSize);
 		mSize = size;
+		claimMem(mSize);
 	}
 }
 
@@ -1188,7 +1189,7 @@ void LLVertexBuffer::createGLIndices(U32 size)
 	}
 	else
 	{
-		mMappedIndexData = (U8*)ALLOCATE_MEM(sPrivatePoolp, size);
+		mMappedIndexData = (U8*) ll_aligned_malloc_16(size);
 		static int gl_buffer_idx = 0;
 		mGLIndices = ++gl_buffer_idx;
 		mIndicesSize = size;
@@ -1205,7 +1206,7 @@ void LLVertexBuffer::destroyGLBuffer()
 		}
 		else
 		{
-			FREE_MEM(sPrivatePoolp, (void*) mMappedData);
+			ll_aligned_free_16((void*) mMappedData);
 			mMappedData = NULL;
 			mEmpty = true;
 		}
@@ -1225,7 +1226,7 @@ void LLVertexBuffer::destroyGLIndices()
 		}
 		else
 		{
-			FREE_MEM(sPrivatePoolp, (void*) mMappedIndexData);
+			ll_aligned_free_16((void*) mMappedIndexData);
 			mMappedIndexData = NULL;
 			mEmpty = true;
 		}
@@ -1301,7 +1302,7 @@ void LLVertexBuffer::allocateBuffer(S32 nverts, S32 nindices, bool create)
 	}
 }
 
-static LLFastTimer::DeclareTimer FTM_SETUP_VERTEX_ARRAY("Setup VAO");
+static LLTrace::BlockTimerStatHandle FTM_SETUP_VERTEX_ARRAY("Setup VAO");
 
 void LLVertexBuffer::setupVertexArray()
 {
@@ -1310,7 +1311,7 @@ void LLVertexBuffer::setupVertexArray()
 		return;
 	}
 
-	LLFastTimer t(FTM_SETUP_VERTEX_ARRAY);
+	LL_RECORD_BLOCK_TIME(FTM_SETUP_VERTEX_ARRAY);
 #if GL_ARB_vertex_array_object
 	glBindVertexArray(mGLArray);
 #endif
@@ -1465,8 +1466,8 @@ bool expand_region(LLVertexBuffer::MappedRegion& region, S32 index, S32 count)
 	return true;
 }
 
-static LLFastTimer::DeclareTimer FTM_VBO_MAP_BUFFER_RANGE("VBO Map Range");
-static LLFastTimer::DeclareTimer FTM_VBO_MAP_BUFFER("VBO Map");
+static LLTrace::BlockTimerStatHandle FTM_VBO_MAP_BUFFER_RANGE("VBO Map Range");
+static LLTrace::BlockTimerStatHandle FTM_VBO_MAP_BUFFER("VBO Map");
 
 // Map for data access
 volatile U8* LLVertexBuffer::mapVertexBuffer(S32 type, S32 index, S32 count, bool map_range)
@@ -1537,7 +1538,7 @@ volatile U8* LLVertexBuffer::mapVertexBuffer(S32 type, S32 index, S32 count, boo
 					if (map_range)
 					{
 #ifdef GL_ARB_map_buffer_range
-						LLFastTimer t(FTM_VBO_MAP_BUFFER_RANGE);
+						LL_RECORD_BLOCK_TIME(FTM_VBO_MAP_BUFFER_RANGE);
 						S32 offset = mOffsets[type] + sTypeSize[type]*index;
 						S32 length = (sTypeSize[type]*count+0xF) & ~0xF;
 						src = (U8*) glMapBufferRange(GL_ARRAY_BUFFER_ARB, offset, length, 
@@ -1561,7 +1562,7 @@ volatile U8* LLVertexBuffer::mapVertexBuffer(S32 type, S32 index, S32 count, boo
 							}
 						}
 
-						LLFastTimer t(FTM_VBO_MAP_BUFFER);
+						LL_RECORD_BLOCK_TIME(FTM_VBO_MAP_BUFFER);
 						src = (U8*) glMapBufferRange(GL_ARRAY_BUFFER_ARB, 0, mSize, 
 							GL_MAP_WRITE_BIT | 
 							GL_MAP_FLUSH_EXPLICIT_BIT);
@@ -1572,8 +1573,10 @@ volatile U8* LLVertexBuffer::mapVertexBuffer(S32 type, S32 index, S32 count, boo
 				{
 					if (map_range)
 					{
+#ifndef LL_MESA_HEADLESS
 						glBufferParameteriAPPLE(GL_ARRAY_BUFFER_ARB, GL_BUFFER_SERIALIZED_MODIFY_APPLE, GL_FALSE);
 						glBufferParameteriAPPLE(GL_ARRAY_BUFFER_ARB, GL_BUFFER_FLUSHING_UNMAP_APPLE, GL_FALSE);
+#endif
 						src = (U8*) glMapBufferARB(GL_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 					}
 					else
@@ -1645,8 +1648,8 @@ volatile U8* LLVertexBuffer::mapVertexBuffer(S32 type, S32 index, S32 count, boo
 }
 
 
-static LLFastTimer::DeclareTimer FTM_VBO_MAP_INDEX_RANGE("IBO Map Range");
-static LLFastTimer::DeclareTimer FTM_VBO_MAP_INDEX("IBO Map");
+static LLTrace::BlockTimerStatHandle FTM_VBO_MAP_INDEX_RANGE("IBO Map Range");
+static LLTrace::BlockTimerStatHandle FTM_VBO_MAP_INDEX("IBO Map");
 
 volatile U8* LLVertexBuffer::mapIndexBuffer(S32 index, S32 count, bool map_range)
 {
@@ -1724,7 +1727,7 @@ volatile U8* LLVertexBuffer::mapIndexBuffer(S32 index, S32 count, bool map_range
 					if (map_range)
 					{
 #ifdef GL_ARB_map_buffer_range
-						LLFastTimer t(FTM_VBO_MAP_INDEX_RANGE);
+						LL_RECORD_BLOCK_TIME(FTM_VBO_MAP_INDEX_RANGE);
 						S32 offset = sizeof(U16)*index;
 						S32 length = sizeof(U16)*count;
 						src = (U8*) glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER_ARB, offset, length, 
@@ -1736,7 +1739,7 @@ volatile U8* LLVertexBuffer::mapIndexBuffer(S32 index, S32 count, bool map_range
 					else
 					{
 #ifdef GL_ARB_map_buffer_range
-						LLFastTimer t(FTM_VBO_MAP_INDEX);
+						LL_RECORD_BLOCK_TIME(FTM_VBO_MAP_INDEX);
 						src = (U8*) glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER_ARB, 0, sizeof(U16)*mNumIndices, 
 							GL_MAP_WRITE_BIT | 
 							GL_MAP_FLUSH_EXPLICIT_BIT);
@@ -1747,8 +1750,10 @@ volatile U8* LLVertexBuffer::mapIndexBuffer(S32 index, S32 count, bool map_range
 				{
 					if (map_range)
 					{
+#ifndef LL_MESA_HEADLESS
 						glBufferParameteriAPPLE(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_BUFFER_SERIALIZED_MODIFY_APPLE, GL_FALSE);
 						glBufferParameteriAPPLE(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_BUFFER_FLUSHING_UNMAP_APPLE, GL_FALSE);
+#endif
 						src = (U8*) glMapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 					}
 					else
@@ -1758,7 +1763,7 @@ volatile U8* LLVertexBuffer::mapIndexBuffer(S32 index, S32 count, bool map_range
 				}
 				else
 				{
-					LLFastTimer t(FTM_VBO_MAP_INDEX);
+					LL_RECORD_BLOCK_TIME(FTM_VBO_MAP_INDEX);
 					map_range = false;
 					src = (U8*) glMapBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, GL_WRITE_ONLY_ARB);
 				}
@@ -1809,12 +1814,12 @@ volatile U8* LLVertexBuffer::mapIndexBuffer(S32 index, S32 count, bool map_range
 	}
 }
 
-static LLFastTimer::DeclareTimer FTM_VBO_UNMAP("VBO Unmap");
-static LLFastTimer::DeclareTimer FTM_VBO_FLUSH_RANGE("Flush VBO Range");
+static LLTrace::BlockTimerStatHandle FTM_VBO_UNMAP("VBO Unmap");
+static LLTrace::BlockTimerStatHandle FTM_VBO_FLUSH_RANGE("Flush VBO Range");
 
 
-static LLFastTimer::DeclareTimer FTM_IBO_UNMAP("IBO Unmap");
-static LLFastTimer::DeclareTimer FTM_IBO_FLUSH_RANGE("Flush IBO Range");
+static LLTrace::BlockTimerStatHandle FTM_IBO_UNMAP("IBO Unmap");
+static LLTrace::BlockTimerStatHandle FTM_IBO_FLUSH_RANGE("Flush IBO Range");
 
 void LLVertexBuffer::unmapBuffer()
 {
@@ -1827,7 +1832,7 @@ void LLVertexBuffer::unmapBuffer()
 
 	if (mMappedData && mVertexLocked)
 	{
-		LLFastTimer t(FTM_VBO_UNMAP);
+		LL_RECORD_BLOCK_TIME(FTM_VBO_UNMAP);
 		bindGLBuffer(true);
 		updated_all = mIndexLocked; //both vertex and index buffers done updating
 
@@ -1869,14 +1874,16 @@ void LLVertexBuffer::unmapBuffer()
 						S32 length = sTypeSize[region.mType]*region.mCount;
 						if (gGLManager.mHasMapBufferRange)
 						{
-							LLFastTimer t(FTM_VBO_FLUSH_RANGE);
+							LL_RECORD_BLOCK_TIME(FTM_VBO_FLUSH_RANGE);
 #ifdef GL_ARB_map_buffer_range
 							glFlushMappedBufferRange(GL_ARRAY_BUFFER_ARB, offset, length);
 #endif
 						}
 						else if (gGLManager.mHasFlushBufferRange)
 						{
+#ifndef LL_MESA_HEADLESS
 							glFlushMappedBufferRangeAPPLE(GL_ARRAY_BUFFER_ARB, offset, length);
+#endif
 						}
 						stop_glerror();
 					}
@@ -1897,7 +1904,7 @@ void LLVertexBuffer::unmapBuffer()
 	
 	if (mMappedIndexData && mIndexLocked)
 	{
-		LLFastTimer t(FTM_IBO_UNMAP);
+		LL_RECORD_BLOCK_TIME(FTM_IBO_UNMAP);
 		bindGLIndices();
 		if(!mMappable)
 		{
@@ -1935,7 +1942,7 @@ void LLVertexBuffer::unmapBuffer()
 						S32 length = sizeof(U16)*region.mCount;
 						if (gGLManager.mHasMapBufferRange)
 						{
-							LLFastTimer t(FTM_IBO_FLUSH_RANGE);
+							LL_RECORD_BLOCK_TIME(FTM_IBO_FLUSH_RANGE);
 #ifdef GL_ARB_map_buffer_range
 							glFlushMappedBufferRange(GL_ELEMENT_ARRAY_BUFFER_ARB, offset, length);
 #endif
@@ -1943,7 +1950,9 @@ void LLVertexBuffer::unmapBuffer()
 						else if (gGLManager.mHasFlushBufferRange)
 						{
 #ifdef GL_APPLE_flush_buffer_range
+#ifndef LL_MESA_HEADLESS
 							glFlushMappedBufferRangeAPPLE(GL_ELEMENT_ARRAY_BUFFER_ARB, offset, length);
+#endif
 #endif
 						}
 						stop_glerror();
@@ -2081,13 +2090,13 @@ bool LLVertexBuffer::getClothWeightStrider(LLStrider<LLVector4a>& strider, S32 i
 
 //----------------------------------------------------------------------------
 
-static LLFastTimer::DeclareTimer FTM_BIND_GL_ARRAY("Bind Array");
+static LLTrace::BlockTimerStatHandle FTM_BIND_GL_ARRAY("Bind Array");
 bool LLVertexBuffer::bindGLArray()
 {
 	if (mGLArray && sGLRenderArray != mGLArray)
 	{
 		{
-			LLFastTimer t(FTM_BIND_GL_ARRAY);
+			LL_RECORD_BLOCK_TIME(FTM_BIND_GL_ARRAY);
 #if GL_ARB_vertex_array_object
 			glBindVertexArray(mGLArray);
 #endif
@@ -2104,7 +2113,7 @@ bool LLVertexBuffer::bindGLArray()
 	return false;
 }
 
-static LLFastTimer::DeclareTimer FTM_BIND_GL_BUFFER("Bind Buffer");
+static LLTrace::BlockTimerStatHandle FTM_BIND_GL_BUFFER("Bind Buffer");
 
 bool LLVertexBuffer::bindGLBuffer(bool force_bind)
 {
@@ -2114,21 +2123,14 @@ bool LLVertexBuffer::bindGLBuffer(bool force_bind)
 
 	if (useVBOs() && (force_bind || (mGLBuffer && (mGLBuffer != sGLRenderBuffer || !sVBOActive))))
 	{
-		//LLFastTimer t(FTM_BIND_GL_BUFFER);
-		/*if (sMapped)
-		{
-			LL_ERRS() << "VBO bound while another VBO mapped!" << LL_ENDL;
-		}*/
+		//LL_RECORD_BLOCK_TIME(FTM_BIND_GL_BUFFER);
+		
 		glBindBufferARB(GL_ARRAY_BUFFER_ARB, mGLBuffer);
 		sGLRenderBuffer = mGLBuffer;
 		sBindCount++;
 		sVBOActive = true;
 
-		if (mGLArray)
-		{
-			llassert(sGLRenderArray == mGLArray);
-			//mCachedRenderBuffer = mGLBuffer;
-		}
+		llassert(!mGLArray || sGLRenderArray == mGLArray);
 
 		ret = true;
 	}
@@ -2136,7 +2138,7 @@ bool LLVertexBuffer::bindGLBuffer(bool force_bind)
 	return ret;
 }
 
-static LLFastTimer::DeclareTimer FTM_BIND_GL_INDICES("Bind Indices");
+static LLTrace::BlockTimerStatHandle FTM_BIND_GL_INDICES("Bind Indices");
 
 bool LLVertexBuffer::bindGLIndices(bool force_bind)
 {
@@ -2145,7 +2147,7 @@ bool LLVertexBuffer::bindGLIndices(bool force_bind)
 	bool ret = false;
 	if (useVBOs() && (force_bind || (mGLIndices && (mGLIndices != sGLRenderIndices || !sIBOActive))))
 	{
-		LLFastTimer t(FTM_BIND_GL_INDICES);
+		LL_RECORD_BLOCK_TIME(FTM_BIND_GL_INDICES);
 		/*if (sMapped)
 		{
 			LL_ERRS() << "VBO bound while another VBO mapped!" << LL_ENDL;

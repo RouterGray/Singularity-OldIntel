@@ -81,16 +81,12 @@ static const std::string liru_assert_strip(const std::string& file) { return fil
 #ifdef SHOW_ASSERT
 #define llassert(func)			llassert_always_msg(func, #func)
 #define llverify(func)			llassert_always_msg(func, #func)
-#define ASSERT_ONLY(...)		__VA_ARGS__
-#define ASSERT_ONLY_COMMA(...)	, __VA_ARGS__
 #else
 #define llassert(func)
 #define llverify(func)			do {if (func) {}} while(0)
-#define ASSERT_ONLY(...)
-#define ASSERT_ONLY_COMMA(...)
 #endif
 
-#ifdef LL_WINDOWS
+#if defined(LL_WINDOWS) || defined(LL_CPP11)
 #define LL_STATIC_ASSERT(func, msg) static_assert(func, msg)
 #define LL_BAD_TEMPLATE_INSTANTIATION(type, msg) static_assert(false, msg)
 #else
@@ -366,12 +362,6 @@ typedef LLError::NoClassInfo _LL_CLASS_TO_LOG;
 #define LL_DEBUGS_ONCE(...)	lllog(LLError::LEVEL_DEBUG, true, false, ##__VA_ARGS__)
 #define LL_INFOS_ONCE(...)	lllog(LLError::LEVEL_INFO, true, false, ##__VA_ARGS__)
 #define LL_WARNS_ONCE(...)	lllog(LLError::LEVEL_WARN, true, false, ##__VA_ARGS__)
-
-// No function name
-#define LL_DEBUGS_NF(...)	lllog(LLError::LEVEL_DEBUG, false, true, ##__VA_ARGS__)
-#define LL_INFOS_NF(...)	lllog(LLError::LEVEL_INFO, false, true, ##__VA_ARGS__)
-#define LL_WARNS_NF(...)	lllog(LLError::LEVEL_WARN, false, true, ##__VA_ARGS__)
-#define LL_ERRS_NF(...)	lllog(LLError::LEVEL_ERROR, false, true, ##__VA_ARGS__)
 
 // DEPRECATED: Use the new macros that allow tags and *look* like macros.
 #define lldebugs	LL_COMPILE_TIME_MESSAGE("Warning: lldebugs deprecated, use LL_DEBUGS() instead") LL_DEBUGS()

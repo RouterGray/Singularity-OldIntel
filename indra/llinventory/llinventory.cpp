@@ -73,17 +73,20 @@ const LLUUID MAGIC_ID("3c115e51-04f4-523c-9fa6-98aff1034730");
 LLInventoryObject::LLInventoryObject(const LLUUID& uuid,
 									 const LLUUID& parent_uuid,
 									 LLAssetType::EType type,
-									 const std::string& name) :
+									 const std::string& name) 
+:	LLTrace::MemTrackable<LLInventoryObject>("LLInventoryObject"),
 	mUUID(uuid),
 	mParentUUID(parent_uuid),
 	mType(type),
 	mName(name),
 	mCreationDate(0)
 {
+	claimMem(mName);
 	correctInventoryName(mName);
 }
 
-LLInventoryObject::LLInventoryObject() :
+LLInventoryObject::LLInventoryObject() 
+:	LLTrace::MemTrackable<LLInventoryObject>("LLInventoryObject"),
 	mType(LLAssetType::AT_NONE),
 	mCreationDate(0)
 {
@@ -98,7 +101,9 @@ void LLInventoryObject::copyObject(const LLInventoryObject* other)
 	mUUID = other->mUUID;
 	mParentUUID = other->mParentUUID;
 	mType = other->mType;
+	disclaimMem(mName);
 	mName = other->mName;
+	claimMem(mName);
 }
 
 const LLUUID& LLInventoryObject::getUUID() const
@@ -151,7 +156,9 @@ void LLInventoryObject::rename(const std::string& n)
 	correctInventoryName(new_name);
 	if( !new_name.empty() && new_name != mName )
 	{
+		disclaimMem(mName);
 		mName = new_name;
+		claimMem(mName);
 	}
 }
 
@@ -263,7 +270,7 @@ void LLInventoryObject::updateServer(BOOL) const
 	LL_WARNS() << "LLInventoryObject::updateServer() called.  Doesn't do anything." << LL_ENDL;
 }
 
-// inline
+// static
 void LLInventoryObject::correctInventoryName(std::string& name)
 {
 	LLStringUtil::replaceNonstandardASCII(name, ' ');
@@ -316,8 +323,11 @@ LLInventoryItem::LLInventoryItem(const LLUUID& uuid,
 	mFlags(flags)
 {
 	mCreationDate = creation_date_utc;
+
 	LLStringUtil::replaceNonstandardASCII(mDescription, ' ');
 	LLStringUtil::replaceChar(mDescription, '|', ' ');
+	claimMem(mDescription);
+
 	mPermissions.initMasks(inv_type);
 }
 
@@ -349,7 +359,9 @@ void LLInventoryItem::copyItem(const LLInventoryItem* other)
 	copyObject(other);
 	mPermissions = other->mPermissions;
 	mAssetUUID = other->mAssetUUID;
+	disclaimMem(mDescription);
 	mDescription = other->mDescription;
+	claimMem(mDescription);
 	mSaleInfo = other->mSaleInfo;
 	mInventoryType = other->mInventoryType;
 	mFlags = other->mFlags;
@@ -429,7 +441,9 @@ void LLInventoryItem::setDescription(const std::string& d)
 	LLInventoryItem::correctInventoryDescription(new_desc);
 	if( new_desc != mDescription )
 	{
+		disclaimMem(mDescription);
 		mDescription = new_desc;
+		claimMem(mDescription);
 	}
 }
 
@@ -710,7 +724,9 @@ BOOL LLInventoryItem::importFile(LLFILE* fp)
 				valuestr[0] = '\000';
 			}
 
+			disclaimMem(mDescription);
 			mDescription.assign(valuestr);
+			claimMem(mDescription);
 			LLStringUtil::replaceNonstandardASCII(mDescription, ' ');
 			/* TODO -- ask Ian about this code
 			const char *donkey = mDescription.c_str();
@@ -916,8 +932,10 @@ BOOL LLInventoryItem::importLegacyStream(std::istream& input_stream)
 				valuestr[0] = '\000';
 			}
 
+			disclaimMem(mDescription);
 			mDescription.assign(valuestr);
 			LLStringUtil::replaceNonstandardASCII(mDescription, ' ');
+			claimMem(mDescription);
 			/* TODO -- ask Ian about this code
 			const char *donkey = mDescription.c_str();
 			if (donkey[0] == '|')
@@ -1046,12 +1064,11 @@ void LLInventoryItem::asLLSD( LLSD& sd ) const
 	sd[INV_CREATION_DATE_LABEL] = (S32) mCreationDate;
 }
 
-LLFastTimer::DeclareTimer FTM_INVENTORY_SD_DESERIALIZE("Inventory SD Deserialize");
+LLTrace::BlockTimerStatHandle FTM_INVENTORY_SD_DESERIALIZE("Inventory SD Deserialize");
 
 bool LLInventoryItem::fromLLSD(const LLSD& sd, bool is_new)
 {
-
-	LLFastTimer _(FTM_INVENTORY_SD_DESERIALIZE);
+	LL_RECORD_BLOCK_TIME(FTM_INVENTORY_SD_DESERIALIZE);
 	if (is_new)
 	{
 		// If we're adding LLSD to an existing object, need avoid
@@ -1202,8 +1219,10 @@ bool LLInventoryItem::fromLLSD(const LLSD& sd, bool is_new)
 	w = INV_DESC_LABEL;
 	if (sd.has(w))
 	{
+		disclaimMem(mDescription);
 		mDescription = sd[w].asString();
 		LLStringUtil::replaceNonstandardASCII(mDescription, ' ');
+		claimMem(mDescription);
 	}
 	w = INV_CREATION_DATE_LABEL;
 	if (sd.has(w))

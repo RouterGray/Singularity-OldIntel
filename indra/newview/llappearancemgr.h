@@ -34,13 +34,12 @@
 #include "llinventorymodel.h"
 #include "llinventoryobserver.h"
 #include "llviewerinventory.h"
-#include "llhttpclient.h"
+#include "llcorehttputil.h"
 
 class LLWearable;
 class LLWearableHoldingPattern;
 class LLInventoryCallback;
 class LLOutfitUnLockTimer;
-class RequestAgentUpdateAppearanceResponder;
 
 class LLAppearanceMgr: public LLSingleton<LLAppearanceMgr>
 {
@@ -251,6 +250,14 @@ public:
 	std::string getAppearanceServiceURL() const;
 
 private:
+#ifdef APPEARANCEBAKE_AS_IN_AIS_QUEUE
+    void serverAppearanceUpdateCoro(LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t &httpAdapter);
+#else
+    void serverAppearanceUpdateCoro();
+#endif
+
+    static void debugAppearanceUpdateCOF(const LLSD& content);
+
 	std::string		mAppearanceServiceURL;
 	
 
@@ -278,14 +285,17 @@ private:
 	bool mAttachmentInvLinkEnabled;
 	bool mOutfitIsDirty;
 	bool mIsInUpdateAppearanceFromCOF; // to detect recursive calls.
-
-	boost::intrusive_ptr<RequestAgentUpdateAppearanceResponder> mAppearanceResponder;
+    bool mOutstandingAppearanceBakeRequest; // A bake request is outstanding.  Do not overlap.
+    bool mRerequestAppearanceBake;
 
 	/**
 	 * Lock for blocking operations on outfit until server reply or timeout exceed
 	 * to avoid unsynchronized outfit state or performing duplicate operations.
 	 */
 	bool mOutfitLocked;
+	S32  mInFlightCounter;
+	LLTimer mInFlightTimer;
+	static bool mActive;
 
 	std::auto_ptr<LLOutfitUnLockTimer> mUnlockOutfitTimer;
 

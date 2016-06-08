@@ -71,9 +71,9 @@
 #include "lluiimage.h"
 #include "llviewborder.h"
 
-LLFastTimer::DeclareTimer FTM_WIDGET_CONSTRUCTION("Widget Construction");
-LLFastTimer::DeclareTimer FTM_INIT_FROM_PARAMS("Widget InitFromParams");
-LLFastTimer::DeclareTimer FTM_WIDGET_SETUP("Widget Setup");
+LLTrace::BlockTimerStatHandle FTM_WIDGET_CONSTRUCTION("Widget Construction");
+LLTrace::BlockTimerStatHandle FTM_INIT_FROM_PARAMS("Widget InitFromParams");
+LLTrace::BlockTimerStatHandle FTM_WIDGET_SETUP("Widget Setup");
 
 const char XML_HEADER[] = "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\" ?>\n";
 
@@ -83,6 +83,8 @@ const S32 FLOATER_H_MARGIN = 15;
 const S32 MIN_WIDGET_HEIGHT = 10;
 
 std::vector<std::string> LLUICtrlFactory::sXUIPaths;
+
+//-----------------------------------------------------------------------------
 
 // UI Ctrl class for padding
 class LLUICtrlLocate : public LLUICtrl

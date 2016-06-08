@@ -24,7 +24,7 @@
 #include "llwindow.h"
 #include "lldiriterator.h"
 #include "llfile.h"
-#include "llhttpclient.h"
+#include "llcorehttputil.h"
 #include "lggdicdownload.h"
 
 lggHunSpell_Wrapper *glggHunSpell = 0;
@@ -920,7 +920,8 @@ void lggHunSpell_Wrapper::getMoreButton(void* data)
 {
 	std::vector<std::string> shortNames;
 	std::vector<std::string> longNames;
-	LLSD response = LLHTTPClient::blockingGet(gSavedSettings.getString("SpellDownloadURL")+"dic_list.xml");
+	LLCoreHttpUtil::HttpCoroutineAdapter::ptr_t httpAdapter(new LLCoreHttpUtil::HttpCoroutineAdapter("SHClientTagMgr", LLCore::HttpRequest::DEFAULT_POLICY_ID));
+	LLSD response = httpAdapter->getAndSuspend(LLCore::HttpRequest::ptr_t(new LLCore::HttpRequest), gSavedSettings.getString("SpellDownloadURL")+"dic_list.xml");
 	if (response.has("body"))
 	{
 		const LLSD &dict_list = response["body"];

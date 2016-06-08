@@ -31,12 +31,12 @@
 #include "dom/domMatrix.h"
 
 // library includes
-#include "aifilepicker.h"
 #include "llnotificationsutil.h"
 
 // newview includes
 #include "lfsimfeaturehandler.h"
 #include "llface.h"
+#include "llfilepicker.h"
 #include "llvovolume.h"
 #include "llviewerinventory.h"
 #include "llinventorymodel.h"
@@ -236,16 +236,10 @@ public:
 	void onClickBrowse()
 	{
 		static const std::string file_ext = ".dae";
-		AIFilePicker* filepicker = AIFilePicker::create();
-		filepicker->open(mObjectName + file_ext);
-		filepicker->run(boost::bind(&ColladaExportFloater::onFilePicker, this, filepicker));
-	}
-
-	void onFilePicker(AIFilePicker* filepicker)
-	{
-		if (filepicker->hasFilename())
+		LLFilePicker& filepicker = LLFilePicker::instance();
+		if (filepicker.getSaveFile(LLFilePicker::FFSAVE_ALL, mObjectName + file_ext))
 		{
-			mFileName->setValue(filepicker->getFilename());
+			mFileName->setValue(filepicker.getFirstFile());
 			mExportBtn->setEnabled(TRUE);
 		}
 	}

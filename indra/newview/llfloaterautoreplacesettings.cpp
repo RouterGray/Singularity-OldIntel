@@ -26,11 +26,11 @@
 
 #include "llfloaterautoreplacesettings.h"
 
-#include "statemachine/aifilepicker.h"
 #include "llscrolllistctrl.h"
 #include "lluictrlfactory.h"
 
 #include "llautoreplace.h"
+#include "llfilepicker.h"
 #include "llsdserialize.h"
 #include "llsdutil.h"
 
@@ -319,17 +319,11 @@ void LLFloaterAutoReplaceSettings::onDeleteEntry()
 // called when the Import List button is pressed
 void LLFloaterAutoReplaceSettings::onImportList()
 {
-	AIFilePicker* picker = AIFilePicker::create();
-	picker->open(FFLOAD_XML, "", "autoreplace");
-	picker->run(boost::bind(&LLFloaterAutoReplaceSettings::onImportList_continued, this, picker));
-}
-
-void LLFloaterAutoReplaceSettings::onImportList_continued(AIFilePicker* picker)
-{
-	if (picker->hasFilename())
+	LLFilePicker& picker = LLFilePicker::instance();
+	if( picker.getOpenFile( LLFilePicker::FFLOAD_XML) )
 	{
 		llifstream file;
-		file.open(picker->getFilename());
+		file.open(picker.getFirstFile().c_str());
 		LLSD newList;
 		if (file.is_open())
 		{
@@ -516,17 +510,12 @@ void LLFloaterAutoReplaceSettings::onExportList()
 {
 	std::string listName=mListNames->getFirstSelected()->getColumn(0)->getValue().asString();
 	std::string listFileName = listName + ".xml";
-	AIFilePicker* picker = AIFilePicker::create();
-	picker->open(listFileName, FFSAVE_XML, "", "autoreplace");
-	picker->run(boost::bind(&LLFloaterAutoReplaceSettings::onExportList_continued, this, picker, mSettings.exportList(listName)));
-}
-void LLFloaterAutoReplaceSettings::onExportList_continued(AIFilePicker* picker, const LLSD* list)
-{
-	if (picker->hasFilename())
+	LLFilePicker& picker = LLFilePicker::instance();
+	if( picker.getSaveFile( LLFilePicker::FFSAVE_XML, listFileName) )
 	{
 		llofstream file;
-		file.open(picker->getFilename());
-		LLSDSerialize::toPrettyXML(*list, file);
+		file.open(picker.getFirstFile().c_str());
+		LLSDSerialize::toPrettyXML(*mSettings.exportList(listName), file);
 		file.close();
 	}
 }

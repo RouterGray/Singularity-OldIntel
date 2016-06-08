@@ -4,7 +4,7 @@ project(llmessage)
 
 include(00-Common)
 include(LLCommon)
-include(AIStateMachine)
+include(LLCoreHttp)
 include(LLMath)
 include(LLMessage)
 include(LLVFS)
@@ -14,7 +14,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories(
     ${LLCOMMON_INCLUDE_DIRS}
-    ${AISTATEMACHINE_INCLUDE_DIRS}
+    ${LLCOREHTTP_INCLUDE_DIRS}
     ${LLMATH_INCLUDE_DIRS}
     ${LLMESSAGE_INCLUDE_DIRS}
     ${LLVFS_INCLUDE_DIRS}
@@ -22,18 +22,6 @@ include_directories(
     )
 
 set(llmessage_SOURCE_FILES
-    aiaverage.cpp
-    aicurl.cpp
-    aicurleasyrequeststatemachine.cpp
-    aicurlperservice.cpp
-    aicurlthread.cpp
-    aicurltimer.cpp
-    aihttpheaders.cpp
-    aihttptimeout.cpp
-    aihttptimeoutpolicy.cpp
-    debug_libcurl.cpp
-    llares.cpp
-    llareslistener.cpp
     llassetstorage.cpp
     llavatarname.cpp
     llavatarnamecache.cpp
@@ -44,13 +32,15 @@ set(llmessage_SOURCE_FILES
     llchainio.cpp
     llcircuit.cpp
     llclassifiedflags.cpp
+    llcoproceduremanager.cpp
+    llcorehttputil.cpp
     lldatapacker.cpp
     lldispatcher.cpp
+    llexperiencecache.cpp
     llfiltersd2xmlrpc.cpp
     llhost.cpp
-    llhttpclient.cpp
     llhttpnode.cpp
-    llhttpsender.cpp
+    llhttpsdhandler.cpp
     llinstantmessage.cpp
     lliobuffer.cpp
     lliohttpserver.cpp
@@ -65,7 +55,6 @@ set(llmessage_SOURCE_FILES
     llmessagetemplate.cpp
     llmessagetemplateparser.cpp
     llmessagethrottle.cpp
-    llmime.cpp
     llnamevalue.cpp
     llnullcipher.cpp
     llpacketack.cpp
@@ -76,7 +65,6 @@ set(llmessage_SOURCE_FILES
     llpumpio.cpp
     llsdappservices.cpp
     llsdhttpserver.cpp
-    llsdmessage.cpp
     llsdmessagebuilder.cpp
     llsdmessagereader.cpp
     llstoredmessage.cpp
@@ -90,7 +78,6 @@ set(llmessage_SOURCE_FILES
     lltransfertargetfile.cpp
     lltransfertargetvfile.cpp
     lltrustedmessageservice.cpp
-    llurlrequest.cpp
     lluseroperation.cpp
     llxfer.cpp
     llxfer_file.cpp
@@ -112,19 +99,6 @@ set(llmessage_SOURCE_FILES
 set(llmessage_HEADER_FILES
     CMakeLists.txt
 
-    aiaverage.h
-    aicurl.h
-    aicurleasyrequeststatemachine.h
-    aicurlperservice.h
-    aicurlprivate.h
-    aicurlthread.h
-    aicurltimer.h
-    aihttpheaders.h
-    aihttptimeout.h
-    aihttptimeoutpolicy.h
-    debug_libcurl.h
-    llares.h
-    llareslistener.h
     llassetstorage.h
     llavatarname.h
     llavatarnamecache.h
@@ -136,18 +110,19 @@ set(llmessage_HEADER_FILES
     llcipher.h
     llcircuit.h
     llclassifiedflags.h
-    llcurl.h
+    llcoproceduremanager.h
+    llcorehttputil.h
     lldatapacker.h
     lldbstrings.h
     lldispatcher.h
     lleventflags.h
+    llexperiencecache.h
     llfiltersd2xmlrpc.h
     llfollowcamparams.h
     llhost.h
-    llhttpclient.h
     llhttpnode.h
     llhttpnodeadapter.h
-    llhttpsender.h
+    llhttpsdhandler.h
     llinstantmessage.h
     llinvite.h
     lliobuffer.h
@@ -164,7 +139,6 @@ set(llmessage_HEADER_FILES
     llmessagetemplate.h
     llmessagetemplateparser.h
     llmessagethrottle.h
-    llmime.h
     llmsgvariabletype.h
     llnamevalue.h
     llnullcipher.h
@@ -179,7 +153,6 @@ set(llmessage_HEADER_FILES
     llregionhandle.h
     llsdappservices.h
     llsdhttpserver.h
-    llsdmessage.h
     llsdmessagebuilder.h
     llsdmessagereader.h
     llstoredmessage.h
@@ -195,7 +168,6 @@ set(llmessage_HEADER_FILES
     lltransfertargetfile.h
     lltransfertargetvfile.h
     lltrustedmessageservice.h
-    llurlrequest.h
     lluseroperation.h
     llvehicleparams.h
     llxfer.h
@@ -228,6 +200,7 @@ target_link_libraries(
   ${OPENSSL_LIBRARIES}
   ${CRYPTO_LIBRARIES}
   ${XMLRPCEPI_LIBRARIES}
+  ${LLCOREHTTP_LIBRARIES}
   )
 
 # tests
@@ -251,7 +224,9 @@ if (LL_TESTS)
     ${WINDOWS_LIBRARIES}
     ${LLVFS_LIBRARIES}
     ${LLMATH_LIBRARIES}
+    ${CURL_LIBRARIES}
     ${LLCOMMON_LIBRARIES}
+    ${LLCOREHTTP_LIBRARIES}
     ${GOOGLEMOCK_LIBRARIES}
     ${LLXML_LIBRARIES}
     )

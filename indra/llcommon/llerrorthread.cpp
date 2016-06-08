@@ -188,17 +188,17 @@ void LLErrorThread::run()
 	if (LLApp::isError())
 	{
 		// The app is in an error state, run the application's error handler.
-		Dout(dc::notice, "thread_error - An error has occurred, running error callback!");
+		//LL_INFOS() << "thread_error - An error has occurred, running error callback!" << LL_ENDL;
 		// Run the error handling callback
 		LLApp::runErrorHandler();
 	}
 	else
 	{
 		// Everything is okay, a clean exit.
-		Dout(dc::notice, "thread_error - Application exited cleanly");
+		//LL_INFOS() << "thread_error - Application exited cleanly" << LL_ENDL;
 	}
 	
-	Dout(dc::notice, "thread_error - Exiting");
+	//LL_INFOS() << "thread_error - Exiting" << LL_ENDL;
 	LLApp::sErrorThreadRunning = FALSE;
 }
 

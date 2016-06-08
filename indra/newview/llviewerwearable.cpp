@@ -30,7 +30,9 @@
 #include "llagentcamera.h"
 #include "llagentwearables.h"
 #include "llfloatercustomize.h"
+#include "lllocaltextureobject.h"
 #include "llnotificationsutil.h"
+#include "llpaneleditwearable.h"
 #include "lltextureentry.h"
 #include "llviewertexlayer.h"
 #include "llvoavatarself.h"
@@ -40,8 +42,6 @@
 #include "llviewerregion.h"
 #include "llinventoryobserver.h"
 #include "llinventoryfunctions.h"
-#include "lllocaltextureobject.h"
-#include "llpaneleditwearable.h"
 
 using namespace LLAvatarAppearanceDefines;
 
@@ -75,14 +75,16 @@ private:
 static std::string asset_id_to_filename(const LLUUID &asset_id);
 
 LLViewerWearable::LLViewerWearable(const LLTransactionID& transaction_id) :
-	LLWearable()
+	LLWearable(),
+	mVolatile(FALSE)
 {
 	mTransactionID = transaction_id;
 	mAssetID = mTransactionID.makeAssetID(gAgent.getSecureSessionID());
 }
 
 LLViewerWearable::LLViewerWearable(const LLAssetID& asset_id) :
-	LLWearable()
+	LLWearable(),
+	mVolatile(FALSE)
 {
 	mAssetID = asset_id;
 	mTransactionID.setNull();
@@ -135,21 +137,8 @@ LLWearable::EImportResult LLViewerWearable::importStream( std::istream& input_st
 
 	return result;
 }
-#if 0
-AIArchetype LLViewerWearable::getArchetype(void) const
-{
-	AIArchetype archetype(this);
-	for (visual_param_index_map_t::const_iterator iter = mVisualParamIndexMap.begin(); iter != mVisualParamIndexMap.end(); ++iter)
-	{
-		archetype.add(AIVisualParamIDValuePair(iter->second));
-	}
-	for (te_map_t::const_iterator iter = mTEMap.begin(); iter != mTEMap.end(); ++iter)
-	{
-		archetype.add(AITextureIDUUIDPair(iter->first, iter->second->getID()));
-	}
-	return archetype;
-}
-#endif 
+
+
 // Avatar parameter and texture definitions can change over time.
 // This function returns true if parameters or textures have been added or removed
 // since this wearable was created.
@@ -237,7 +226,6 @@ BOOL LLViewerWearable::isDirty() const
 
 			if( a != b  )
 			{
-				//LL_WARNS() << "param ID " << param->getID() << " was changed." << LL_ENDL;
 				return TRUE;
 			}
 		}
@@ -337,16 +325,6 @@ void LLViewerWearable::writeToAvatar(LLAvatarAppearance *avatarp)
 	if (!avatarp || !viewer_avatar) return;
 
 	if (!viewer_avatar->isValid()) return;
-
-#if 0
-	// FIXME DRANO - kludgy way to avoid overwriting avatar state from wearables.
-	// Ideally would avoid calling this func in the first place.
-	if (viewer_avatar->isUsingServerBakes() &&
-		!viewer_avatar->isUsingLocalAppearance())
-	{
-		return;
-	}
-#endif
 
 	ESex old_sex = avatarp->getSex();
 
@@ -491,13 +469,6 @@ void LLViewerWearable::setItemID(const LLUUID& item_id)
 
 void LLViewerWearable::revertValues()
 {
-#if 0
-	// DRANO avoid overwrite when not in local appearance
-	if (isAgentAvatarValid() && gAgentAvatarp->isUsingServerBakes() && !gAgentAvatarp->isUsingLocalAppearance())
-	{
-		return;
-	}
-#endif
 	LLWearable::revertValues();
 
 
@@ -524,45 +495,6 @@ void LLViewerWearable::saveValues()
 	if (LLFloaterCustomize::instanceExists() && LLFloaterCustomize::getInstance()->getCurrentWearablePanel()->getWearable() == this)
 		LLFloaterCustomize::getInstance()->updateScrollingPanelList();
 }
-
-/*void LLViewerWearable::readFromAvatar()
-{
-	LLVOAvatar* avatar = gAgentAvatarp;
-	llassert( avatar );
-	if( !avatar )
-	{
-		return;
-	}
-
-	mDefinitionVersion = LLViewerWearable::sCurrentDefinitionVersion;
-
-	mVisualParamMap.clear();
-	for( LLVisualParam* param = avatar->getFirstVisualParam(); param; param = avatar->getNextVisualParam() )
-	{
-		if( (((LLViewerVisualParam*)param)->getWearableType() == mType) && (param->isTweakable()) )
-		{
-			mVisualParamMap[param->getID()] = param->getWeight();
-		}
-	}
-
-	mTEMap.clear();
-	for( S32 te = 0; te < TEX_NUM_INDICES; te++ )
-	{
-		if( LLAvatarAppearanceDictionary::getTEWearableType((ETextureIndex) te ) == mType )
-		{
-			LLViewerTexture* image = avatar->getTEImage( te );
-			if( image )
-			{
-				mTEMap[te] = image->getID();
-			}
-		}
-	}
-
-	//if( gFloaterCustomize )
-	//{
-	//	mDescription = gFloaterCustomize->getWearableDescription( mType );
-	//}
-}*/
 
 // virtual
 void LLViewerWearable::setUpdated() const

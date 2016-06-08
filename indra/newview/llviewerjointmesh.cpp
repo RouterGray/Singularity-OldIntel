@@ -33,7 +33,6 @@
 #include "llfasttimer.h"
 #include "llrender.h"
 
-#include "llapr.h"
 #include "llbox.h"
 #include "lldrawable.h"
 #include "lldrawpoolavatar.h"
@@ -384,7 +383,7 @@ void LLViewerJointMesh::updateFaceSizes(U32 &num_vertices, U32& num_indices, F32
 //-----------------------------------------------------------------------------
 // updateFaceData()
 //-----------------------------------------------------------------------------
-static LLFastTimer::DeclareTimer FTM_AVATAR_FACE("Avatar Face");
+static LLTrace::BlockTimerStatHandle FTM_AVATAR_FACE("Avatar Face");
 
 void LLViewerJointMesh::updateFaceData(LLFace *face, F32 pixel_area, BOOL damp_wind, bool terse_update)
 {
@@ -407,7 +406,7 @@ void LLViewerJointMesh::updateFaceData(LLFace *face, F32 pixel_area, BOOL damp_w
 	}
 
 
-	LLFastTimer t(FTM_AVATAR_FACE);
+	LL_RECORD_BLOCK_TIME(FTM_AVATAR_FACE);
 
 	LLStrider<LLVector3> verticesp;
 	LLStrider<LLVector3> normalsp;

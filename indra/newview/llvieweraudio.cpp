@@ -39,6 +39,7 @@
 #include "llvieweraudio.h"
 #include "llviewercamera.h"
 #include "llviewercontrol.h"
+#include "llviewerregion.h"
 #include "llviewerwindow.h"
 #include "llvoavatarself.h" //For mInAir
 #include "llvoiceclient.h"

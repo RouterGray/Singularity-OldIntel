@@ -62,15 +62,11 @@
 #include "llfeaturemanager.h"
 #include "llviewernetwork.h"
 #include "llmeshrepository.h" //for LLMeshRepository::sBytesReceived
+#include "llsdserialize.h"
+#include "llcorehttputil.h"
 #include "sgmemstat.h"
 #include "llviewertexlayer.h"
 
-class AIHTTPTimeoutPolicy;
-extern AIHTTPTimeoutPolicy viewerStatsResponder_timeout;
-
-namespace AICurlInterface {
-size_t getHTTPBandwidth(void);
-}
 
 class StatAttributes
 {
@@ -215,7 +211,6 @@ LLViewerStats::LLViewerStats() :
 	mLayersKBitStat("layerskbitstat"),
 	mObjectKBitStat("objectkbitstat"),
 	mAssetKBitStat("assetkbitstat"),
-	mHTTPTextureKBitStat("httptexturekbitstat"),
 	mUDPTextureKBitStat("udptexturekbitstat"),
 	mMallocStat("mallocstat"),
 	mVFSPendingOperations("vfspendingoperations"),
@@ -306,7 +301,6 @@ void LLViewerStats::resetStats()
 	stats.mKBitStat.reset();
 	stats.mLayersKBitStat.reset();
 	stats.mObjectKBitStat.reset();
-	stats.mHTTPTextureKBitStat.reset();
 	stats.mUDPTextureKBitStat.reset();
 	stats.mVFSPendingOperations.reset();
 	stats.mAssetKBitStat.reset();
@@ -393,7 +387,6 @@ void LLViewerStats::updateFrameStats(const F64 time_diff)
 	}
 	
 	mLastTimeDiff = time_diff;
-
 }
 
 void LLViewerStats::addToMessage(LLSD &body) const
@@ -416,19 +409,6 @@ void LLViewerStats::addToMessage(LLSD &body) const
 			<< "; Count = " << mAgentPositionSnaps.getCount() << LL_ENDL;
 }
 
-// static
-// const std::string LLViewerStats::statTypeToText(EStatType type)
-// {
-// 	if (type >= 0 && type < ST_COUNT)
-// 	{
-// 		return STAT_INFO[type].mName;
-// 	}
-// 	else
-// 	{
-// 		return "Unknown statistic";
-// 	}
-// }
-
 // *NOTE:Mani The following methods used to exist in viewer.cpp
 // Moving them here, but not merging them into LLViewerStats yet.
 void reset_statistics()
@@ -444,16 +424,12 @@ void reset_statistics()
 
 void output_statistics(void*)
 {
-	S32 global_raw_memory;
-	{
-		global_raw_memory = *AIAccess<S32>(LLImageRaw::sGlobalRawMemory);
-	}
 	LL_INFOS() << "Number of orphans: " << gObjectList.getOrphanCount() << LL_ENDL;
 	LL_INFOS() << "Number of dead objects: " << gObjectList.mNumDeadObjects << LL_ENDL;
 	LL_INFOS() << "Num images: " << gTextureList.getNumImages() << LL_ENDL;
 	LL_INFOS() << "Texture usage: " << LLImageGL::sGlobalTextureMemory.value() << LL_ENDL;
 	LL_INFOS() << "Texture working set: " << LLImageGL::sBoundTextureMemory.value() << LL_ENDL;
-	LL_INFOS() << "Raw usage: " << global_raw_memory << LL_ENDL;
+	LL_INFOS() << "Raw usage: " << LLImageRaw::sGlobalRawMemory << LL_ENDL;
 	LL_INFOS() << "Formatted usage: " << LLImageFormatted::sGlobalFormattedMemory << LL_ENDL;
 	LL_INFOS() << "Zombie Viewer Objects: " << LLViewerObject::getNumZombieObjects() << LL_ENDL;
 	LL_INFOS() << "Number of lights: " << gPipeline.getLightCount() << LL_ENDL;
@@ -626,6 +602,7 @@ void update_statistics()
 	LLViewerStats::getInstance()->setStat(LLViewerStats::ST_SHADER_AVATAR, (F64)gSavedSettings.getBOOL("VertexShaderLevelAvatar"));
 	LLViewerStats::getInstance()->setStat(LLViewerStats::ST_SHADER_ENVIRONMENT, (F64)gSavedSettings.getBOOL("VertexShaderLevelEnvironment"));
 #endif
+	/* Singu TODO: Add this back?
 	stats.setStat(LLViewerStats::ST_FRAME_SECS, gDebugView->mFastTimerView->getTime("Frame"));
 	F64 idle_secs = gDebugView->mFastTimerView->getTime("Idle");
 	F64 network_secs = gDebugView->mFastTimerView->getTime("Network");
@@ -633,7 +610,7 @@ void update_statistics()
 	stats.setStat(LLViewerStats::ST_NETWORK_SECS, network_secs);
 	stats.setStat(LLViewerStats::ST_IMAGE_SECS, gDebugView->mFastTimerView->getTime("Update Images"));
 	stats.setStat(LLViewerStats::ST_REBUILD_SECS, gDebugView->mFastTimerView->getTime("Sort Draw State"));
-	stats.setStat(LLViewerStats::ST_RENDER_SECS, gDebugView->mFastTimerView->getTime("Geometry"));
+	stats.setStat(LLViewerStats::ST_RENDER_SECS, gDebugView->mFastTimerView->getTime("Geometry"));*/
 		
 	LLCircuitData *cdp = gMessageSystem->mCircuitInfo.findCircuit(gAgent.getRegion()->getHost());
 	if (cdp)
@@ -689,7 +666,6 @@ void update_statistics()
 		static LLFrameTimer texture_stats_timer;
 		if (texture_stats_timer.getElapsedTimeF32() >= texture_stats_freq)
 		{
-			stats.mHTTPTextureKBitStat.addValue(AICurlInterface::getHTTPBandwidth()/125.f);
 			stats.mUDPTextureKBitStat.addValue(LLViewerTextureList::sTextureBits.valueInUnits<LLUnits::Kilobits>());
 			stats.mTexturePacketsStat.addValue(LLViewerTextureList::sTexturePackets);
 			gTotalTextureData += U32Bits(LLViewerTextureList::sTextureBits);
@@ -710,26 +686,6 @@ void update_statistics()
 	}
 }
 
-class ViewerStatsResponder : public LLHTTPClient::ResponderWithResult
-{
-public:
-    ViewerStatsResponder() { }
-
-    /*virtual*/ void httpFailure(void)
-    {
-		LL_INFOS() << "ViewerStatsResponder::error " << mStatus << " "
-				<< mReason << LL_ENDL;
-    }
-
-    /*virtual*/ void httpSuccess(void)
-    {
-		LL_INFOS() << "ViewerStatsResponder::result" << LL_ENDL;
-	}
-
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return viewerStatsResponder_timeout; }
-	/*virtual*/ char const* getName(void) const { return "ViewerStatsResponder"; }
-};
-
 /*
  * The sim-side LLSD is in newsim/llagentinfo.cpp:forwardViewerStats.
  *
@@ -747,7 +703,7 @@ void send_stats()
 	// but that day is not today.
 
 	// Only send stats if the agent is connected to a region.
-	if (!gAgent.getRegion() || gNoRender)
+	if (!gAgent.getRegion())
 	{
 		return;
 	}
@@ -893,8 +849,8 @@ void send_stats()
 	LLViewerStats::getInstance()->addToMessage(body);
 
 	LL_INFOS("LogViewerStatsPacket") << "Sending viewer statistics: " << body << LL_ENDL;
-	LLHTTPClient::post(url, body, new ViewerStatsResponder());
-
+    LLCoreHttpUtil::HttpCoroutineAdapter::messageHttpPost(url, body,
+        "Statistics posted to sim", "Failed to post statistics to sim");
 }
 
 LLViewerStats::PhaseMap::PhaseMap()

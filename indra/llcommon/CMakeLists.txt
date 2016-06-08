@@ -21,18 +21,13 @@ include_directories(
     )
 
 set(llcommon_SOURCE_FILES
-    aialert.cpp
-    aifile.cpp
-    aiframetimer.cpp
     aisyncclient.cpp
-    aithreadid.cpp
     imageids.cpp
     indra_constants.cpp
     llallocator.cpp
     llallocator_heap_profile.cpp
     llapp.cpp
     llapr.cpp
-    llaprpool.cpp
     llassettype.cpp
     llbase32.cpp
     llbase64.cpp
@@ -44,6 +39,7 @@ set(llcommon_SOURCE_FILES
     llcriticaldamp.cpp
     llcursortypes.cpp
     lldate.cpp
+    lldeadmantimer.cpp
     lldependencies.cpp
     lldictionary.cpp
     llerror.cpp
@@ -55,7 +51,7 @@ set(llcommon_SOURCE_FILES
     lleventfilter.cpp
     llevents.cpp
     lleventtimer.cpp
-    llfasttimer_class.cpp
+    llfasttimer.cpp
     llfile.cpp
     llfindlocale.cpp
     llfixedbuffer.cpp
@@ -64,6 +60,8 @@ set(llcommon_SOURCE_FILES
     llheartbeat.cpp
     llinitparam.cpp
     llinstancetracker.cpp
+    llleap.cpp
+    llleaplistener.cpp
     llliveappconfig.cpp
     lllivefile.cpp
     lllog.cpp
@@ -71,18 +69,21 @@ set(llcommon_SOURCE_FILES
     llmemory.cpp
     llmemorystream.cpp
     llmetrics.cpp
+    llmetricperformancetester.cpp
     llmortician.cpp
+    llmutex.cpp
     lloptioninterface.cpp
     llpredicate.cpp
-    llprocesslauncher.cpp
+    llprocess.cpp
     llprocessor.cpp
+    llprocinfo.cpp
     llptrto.cpp 
     llqueuedthread.cpp
     llrand.cpp
     llrefcount.cpp
     llrun.cpp
-    llscopedvolatileaprpool.h
     llsd.cpp
+    llsdjson.cpp
     llsdparam.cpp
     llsdserialize.cpp
     llsdserialize_xml.cpp
@@ -96,8 +97,13 @@ set(llcommon_SOURCE_FILES
     llstringtable.cpp
     llsys.cpp
     llthread.cpp
+    llthreadlocalstorage.cpp
     llthreadsafequeue.cpp
     lltimer.cpp
+    lltrace.cpp
+    lltraceaccumulators.cpp
+    lltracerecording.cpp
+    lltracethreadrecorder.cpp
     lluri.cpp
     lluuid.cpp
     llworkerthread.cpp
@@ -111,13 +117,8 @@ set(llcommon_SOURCE_FILES
 set(llcommon_HEADER_FILES
     CMakeLists.txt
 
-    aialert.h
-    aifile.h
-    aiframetimer.h
     airecursive.h
     aisyncclient.h
-    aithreadid.h
-    aithreadsafe.h
     bitpack.h
     ctype_workaround.h
     fix_macros.h
@@ -131,7 +132,6 @@ set(llcommon_HEADER_FILES
     llallocator_heap_profile.h
     llapp.h
     llapr.h
-    llaprpool.h
     llassettype.h
     llassoclist.h
     llatomic.h
@@ -149,6 +149,7 @@ set(llcommon_HEADER_FILES
     llcriticaldamp.h
     llcursortypes.h
     lldate.h
+    lldeadmantimer.h
     lldefs.h
     lldependencies.h
     lldepthstack.h
@@ -165,9 +166,7 @@ set(llcommon_HEADER_FILES
     lleventfilter.h
     llevents.h
     lleventtimer.h
-    llextendedstatus.h
     llfasttimer.h
-    llfasttimer_class.h
     llfile.h
     llfindlocale.h
     llfixedbuffer.h
@@ -175,11 +174,12 @@ set(llcommon_HEADER_FILES
     llframetimer.h
     llhandle.h
     llheartbeat.h
-    llhttpstatuscodes.h
     llindexedvector.h
     llinitparam.h
     llinstancetracker.h
     llkeythrottle.h
+    llleap.h
+    llleaplistener.h
     lllinkedqueue.h
     llliveappconfig.h
     lllivefile.h
@@ -187,27 +187,33 @@ set(llcommon_HEADER_FILES
     lllog.h
     lllslconstants.h
     llmap.h
+    llmake.h
     llmd5.h
     llmemory.h
     llmemorystream.h
     llmetrics.h
+    llmetricperformancetester.h
     llmortician.h
+    llmutex.h
     llnametable.h
     lloptioninterface.h
     llpointer.h
     llpredicate.h
     llpreprocessor.h
     llpriqueuemap.h
-    llprocesslauncher.h
+    llprocess.h
     llprocessor.h
+    llprocinfo.h
     llptrto.h
     llqueuedthread.h
     llrand.h
     llrefcount.h
     llregistry.h
     llrun.h
+    llrefcount.h
     llsafehandle.h
     llsd.h
+    llsdjson.h
     llsdparam.h
     llsdserialize.h
     llsdserialize_xml.h
@@ -229,8 +235,13 @@ set(llcommon_HEADER_FILES
     llstaticstringtable.h
     llsys.h
     llthread.h
+    llthreadlocalstorage.h
     llthreadsafequeue.h
     lltimer.h
+    lltrace.h
+    lltraceaccumulators.h
+    lltracerecording.h
+    lltracethreadrecorder.h
     lltreeiterators.h
     llunits.h
     llunittype.h
@@ -250,7 +261,6 @@ set(llcommon_HEADER_FILES
     stdtypes.h
     stringize.h
     timer.h
-    timing.h
     u64.h
     )
 

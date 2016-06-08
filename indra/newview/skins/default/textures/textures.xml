@@ -267,6 +267,12 @@ with the same filename but different name
   <texture name="inv_folder_sound.tga"/>
   <texture name="inv_folder_texture.tga"/>
   <texture name="inv_folder_trash.tga" preload="true"/>
+  <texture name="Inv_SysOpen" file_name="inv_folder_plain_open.tga" preload="false" />
+  <texture name="Inv_SysClosed" file_name="inv_folder_plain_closed.tga" preload="false" />
+  <texture name="Inv_StockFolderClosed" file_name="Inv_StockFolderClosed.png" preload="false" />
+  <texture name="Inv_StockFolderOpen" file_name="Inv_StockFolderOpen.png" preload="false" />
+  <texture name="Inv_VersionFolderClosed" file_name="Inv_VersionFolderClosed.png" preload="false" />
+  <texture name="Inv_VersionFolderOpen" file_name="Inv_VersionFolderOpen.png" preload="false" />
   <texture name="inv_item_animation.tga"/>
   <texture name="inv_item_callingcard_offline.tga"/>
   <texture name="inv_item_callingcard_online.tga"/>

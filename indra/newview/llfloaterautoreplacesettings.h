@@ -29,7 +29,6 @@
 #include "llfloater.h"
 #include "llautoreplace.h"
 
-class AIFilePicker;
 class LLLineEditor;
 class LLScrollListCtrl;
 
@@ -72,9 +71,7 @@ private:
 	void onSelectList();
 
 	void onImportList();
-	void onImportList_continued(AIFilePicker* picker);
 	void onExportList();
-	void onExportList_continued(AIFilePicker* picker, const LLSD* list);
 	void onNewList();
 	void onDeleteList();
 

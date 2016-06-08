@@ -26,13 +26,13 @@
 #ifndef LL_LLWORKERTHREAD_H
 #define LL_LLWORKERTHREAD_H
 
-#include <queue>
-#include <string>
+#include <list>
 #include <map>
+#include <queue>
 #include <set>
+#include <string>
 
 #include "llqueuedthread.h"
-#include "llapr.h"
 
 #define USE_FRAME_CALLBACK_MANAGER 0
 
@@ -194,7 +194,7 @@ protected:
 	U32 mRequestPriority; // last priority set
 
 private:
-	LLMutexRootPool mMutex;		// Use LLMutexRootPool since this object is created and destructed by multiple threads.
+	LLMutex mMutex;
 	LLAtomicU32 mWorkFlags;
 };
 

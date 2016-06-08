@@ -30,6 +30,7 @@
 #include "llhost.h"
 #include "llmessageconfig.h"
 #include "message.h"
+#include "llhttpconstants.h"
 
 
 bool LLTrustedMessageService::validate(const std::string& name, LLSD& context)
@@ -42,9 +43,9 @@ void LLTrustedMessageService::post(LLHTTPNode::ResponsePtr response,
 								   const LLSD& context,
 								   const LLSD& input) const
 {
-	std::string name = context["request"]["wildcard"]["message-name"];
-	std::string senderIP = context["request"]["remote-host"];
-	std::string senderPort = context["request"]["headers"]
+	std::string name = context[CONTEXT_REQUEST][CONTEXT_WILDCARD]["message-name"];
+	std::string senderIP = context[CONTEXT_REQUEST][CONTEXT_REMOTE_HOST];
+	std::string senderPort = context[CONTEXT_REQUEST][CONTEXT_HEADERS]
 		["x-secondlife-udp-listen-port"];
 
 	LLSD message_data;
@@ -64,7 +65,7 @@ void LLTrustedMessageService::post(LLHTTPNode::ResponsePtr response,
 		LL_WARNS("Messaging") << "trusted message POST to /trusted-message/" 
 				<< name << " from unknown or untrusted sender "
 				<< sender << LL_ENDL;
-		response->status(403, "Unknown or untrusted sender");
+		response->status(HTTP_FORBIDDEN, "Unknown or untrusted sender");
 	}
 	else
 	{

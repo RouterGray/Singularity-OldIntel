@@ -36,6 +36,8 @@
 #include "llmodaldialog.h"
 #include "llassetstorage.h"
 #include "llmediactrl.h"
+#include "lleventcoro.h"
+#include "llcoros.h"
 
 class LLButton;
 class LLRadioGroup;
@@ -66,6 +68,7 @@ public:
 	/*virtual*/ void handleMediaEvent(LLPluginClassMedia* self, EMediaEvent event);
 
 private:
+	static void testSiteIsAliveCoro(LLHandle<LLFloater> handle, std::string url);
 	int				mLoadCompleteCount;
 };
 

@@ -32,7 +32,6 @@
 #include "llfeaturemanager.h"
 #include "llviewercontrol.h"
 #include "llframetimer.h"
-#include "timing.h"
 
 #include "llagent.h"
 #include "llagentcamera.h"
@@ -1246,7 +1245,7 @@ void LLVOSky::createDummyVertexBuffer()
 	}
 }
 
-static LLFastTimer::DeclareTimer FTM_RENDER_FAKE_VBO_UPDATE("Fake VBO Update");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_FAKE_VBO_UPDATE("Fake VBO Update");
 
 void LLVOSky::updateDummyVertexBuffer()
 {	
@@ -1259,7 +1258,7 @@ void LLVOSky::updateDummyVertexBuffer()
 		return ;
 	}
 
-	LLFastTimer t(FTM_RENDER_FAKE_VBO_UPDATE) ;
+	LL_RECORD_BLOCK_TIME(FTM_RENDER_FAKE_VBO_UPDATE) ;
 
 	if(!mFace[FACE_DUMMY] || !mFace[FACE_DUMMY]->getVertexBuffer())
 		createDummyVertexBuffer() ;
@@ -1272,11 +1271,11 @@ void LLVOSky::updateDummyVertexBuffer()
 //----------------------------------
 //end of fake vertex buffer updating
 //----------------------------------
-static LLFastTimer::DeclareTimer FTM_GEO_SKY("Sky Geometry");
+static LLTrace::BlockTimerStatHandle FTM_GEO_SKY("Sky Geometry");
 
 BOOL LLVOSky::updateGeometry(LLDrawable *drawable)
 {
-	LLFastTimer ftm(FTM_GEO_SKY);
+	LL_RECORD_BLOCK_TIME(FTM_GEO_SKY);
 	if (mFace[FACE_REFLECTION] == NULL)
 	{
 		LLDrawPoolWater *poolp = (LLDrawPoolWater*) gPipeline.getPool(LLDrawPool::POOL_WATER);

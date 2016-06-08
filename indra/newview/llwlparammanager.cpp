@@ -73,9 +73,10 @@
 #include "llnotify.h"
 #include "llagent.h"
 #include "llinventorymodel.h"
+#include "llpreviewnotecard.h"
+#include "llviewerassetupload.h"
 #include "llviewerinventory.h"
 #include "llviewerregion.h"
-#include "llassetuploadresponders.h"
 
 #include "llstreamtools.h"
 
@@ -305,7 +306,7 @@ void LLWLParamManager::loadPresetsFromDir(const std::string& dir)
 			break; // no more files
 		}
 
-		std::string path = dir + file;
+		std::string path = gDirUtilp->add(dir, file);
 		if (!loadPreset(path))
 		{
 			LL_WARNS() << "Error loading sky preset from " << path << LL_ENDL;
@@ -405,11 +406,11 @@ void LLWLParamManager::updateShaderLinks()
 	}
 }
 
-static LLFastTimer::DeclareTimer FTM_UPDATE_WLPARAM("Update Windlight Params");
+static LLTrace::BlockTimerStatHandle FTM_UPDATE_WLPARAM("Update Windlight Params");
 
 void LLWLParamManager::propagateParameters(void)
 {
-	LLFastTimer ftm(FTM_UPDATE_WLPARAM);
+	LL_RECORD_BLOCK_TIME(FTM_UPDATE_WLPARAM);
 	
 	LLVector4 sunDir;
 	LLVector4 moonDir;
@@ -474,7 +475,7 @@ void LLWLParamManager::propagateParameters(void)
 
 void LLWLParamManager::update(LLViewerCamera * cam)
 {
-	LLFastTimer ftm(FTM_UPDATE_WLPARAM);
+	LL_RECORD_BLOCK_TIME(FTM_UPDATE_WLPARAM);
 
 	// update clouds, sun, and general
 	mCurParams.updateCloudScrolling();
@@ -893,7 +894,7 @@ bool LLWLParamManager::loadPresetXML(const LLWLParamKey& key, std::istream& pres
 
 void LLWLParamManager::loadPresetNotecard(const std::string& name, const LLUUID& asset_id, const LLUUID& inv_id)
 {
-	gAssetStorage->getInvItemAsset(LLHost::invalid,
+	gAssetStorage->getInvItemAsset(LLHost(),
 								   gAgent.getID(),
 								   gAgent.getSessionID(),
 								   gAgent.getID(),
@@ -949,9 +950,10 @@ bool LLWLParamManager::savePresetToNotecard(const std::string & name)
 		S32 size = buffer.length() + 1;
 		file.setMaxSize(size);
 		file.write((U8*)buffer.c_str(), size);
-		LLSD body;
-		body["item_id"] = item->getUUID();
-		LLHTTPClient::post(agent_url, body, new LLUpdateAgentInventoryResponder(body, asset_id, LLAssetType::AT_NOTECARD));
+
+		LLResourceUploadInfo::ptr_t uploadInfo(new LLBufferedAssetUploadInfo(item->getUUID(), LLAssetType::AT_NOTECARD, buffer,
+			boost::bind(&LLPreviewNotecard::finishInventoryUpload, _1, _2, _3)));
+		LLViewerAssetUpload::EnqueueInventoryUpload(agent_url, uploadInfo);
 	}
 	else
 	{
@@ -962,6 +964,8 @@ bool LLWLParamManager::savePresetToNotecard(const std::string & name)
 	return true;
 }
 
+#include "llpreviewnotecard.h"
+#include "llviewerassetupload.h"
 // static
 void LLWLParamManager::loadWindlightNotecard(LLVFS *vfs, const LLUUID& asset_id, LLAssetType::EType asset_type, void *user_data, S32 status, LLExtStat ext_status)
 {

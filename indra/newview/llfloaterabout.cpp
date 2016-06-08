@@ -40,7 +40,7 @@
 #include "llui.h"	// for tr()
 #include "v3dmath.h"
 
-#include "llcurl.h"
+#include "llcoros.h"
 #include "llimagej2c.h"
 #include "llaudioengine.h"
 
@@ -274,7 +274,7 @@ LLFloaterAbout::LLFloaterAbout()
 	support.append("\n\n");
 
 	support.append("libcurl Version: ");
-	support.append( LLCurl::getVersionString() );
+	support.append(LLCore::LLHttp::getCURLVersion());
 	support += '\n';
 
 	support.append("J2C Decoder Version: ");

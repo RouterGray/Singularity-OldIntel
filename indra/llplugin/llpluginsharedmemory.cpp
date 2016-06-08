@@ -30,13 +30,6 @@
 
 #include "llpluginsharedmemory.h"
 
-#if LL_WINDOWS
-#include <process.h>
-#else // LL_WINDOWS
-#include <sys/types.h>
-#include <unistd.h>
-#endif // LL_WINDOWS
-
 // on Mac and Linux, we use the native shm_open/mmap interface by using
 //	#define USE_SHM_OPEN_SHARED_MEMORY 1
 // in the appropriate sections below.
@@ -194,8 +187,7 @@ bool LLPluginSharedMemory::create(size_t size)
 	mName += createName();
 	mSize = size;
 	
-	mPool.create();
-	apr_status_t status = apr_shm_create( &(mImpl->mAprSharedMemory), mSize, mName.c_str(), mPool());
+	apr_status_t status = apr_shm_create( &(mImpl->mAprSharedMemory), mSize, mName.c_str(), gAPRPoolp );
 	
 	if(ll_apr_warn_status(status))
 	{
@@ -218,7 +210,7 @@ bool LLPluginSharedMemory::destroy(void)
 		}
 		mImpl->mAprSharedMemory = NULL;
 	}
-	mPool.destroy();
+	
 	return true;
 }
 
@@ -227,8 +219,7 @@ bool LLPluginSharedMemory::attach(const std::string &name, size_t size)
 	mName = name;
 	mSize = size;
 	
-	mPool.create();
-	apr_status_t status = apr_shm_attach( &(mImpl->mAprSharedMemory), mName.c_str(), mPool() );
+	apr_status_t status = apr_shm_attach( &(mImpl->mAprSharedMemory), mName.c_str(), gAPRPoolp );
 	
 	if(ll_apr_warn_status(status))
 	{
@@ -250,7 +241,6 @@ bool LLPluginSharedMemory::detach(void)
 		}
 		mImpl->mAprSharedMemory = NULL;
 	}
-	mPool.destroy();
 	
 	return true;
 }
@@ -270,14 +260,6 @@ LLPluginSharedMemoryPlatformImpl::~LLPluginSharedMemoryPlatformImpl()
 
 bool LLPluginSharedMemory::map(void)
 {
-    llassert(mSize);
-    if (!mSize)
-    {
-        LL_DEBUGS("Plugin") << "Tried to mmap zero length" << LL_ENDL;
-        return false;
-    }
-    llassert(mImpl->mSharedMemoryFD != -1);
-    llassert(fcntl(mImpl->mSharedMemoryFD, F_GETFL) != -1);
 	mMappedAddress = ::mmap(NULL, mSize, PROT_READ | PROT_WRITE, MAP_SHARED, mImpl->mSharedMemoryFD, 0);
 	if(mMappedAddress == NULL)
 	{

@@ -56,6 +56,7 @@
 #include "llagent.h"
 #include "llagentcamera.h"
 #include "llcallingcard.h"
+#include "llcorehttputil.h"
 #include "llfirstuse.h"
 #include "llfloaterbump.h"
 #include "llfloaterbuycurrency.h"
@@ -119,6 +120,13 @@
 #include "rlvui.h"
 // [/RLVa:KB]
 
+#include <boost/regex.hpp>
+
+//#include "llnotificationmanager.h" //
+#include "llexperiencecache.h"
+
+#include "llexperiencecache.h"
+
 #if SHY_MOD //Command handler
 # include "shcommandhandler.h"
 #endif //shy_mod
@@ -141,11 +149,8 @@
 #include "NACLantispam.h"
 bool can_block(const LLUUID& id);
 // NaCl - Newline flood protection
-#include <boost/regex.hpp>
 static const boost::regex NEWLINES("\\n{1}");
 // NaCl End
-
-extern AIHTTPTimeoutPolicy authHandler_timeout;
 
 //
 // Constants
@@ -168,6 +173,7 @@ bool check_offer_throttle(const std::string& from_name, bool check_only);
 bool check_asset_previewable(const LLAssetType::EType asset_type);
 void callbackCacheEstateOwnerName(const LLUUID& id, const LLAvatarName& av_name);
 static void process_money_balance_reply_extended(LLMessageSystem* msg);
+bool handle_trusted_experiences_notification(const LLSD&);
 
 //inventory offer throttle globals
 LLFrameTimer gThrottleTimer;
@@ -366,7 +372,9 @@ void process_layer_data(LLMessageSystem *mesgsys, void **user_data)
 {
 	LLViewerRegion *regionp = LLWorld::getInstance()->getRegion(mesgsys->getSender());
 
-	if(!regionp || gNoRender)
+	LL_DEBUGS_ONCE("SceneLoadTiming") << "Received layer data" << LL_ENDL;
+
+	if(!regionp)
 	{
 		LL_WARNS() << "Invalid region for layer data." << LL_ENDL;
 		return;
@@ -3729,7 +3737,7 @@ void check_translate_chat(const std::string &mesg, LLChat &chat, const BOOL hist
 		const std::string &toLang = LLTranslate::getTranslateLanguage();
 		LLChat *newChat = new LLChat(chat);
 
-		LLHTTPClient::ResponderPtr result = ChatTranslationReceiver::build(fromLang, toLang, newChat, history);
+		//LLHTTPClient::ResponderPtr result = ChatTranslationReceiver::build(fromLang, toLang, newChat, history);
 		LLTranslate::translateMessage(result, fromLang, toLang, mesg);
 	}
 	else
@@ -3753,26 +3761,11 @@ void script_msg_api(const std::string& msg)
 	send_chat_from_viewer(LLBase64::encode(reinterpret_cast<const U8*>(str.c_str()), str.size()), CHAT_TYPE_WHISPER, channel);
 }
 
-class AuthHandler : public LLHTTPClient::ResponderWithCompleted
+void handle_auth(const LLSD& result)
 {
-protected:
-	/*virtual*/ void completedRaw(LLChannelDescriptors const& channels, buffer_ptr_t const& buffer)
-	{
-		std::string content;
-		decode_raw_body(channels, buffer, content);
-		if (mStatus == HTTP_OK)
-		{
-			send_chat_from_viewer("AUTH:" + content, CHAT_TYPE_WHISPER, 427169570);
-		}
-		else
-		{
-			LL_WARNS() << "Hippo AuthHandler: non-OK HTTP status " << mStatus << " for URL " << mURL << " (" << mReason << "). Error body: \"" << content << "\"." << LL_ENDL;
-		}
-	}
-
-	/*virtual*/ AIHTTPTimeoutPolicy const& getHTTPTimeoutPolicy(void) const { return authHandler_timeout; }
-	/*virtual*/ char const* getName(void) const { return "AuthHandler"; }
-};
+	std::string content = result[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_CONTENT];
+	send_chat_from_viewer("AUTH:" + content, CHAT_TYPE_WHISPER, 427169570);
+}
 
 void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 {
@@ -3940,7 +3933,7 @@ void process_chat_from_simulator(LLMessageSystem *msg, void **user_data)
 				std::string authUrl = mesg.substr(8);
 				authUrl += (authUrl.find('?') != std::string::npos)? "&auth=": "?auth=";
 				authUrl += gAuthString;
-				LLHTTPClient::get(authUrl, new AuthHandler);
+				LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpGet(authUrl, boost::bind(handle_auth, _1));
 				return;
 			}
 		}
@@ -4913,7 +4906,7 @@ const F32 THRESHOLD_HEAD_ROT_QDOT = 0.9997f;	// ~= 2.5 degrees -- if its less th
 const F32 MAX_HEAD_ROT_QDOT = 0.99999f;			// ~= 0.5 degrees -- if its greater than this then no need to update head_rot
 												// between these values we delay the updates (but no more than one second)
 
-static LLFastTimer::DeclareTimer FTM_AGENT_UPDATE_SEND("Send Message");
+static LLTrace::BlockTimerStatHandle FTM_AGENT_UPDATE_SEND("Send Message");
 
 void send_agent_update(BOOL force_send, BOOL send_reliable)
 {
@@ -5006,6 +4999,10 @@ void send_agent_update(BOOL force_send, BOOL send_reliable)
 	if (gAgent.isGroupTitleHidden())
 	{
 		flags |= AU_FLAGS_HIDETITLE;
+	}
+	if (gAgent.getAutoPilot())
+	{
+		flags |= AU_FLAGS_CLIENT_AUTOPILOT;
 	}
 
 	flag_change = last_flags ^ flags;
@@ -5100,7 +5097,7 @@ void send_agent_update(BOOL force_send, BOOL send_reliable)
 		}
 		*/
 
-		LLFastTimer t(FTM_AGENT_UPDATE_SEND);
+		LL_RECORD_BLOCK_TIME(FTM_AGENT_UPDATE_SEND);
 		// Build the message
 		msg->newMessageFast(_PREHASH_AgentUpdate);
 		msg->nextBlockFast(_PREHASH_AgentData);
@@ -5231,12 +5228,11 @@ void process_terse_object_update_improved(LLMessageSystem *mesgsys, void **user_
 	gObjectList.processCompressedObjectUpdate(mesgsys, user_data, OUT_TERSE_IMPROVED);
 }
 
-static LLFastTimer::DeclareTimer FTM_PROCESS_OBJECTS("Process Objects");
-
+static LLTrace::BlockTimerStatHandle FTM_PROCESS_OBJECTS("Process Kill Objects");
 
 void process_kill_object(LLMessageSystem *mesgsys, void **user_data)
 {
-	LLFastTimer t(FTM_PROCESS_OBJECTS);
+	LL_RECORD_BLOCK_TIME(FTM_PROCESS_OBJECTS);
 
 	LLUUID		id;
 	U32			local_id;
@@ -5321,7 +5317,7 @@ void process_time_synch(LLMessageSystem *mesgsys, void **user_data)
 
 	gSky.setSunPhase(phase);
 	gSky.setSunTargetDirection(sun_direction, sun_ang_velocity);
-	if (!gNoRender && !(gSavedSettings.getBOOL("SkyOverrideSimSunPosition") || gSky.getOverrideSun()))
+	if (!(gSavedSettings.getBOOL("SkyOverrideSimSunPosition") || gSky.getOverrideSun()))
 	{
 		gSky.setSunDirection(sun_direction, sun_ang_velocity);
 	}
@@ -5329,7 +5325,11 @@ void process_time_synch(LLMessageSystem *mesgsys, void **user_data)
 
 void process_sound_trigger(LLMessageSystem *msg, void **)
 {
-	if (!gAudiop) return;
+	if (!gAudiop)
+	{
+		LL_WARNS("AudioEngine") << "LLAudioEngine instance doesn't exist!" << LL_ENDL;
+		return;
+	}
 
 	U64		region_handle = 0;
 	F32		gain = 0;
@@ -5419,6 +5419,7 @@ void process_preload_sound(LLMessageSystem *msg, void **user_data)
 {
 	if (!gAudiop)
 	{
+		LL_WARNS("AudioEngine") << "LLAudioEngine instance doesn't exist!" << LL_ENDL;
 		return;
 	}
 
@@ -6438,7 +6439,8 @@ static void process_money_balance_reply_extended(LLMessageSystem* msg)
 									_1, _2, _3, message,
 									args, payload));
 	}
-	else {
+	else
+	{
 		LLAvatarNameCache::get(name_id,
 							   boost::bind(&money_balance_avatar_notify,
 										   _1, _2, message,
@@ -6714,6 +6716,7 @@ bool attempt_standard_notification(LLMessageSystem* msgsystem)
 			(notificationID == "RegionEntryAccessBlocked") ||
 			(notificationID == "LandClaimAccessBlocked") ||
 			(notificationID == "LandBuyAccessBlocked")
+
 		   )
 		{
 			/*---------------------------------------------------------------------

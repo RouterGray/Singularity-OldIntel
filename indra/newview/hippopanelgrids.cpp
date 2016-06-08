@@ -42,7 +42,6 @@
 #include "lluictrlfactory.h"
 #include "llviewerwindow.h"
 #include "llnotificationsutil.h"
-#include "llhttpstatuscodes.h"
 
 // ********************************************************************
 

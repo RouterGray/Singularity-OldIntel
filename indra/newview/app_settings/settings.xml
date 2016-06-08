@@ -181,21 +181,6 @@
     <integer>1</integer>
   </map>
 
-  <key>HTTPThrottleBandwidth</key>
-  <map>
-    <key>Comment</key>
-    <string>The bandwidth (in kbit/s) to strive for. Smaller values might reduce network
- congestion (sim ping time, aka avatar responsiveness). Higher values might download
- textures and the inventory faster, although in some cases a too high value might
- actually slow that down due to serverside throttling. If unsure, choose 2000.</string>
-    <key>Persist</key>
-    <integer>1</integer>
-    <key>Type</key>
-    <string>F32</string>
-    <key>Value</key>
-    <real>3000</real>
-  </map>
-
   <key>TeleportHistoryMaxEntries</key>
   <map>
     <key>Comment</key>
@@ -5204,105 +5189,39 @@ This should be as low as possible, but too low may break functionality</string>
       <key>Value</key>
       <integer>0</integer>
     </map>
-    <key>CurlMaxTotalConcurrentConnections</key>
-    <map>
-      <key>Comment</key>
-      <string>Maximum total number of simultaneous curl connections</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <integer>64</integer>
-    </map>
-    <key>CurlConcurrentConnectionsPerService</key>
-    <map>
-      <key>Comment</key>
-      <string>Maximum number of simultaneous curl connections per host:port service</string>
-      <key>Persist</key>
-      <integer>0</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <integer>8</integer>
-    </map>
-    <key>CurlTimeoutDNSLookup</key>
-    <map>
-      <key>Comment</key>
-      <string>Extra time in seconds added to CurlTimeoutConnect for the initial connect to a host</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <real>60</real>
-    </map>
-    <key>CurlTimeoutConnect</key>
-    <map>
-      <key>Comment</key>
-      <string>Maximum time allowed until a connection is established (after adding the easy handle) until the server is considered unreachable and the connection is terminated</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <real>10</real>
-    </map>
-    <key>CurlTimeoutReplyDelay</key>
-    <map>
-      <key>Comment</key>
-      <string>Maximum time the viewer will wait between sending data to the server and receiving (a partial) reply</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <real>60</real>
-    </map>
-    <key>CurlTimeoutLowSpeedLimit</key>
-    <map>
-      <key>Comment</key>
-      <string>If a transfer speed drops below this value (in bytes/s) during CurlTimeoutLowSpeedTime seconds, the transfer is considered too slow and is terminated</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <real>7000</real>
-    </map>
-    <key>CurlTimeoutLowSpeedTime</key>
-    <map>
-      <key>Comment</key>
-      <string>If a transfer speed drops below CurlTimeoutLowSpeedLimit (in bytes/s) during this amount of seconds, the transfer is considered too slow and is terminated</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <real>30</real>
-    </map>
-    <key>CurlTimeoutMaxTransaction</key>
-    <map>
-      <key>Comment</key>
-      <string>Maximum total time of a curl transaction, from when the easy handle is added till the transaction has completed. This INCLUDES DNS lookups (CurlTimeoutDNSLookup), connect time (CurlTimeoutConnect) and waiting for the first server reply (CurlTimeoutReply) as well as the actually time needed for data transfer</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <real>300</real>
-    </map>
-    <key>CurlTimeoutMaxTotalDelay</key>
-    <map>
-      <key>Comment</key>
-	  <string>Maximum total time of a curl request, from when it is requested till the transaction has completed. This includes queuing due to connection throttling on top of the events covered by CurlTimeoutMaxTransaction</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <real>600</real>
-    </map>
+  <key>CurlMaximumNumberOfHandles</key>
+  <map>
+    <key>Comment</key>
+    <string>Maximum number of handles curl can use (requires restart)</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>S32</string>
+    <key>Value</key>
+    <integer>256</integer>
+  </map>
+  <key>CurlRequestTimeOut</key>
+  <map>
+    <key>Comment</key>
+    <string>Max idle time of a curl request before killed (requires restart)</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>F32</string>
+    <key>Value</key>
+    <real>120.0</real>
+  </map>
+  <key>CurlUseMultipleThreads</key>
+  <map>
+    <key>Comment</key>
+    <string>Use background threads for executing curl_multi_perform (requires restart)</string>
+    <key>Persist</key>
+    <integer>1</integer>
+    <key>Type</key>
+    <string>Boolean</string>
+    <key>Value</key>
+    <integer>1</integer>
+  </map>
     <key>Cursor3D</key>
     <map>
       <key>Comment</key>
@@ -6683,16 +6602,16 @@ This should be as low as possible, but too low may break functionality</string>
       <key>Value</key>
       <integer>175</integer>
     </map>
-    <key>FPSLogFrequency</key>
+    <key>FastCacheFetchEnabled</key>
     <map>
       <key>Comment</key>
-      <string>Seconds between display of FPS in log (0 for never)</string>
+      <string>Enable texture fast cache fetching if set</string>
       <key>Persist</key>
       <integer>1</integer>
       <key>Type</key>
-      <string>F32</string>
+      <string>Boolean</string>
       <key>Value</key>
-      <real>60.0</real>
+      <string>1</string>
     </map>
     <key>FPSLogFrequency</key>
     <map>
@@ -6703,7 +6622,7 @@ This should be as low as possible, but too low may break functionality</string>
       <key>Type</key>
       <string>F32</string>
       <key>Value</key>
-      <real>10.0</real>
+      <real>60.0</real>
     </map>
     <key>FilterGamingSearchAll</key>
     <map>
@@ -15829,17 +15748,6 @@ This should be as low as possible, but too low may break functionality</string>
       <string>Boolean</string>
       <key>Value</key>
       <integer>0</integer>
-    </map>
-    <key>StateMachineMaxTime</key>
-    <map>
-      <key>Comment</key>
-      <string>Maximum time per frame spent executing AIStateMachine objects, in miliseconds</string>
-      <key>Persist</key>
-      <integer>1</integer>
-      <key>Type</key>
-      <string>U32</string>
-      <key>Value</key>
-      <integer>20</integer>
     </map>
     <key>StatsAutoRun</key>
     <map>

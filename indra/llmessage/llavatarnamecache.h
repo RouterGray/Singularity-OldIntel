@@ -29,10 +29,9 @@
 #define LLAVATARNAMECACHE_H
 
 #include "llavatarname.h"	// for convenience
-
 #include <boost/signals2.hpp>
 
-class AIHTTPReceivedHeaders;
+class LLSD;
 class LLUUID;
 
 namespace LLAvatarNameCache
@@ -49,7 +48,7 @@ namespace LLAvatarNameCache
 	bool importFile(std::istream& istr);
 	void exportFile(std::ostream& ostr);
 
-	// On the viewer, usually a simulator capabilitity.
+	// On the viewer, usually a simulator capabilities.
 	// If empty, name cache will fall back to using legacy name lookup system.
 	void setNameLookupURL(const std::string& name_lookup_url);
 
@@ -82,14 +81,15 @@ namespace LLAvatarNameCache
 	// Set display name: flips the switch and triggers the callbacks.
 	void setUseDisplayNames(bool use);
 
+	void setUseUsernames(bool use);
+
+	void insert(const LLUUID& agent_id, const LLAvatarName& av_name);
+
 // [RLVa:KB] - Checked: 2010-12-08 (RLVa-1.4.0a) | Added: RLVa-1.2.2c
 	bool getForceDisplayNames();
 	void setForceDisplayNames(bool force);
 // [/RLVa:KB]
 
-	void setUseUsernames(bool use);
-
-	void insert(const LLUUID& agent_id, const LLAvatarName& av_name);
 	void erase(const LLUUID& agent_id);
 
     /// Provide some fallback for agents that return errors.
@@ -97,7 +97,7 @@ namespace LLAvatarNameCache
 
 	// Compute name expiration time from HTTP Cache-Control header,
 	// or return default value, in seconds from epoch.
-	F64 nameExpirationFromHeaders(const AIHTTPReceivedHeaders& headers);
+    F64 nameExpirationFromHeaders(const LLSD& headers);
 
 	void addUseDisplayNamesCallback(const use_display_name_signal_t::slot_type& cb);
 }

@@ -4,7 +4,7 @@
  *
  * $LicenseInfo:firstyear=2002&license=viewerlgpl$
  * Second Life Viewer Source Code
- * Copyright (C) 2010, Linden Research, Inc.
+ * Copyright (C) 2014, Linden Research, Inc.
  * 
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,13 +62,19 @@
 #include "llcommandhandler.h"
 #include "llviewermessage.h"
 #include "llavatarnamecache.h"
+#include "llhttpretrypolicy.h"
 
 #include "llsdutil.h"
 
 #include "llfloatercustomize.h"
 // <edit>
 #include "llappviewer.h" // System Folders
-bool use_http_inventory(); // UseHTTPInventory replacement
+
+#include "hippogridmanager.h"
+bool use_http_inventory() // UseHTTPInventory replacement
+{
+	return gHippoGridManager->getConnectedGrid()->isSecondLife() || gSavedSettings.getBOOL("UseHTTPInventory");
+}
 // </edit>
 // [RLVa:KB] - Checked: 2014-11-02 (RLVa-1.4.11)
 #include "rlvcommon.h"
@@ -82,6 +88,16 @@ void no_op() {}
 static const char * const LOG_INV("Inventory");
 static const char * const LOG_LOCAL("InventoryLocalize");
 static const char * const LOG_NOTECARD("copy_inventory_from_notecard");
+
+#if 1
+// *TODO$: LLInventoryCallback should be deprecated to conform to the new boost::bind/coroutine model.
+// temp code in transition
+void doInventoryCb(LLPointer<LLInventoryCallback> cb, LLUUID id)
+{
+    if (cb.notNull())
+        cb->fire(id);
+}
+#endif
 
 ///----------------------------------------------------------------------------
 /// Helper class to store special inventory item names and their localized values.
@@ -316,6 +332,7 @@ void LLViewerInventoryItem::updateServer(BOOL is_new) const
 	if(!mIsComplete)
 	{
 		// *FIX: deal with this better.
+		// If we're crashing here then the UI is incorrectly enabled.
 		LL_ERRS(LOG_INV) << "LLViewerInventoryItem::updateServer() - for incomplete item"
 			   << LL_ENDL;
 		LLNotificationsUtil::add("IncompleteInventoryItem");
@@ -346,7 +363,7 @@ void LLViewerInventoryItem::updateServer(BOOL is_new) const
 
 void LLViewerInventoryItem::fetchFromServer(void) const
 {
-	if (!mIsComplete)
+	if(!mIsComplete)
 	{
 		std::string url;
 
@@ -377,7 +394,8 @@ void LLViewerInventoryItem::fetchFromServer(void) const
 				body["items"][0]["owner_id"] = mPermissions.getOwner();
 				body["items"][0]["item_id"] = mUUID;
 
-				LLHTTPClient::post(url, body, new LLInventoryModel::FetchItemHttpHandler(body));
+	            LLCore::HttpHandler::ptr_t handler(new LLInventoryModel::FetchItemHttpHandler(body));
+				gInventory.requestPost(true, url, body, handler, "Inventory Item");
 			}
 			else
 			{
@@ -616,7 +634,8 @@ bool LLViewerInventoryCategory::fetch()
 	{
 		LL_DEBUGS(LOG_INV) << "Fetching category children: " << mName << ", UUID: " << mUUID << LL_ENDL;
 		const F32 FETCH_TIMER_EXPIRY = 10.0f;
-		mDescendentsRequested.start(FETCH_TIMER_EXPIRY);
+		mDescendentsRequested.start();
+		mDescendentsRequested.resetWithExpiry(FETCH_TIMER_EXPIRY);
 
 		// bitfield
 		// 1 = by date
@@ -933,7 +952,7 @@ void LLInventoryCallbackManager::fire(U32 callback_id, const LLUUID& item_id)
 }
 
 //void rez_attachment_cb(const LLUUID& inv_item, LLViewerJointAttachment *attachmentp)
-// [SL:KB] - Patch: Appearance-DnDWear | Checked: 2010-09-28 (Catznip-3.0.0a) | Added: Catznip-2.2.0a
+// [SL:KB] - Patch: Appearance-DnDWear | Checked: 2010-09-28 (Catznip-3.4)
 void rez_attachment_cb(const LLUUID& inv_item, LLViewerJointAttachment *attachmentp, bool replace)
 // [/SL:KB]
 {
@@ -1226,16 +1245,17 @@ void link_inventory_array(const LLUUID& category,
 #endif
 	}
 
-	bool ais_ran = false;
-	if (AISCommand::isAPIAvailable())
+//    if (AISAPI::isAvailable())
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
+	if (AISAPI::isAvailable( (baseobj_array.size() > 1) ? AISAPI::CMD_OBJ_LINKBATCH : AISAPI::CMD_OBJ_LINK ))
+// [/SL:KB]
 	{
 		LLSD new_inventory = LLSD::emptyMap();
 		new_inventory["links"] = links;
-		boost::intrusive_ptr<AISCommand> cmd_ptr = new CreateInventoryCommand(category, new_inventory, cb);
-		ais_ran = cmd_ptr->run_command();
+        AISAPI::completion_t cr = (cb) ? boost::bind(&doInventoryCb, cb, _1) : AISAPI::completion_t();
+        AISAPI::CreateInventory(category, new_inventory, cr);
 	}
-
-	if (!ais_ran)
+    else
 	{
 		LLMessageSystem* msg = gMessageSystem;
 		for (LLSD::array_iterator iter = links.beginArray(); iter != links.endArray(); ++iter )
@@ -1292,8 +1312,10 @@ void update_inventory_item(
 	LLPointer<LLInventoryCallback> cb)
 {
 	const LLUUID& item_id = update_item->getUUID();
-	bool ais_ran = false;
-	if (AISCommand::isAPIAvailable())
+//    if (AISAPI::isAvailable())
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
+	if (AISAPI::isAvailable(AISAPI::CMD_ITEM_UPDATE))
+// [/SL:KB]
 	{
 		LLSD updates = update_item->asLLSD();
 		// Replace asset_id and/or shadow_id with transaction_id (hash_id)
@@ -1307,10 +1329,10 @@ void update_inventory_item(
 			updates.erase("shadow_id");
 			updates["hash_id"] = update_item->getTransactionID();
 		}
-		boost::intrusive_ptr<AISCommand> cmd_ptr = new UpdateItemCommand(item_id, updates, cb);
-		ais_ran = cmd_ptr->run_command();
+        AISAPI::completion_t cr = (cb) ? boost::bind(&doInventoryCb, cb, _1) : AISAPI::completion_t();
+        AISAPI::UpdateItem(item_id, updates, cr);
 	}
-	if (!ais_ran)
+    else
 	{
 		LLPointer<LLViewerInventoryItem> obj = gInventory.getItem(item_id);
 		LL_DEBUGS(LOG_INV) << "item_id: [" << item_id << "] name " << (update_item ? update_item->getName() : "(NOT FOUND)") << LL_ENDL;
@@ -1362,13 +1384,15 @@ void update_inventory_item(
 	}
 // [/SL:KB]
 
-	bool ais_ran = false;
-	if (AISCommand::isAPIAvailable())
+//    if (AISAPI::isAvailable())
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
+	if (AISAPI::isAvailable(AISAPI::CMD_ITEM_UPDATE))
+// [/SL:KB]
 	{
-		boost::intrusive_ptr<AISCommand> cmd_ptr = new UpdateItemCommand(item_id, updates, cb);
-		ais_ran = cmd_ptr->run_command();
+        AISAPI::completion_t cr = (cb) ? boost::bind(&doInventoryCb, cb, _1) : AISAPI::completion_t();
+        AISAPI::UpdateItem(item_id, updates, cr);
 	}
-	if (!ais_ran)
+    else
 	{
 //		LLPointer<LLViewerInventoryItem> obj = gInventory.getItem(item_id);
 //		LL_DEBUGS(LOG_INV) << "item_id: [" << item_id << "] name " << (obj ? obj->getName() : "(NOT FOUND)") << LL_ENDL;
@@ -1422,11 +1446,14 @@ void update_inventory_category(
 		LLPointer<LLViewerInventoryCategory> new_cat = new LLViewerInventoryCategory(obj);
 		new_cat->fromLLSD(updates);
 		// FIXME - restore this once the back-end work has been done.
-		if (AISCommand::isAPIAvailable())
+//        if (AISAPI::isAvailable())
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
+		if (AISAPI::isAvailable(AISAPI::CMD_CAT_UPDATE))
+// [/SL:KB]
 		{
 			LLSD new_llsd = new_cat->asLLSD();
-			boost::intrusive_ptr<AISCommand> cmd_ptr = new UpdateCategoryCommand(cat_id, new_llsd, cb);
-			cmd_ptr->run_command();
+            AISAPI::completion_t cr = (cb) ? boost::bind(&doInventoryCb, cb, _1) : AISAPI::completion_t();
+            AISAPI::UpdateCategory(cat_id, new_llsd, cr);
 		}
 		else // no cap
 		{
@@ -1488,10 +1515,13 @@ void remove_inventory_item(
 	{
 		const LLUUID item_id(obj->getUUID());
 		LL_DEBUGS(LOG_INV) << "item_id: [" << item_id << "] name " << obj->getName() << LL_ENDL;
-		if (AISCommand::isAPIAvailable())
+//        if (AISAPI::isAvailable())
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
+		if (AISAPI::isAvailable(AISAPI::CMD_ITEM_REMOVE))
+// [/SL:KB]
 		{
-			boost::intrusive_ptr<AISCommand> cmd_ptr = new RemoveItemCommand(item_id, cb);
-			cmd_ptr->run_command();
+            AISAPI::completion_t cr = (cb) ? boost::bind(&doInventoryCb, cb, _1) : AISAPI::completion_t();
+            AISAPI::RemoveItem(item_id, cr);
 
 			if (immediate_delete)
 			{
@@ -1564,10 +1594,13 @@ void remove_inventory_category(
 			LLNotificationsUtil::add("CannotRemoveProtectedCategories");
 			return;
 		}
-		if (AISCommand::isAPIAvailable())
+//        if (AISAPI::isAvailable())
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
+		if (AISAPI::isAvailable(AISAPI::CMD_CAT_REMOVE))
+// [/SL:KB]
 		{
-			boost::intrusive_ptr<AISCommand> cmd_ptr = new RemoveCategoryCommand(cat_id, cb);
-			cmd_ptr->run_command();
+            AISAPI::completion_t cr = (cb) ? boost::bind(&doInventoryCb, cb, _1) : AISAPI::completion_t();
+            AISAPI::RemoveCategory(cat_id, cr);
 		}
 		else // no cap
 		{
@@ -1667,10 +1700,13 @@ void purge_descendents_of(const LLUUID& id, LLPointer<LLInventoryCallback> cb)
 		}
 		else
 		{
-			if (AISCommand::isAPIAvailable())
+//            if (AISAPI::isAvailable())
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
+			if (AISAPI::isAvailable(AISAPI::CMD_CAT_PURGE))
+// [/SL:KB]
 			{
-				boost::intrusive_ptr<AISCommand> cmd_ptr = new PurgeDescendentsCommand(id, cb);
-				cmd_ptr->run_command();
+                AISAPI::completion_t cr = (cb) ? boost::bind(&doInventoryCb, cb, _1) : AISAPI::completion_t();
+                AISAPI::PurgeDescendents(id, cr);
 			}
 			else // no cap
 			{
@@ -1746,27 +1782,20 @@ void copy_inventory_from_notecard(const LLUUID& destination_id,
         return;
     }
 
-	// check capability to prevent a crash while LL_ERRS in LLCapabilityListener::capListener. See EXT-8459.
-	std::string url = viewer_region->getCapability("CopyInventoryFromNotecard");
-	if (url.empty())
-	{
-        LL_WARNS(LOG_NOTECARD) << "There is no 'CopyInventoryFromNotecard' capability"
-							   << " for region: " << viewer_region->getName()
-                                                 << LL_ENDL;
-		return;
-	}
-
-    LLSD request, body;
+    LLSD body;
     body["notecard-id"] = notecard_inv_id;
     body["object-id"] = object_id;
     body["item-id"] = src->getUUID();
 	body["folder-id"] = destination_id;
     body["callback-id"] = (LLSD::Integer)callback_id;
 
-    request["message"] = "CopyInventoryFromNotecard";
-    request["payload"] = body;
-
-    viewer_region->getCapAPI().post(request);
+    /// *TODO: RIDER: This posts the request under the agents policy.  
+    /// When I convert the inventory over this call should be moved under that 
+    /// policy as well.
+    if (!gAgent.requestPostCapability("CopyInventoryFromNotecard", body))
+    {
+        LL_WARNS() << "SIM does not have the capability to copy from notecard." << LL_ENDL;
+    }
 }
 
 void create_new_item(const std::string& name,
@@ -1781,7 +1810,7 @@ void create_new_item(const std::string& name,
 
 	LLPointer<LLInventoryCallback> cb = NULL;
 
-	switch(inv_type)
+	switch (inv_type)
 	{
 		case LLInventoryType::IT_LSL:
 		{
@@ -1883,12 +1912,16 @@ void slam_inventory_folder(const LLUUID& folder_id,
 						   const LLSD& contents,
 						   LLPointer<LLInventoryCallback> cb)
 {
-	if (AISCommand::isAPIAvailable())
+//    if (AISAPI::isAvailable())
+// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
+	if (AISAPI::isAvailable(AISAPI::CMD_CAT_SLAM))
+// [/SL:KB]
 	{
 		LL_DEBUGS(LOG_INV) << "using AISv3 to slam folder, id " << folder_id
 						   << " new contents: " << ll_pretty_print_sd(contents) << LL_ENDL;
-		boost::intrusive_ptr<AISCommand> cmd_ptr = new SlamFolderCommand(folder_id, contents, cb);
-		cmd_ptr->run_command();
+
+        AISAPI::completion_t cr = (cb) ? boost::bind(&doInventoryCb, cb, _1) : AISAPI::completion_t();
+        AISAPI::SlamFolder(folder_id, contents, cr);
 	}
 	else // no cap
 	{
@@ -2013,7 +2046,7 @@ const std::string NEW_GESTURE_NAME = "New Gesture"; // *TODO:Translate? (probabl
 		}
 		else
 		{
-			LL_WARNS() << "Can't create unrecognized type " << type_name << LL_ENDL;
+			LL_WARNS(LOG_INV) << "Can't create unrecognized type " << type_name << LL_ENDL;
 		}
 	}
 	root->setNeedsAutoRename(TRUE);	
@@ -2095,6 +2128,12 @@ S32 LLViewerInventoryItem::getSortField() const
 {
 	return LLFavoritesOrderStorage::instance().getSortIndex(mUUID);
 }
+
+//void LLViewerInventoryItem::setSortField(S32 sortField)
+//{
+//	LLFavoritesOrderStorage::instance().setSortIndex(mUUID, sortField);
+//	getSLURL();
+//}
 
 void LLViewerInventoryItem::getSLURL()
 {

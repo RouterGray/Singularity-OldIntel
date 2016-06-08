@@ -30,8 +30,10 @@
 #if LL_WINDOWS
 #include "llwin32headerslean.h"
 #include <stdlib.h>                 // Windows errno
+#include <io.h>
 #else
 #include <errno.h>
+#include <sys/file.h>
 #endif
 
 #include "linden_common.h"
@@ -40,7 +42,6 @@
 #include "llerror.h"
 #include "stringize.h"
 
-using namespace std;
 
 static std::string empty;
 
@@ -49,15 +50,12 @@ static std::string empty;
 
 #if LL_WINDOWS
 // On Windows, use strerror_s().
-//static
-std::string LLFile::strerr(int errn)
+std::string strerr(int errn)
 {
 	char buffer[256];
 	strerror_s(buffer, errn);       // infers sizeof(buffer) -- love it!
 	return buffer;
 }
-
-typedef std::basic_ios<char,std::char_traits < char > > _Myios;
 
 #else
 // On Posix we want to call strerror_r(), but alarmingly, there are two
@@ -99,8 +97,7 @@ std::string message_from(int orig_errno, const char* buffer, size_t bufflen,
 					 << " (error " << stre_errno << ')');
 }
 
-//static
-std::string LLFile::strerr(int errn)
+std::string strerr(int errn)
 {
 	char buffer[256];
 	// Select message_from() function matching the strerror_r() we have on hand.
@@ -110,8 +107,7 @@ std::string LLFile::strerr(int errn)
 #endif	// ! LL_WINDOWS
 
 // On either system, shorthand call just infers global 'errno'.
-//static
-std::string LLFile::strerr()
+std::string strerr()
 {
 	return strerr(errno);
 }
@@ -128,7 +124,7 @@ int warnif(const std::string& desc, const std::string& filename, int rc, int acc
 		if (errn != accept)
 		{
 			LL_WARNS("LLFile") << "Couldn't " << desc << " '" << filename
-							   << "' (errno " << errn << "): " << LLFile::strerr(errn) << LL_ENDL;
+							   << "' (errno " << errn << "): " << strerr(errn) << LL_ENDL;
 		}
 #if 0 && LL_WINDOWS                 // turn on to debug file-locking problems
 		// If the problem is "Permission denied," maybe it's because another
@@ -189,7 +185,7 @@ int	LLFile::mkdir_nowarn(const std::string& dirname, int perms)
 
 int LLFile::mkdir(const std::string& dirname, int perms)
 {
-	int rc = LLFile::mkdir_nowarn(dirname, perms);
+	int rc = mkdir_nowarn(dirname, perms);
 	// We often use mkdir() to ensure the existence of a directory that might
 	// already exist. Don't spam the log if it does.
 	return warnif("mkdir", dirname, rc, EEXIST);
@@ -211,7 +207,7 @@ int	LLFile::rmdir_nowarn(const std::string& dirname)
 
 int	LLFile::rmdir(const std::string& dirname)
 {
-	int rc = LLFile::rmdir_nowarn(dirname);
+	int rc = rmdir_nowarn(dirname);
 	return warnif("rmdir", dirname, rc);
 }
 
@@ -253,6 +249,7 @@ int	LLFile::close(LLFILE * file)
 	return ret_value;
 }
 
+
 int	LLFile::remove_nowarn(const std::string& filename)
 {
 #if	LL_WINDOWS
@@ -289,6 +286,43 @@ int	LLFile::rename(const std::string& filename, const std::string& newname)
 {
 	int rc = LLFile::rename_nowarn(filename, newname);
 	return warnif(STRINGIZE("rename to '" << newname << "' from"), filename, rc);
+}
+
+bool LLFile::copy(const std::string from, const std::string to)
+{
+	bool copied = false;
+	LLFILE* in = LLFile::fopen(from, "rb");		/* Flawfinder: ignore */	 	
+	if (in)	 	
+	{	 	
+		LLFILE* out = LLFile::fopen(to, "wb");		/* Flawfinder: ignore */
+		if (out)
+		{
+			char buf[16384];		/* Flawfinder: ignore */ 	
+			size_t readbytes;
+			bool write_ok = true;
+			while(write_ok && (readbytes = fread(buf, 1, 16384, in))) /* Flawfinder: ignore */
+			{
+				if (fwrite(buf, 1, readbytes, out) != readbytes)
+				{
+					LL_WARNS("LLFile") << "Short write" << LL_ENDL; 
+					write_ok = false;
+				}
+			}
+			if ( write_ok )
+			{
+				copied = true;
+			}
+			fclose(out);
+		}
+		fclose(in);
+	}
+	return copied;
+}
+
+int LLFile::size(const std::string& filename)
+{
+	llstat stat_data;
+	return stat(filename, &stat_data) ? 0 : stat_data.st_size;
 }
 
 int	LLFile::stat(const std::string& filename, llstat* filestatus)
@@ -328,11 +362,9 @@ const char *LLFile::tmpdir()
 		char sep;
 #if LL_WINDOWS
 		sep = '\\';
-
-		DWORD len = GetTempPathW(0, L"");
-		llutf16string utf16path;
-		utf16path.resize(len + 1);
-		len = GetTempPathW(static_cast<DWORD>(utf16path.size()), &utf16path[0]);
+		WCHAR lpTempPathBuffer[MAX_PATH+1];
+		GetTempPath(MAX_PATH+1, lpTempPathBuffer);
+		llutf16string utf16path(lpTempPathBuffer);
 		utf8path = utf16str_to_utf8str(utf16path);
 #else
 		sep = '/';
@@ -349,6 +381,173 @@ const char *LLFile::tmpdir()
 	return utf8path.c_str();
 }
 
+//static
+bool LLFile::lockFile(LLFILE* filep, bool exclusive, bool non_blocking)
+{
+#if LL_WINDOWS
+	int fd = _fileno(filep);
+	if (fd == -1 || fd == -2)
+	{
+		LL_WARNS() << "Failed to get file descriptor: " << errno << LL_ENDL;
+		return false;
+	}
+
+	HANDLE handle = (HANDLE) _get_osfhandle(fd);
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		LL_WARNS() << "Failed to get file handle: " << errno << LL_ENDL;
+		return false;
+	}
+
+	DWORD lock_type = 0;
+	if (exclusive)
+		lock_type |= LOCKFILE_EXCLUSIVE_LOCK;
+	if (non_blocking)
+		lock_type |= LOCKFILE_FAIL_IMMEDIATELY;
+
+	OVERLAPPED overlap;
+	memset(&overlap, 0, sizeof(OVERLAPPED));
+	if (!LockFileEx(handle, lock_type, 0, UINT_MAX, UINT_MAX, &overlap))
+	{
+		LL_WARNS() << "Failed to lock file: " << GetLastError() << LL_ENDL;
+		return false;
+	}
+
+	return true;
+#else
+	int fd = fileno(filep);
+	if (fd == -1)
+	{
+		LL_WARNS() << "Failed to get file descriptor: " << errno << LL_ENDL;
+		return false;
+	}
+
+	int lock_type = LOCK_SH;
+	if (exclusive)
+		lock_type = LOCK_EX;
+	if (non_blocking)
+		lock_type |= LOCK_NB;
+
+	int rc;
+	while ((rc = flock(fd, lock_type)) < 0 && errno == EINTR)
+
+	if (rc == -1)
+	{
+		LL_WARNS() << "Failed to lock file: " << errno << LL_ENDL;
+		return false;
+	}
+
+	return true;
+#endif
+}
+
+// static
+S32 LLFile::readEx(const std::string& filename, void *buf, S32 offset, S32 nbytes)
+{
+	//*****************************************
+	llifstream infile(filename, std::ios::in | std::ios::binary);
+	//*****************************************	
+	if (!infile.is_open())
+	{
+		return 0;
+	}
+
+	llassert(offset >= 0);
+
+	if (offset > 0)
+	{
+		infile.seekg(offset);
+		if (!infile.good())
+		{
+			offset = -1;
+		}
+	}
+
+	S32 bytes_read;
+	if (offset < 0)
+	{
+		bytes_read = 0;
+	}
+	else
+	{
+		infile.read((char*) buf, nbytes);
+		bytes_read = infile.gcount();
+		if (!infile.good() || bytes_read != nbytes)
+		{
+			LL_WARNS() << "Error when reading, wanted: " << nbytes << " read: " << bytes_read << " at offset: " << offset << LL_ENDL;
+			bytes_read = 0;
+		}
+		else
+		{
+			llassert_always(bytes_read <= S32_MAX);
+		}
+	}
+
+	//*****************************************
+	infile.close();
+	//*****************************************
+
+	return bytes_read;
+}
+
+// static
+S32 LLFile::writeEx(const std::string& filename, void *buf, S32 offset, S32 nbytes)
+{
+	std::ios_base::openmode flags = std::ios::out | std::ios::binary;
+	if (offset < 0)
+	{
+		flags |= std::ios::app;
+		offset = 0;
+	}
+	else if (isfile(filename))
+	{
+		flags |= std::ios::in;
+	}
+
+	//*****************************************
+	llofstream outfile(filename, flags);
+	//*****************************************
+	if (!outfile.is_open())
+	{
+		return 0;
+	}
+
+	if (offset > 0)
+	{
+		outfile.seekp(offset);
+		if (!outfile.good())
+		{
+			offset = -1;
+		}
+	}
+
+	S32 bytes_written;
+	if (offset < 0)
+	{
+		bytes_written = 0;
+	}
+	else
+	{
+		std::streampos old_pos = outfile.tellp();
+		outfile.write((char*) buf, nbytes);
+		bytes_written = outfile.tellp() - old_pos;
+		if (!outfile.good() || bytes_written != nbytes)
+		{
+			LL_WARNS() << "Error when writing, wanted " << nbytes << " wrote " << bytes_written << " offset " << offset << LL_ENDL;
+			bytes_written = 0;
+		}
+		else
+		{
+			llassert_always(bytes_written <= S32_MAX);
+		}
+	}
+
+	//*****************************************
+	outfile.close();
+	//*****************************************
+
+	return bytes_written;
+}
 
 /***************** Modified file stream created to overcome the incorrect behaviour of posix fopen in windows *******************/
 
@@ -364,38 +563,38 @@ LLFILE *	LLFile::_Fiopen(const std::string& filename,
 	0};
 	static const int valid[] =
 	{	// valid combinations of open flags
-		ios_base::in,
-		ios_base::out,
-		ios_base::out | ios_base::trunc,
-		ios_base::out | ios_base::app,
-		ios_base::in | ios_base::binary,
-		ios_base::out | ios_base::binary,
-		ios_base::out | ios_base::trunc | ios_base::binary,
-		ios_base::out | ios_base::app | ios_base::binary,
-		ios_base::in | ios_base::out,
-		ios_base::in | ios_base::out | ios_base::trunc,
-		ios_base::in | ios_base::out | ios_base::app,
-		ios_base::in | ios_base::out | ios_base::binary,
-		ios_base::in | ios_base::out | ios_base::trunc
-			| ios_base::binary,
-		ios_base::in | ios_base::out | ios_base::app
-			| ios_base::binary,
+		std::ios_base::in,
+		std::ios_base::out,
+		std::ios_base::out | std::ios_base::trunc,
+		std::ios_base::out | std::ios_base::app,
+		std::ios_base::in  | std::ios_base::binary,
+		std::ios_base::out | std::ios_base::binary,
+		std::ios_base::out | std::ios_base::trunc | std::ios_base::binary,
+		std::ios_base::out | std::ios_base::app | std::ios_base::binary,
+		std::ios_base::in  | std::ios_base::out,
+		std::ios_base::in  | std::ios_base::out | std::ios_base::trunc,
+		std::ios_base::in  | std::ios_base::out | std::ios_base::app,
+		std::ios_base::in  | std::ios_base::out | std::ios_base::binary,
+		std::ios_base::in  | std::ios_base::out | std::ios_base::trunc
+			| std::ios_base::binary,
+		std::ios_base::in | std::ios_base::out | std::ios_base::app
+			| std::ios_base::binary,
 	0};
 
 	LLFILE *fp = 0;
 	int n;
-	ios_base::openmode atendflag = mode & ios_base::ate;
-	ios_base::openmode norepflag = mode & ios_base::_Noreplace;
+	std::ios_base::openmode atendflag = mode & std::ios_base::ate;
+	std::ios_base::openmode norepflag = mode & std::ios_base::_Noreplace;
 
-	if (mode & ios_base::_Nocreate)
-		mode |= ios_base::in;	// file must exist
-	mode &= ~(ios_base::ate | ios_base::_Nocreate | ios_base::_Noreplace);
+	if (mode & std::ios_base::_Nocreate)
+		mode |= std::ios_base::in;	// file must exist
+	mode &= ~(std::ios_base::ate | std::ios_base::_Nocreate | std::ios_base::_Noreplace);
 	for (n = 0; valid[n] != 0 && valid[n] != mode; ++n)
 		;	// look for a valid mode
 
 	if (valid[n] == 0)
 		return (0);	// no valid mode
-	else if (norepflag && mode & (ios_base::out || ios_base::app)
+	else if (norepflag && mode & (std::ios_base::out || std::ios_base::app)
 		&& (fp = LLFile::fopen(filename, "r")) != 0)	/* Flawfinder: ignore */
 		{	// file must not exist, close and fail
 		fclose(fp);
@@ -414,90 +613,17 @@ LLFILE *	LLFile::_Fiopen(const std::string& filename,
 	return (0);
 }
 
-#endif /* LL_WINDOWS */
-
-
-#if LL_WINDOWS
-/************** input file stream ********************************/
-
-llifstream::llifstream() : std::ifstream()
-{
-}
-
-// explicit
-llifstream::llifstream(const std::string& _Filename, ios_base::openmode _Mode) :
-	std::ifstream(utf8str_to_utf16str(_Filename),
-				 _Mode | ios_base::in)
-{
-}
-
-// explicit
-llifstream::llifstream(const char* _Filename, ios_base::openmode _Mode) :
-	std::ifstream(utf8str_to_utf16str(_Filename).c_str(),
-				 _Mode | ios_base::in)
-
-{
-}
-
-void llifstream::open(const std::string& _Filename, ios_base::openmode _Mode)
-{
-	std::ifstream::open(utf8str_to_utf16str(_Filename),
-		_Mode | ios_base::in);
-}
-
-void llifstream::open(const char* _Filename, ios_base::openmode _Mode)
-{
-	std::ifstream::open(utf8str_to_utf16str(_Filename).c_str(),
-		_Mode | ios_base::in);
-}
-
-
-/************** output file stream ********************************/
-
-
-llofstream::llofstream() : std::ofstream()
-{
-}
-
-// explicit
-llofstream::llofstream(const std::string& _Filename, ios_base::openmode _Mode) :
-	std::ofstream(utf8str_to_utf16str(_Filename),
-				  _Mode | ios_base::out)
-{
-}
-
-// explicit
-llofstream::llofstream(const char* _Filename, ios_base::openmode _Mode) :
-	std::ofstream(utf8str_to_utf16str(_Filename).c_str(),
-				  _Mode | ios_base::out)
-{
-}
-
-void llofstream::open(const std::string& _Filename, ios_base::openmode _Mode)
-{
-	std::ofstream::open(utf8str_to_utf16str(_Filename),
-		_Mode | ios_base::out);
-}
-
-void llofstream::open(const char* _Filename, ios_base::openmode _Mode)
-{
-	std::ofstream::open(utf8str_to_utf16str(_Filename).c_str(),
-		_Mode | ios_base::out);
-}
-
-#endif  // LL_WINDOWS
-
 /************** helper functions ********************************/
 
 std::streamsize llifstream_size(llifstream& ifstr)
 {
 	if(!ifstr.is_open()) return 0;
 	std::streampos pos_old = ifstr.tellg();
-	ifstr.seekg(0, ios_base::beg);
+	ifstr.seekg(0, std::ios_base::beg);
 	std::streampos pos_beg = ifstr.tellg();
-	ifstr.seekg(0, ios_base::end);
+	ifstr.seekg(0, std::ios_base::end);
 	std::streampos pos_end = ifstr.tellg();
-	ifstr.seekg(pos_old, ios_base::beg);
+	ifstr.seekg(pos_old, std::ios_base::beg);
 	return pos_end - pos_beg;
 }
 
@@ -505,12 +631,12 @@ std::streamsize llofstream_size(llofstream& ofstr)
 {
 	if(!ofstr.is_open()) return 0;
 	std::streampos pos_old = ofstr.tellp();
-	ofstr.seekp(0, ios_base::beg);
+	ofstr.seekp(0, std::ios_base::beg);
 	std::streampos pos_beg = ofstr.tellp();
-	ofstr.seekp(0, ios_base::end);
+	ofstr.seekp(0, std::ios_base::end);
 	std::streampos pos_end = ofstr.tellp();
-	ofstr.seekp(pos_old, ios_base::beg);
+	ofstr.seekp(pos_old, std::ios_base::beg);
 	return pos_end - pos_beg;
 }
 
-
+#endif /* LL_WINDOWS */
