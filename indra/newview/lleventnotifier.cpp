@@ -39,7 +39,7 @@
 
 #include "llnotify.h"
 #include "lleventinfo.h"
-#include "llfloaterdirectory.h"
+#include "llfloaterevent.h"
 #include "llfloaterworldmap.h"
 #include "llagent.h"
 #include "llappviewer.h"	// for gPacificDaylightTime
@@ -104,8 +104,7 @@ bool LLEventNotifier::handleResponse(U32 eventId, LLVector3d eventPos, const LLS
 		gFloaterWorldMap->trackLocation(eventPos);
 		break;
 	case 1:
-		gDisplayEventHack = TRUE;
-		LLFloaterDirectory::showEvents(eventId);
+		LLFloaterEventInfo::show(eventId);
 		break;
 	case 2:
 		break;
