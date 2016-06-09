@@ -8,6 +8,7 @@ include(UnixInstall)
 
 include_directories(
     ${LLCOMMON_INCLUDE_DIRS}
+    ${LLCOMMON_SYSTEM_INCLUDE_DIRS}
     )
 
 set(llvfs_SOURCE_FILES
@@ -64,9 +65,14 @@ list(APPEND llvfs_SOURCE_FILES ${llvfs_HEADER_FILES})
 
 add_library (llvfs ${llvfs_SOURCE_FILES})
 
+set(vfs_BOOST_LIBRARIES
+    ${BOOST_FILESYSTEM_LIBRARY}
+    ${BOOST_SYSTEM_LIBRARY}
+    )
+
 target_link_libraries(llvfs
-    ${Boost_FILESYSTEM_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
+    ${LLCOMMON_LIBRARIES}
+    ${vfs_BOOST_LIBRARIES}
     )
 
 if (DARWIN)

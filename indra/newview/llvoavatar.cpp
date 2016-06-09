@@ -8134,7 +8134,7 @@ bool LLVOAvatar::visualParamWeightsAreDefault()
 	return rtn;
 }
 
-void dump_visual_param(llofstream& ofstream, LLVisualParam* viewer_param, F32 value)
+void dump_visual_param(llofstream& ofstream, LLVisualParam const* viewer_param, F32 value)
 {
 	S32 u8_value = F32_to_U8(value,viewer_param->getMinWeight(),viewer_param->getMaxWeight());
 	ofstream << llformat("\t\t<param id=\"%d\" name=\"%s\" value=\"%.3f\" u8=\"%d\" type=\"%s\" wearable=\"%s\"/>\n",

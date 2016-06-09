@@ -142,43 +142,30 @@ endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set(DARWIN 1)
 
-  execute_process(
-    COMMAND sh -c "xcodebuild -version | grep Xcode  | cut -d ' ' -f2 | cut -d'.' -f1-2"
-    OUTPUT_VARIABLE XCODE_VERSION )
-  string(REGEX REPLACE "(\r?\n)+$" "" XCODE_VERSION "${XCODE_VERSION}")
+  # now we only support Xcode 7.0 using 10.11 (El Capitan), minimum OS 10.7 (Lion)
+  set(XCODE_VERSION 7.0)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET 10.7)
+  set(CMAKE_OSX_SYSROOT macosx10.11)
 
-  # Hardcode SDK we build against until we can test and allow newer ones
-  # as autodetected in the code above
-  set(CMAKE_OSX_DEPLOYMENT_TARGET 10.6)
-  set(CMAKE_OSX_SYSROOT macosx10.6)
-
-  # Support for Unix Makefiles generator
-  if (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
-    execute_process(COMMAND xcodebuild -version -sdk "${CMAKE_OSX_SYSROOT}" Path | head -n 1 OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
-    string(REGEX REPLACE "(\r?\n)+$" "" CMAKE_OSX_SYSROOT "${CMAKE_OSX_SYSROOT}")
-  endif (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
-      
-  # LLVM-GCC has been removed in Xcode5
-  if (XCODE_VERSION GREATER 4.9)
     set(CMAKE_XCODE_ATTRIBUTE_GCC_VERSION "com.apple.compilers.llvm.clang.1_0")
-  else (XCODE_VERSION GREATER 4.9)
-    set(CMAKE_XCODE_ATTRIBUTE_GCC_VERSION "com.apple.compilers.llvmgcc42")
-  endif (XCODE_VERSION GREATER 4.9)
+  set(CMAKE_XCODE_ATTRIBUTE_GCC_OPTIMIZATION_LEVEL 3)
+  set(CMAKE_XCODE_ATTRIBUTE_GCC_STRICT_ALIASING NO)
+  set(CMAKE_XCODE_ATTRIBUTE_GCC_FAST_MATH NO)
+  set(CMAKE_XCODE_ATTRIBUTE_CLANG_X86_VECTOR_INSTRUCTIONS ssse3)
+  set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libstdc++")
 
   set(CMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT dwarf-with-dsym)
 
-  message(STATUS "Xcode version: ${XCODE_VERSION}")
-  message(STATUS "OSX sysroot: ${CMAKE_OSX_SYSROOT}")
-  message(STATUS "OSX deployment target: ${CMAKE_OSX_DEPLOYMENT_TARGET}")
-  
-  # Build only for i386 by default, system default on MacOSX 10.6 is x86_64
-  set(CMAKE_OSX_ARCHITECTURES i386)
-  set(ARCH i386)
-  set(WORD_SIZE 32)
-  set(AUTOBUILD_PLATFORM_NAME "darwin")
+  # Build only for i386 by default, system default on MacOSX 10.6+ is x86_64
+  if (NOT CMAKE_OSX_ARCHITECTURES)
+    set(CMAKE_OSX_ARCHITECTURES "i386")
+  endif (NOT CMAKE_OSX_ARCHITECTURES)
 
+  set(ARCH ${CMAKE_OSX_ARCHITECTURES})
   set(LL_ARCH ${ARCH}_darwin)
   set(LL_ARCH_DIR universal-darwin)
+  set(WORD_SIZE 32)
+  set(AUTOBUILD_PLATFORM_NAME "darwin")
 endif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 # Default deploy grid
@@ -190,7 +177,7 @@ set(ENABLE_SIGNING OFF CACHE BOOL "Enable signing the viewer")
 set(SIGNING_IDENTITY "" CACHE STRING "Specifies the signing identity to use, if necessary.")
 
 set(VERSION_BUILD "0" CACHE STRING "Revision number passed in from the outside")
-set(STANDALONE OFF CACHE BOOL "Do not use Linden-supplied prebuilt libraries.")
+set(STANDALONE OFF CACHE BOOL "Use libraries from your system rather than Linden-supplied prebuilt libraries.")
 
 set(USE_PRECOMPILED_HEADERS ON CACHE BOOL "Enable use of precompiled header directives where supported.")
 

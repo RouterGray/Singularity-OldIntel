@@ -3,16 +3,28 @@
 project(llplugin)
 
 include(00-Common)
+include(CURL)
 include(LLCommon)
+include(LLImage)
 include(LLMath)
 include(LLMessage)
 include(LLRender)
+include(LLXML)
+include(LLWindow)
+include(Boost)
 
 include_directories(
     ${LLCOMMON_INCLUDE_DIRS}
+    ${LLIMAGE_INCLUDE_DIRS}
     ${LLMATH_INCLUDE_DIRS}
     ${LLMESSAGE_INCLUDE_DIRS}
     ${LLRENDER_INCLUDE_DIRS}
+    ${LLXML_INCLUDE_DIRS}
+    ${LLWINDOW_INCLUDE_DIRS}
+    )
+include_directories(SYSTEM
+    ${LLCOMMON_SYSTEM_INCLUDE_DIRS}
+    ${LLXML_SYSTEM_INCLUDE_DIRS}
     )
 
 set(llplugin_SOURCE_FILES
@@ -45,19 +57,20 @@ set_source_files_properties(${llplugin_HEADER_FILES}
                             PROPERTIES HEADER_FILE_ONLY TRUE)
 
 if(NOT WORD_SIZE EQUAL 32)
-	if(WINDOWS)
-		# add_definitions(/FIXED:NO)
-	else(WINDOWS) # not windows therefore gcc LINUX and DARWIN
+  if(NOT WINDOWS)
 		add_definitions(-fPIC)
-	endif(WINDOWS)
+  endif(NOT WINDOWS)
 endif (NOT WORD_SIZE EQUAL 32)
 
 list(APPEND llplugin_SOURCE_FILES ${llplugin_HEADER_FILES})
 
 add_library (llplugin ${llplugin_SOURCE_FILES})
-if(LINUX AND STANDALONE)
+if(LINUX)
+  target_link_libraries(llplugin pthread)
+  if (STANDALONE)
     target_link_libraries (llplugin rt dl)
-endif(LINUX AND STANDALONE)
+  endif(STANDALONE)
+endif(LINUX)
 
 add_subdirectory(slplugin)
 

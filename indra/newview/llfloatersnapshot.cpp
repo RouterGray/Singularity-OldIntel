@@ -1058,8 +1058,8 @@ LLSnapshotLivePreview::EAspectSizeProblem LLSnapshotLivePreview::getAspectSizePr
 	if (mSnapshotType == SNAPSHOT_LOCAL && (mWidth >= window_width || mHeight >= window_height) && mWidth != width_out && mHeight != height_out)
 	{
 		LL_DEBUGS("DCSnapshot") << "NOT up to date: required target size " << mWidth << "x" << mHeight <<
-			" is larger or equal the window size (" << window_width << "x" << window_height << ")"\
-			" but unequal the the raw snapshot size (" << width_out << "x" << height_out << ")"\
+			" is larger or equal the window size (" << window_width << "x" << window_height << ")" \
+			" but unequal the the raw snapshot size (" << width_out << "x" << height_out << ")" \
 			" and target is disk!" << LL_ENDL;
 		return CANNOT_RESIZE;
 	}
@@ -1400,18 +1400,18 @@ void LLSnapshotLivePreview::saveTexture()
 	LLAssetStorage::LLStoreAssetCallback callback = &LLSnapshotLivePreview::saveTextureDone;
 	S32 expected_upload_cost = LLGlobalEconomy::Singleton::getInstance()->getPriceUpload();
 	saveTextureUserData* user_data = new saveTextureUserData(this, sSnapshotIndex, gSavedSettings.getBOOL("TemporaryUpload"));
-	if (upload_new_resource(tid,	// tid
-				LLAssetType::AT_TEXTURE,
-				"Snapshot : " + pos_string,
-				"Taken by " + who_took_it + " at " + pos_string,
-				0,
-				LLFolderType::FT_SNAPSHOT_CATEGORY,
-				LLInventoryType::IT_SNAPSHOT,
-				PERM_ALL,  // Note: Snapshots to inventory is a special case of content upload
-				LLFloaterPerms::getGroupPerms("Uploads"), // that is more permissive than other uploads
-				LLFloaterPerms::getEveryonePerms("Uploads"),
-				"Snapshot : " + pos_string,
-				callback, expected_upload_cost, user_data))
+	LLResourceUploadInfo::ptr_t uploadInfo(new LLResourceUploadInfo(tid,	// tid
+			LLAssetType::AT_TEXTURE,
+			"Snapshot : " + pos_string,
+			"Taken by " + who_took_it + " at " + pos_string,
+			0,
+			LLFolderType::FT_SNAPSHOT_CATEGORY,
+			LLInventoryType::IT_SNAPSHOT,
+			PERM_ALL,  // Note: Snapshots to inventory is a special case of content upload
+			LLFloaterPerms::getGroupPerms("Uploads"), // that is more permissive than other uploads
+			LLFloaterPerms::getEveryonePerms("Uploads"),
+			expected_upload_cost));
+	if (upload_new_resource(uploadInfo, callback, user_data))
 	{
 		saveTextureDone2(true, user_data);
 	}

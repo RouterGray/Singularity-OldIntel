@@ -1069,6 +1069,17 @@ void LLViewerObjectList::fetchPhysicsFlags()
 	}
 }
 
+bool LLViewerObjectList::gotObjectPhysicsFlags(LLViewerObject* objectp)
+{
+	// This will insert objectp in mStalePhysicsFlags if needed:
+	objectp->getPhysicsShapeType();
+	// Data has been retrieved if the object is not in either of the
+	// two lists:
+	const LLUUID& id = objectp->getID();
+	return mPendingPhysicsFlags.count(id) == 0 &&
+		   mStalePhysicsFlags.count(id) == 0;
+}
+
 /*static*/
 void LLViewerObjectList::reportPhysicsFlagFailure(LLSD &objectList)
 {

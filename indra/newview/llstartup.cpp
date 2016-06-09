@@ -1035,7 +1035,8 @@ bool idle_startup()
 		// Note: can't store warnings files per account because some come up before login
 		
 		// Overwrite default user settings with user settings								 
-		LLAppViewer::instance()->loadSettingsFromDirectory(gSettings, "Account");
+		LLAppViewer::instance()->loadSettingsFromDirectory("Account");
+
 
 		// Need to set the LastLogoff time here if we don't have one.  LastLogoff is used for "Recent Items" calculation
 		// and startup time is close enough if we don't have a real value.

@@ -12,14 +12,12 @@ set(cmake_SOURCE_FILES
     Audio.cmake
     Boost.cmake
     BuildVersion.cmake
-    CARes.cmake
     CEFPlugin.cmake
     CMakeCopyIfDifferent.cmake
     CURL.cmake
     Colladadom.cmake
     ConfigurePkgConfig.cmake
     Copy3rdPartyLibs.cmake
-    Cwdebug.cmake
     DBusGlib.cmake
     DeploySharedLibs.cmake
     EXPAT.cmake
@@ -27,7 +25,6 @@ set(cmake_SOURCE_FILES
     FMODSTUDIO.cmake
     FindAPR.cmake
     FindAutobuild.cmake
-    FindCARes.cmake
     FindColladadom.cmake
     FindGLOD.cmake
     FindGoogleBreakpad.cmake

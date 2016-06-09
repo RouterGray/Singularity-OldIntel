@@ -4020,6 +4020,22 @@ void LLVivoxVoiceClient::sessionState::removeAllParticipants()
 	mParticipantList.shrink_to_fit();
 }
 
+/*static*/
+void LLVivoxVoiceClient::sessionState::VerifySessions()
+{
+    std::set<wptr_t>::iterator it = mSession.begin();
+    while (it != mSession.end())
+    {
+        if ((*it).expired())
+        {
+            LL_WARNS("Voice") << "Expired session found! removing" << LL_ENDL;
+            mSession.erase(it++);
+        }
+        else
+            ++it;
+    }
+}
+
 
 void LLVivoxVoiceClient::getParticipantList(std::set<LLUUID> &participants)
 {

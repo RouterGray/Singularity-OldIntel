@@ -7,9 +7,7 @@ set(${CMAKE_CURRENT_LIST_FILE}_INCLUDED "YES")
 
 include(Variables)
 
-
 # Portable compilation flags.
-
 set(CMAKE_CXX_FLAGS_DEBUG "-D_DEBUG -DLL_DEBUG=1")
 set(CMAKE_CXX_FLAGS_RELEASE
     "-DLL_RELEASE=1 -DLL_RELEASE_FOR_DOWNLOAD=1 -D_SECURE_SCL=0 -DNDEBUG")
@@ -31,11 +29,10 @@ if(NON_RELEASE_CRASH_REPORTING)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLL_SEND_CRASH_REPORTS=1")
 endif()
 
-
 # Don't bother with a MinSizeRel build.
-
 set(CMAKE_CONFIGURATION_TYPES "RelWithDebInfo;Release;Debug" CACHE STRING
     "Supported build types." FORCE)
+
 
 # Platform-specific compilation flags.
 

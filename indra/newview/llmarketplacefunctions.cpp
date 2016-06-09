@@ -53,18 +53,18 @@
 // Helpers
 //
 
-namespace {
-
-	std::string getLoginUriDomain()
+std::string getLoginUriDomain()
+{
+	LLURI uri(gHippoGridManager->getConnectedGrid()->getLoginUri());
+	std::string hostname = uri.hostName();	// Ie, "login.<gridid>.lindenlab.com"
+	if (hostname.substr(0, 6) == "login.")
 	{
-		LLURI uri(gHippoGridManager->getConnectedGrid()->getLoginUri());
-		std::string hostname = uri.hostName();	// Ie, "login.<gridid>.lindenlab.com"
-		if (hostname.substr(0, 6) == "login.")
-		{
-			hostname = hostname.substr(6);		// "<gridid>.lindenlab.com"
-		}
-		return hostname;
+		hostname = hostname.substr(6);		// "<gridid>.lindenlab.com"
 	}
+	return hostname;
+}
+
+namespace {
 	
 	// Apart from well-known cases, in general this function returns the domain of the loginUri (with the "login." stripped off).
 	// This should be correct for all SL BETA grids, assuming they have the form of "login.<gridId>.lindenlab.com", in which

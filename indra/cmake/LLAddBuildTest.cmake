@@ -3,7 +3,6 @@
 INCLUDE(APR)
 INCLUDE(LLMath)
 INCLUDE(Tut)
-INCLUDE(Cwdebug)
 
 MACRO(ADD_BUILD_TEST_NO_COMMON name parent)
 #   MESSAGE("${CMAKE_CURRENT_SOURCE_DIR}/tests/${name}_test.cpp")

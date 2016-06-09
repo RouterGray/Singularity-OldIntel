@@ -72,7 +72,7 @@ const int LL_ERR_NOERR = 0;
 
 #endif // !_DEBUG
 
-static const std::string liru_assert_strip(const std::string& file) { return file.substr(1+file.substr(0, file.find_last_of("/\\")).find_last_of("/\\")); } //return foo/bar.cpp or perhaps foo\bar.cpp
+inline const std::string liru_assert_strip(const std::string& file) { return file.substr(1+file.substr(0, file.find_last_of("/\\")).find_last_of("/\\")); } //return foo/bar.cpp or perhaps foo\bar.cpp
 
 #define llassert_always_msg(func, msg) if (LL_UNLIKELY(!(func))) LL_ERRS() << "ASSERT (" << msg << ")\nfile:" << liru_assert_strip(__FILE__) << " line:" << std::dec << __LINE__ << LL_ENDL
 

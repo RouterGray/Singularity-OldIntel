@@ -72,6 +72,11 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
+include_directories(SYSTEM
+    ${LLCOMMON_SYSTEM_INCLUDE_DIRS}
+    ${LLXML_SYSTEM_INCLUDE_DIRS}
+     )
+
 set(viewer_SOURCE_FILES
     NACLantispam.cpp
     aifile.cpp
@@ -312,6 +317,7 @@ set(viewer_SOURCE_FILES
     llinventoryfunctions.cpp
     llinventoryicon.cpp
     llinventorymodel.cpp
+    llinventorymodelbackgroundfetch.cpp
     llinventoryobserver.cpp
     llinventorypanel.cpp
     lljoystickbutton.cpp
@@ -841,6 +847,7 @@ set(viewer_HEADER_FILES
     llinventoryfunctions.h
     llinventoryicon.h
     llinventorymodel.h
+    llinventorymodelbackgroundfetch.h
     llinventoryobserver.h
     llinventorypanel.h
     lljoystickbutton.h
@@ -1652,23 +1659,23 @@ target_link_libraries(${VIEWER_BINARY_NAME}
     ${NDOF_LIBRARY}
     ${NVAPI_LIBRARY}
     ${viewer_LIBRARIES}
-    ${Boost_CONTEXT_LIBRARY}
-    ${Boost_FILESYSTEM_LIBRARY}
-    ${Boost_PROGRAM_OPTIONS_LIBRARY}
-    ${Boost_REGEX_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
-    ${Boost_DATE_TIME_LIBRARY}
+    ${BOOST_CONTEXT_LIBRARY}
+    ${BOOST_FILESYSTEM_LIBRARY}
+    ${BOOST_PROGRAM_OPTIONS_LIBRARY}
+    ${BOOST_REGEX_LIBRARY}
+    ${BOOST_SYSTEM_LIBRARY}
+    ${BOOST_DATE_TIME_LIBRARY}
     ${DBUSGLIB_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${FMOD_LIBRARY} # must come after LLAudio
     ${GLOD_LIBRARIES}
-    ${APRUTIL_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${JSONCPP_LIBRARIES}
     ${SDL_LIBRARY}
     ${SMARTHEAP_LIBRARY}
     ${UI_LIBRARIES}
     ${WINDOWS_LIBRARIES}
+    ${EXPAT_LIBRARIES}
     ${XMLRPCEPI_LIBRARIES}
     ${HUNSPELL_LIBRARY}
     ${LLPHYSICSEXTENSIONS_LIBRARIES}
@@ -1732,7 +1739,7 @@ if (LINUX)
     COMMENT "Performing viewer_manifest copy"
       )
 
-  add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_gstreamer010 basic_plugin_filepicker)
+  add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_gstreamer010)
   add_custom_target(copy_l_viewer_manifest ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/.${product}.copy_touched)
 
   if (PACKAGE)
@@ -1789,7 +1796,7 @@ if (DARWIN)
       ${CMAKE_CURRENT_SOURCE_DIR}/viewer_manifest.py
     )
 
-  add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_quicktime media_plugin_webkit basic_plugin_filepicker)
+  add_dependencies(${VIEWER_BINARY_NAME} SLPlugin media_plugin_quicktime media_plugin_cef)
 
   if (PACKAGE)
       add_custom_target(llpackage ALL DEPENDS ${VIEWER_BINARY_NAME})

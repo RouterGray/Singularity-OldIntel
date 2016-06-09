@@ -232,6 +232,9 @@ public:
 	virtual void unpackMessage(LLMessageSystem* msg, const char* block, S32 block_num = 0);
 	virtual BOOL unpackMessage(const LLSD& category);
 
+    // returns true if the category object will accept the incoming item
+    bool acceptItem(LLInventoryItem* inv_item);
+
 private:
 	friend class LLInventoryModel;
 	void localizeName(); // intended to be called from the LLInventoryModel
@@ -251,10 +254,10 @@ public:
 
 class LLViewerJointAttachment;
 
-//void rez_attachment_cb(const LLUUID& inv_item, LLViewerJointAttachment *attachmentp);
 // [SL:KB] - Patch: Appearance-DnDWear | Checked: 2010-09-28 (Catznip-3.0.0a) | Added: Catznip-2.2.0a
 void rez_attachment_cb(const LLUUID& inv_item, LLViewerJointAttachment *attachmentp, bool replace = false);
 // [/SL:KB]
+//void rez_attachment_cb(const LLUUID& inv_item, LLViewerJointAttachment *attachmentp);
 
 void activate_gesture_cb(const LLUUID& inv_item);
 

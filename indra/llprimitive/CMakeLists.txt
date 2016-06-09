@@ -3,12 +3,13 @@
 project(llprimitive)
 
 include(00-Common)
+include(Colladadom)
 include(LLCommon)
 include(LLMath)
 include(LLMessage)
+include(LLCoreHttp)
 include(LLXML)
 include(LLPhysicsExtensions)
-include(Colladadom)
 include(LLCharacter)
 
 include_directories(
@@ -71,3 +72,14 @@ set_source_files_properties(${llprimitive_HEADER_FILES}
 list(APPEND llprimitive_SOURCE_FILES ${llprimitive_HEADER_FILES})
 
 add_library (llprimitive ${llprimitive_SOURCE_FILES})
+
+target_link_libraries(llprimitive
+    ${LLCOMMON_LIBRARIES}
+    ${LLMATH_LIBRARIES}
+    ${LLMESSAGE_LIBRARIES}
+    ${LLCOREHTTP_LIBRARIES}
+    ${LLXML_LIBRARIES}
+    ${LLPHYSICSEXTENSIONS_LIBRARIES}
+    ${LLCHARACTER_LIBRARIES}
+    )
+

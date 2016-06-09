@@ -118,7 +118,7 @@ void selfClearPhases()
 using namespace LLAvatarAppearanceDefines;
 
 
-LLSD summarize_by_buckets(std::vector<LLSD> in_records, std::vector<std::string> by_fields, std::string val_field);
+LLSD summarize_by_buckets(std::vector<LLSD> in_records, std::vector<std::string> by_fields, const std::string& val_field);
 
 /*********************************************************************************
  **                                                                             **
@@ -2517,7 +2517,7 @@ void LLVOAvatarSelf::checkForUnsupportedServerBakeAppearance()
 	// query baked image service to check status.
 	std::string image_url = gAgentAvatarp->getImageURL(TEX_HEAD_BAKED,
 													   getTE(TEX_HEAD_BAKED)->getID());
-	LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpGet(image_url, NULL, boost::bind(forceAppearanceUpdate));
+	LLCoreHttpUtil::HttpCoroutineAdapter::callbackHttpGet(image_url, 0, boost::bind(forceAppearanceUpdate));
 }
 
 const LLUUID& LLVOAvatarSelf::grabBakedTexture(EBakedTextureIndex baked_index) const

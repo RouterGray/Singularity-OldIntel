@@ -2,13 +2,12 @@
 
 project(llcommon)
 
-include(Cwdebug)
 include(00-Common)
 include(LLCommon)
-include(APR)
 include(Linking)
 include(Boost)
 include(LLSharedLibs)
+include(JsonCpp)
 include(GoogleBreakpad)
 include(Copy3rdPartyLibs)
 include(ZLIB)
@@ -16,6 +15,7 @@ include(ZLIB)
 include_directories(
     ${EXPAT_INCLUDE_DIRS}
     ${LLCOMMON_INCLUDE_DIRS}
+    ${JSONCPP_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIRS}
     ${BREAKPAD_INCLUDE_DIRECTORIES}
     )
@@ -267,8 +267,6 @@ set(llcommon_HEADER_FILES
 set_source_files_properties(${llcommon_HEADER_FILES}
                             PROPERTIES HEADER_FILE_ONLY TRUE)
 
-list(APPEND llcommon_SOURCE_FILES ${cwdebug_SOURCE_FILES})
-
 list(APPEND llcommon_SOURCE_FILES ${llcommon_HEADER_FILES})
 
 if(NOT WORD_SIZE EQUAL 32)
@@ -276,7 +274,6 @@ if(NOT WORD_SIZE EQUAL 32)
     add_definitions(-fPIC)
   endif(NOT WINDOWS)
 endif(NOT WORD_SIZE EQUAL 32)
-
 if(LLCOMMON_LINK_SHARED)
   add_library (llcommon SHARED ${llcommon_SOURCE_FILES})
   if(WINDOWS)
@@ -294,23 +291,22 @@ target_link_libraries(
     ${APRUTIL_LIBRARIES}
     ${APR_LIBRARIES}
     ${EXPAT_LIBRARIES}
+    ${JSONCPP_LIBRARIES}
     ${ZLIB_LIBRARIES}
     ${WINDOWS_LIBRARIES}
-    ${Boost_CONTEXT_LIBRARY}
-    ${Boost_REGEX_LIBRARY}
-    ${Boost_THREAD_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
-    ${CORESERVICES_LIBRARY}
+    ${BOOST_COROUTINE_LIBRARY}
+    ${BOOST_CONTEXT_LIBRARY}
+    ${BOOST_PROGRAM_OPTIONS_LIBRARY}
+    ${BOOST_REGEX_LIBRARY}
+    ${BOOST_THREAD_LIBRARY}
+    ${BOOST_CHRONO_LIBRARY}
+    ${BOOST_SYSTEM_LIBRARY}
     )
 
 if (DARWIN)
-    # Don't embed a full path in the library's install name
-    set_target_properties(
-        llcommon
-        PROPERTIES
-        BUILD_WITH_INSTALL_RPATH 1
-        INSTALL_NAME_DIR "@executable_path/../Resources"
-      )
+  include(CMakeFindFrameworks)
+  find_library(CARBON_LIBRARY Carbon)
+  target_link_libraries(llcommon ${CARBON_LIBRARY})
 endif (DARWIN)
 
 add_dependencies(llcommon stage_third_party_libs)

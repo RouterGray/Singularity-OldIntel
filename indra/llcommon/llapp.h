@@ -32,6 +32,10 @@
 #include "llsd.h"
 #include "lloptioninterface.h"
 
+#if !LL_WINDOWS
+#include "llatomic.h"
+#endif
+
 // Forward declarations
 class LLErrorThread;
 class LLLiveFile;

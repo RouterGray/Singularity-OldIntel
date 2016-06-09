@@ -241,7 +241,8 @@ LLResourceUploadInfo::ptr_t fake_resource_upload_info(const std::string name)
 }
 void LLFloaterPostcard::uploadPostcardFailure(LLSD content, const std::string& name, int mSnapshotIndex)
 {
-	LLViewerAssetUpload::HandleUploadError(LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(content), content[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_CONTENT], fake_resource_upload_info(name));
+	LLResourceUploadInfo::ptr_t uploadInfo(fake_resource_upload_info(name));
+	LLViewerAssetUpload::HandleUploadError(LLCoreHttpUtil::HttpCoroutineAdapter::getStatusFromLLSD(content), content[LLCoreHttpUtil::HttpCoroutineAdapter::HTTP_RESULTS_CONTENT], uploadInfo);
 	LLFloaterSnapshot::savePostcardDone(false, mSnapshotIndex);
 }
 

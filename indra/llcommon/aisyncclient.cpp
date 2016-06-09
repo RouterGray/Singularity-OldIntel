@@ -81,11 +81,9 @@
  * by searching through it for the pointer to the server.
  */
 
-#include "sys.h"
 #include "aisyncclient.h"
 #include <cmath>
 #include <algorithm>
-#include "debug.h"
 
 bool operator==(AISyncKey const& key1, AISyncKey const& key2)
 {

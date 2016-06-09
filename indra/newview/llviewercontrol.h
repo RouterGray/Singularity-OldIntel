@@ -49,9 +49,6 @@ extern BOOL gHackGodmode;
 //setting variables are declared in this function
 void settings_setup_listeners();
 
-typedef std::map<std::string, LLControlGroup*> settings_map_type;
-extern settings_map_type gSettings;
-
 // for the graphics settings
 void create_graphics_group(LLControlGroup& group);
 

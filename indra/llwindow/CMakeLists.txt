@@ -30,6 +30,10 @@ include_directories(
     ${LLXML_INCLUDE_DIRS}
     ${DIRECTX_INCLUDE_DIR}
     )
+include_directories(SYSTEM
+    ${LLCOMMON_SYSTEM_INCLUDE_DIRS}
+    ${LLXML_SYSTEM_INCLUDE_DIRS}
+    )
 
 set(llwindow_SOURCE_FILES
     llkeyboard.cpp
@@ -82,6 +86,18 @@ if (LINUX)
        llwindowsdl.h
        )
 
+  if (BUILD_HEADLESS)
+    set(llwindowheadless_LINK_LIBRARIES
+        ${LLCOMMON_LIBRARIES}
+        ${LLIMAGE_LIBRARIES}
+        ${LLMATH_LIBRARIES}
+        ${LLRENDER_HEADLESS_LIBRARIES}
+        ${LLVFS_LIBRARIES}
+        ${LLWINDOW_HEADLESS_LIBRARIES}
+        ${LLXML_LIBRARIES}
+        fontconfig          # For FCInit and other FC* functions.
+        )
+  endif (BUILD_HEADLESS)
 
 endif (LINUX)
 
@@ -90,11 +106,14 @@ if (DARWIN)
     llkeyboardmacosx.cpp
     llwindowmacosx.cpp
     llwindowmacosx-objc.mm
+    llopenglview-objc.mm
     )
   list(APPEND llwindow_HEADER_FILES
     llkeyboardmacosx.h
     llwindowmacosx.h
     llwindowmacosx-objc.h
+    llopenglview-objc.h
+    llappdelegate-objc.h
     )
 
   # We use a bunch of deprecated system APIs.
@@ -138,14 +157,40 @@ endif (SOLARIS)
 set_source_files_properties(${llwindow_HEADER_FILES}
                             PROPERTIES HEADER_FILE_ONLY TRUE)
 
+if (BUILD_HEADLESS)
+  set(llwindowheadless_SOURCE_FILES
+       llwindowmesaheadless.cpp
+       llmousehandler.cpp
+       )
+  set(llwindowheadless_HEADER_FILES
+       llwindowmesaheadless.h
+       llmousehandler.h
+    )
+  add_library (llwindowheadless
+    ${llwindow_SOURCE_FILES}
+    ${llwindowheadless_SOURCE_FILES}
+    )
+  set_property(TARGET llwindowheadless
+    PROPERTY COMPILE_DEFINITIONS LL_MESA=1 LL_MESA_HEADLESS=1
+    )
+  target_link_libraries (llwindowheadless ${llwindowheadless_LINK_LIBRARIES} dl)
+endif (BUILD_HEADLESS)
+
 if (llwindow_HEADER_FILES)
   list(APPEND llwindow_SOURCE_FILES ${llwindow_HEADER_FILES})
 endif (llwindow_HEADER_FILES)
+
   list(APPEND viewer_SOURCE_FILES ${viewer_HEADER_FILES})
 
   add_library (llwindow
     ${llwindow_SOURCE_FILES}
     ${viewer_SOURCE_FILES}
     )
+
+if (SDL_FOUND)
+  set_property(TARGET llwindow
+    PROPERTY COMPILE_DEFINITIONS LL_SDL=1
+    )
+endif (SDL_FOUND)
 
 target_link_libraries (llwindow ${llwindow_LINK_LIBRARIES})

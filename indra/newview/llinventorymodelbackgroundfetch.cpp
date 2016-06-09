@@ -351,6 +351,7 @@ void LLInventoryModelBackgroundFetch::backgroundFetch()
 	LLViewerRegion* region = gAgent.getRegion();
 	if (mBackgroundFetchActive && region && region->capabilitiesReceived())
 	{
+		bool use_http_inventory();
 		if (use_http_inventory())
 		{
 			// If we'll be using the capability, we'll be sending batches and the background thing isn't as important.

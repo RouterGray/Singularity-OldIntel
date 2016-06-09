@@ -17,6 +17,7 @@
 
 #include "llviewerprecompiledheaders.h"
 #include "sgmemstat.h"
+#include "apr_dso.h"
 
 #if (!LL_LINUX && !LL_USE_TCMALLOC)
 bool SGMemStat::haveStat() {
@@ -50,12 +51,10 @@ static void initialize() {
 	static bool initialized = false;	
 	if (!initialized) {
 		apr_dso_handle_t* hprog = 0;
-		LLAPRPool pool;
-		pool.create();
 #if LL_WINDOWS
-		apr_dso_load(&hprog, "libtcmalloc_minimal.dll", pool());
+		apr_dso_load(&hprog, "libtcmalloc_minimal.dll", gAPRPoolp);
 #else
-		apr_dso_load(&hprog, 0, pool());
+		apr_dso_load(&hprog, 0, gAPRPoolp);
 #endif
 		apr_dso_sym((apr_dso_handle_sym_t*)&MallocExtension_GetNumericProperty,
 			hprog, "MallocExtension_GetNumericProperty");

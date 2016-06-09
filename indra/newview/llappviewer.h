@@ -36,7 +36,6 @@
 #include "llallocator.h"
 #include "llsys.h"			// for LLOSInfo
 #include "lltimer.h"
-#include "llviewercontrol.h"	// settings_map_type
 #include "llappcorehttp.h"
 
 class LLCommandLineParser;
@@ -143,12 +142,11 @@ public:
 	// Load settings from the location specified by loction_key.
 	// Key availale and rules for loading, are specified in 
 	// 'app_settings/settings_files.xml'
-	bool loadSettingsFromDirectory(settings_map_type const& settings_r,
-	                               std::string const& location_key,
+	bool loadSettingsFromDirectory(const std::string& location_key,
 	                               bool set_defaults = false);
 
-	std::string getSettingsFilename(std::string const& location_key,
-	                                std::string const& file);
+	std::string getSettingsFilename(const std::string& location_key,
+	                                const std::string& file);
 
 	// For thread debugging. 
 	// llstartup needs to control init.

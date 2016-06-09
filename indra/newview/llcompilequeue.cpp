@@ -501,7 +501,6 @@ void LLFloaterCompileQueue::scriptArrived(LLVFS *vfs, const LLUUID& asset_id,
 		asset_id.toString(uuid_str);
 		filename = gDirUtilp->getExpandedFilename(LL_PATH_CACHE,uuid_str) + llformat(".%s",LLAssetType::lookup(type));
 		
-		const bool is_running = true;
 		LLViewerObject* object = gObjectList.findObject(data->mTaskId);
 		if (object)
 		{

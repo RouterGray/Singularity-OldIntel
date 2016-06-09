@@ -263,6 +263,55 @@ LLScriptEdCore::~LLScriptEdCore()
 	delete mLiveFile;
 }
 
+void LLLiveLSLEditor::experienceChanged()
+{
+	if(mScriptEd->getAssociatedExperience() != mExperiences->getSelectedValue().asUUID())
+	{
+		mScriptEd->enableSave(getIsModifiable());
+		//getChildView("Save_btn")->setEnabled(TRUE);
+		mScriptEd->setAssociatedExperience(mExperiences->getSelectedValue().asUUID());
+		updateExperiencePanel();
+	}
+}
+
+void LLLiveLSLEditor::onViewProfile( LLUICtrl *ui, void* userdata )
+{
+	/*LLLiveLSLEditor* self = (LLLiveLSLEditor*)userdata;
+
+	LLUUID id;
+	if(self->mExperienceEnabled->get())
+	{
+		id=self->mScriptEd->getAssociatedExperience();
+		if(id.notNull())
+		{
+			LLFloaterReg::showInstance("experience_profile", id, true);
+		}
+	}*/
+
+}
+
+void LLLiveLSLEditor::onToggleExperience( LLUICtrl *ui, void* userdata )
+{
+	LLLiveLSLEditor* self = (LLLiveLSLEditor*)userdata;
+
+	LLUUID id;
+	if(self->mExperienceEnabled->get())
+	{
+		if(self->mScriptEd->getAssociatedExperience().isNull())
+		{
+			id=self->mExperienceIds.beginArray()->asUUID();
+		}
+	}
+
+	if(id != self->mScriptEd->getAssociatedExperience())
+	{
+		self->mScriptEd->enableSave(self->getIsModifiable());
+	}
+	self->mScriptEd->setAssociatedExperience(id);
+
+	self->updateExperiencePanel();
+}
+
 BOOL LLScriptEdCore::postBuild()
 {
 	mErrorList = getChild<LLScrollListCtrl>("lsl errors");
@@ -2278,4 +2327,19 @@ BOOL LLLiveLSLEditor::monoChecked() const
 		return mMonoCheckbox->getValue()? TRUE : FALSE;
 	}
 	return FALSE;
+}
+
+void LLLiveLSLEditor::setAssociatedExperience( LLHandle<LLLiveLSLEditor> editor, const LLSD& experience )
+{
+	LLLiveLSLEditor* scriptEd = editor.get();
+	if(scriptEd)
+	{
+		LLUUID id;
+		if(experience.has(LLExperienceCache::EXPERIENCE_ID))
+		{
+			id=experience[LLExperienceCache::EXPERIENCE_ID].asUUID();
+		}
+		scriptEd->mScriptEd->setAssociatedExperience(id);
+		scriptEd->updateExperiencePanel();
+	}
 }

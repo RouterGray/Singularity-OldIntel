@@ -423,8 +423,8 @@ const char * const LOG_MESH = "Mesh";
 // Static data and functions to measure mesh load
 // time metrics for a new region scene.
 static unsigned int metrics_teleport_start_count = 0;
-boost::signals2::connection metrics_teleport_started_signal;
-static void teleport_started();
+//boost::signals2::connection metrics_teleport_started_signal;
+//static void teleport_started();
 
 void on_new_single_inventory_upload_complete(
     LLAssetType::EType asset_type,
@@ -3120,7 +3120,7 @@ void LLMeshRepository::shutdown()
 {
 	LL_INFOS(LOG_MESH) << "Shutting down mesh repository." << LL_ENDL;
 
-	metrics_teleport_started_signal.disconnect();
+	//metrics_teleport_started_signal.disconnect();
 
 	for (U32 i = 0; i < mUploads.size(); ++i)
 	{
@@ -4654,10 +4654,10 @@ void LLMeshRepository::metricsUpdate()
 
 // Threading:  main thread only
 // static
-void teleport_started()
+/*void teleport_started()
 {
 	LLMeshRepository::metricsStart();
-}
+}*/
 
 
 void on_new_single_inventory_upload_complete(

@@ -1258,16 +1258,14 @@ void LLFloaterBvhPreview::onBtnOK(void* userdata)
 				else
 				// </edit>
 				{
-					upload_new_resource(floaterp->mTransactionID, // tid
-						    LLAssetType::AT_ANIMATION,
-						    name,
-						    desc,
-						    0,
-						    LLFolderType::FT_NONE,
-						    LLInventoryType::IT_ANIMATION,
-						    LLFloaterPerms::getNextOwnerPerms("Uploads"), LLFloaterPerms::getGroupPerms("Uploads"), LLFloaterPerms::getEveryonePerms("Uploads"),
-						    name,
-						    callback, expected_upload_cost, userdata);
+					LLResourceUploadInfo::ptr_t assetUpdloadInfo(new LLResourceUploadInfo(
+						floaterp->mTransactionID, LLAssetType::AT_ANIMATION,
+						name, desc, 0,
+						LLFolderType::FT_NONE, LLInventoryType::IT_ANIMATION,
+						LLFloaterPerms::getNextOwnerPerms("Uploads"), LLFloaterPerms::getGroupPerms("Uploads"), LLFloaterPerms::getEveryonePerms("Uploads"),
+						expected_upload_cost));
+
+					upload_new_resource(assetUpdloadInfo);
 				}
 			}
 			else

@@ -703,7 +703,7 @@ bool LLGLManager::initGL()
 
 	S32 old_vram = mVRAM;
 
-#if GLX_MESA_query_renderer
+#if 0 //GLX_MESA_query_renderer
 	if (mHasMESAQueryRenderer)
 	{
 		U32 video_memory = 0;
@@ -1005,7 +1005,7 @@ void LLGLManager::initExtensions()
 #elif LL_LINUX
 	mHasAdaptiveVsync = ExtensionExists("GLX_EXT_swap_control_tear", gGLHExts.mSysExts);
 
-#if GLX_MESA_query_renderer
+#if 0 //GLX_MESA_query_renderer
 	mHasMESAQueryRenderer = FALSE; //GLXEW_MESA_query_renderer;
 #endif
 #endif

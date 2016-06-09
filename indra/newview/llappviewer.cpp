@@ -2031,8 +2031,10 @@ bool LLAppViewer::initLoggingPortable()
 	return true;
 }
 
-bool LLAppViewer::loadSettingsFromDirectory(settings_map_type const& settings_r,
-											std::string const& location_key,
+typedef std::map<std::string, LLControlGroup*> settings_map_type;
+settings_map_type gSettings;
+
+bool LLAppViewer::loadSettingsFromDirectory(const std::string& location_key,
 											bool set_defaults)
 {	
 	// Find and vet the location key.
@@ -2061,12 +2063,12 @@ bool LLAppViewer::loadSettingsFromDirectory(settings_map_type const& settings_r,
 	for(LLSD::map_iterator itr = files.beginMap(); itr != files.endMap(); ++itr)
 	{
 		std::string const settings_group = (*itr).first;
-		settings_map_type::const_iterator const settings_group_iter = settings_r.find(settings_group);
+		settings_map_type::const_iterator const settings_group_iter = gSettings.find(settings_group);
 
 		LL_INFOS() << "Attempting to load settings for the group " << settings_group 
 				<< " - from location " << location_key << LL_ENDL;
 
-		if(settings_group_iter == settings_r.end())
+		if(settings_group_iter == gSettings.end())
 		{
 			LL_WARNS() << "No matching settings group for name " << settings_group << LL_ENDL;
 			continue;
@@ -2080,7 +2082,7 @@ bool LLAppViewer::loadSettingsFromDirectory(settings_map_type const& settings_r,
 			std::string custom_name_setting = file.get("NameFromSetting");
 			// *NOTE: Regardless of the group currently being lodaed,
 			// this setting is always read from the Global settings.
-			LLControlGroup const* control_group = settings_r.find(sGlobalSettingsName)->second;
+			LLControlGroup const* control_group = gSettings.find(sGlobalSettingsName)->second;
 			if(control_group->controlExists(custom_name_setting))
 			{
 				full_settings_path = control_group->getString(custom_name_setting);
@@ -2139,13 +2141,11 @@ std::string LLAppViewer::getSettingsFilename(const std::string& location_key,
 }
 
 bool LLAppViewer::initConfiguration()
-{	
-	settings_map_type& settings(gSettings);
-
+{
 	//Set up internal pointers	
-	settings[sGlobalSettingsName] = &gSavedSettings;
-	settings[sPerAccountSettingsName] = &gSavedPerAccountSettings;
-	settings[sCrashSettingsName] = &gCrashSettings;
+	gSettings[sGlobalSettingsName] = &gSavedSettings;
+	gSettings[sPerAccountSettingsName] = &gSavedPerAccountSettings;
+	gSettings[sCrashSettingsName] = &gCrashSettings;
 
 	//Load settings files list
 	std::string settings_file_list = gDirUtilp->getExpandedFilename(LL_PATH_APP_SETTINGS, "settings_files.xml");
@@ -2170,7 +2170,7 @@ bool LLAppViewer::initConfiguration()
 	
 	// - load defaults
 	bool set_defaults = true;
-	if(!loadSettingsFromDirectory(settings, "Default", set_defaults))
+	if(!loadSettingsFromDirectory("Default", set_defaults))
 	{
 		std::ostringstream msg;
 		msg << "Unable to load default settings file. The installation may be corrupted.";
@@ -2326,7 +2326,7 @@ bool LLAppViewer::initConfiguration()
 	}
 
 	// - load overrides from user_settings 
-	loadSettingsFromDirectory(settings, "User");
+	loadSettingsFromDirectory("User");
 
 	// - apply command line settings 
 	clp.notify(); 
@@ -2375,7 +2375,7 @@ bool LLAppViewer::initConfiguration()
 			{
 				const std::string& name = *itr;
 				const std::string& value = *(++itr);
-				LLControlVariable* c = settings[sGlobalSettingsName]->getControl(name);
+				LLControlVariable* c = gSettings[sGlobalSettingsName]->getControl(name);
 				if(c)
 				{
 					c->setValue(value, false);

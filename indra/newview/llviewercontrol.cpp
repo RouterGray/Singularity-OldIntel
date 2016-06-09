@@ -86,7 +86,9 @@ void load_default_bindings(bool zqsd);
 BOOL 				gHackGodmode = FALSE;
 #endif
 
-settings_map_type gSettings;
+// Should you contemplate changing the name "Global", please first grep for
+// that string literal. There are at least a couple other places in the C++
+// code that assume the LLControlGroup named "Global" is gSavedSettings.
 LLControlGroup gSavedSettings("Global");	// saved at end of session
 LLControlGroup gSavedPerAccountSettings("PerAccount"); // saved at end of session
 LLControlGroup gColors("Colors");	// saved at end of session

@@ -52,35 +52,21 @@ class LLTransactionID;
 
 void init_menu_file();
 
-void upload_new_resource(const std::string& src_filename,
-						 std::string name,
-						 std::string desc,
-						 S32 compression_info,
-						 LLFolderType::EType destination_folder_type,
-						 LLInventoryType::EType inv_type,
-						 U32 next_owner_perms,
-						 U32 group_perms,
-						 U32 everyone_perms,
-						 const std::string& display_name,
-						 LLAssetStorage::LLStoreAssetCallback callback,
-						 S32 expected_upload_cost,
-						 void *userdata);
 
-// Return false if no upload attempt was done (and the callback will not be called).
-bool upload_new_resource(const LLTransactionID &tid, 
-						 LLAssetType::EType type,
-						 std::string name,
-						 std::string desc, 
-						 S32 compression_info,
-						 LLFolderType::EType destination_folder_type,
-						 LLInventoryType::EType inv_type,
-						 U32 next_owner_perms,
-						 U32 group_perms,
-						 U32 everyone_perms,
-						 const std::string& display_name,
-						 LLAssetStorage::LLStoreAssetCallback callback,
-						 S32 expected_upload_cost,
-						 void *userdata);
+void upload_new_resource(
+    const std::string& src_filename,
+    std::string name,
+    std::string desc,
+    S32 compression_info,
+    LLFolderType::EType destination_folder_type,
+    LLInventoryType::EType inv_type,
+    U32 next_owner_perms,
+    U32 group_perms,
+    U32 everyone_perms,
+    const std::string& display_name,
+    LLAssetStorage::LLStoreAssetCallback callback,
+    S32 expected_upload_cost,
+    void *userdata);
 
 bool upload_new_resource(
     LLResourceUploadInfo::ptr_t &uploadInfo,

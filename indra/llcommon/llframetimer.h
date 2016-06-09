@@ -99,7 +99,7 @@ public:
 	F32  getElapsedTimeF32() const					{ return mStarted ? (F32)(sFrameTime - mStartTime) : (F32)mStartTime; }
 	BOOL getStarted() const							{ return mStarted; }
 	//<singu>
-	F64 getStartTime() const						{ llassert(!mPaused); return mStartTime; }
+	F64 getStartTime() const						{ return mStartTime; }
 	//</singu>
 
 	// return the seconds since epoch when this timer will expire.

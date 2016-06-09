@@ -14,6 +14,7 @@ include(LLAddBuildTest)
 
 include_directories(
     ${LLCOMMON_INCLUDE_DIRS}
+    ${LLCOMMON_SYSTEM_INCLUDE_DIRS}
     ${LLMATH_INCLUDE_DIRS}
     ${LLVFS_INCLUDE_DIRS}
     ${JPEG_INCLUDE_DIRS}

@@ -78,9 +78,6 @@ static void exceptionTerminateHandler()
 
 int main( int argc, char **argv ) 
 {
-	Debug(debug::init());
-	Debug(libcw_do.on());
-
 #if LL_SOLARIS && defined(__sparc)
 	asm ("ta\t6");		 // NOTE:  Make sure memory alignment is enforced on SPARC
 #endif
@@ -156,7 +153,7 @@ bool LLAppViewerLinux::init()
 
 bool LLAppViewerLinux::restoreErrorTrap()
 {
-	// *NOTE:Mani there is a case for implementing this or the mac.
+	// *NOTE:Mani there is a case for implementing this on the mac.
 	// Linux doesn't need it to my knowledge.
 	return true;
 }

@@ -9,6 +9,7 @@ include(LLImage)
 include(LLInventory)
 include(LLMath)
 include(LLMessage)
+include(LLCoreHttp)
 include(LLRender)
 include(LLVFS)
 include(LLWindow)
@@ -85,5 +86,8 @@ target_link_libraries(llappearance
     ${LLVFS_LIBRARIES}
     ${LLMATH_LIBRARIES}
     ${LLXML_LIBRARIES}
+    ${LLMATH_LIBRARIES}
+    ${LLMESSAGE_LIBRARIES}
+    ${LLCOREHTTP_LIBRARIES}
     ${LLCOMMON_LIBRARIES}
     )

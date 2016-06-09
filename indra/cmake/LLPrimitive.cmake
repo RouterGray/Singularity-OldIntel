@@ -18,13 +18,11 @@ if (WINDOWS)
         llprimitive
         ${COLLADADOM_LIBRARIES}
         libxml2_a
-        ${BOOST_SYSTEM_LIBRARIES}
         )
 else (WINDOWS)
     set(LLPRIMITIVE_LIBRARIES 
         llprimitive
         ${COLLADADOM_LIBRARIES}
-        ${BOOST_SYSTEM_LIBRARIES}
         minizip
         xml2
         )

@@ -4,8 +4,10 @@ project(llinventory)
 
 include(00-Common)
 include(LLCommon)
+include(LLCoreHttp)
 include(LLMath)
 include(LLMessage)
+include(LLVFS)
 include(LLXML)
 
 include_directories(

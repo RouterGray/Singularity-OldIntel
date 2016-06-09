@@ -3,12 +3,18 @@
 project(llmessage)
 
 include(00-Common)
+include(LLAddBuildTest)
 include(LLCommon)
 include(LLCoreHttp)
 include(LLMath)
 include(LLMessage)
 include(LLVFS)
 include(LLXML)
+include(LLAddBuildTest)
+include(Python)
+include(Tut)
+include(Python)
+include(JsonCpp)
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -19,6 +25,7 @@ include_directories(
     ${LLMESSAGE_INCLUDE_DIRS}
     ${LLVFS_INCLUDE_DIRS}
     ${LLXML_INCLUDE_DIRS}
+    ${JSONCPP_INCLUDE_DIR}
     )
 
 set(llmessage_SOURCE_FILES
@@ -193,53 +200,76 @@ list(APPEND llmessage_SOURCE_FILES ${llmessage_HEADER_FILES})
 
 add_library (llmessage ${llmessage_SOURCE_FILES})
 
+if (LINUX)
 target_link_libraries(
   llmessage
   ${CURL_LIBRARIES}
-  ${CARES_LIBRARIES}
+  ${LLCOMMON_LIBRARIES}
+  ${LLVFS_LIBRARIES}
+  ${LLMATH_LIBRARIES}
+  ${JSONCPP_LIBRARIES}
+  ${OPENSSL_LIBRARIES}
+  ${CRYPTO_LIBRARIES}
+  ${XMLRPCEPI_LIBRARIES}
+  ${LLCOREHTTP_LIBRARIES}
+  rt
+  )
+else (LINUX)
+target_link_libraries(
+  llmessage
+  ${CURL_LIBRARIES}
+  ${LLCOMMON_LIBRARIES}
+  ${LLVFS_LIBRARIES}
+  ${LLMATH_LIBRARIES}
+  ${JSONCPP_LIBRARIES}
   ${OPENSSL_LIBRARIES}
   ${CRYPTO_LIBRARIES}
   ${XMLRPCEPI_LIBRARIES}
   ${LLCOREHTTP_LIBRARIES}
   )
+endif(LINUX)
 
 # tests
 if (LL_TESTS)
-  include(GoogleMock)
-  include(LLAddBuildTest)
-  include(Python)
-  include(Tut)
-
   SET(llmessage_TEST_SOURCE_FILES
-    llmime.cpp
     llnamevalue.cpp
     lltrustedmessageservice.cpp
     lltemplatemessagedispatcher.cpp
     )
   LL_ADD_PROJECT_UNIT_TESTS(llmessage "${llmessage_TEST_SOURCE_FILES}")
 
+
   #    set(TEST_DEBUG on)
+  
+if (LINUX)
   set(test_libs
-    ${LLMESSAGE_LIBRARIES}
     ${WINDOWS_LIBRARIES}
     ${LLVFS_LIBRARIES}
     ${LLMATH_LIBRARIES}
     ${CURL_LIBRARIES}
     ${LLCOMMON_LIBRARIES}
+    ${LLMESSAGE_LIBRARIES}
     ${LLCOREHTTP_LIBRARIES}
+    ${JSONCPP_LIBRARIES}
+    rt
     ${GOOGLEMOCK_LIBRARIES}
     ${LLXML_LIBRARIES}
     )
-
-  LL_ADD_INTEGRATION_TEST(
-    llsdmessage
-    "llsdmessage.cpp"
-    "${test_libs}"
-    ${PYTHON_EXECUTABLE}
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_llsdmessage_peer.py"
+else (LINUX)
+  set(test_libs
+    ${WINDOWS_LIBRARIES}
+    ${LLVFS_LIBRARIES}
+    ${LLMATH_LIBRARIES}
+    ${CURL_LIBRARIES}
+    ${LLCOMMON_LIBRARIES}
+    ${LLMESSAGE_LIBRARIES}
+    ${LLCOREHTTP_LIBRARIES}
+    ${JSONCPP_LIBRARIES}
+    ${LLXML_LIBRARIES}
     )
+endif(LINUX)
 
-  LL_ADD_INTEGRATION_TEST(llavatarnamecache "" "${test_libs}")
+  #LL_ADD_INTEGRATION_TEST(llavatarnamecache "" "${test_libs}")
   LL_ADD_INTEGRATION_TEST(llhost "" "${test_libs}")
   LL_ADD_INTEGRATION_TEST(llpartdata "" "${test_libs}")
   LL_ADD_INTEGRATION_TEST(llxfer_file "" "${test_libs}")

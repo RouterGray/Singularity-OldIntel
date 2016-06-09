@@ -1498,7 +1498,7 @@ BOOL LLFilePicker::getSaveFile( ESaveFilter filter, const std::string& filename 
 			suggest_ext = ".lsl";
 			break;
 		case FFSAVE_IMAGE:
-			caption += add_imagesave_filter_to_gtkchooser(picker);
+			caption += add_save_texture_filter_to_gtkchooser(picker);
 			suggest_ext = ".png";
 			break;
 		default:;
@@ -1540,31 +1540,31 @@ BOOL LLFilePicker::getSaveFile( ESaveFilter filter, const std::string& filename 
 	return rtn;
 }
 
-std::string setup_filter(GtkWindow* picker)
+std::string setup_filter(GtkWindow* picker, const LLFilePicker::ELoadFilter& filter)
 {
 	std::string filtername = "";
 
 	switch (filter)
 	{
-	case FFLOAD_WAV:
+	case LLFilePicker::FFLOAD_WAV:
 		filtername = add_wav_filter_to_gtkchooser(picker);
 		break;
-	case FFLOAD_ANIM:
+	case LLFilePicker::FFLOAD_ANIM:
 		filtername = add_anim_filter_to_gtkchooser(picker);
 		break;
-	case FFLOAD_XML:
+	case LLFilePicker::FFLOAD_XML:
 		filtername = add_xml_filter_to_gtkchooser(picker);
 		break;
-	case FFLOAD_COLLADA:
+	case LLFilePicker::FFLOAD_COLLADA:
 		filtername = add_collada_filter_to_gtkchooser(picker);
 		break;
-	case FFLOAD_IMAGE:
+	case LLFilePicker::FFLOAD_IMAGE:
 		filtername = add_imageload_filter_to_gtkchooser(picker);
 		break;
-	case FFLOAD_SCRIPT:
+	case LLFilePicker::FFLOAD_SCRIPT:
 		filtername = add_script_filter_to_gtkchooser(picker);
 		break;
-	case FFLOAD_DICTIONARY:
+	case LLFilePicker::FFLOAD_DICTIONARY:
 		filtername = add_dictionary_filter_to_gtkchooser(picker);
 		break;
 	default:;
@@ -1592,7 +1592,7 @@ BOOL LLFilePicker::getOpenFile( ELoadFilter filter, bool blocking )
 	if (picker)
 	{
 		std::string caption = LLTrans::getString("load_file_verb") + " ";
-		caption += setup_filter(picker);
+		caption += setup_filter(picker, filter);
 
 		gtk_window_set_title(GTK_WINDOW(picker), caption.c_str());
 
@@ -1629,7 +1629,7 @@ BOOL LLFilePicker::getMultipleOpenFiles( ELoadFilter filter )
 						      TRUE);
 
 		std::string caption = LLTrans::getString("load_files") + ' ';
-		caption += setup_filter(picker);
+		caption += setup_filter(picker, filter);
 		gtk_window_set_title(GTK_WINDOW(picker), caption.c_str());
 
 		gtk_widget_show_all(GTK_WIDGET(picker));

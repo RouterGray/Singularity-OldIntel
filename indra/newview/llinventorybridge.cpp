@@ -2195,48 +2195,6 @@ static BOOL can_move_to_outbox(LLInventoryItem* inv_item)
 }
 
 
-int get_folder_levels(LLInventoryCategory* inv_cat)
-{
-	LLInventoryModel::cat_array_t* cats;
-	LLInventoryModel::item_array_t* items;
-	gInventory.getDirectDescendentsOf(inv_cat->getUUID(), cats, items);
-
-	int max_child_levels = 0;
-
-	for (size_t i=0; i < cats->size(); ++i)
-	{
-		LLInventoryCategory* category = cats->at(i);
-		max_child_levels = llmax(max_child_levels, get_folder_levels(category));
-	}
-
-	return 1 + max_child_levels;
-}
-
-int get_folder_path_length(const LLUUID& ancestor_id, const LLUUID& descendant_id)
-{
-	int depth = 0;
-
-	if (ancestor_id == descendant_id) return depth;
-
-	const LLInventoryCategory* category = gInventory.getCategory(descendant_id);
-
-	while(category)
-	{
-		LLUUID parent_id = category->getParentUUID();
-
-		if (parent_id.isNull()) break;
-
-		depth++;
-
-		if (parent_id == ancestor_id) return depth;
-
-		category = gInventory.getCategory(parent_id);
-	}
-
-	LL_WARNS() << "get_folder_path_length() couldn't trace a path from the descendant to the ancestor" << LL_ENDL;
-	return -1;
-}
-
 BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 											BOOL drop)
 {
@@ -2382,6 +2340,8 @@ BOOL LLFolderBridge::dragCategoryIntoFolder(LLInventoryCategory* inv_cat,
 // [/RLVa:KB]
 		if (is_movable && move_is_into_outbox)
 		{
+			int get_folder_levels(LLInventoryCategory* inv_cat);
+			int get_folder_path_length(const LLUUID& ancestor_id, const LLUUID& descendant_id);
 			const int nested_folder_levels = get_folder_path_length(outbox_id, mUUID) + get_folder_levels(inv_cat);
 			
 			if (nested_folder_levels > (S32)gSavedSettings.getU32("InventoryOutboxMaxFolderDepth"))

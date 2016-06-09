@@ -7,78 +7,124 @@ set(Boost_FIND_REQUIRED ON)
 if (STANDALONE)
   include(FindBoost)
 
-  set(Boost_USE_MULTITHREADED ON)
-  find_package(Boost 1.51.0 COMPONENTS date_time filesystem program_options regex system thread wave context)
+  set(BOOST_CHRONO_LIBRARY boost_chrono-mt)
+  set(BOOST_CONTEXT_LIBRARY boost_context-mt)
+  set(BOOST_COROUTINE_LIBRARY boost_coroutine-mt)
+  set(BOOST_DATE_TIME_LIBRARY boost_date_time-mt)
+  set(BOOST_FILESYSTEM_LIBRARY boost_filesystem-mt)
+  set(BOOST_IOSTREAMS_LIBRARY boost_iostreams-mt)
+  set(BOOST_PROGRAM_OPTIONS_LIBRARY boost_program_options-mt)
+  set(BOOST_REGEX_LIBRARY boost_regex-mt)
+  set(BOOST_SIGNALS_LIBRARY boost_signals-mt)
+  set(BOOST_SYSTEM_LIBRARY boost_system-mt)
+  set(BOOST_THREAD_LIBRARY boost_thread-mt)
 else (STANDALONE)
   use_prebuilt_binary(boost)
   set(Boost_INCLUDE_DIRS ${LIBS_PREBUILT_DIR}/include)
-  set(Boost_VERSION "1.60")
+  set(BOOST_VERSION "1.60")
 
   if (WINDOWS)
-    set(Boost_CONTEXT_LIBRARY 
+    set(BOOST_CHRONO_LIBRARY
+        optimized libboost_chrono-mt
+        debug libboost_chrono-mt-gd)
+    set(BOOST_CONTEXT_LIBRARY 
         optimized libboost_context-mt
         debug libboost_context-mt-gd)
-    set(Boost_FILESYSTEM_LIBRARY 
+    set(BOOST_COROUTINE_LIBRARY
+        optimized libboost_coroutine-mt
+        debug libboost_coroutine-mt-gd)
+    set(BOOST_DATE_TIME_LIBRARY
+        optimized libboost_date_time-mt
+        debug libboost_date_time-mt-gd)
+    set(BOOST_FILESYSTEM_LIBRARY
         optimized libboost_filesystem-mt
         debug libboost_filesystem-mt-gd)
-    set(Boost_PROGRAM_OPTIONS_LIBRARY 
+    set(BOOST_IOSTREAMS_LIBRARY
+        optimized libboost_iostreams-mt
+        debug libboost_iostreams-mt-gd)
+    set(BOOST_PROGRAM_OPTIONS_LIBRARY
         optimized libboost_program_options-mt
         debug libboost_program_options-mt-gd)
-    set(Boost_REGEX_LIBRARY
+    set(BOOST_REGEX_LIBRARY
         optimized libboost_regex-mt
         debug libboost_regex-mt-gd)
-    set(Boost_SIGNALS_LIBRARY 
+    set(BOOST_SIGNALS_LIBRARY
         optimized libboost_signals-mt
         debug libboost_signals-mt-gd)
-    set(Boost_SYSTEM_LIBRARY 
+    set(BOOST_SYSTEM_LIBRARY 
         optimized libboost_system-mt
         debug libboost_system-mt-gd)
-    set(Boost_THREAD_LIBRARY 
+    set(BOOST_THREAD_LIBRARY 
         optimized libboost_thread-mt
         debug libboost_thread-mt-gd)
   elseif (LINUX)
-    set(Boost_CONTEXT_LIBRARY
+    set(BOOST_CHRONO_LIBRARY
+        optimized boost_chrono-mt
+        debug boost_chrono-mt-d)
+    set(BOOST_CONTEXT_LIBRARY
         optimized boost_context-mt
         debug boost_context-mt-d)
-    set(Boost_FILESYSTEM_LIBRARY
+    set(BOOST_COROUTINE_LIBRARY
+        optimized boost_coroutine-mt
+        debug boost_coroutine-mt-d)
+    set(BOOST_DATE_TIME_LIBRARY
+        optimized boost_date_time-mt
+        debug boost_date_time-mt-d)
+    set(BOOST_FILESYSTEM_LIBRARY
         optimized boost_filesystem-mt
         debug boost_filesystem-mt-d)
-    set(Boost_PROGRAM_OPTIONS_LIBRARY
+    set(BOOST_IOSTREAMS_LIBRARY
+        optimized boost_iostreams-mt
+        debug boost_iostreams-mt-d)
+    set(BOOST_PROGRAM_OPTIONS_LIBRARY
         optimized boost_program_options-mt
         debug boost_program_options-mt-d)
-    set(Boost_REGEX_LIBRARY
+    set(BOOST_REGEX_LIBRARY
         optimized boost_regex-mt
         debug boost_regex-mt-d)
-    set(Boost_SIGNALS_LIBRARY
+    set(BOOST_SIGNALS_LIBRARY
         optimized boost_signals-mt
         debug boost_signals-mt-d)
-    set(Boost_SYSTEM_LIBRARY
+    set(BOOST_SYSTEM_LIBRARY
         optimized boost_system-mt
         debug boost_system-mt-d)
-    set(Boost_THREAD_LIBRARY
+    set(BOOST_THREAD_LIBRARY
         optimized boost_thread-mt
         debug boost_thread-mt-d)
   elseif (DARWIN)
-    set(Boost_CONTEXT_LIBRARY
+    set(BOOST_CHRONO_LIBRARY
+        optimized boost_chrono-mt
+        debug boost_chrono-mt-d)
+    set(BOOST_CONTEXT_LIBRARY
         optimized boost_context-mt
         debug boost_context-mt-d)
-    set(Boost_FILESYSTEM_LIBRARY
+    set(BOOST_COROUTINE_LIBRARY
+        optimized boost_coroutine-mt
+        debug boost_coroutine-mt-d)
+    set(BOOST_DATE_TIME_LIBRARY
+        optimized boost_date_time-mt
+        debug boost_date_time-mt-d)
+    set(BOOST_FILESYSTEM_LIBRARY
         optimized boost_filesystem-mt
         debug boost_filesystem-mt-d)
-    set(Boost_PROGRAM_OPTIONS_LIBRARY
+    set(BOOST_IOSTREAMS_LIBRARY
+        optimized boost_iostreams-mt
+        debug boost_iostreams-mt-d)
+    set(BOOST_PROGRAM_OPTIONS_LIBRARY
         optimized boost_program_options-mt
         debug boost_program_options-mt-d)
-    set(Boost_REGEX_LIBRARY
+    set(BOOST_REGEX_LIBRARY
         optimized boost_regex-mt
         debug boost_regex-mt-d)
-    set(Boost_SIGNALS_LIBRARY
+    set(BOOST_SIGNALS_LIBRARY
         optimized boost_signals-mt
         debug boost_signals-mt-d)
-    set(Boost_SYSTEM_LIBRARY
+    set(BOOST_SYSTEM_LIBRARY
         optimized boost_system-mt
         debug boost_system-mt-d)
-    set(Boost_THREAD_LIBRARY
+    set(BOOST_THREAD_LIBRARY
         optimized boost_thread-mt
         debug boost_thread-mt-d)
   endif (WINDOWS)
 endif (STANDALONE)
+
