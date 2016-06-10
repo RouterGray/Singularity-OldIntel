@@ -45,6 +45,7 @@
 #include "llfloaterregioninfo.h"
 #include "llfloaterscriptdebug.h"
 #include "llfloatersearch.h"
+#include "llfloaterstats.h"
 #include "llhudicon.h"
 #include "llkeyboard.h"
 #include "lllineeditor.h"
@@ -275,6 +276,7 @@ mIsNavMeshDirty(false)
 	addChild(mSGPacketLoss);
 
 	mStatBtn = getChild<LLTextBox>("stat_btn");
+	mStatBtn->setClickedCallback(boost::bind(LLFloaterStats::toggleInstance, LLSD()));
 }
 
 LLStatusBar::~LLStatusBar()
