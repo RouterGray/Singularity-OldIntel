@@ -233,9 +233,9 @@ copy_if_different(
     )
 set(third_party_targets ${third_party_targets} ${out_targets})
 
-if(NOT USESYSTEMLIBS)
+if(NOT STANDALONE)
   add_custom_target(
       stage_third_party_libs ALL
       DEPENDS ${third_party_targets}
       )
-endif(NOT USESYSTEMLIBS)
+endif(NOT STANDALONE)

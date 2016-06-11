@@ -604,6 +604,8 @@ LLAppViewer::LLAppViewer()
 	//
 	sInstance = this;
 
+	initLogging();
+
 	processMarkerFiles();
 	//
 	// OK to write stuff to logs now, we've now crash reported if necessary
@@ -668,6 +670,9 @@ bool LLAppViewer::init()
 	//
 	// Start of the application
 	//
+#ifdef LL_DARWIN
+	mMainLoopInitialized = false;
+#endif
 	
 	// initialize LLWearableType translation bridge.
 	// Memory will be cleaned up in ::cleanupClass()
@@ -683,10 +688,7 @@ bool LLAppViewer::init()
 	// this allows simple skinned file lookups to work
 	gDirUtilp->setSkinFolder("default", "en-us");
 
-	initLogging();
-
-	// Logging is initialized. Now it's safe to start the error thread.
-	startErrorThread();
+//	initLogging();
 
 	//
 	// OK to write stuff to logs now, we've now crash reported if necessary
@@ -2294,7 +2296,7 @@ bool LLAppViewer::initConfiguration()
 			gDirUtilp->getExpandedFilename(LL_PATH_USER_SETTINGS, 
 										   clp.getOption("settings")[0]);		
 		gSavedSettings.setString("ClientSettingsFile", user_settings_filename);
-		LL_INFOS() << "Using command line specified settings filename: " 
+		LL_INFOS("Settings")	<< "Using command line specified settings filename: " 
 			<< user_settings_filename << LL_ENDL;
 	}
 	else

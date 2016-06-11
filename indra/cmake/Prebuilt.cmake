@@ -26,11 +26,11 @@ endif ("${CMAKE_SOURCE_DIR}/../autobuild.xml" IS_NEWER_THAN "${PREBUILD_TRACKING
 # of previous attempts is serialized in the file
 # ${PREBUILD_TRACKING_DIR}/${_binary}_installed)
 macro (use_prebuilt_binary _binary)
-  if (NOT DEFINED USESYSTEMLIBS_${_binary})
-    set(USESYSTEMLIBS_${_binary} ${USESYSTEMLIBS})
-  endif (NOT DEFINED USESYSTEMLIBS_${_binary})
+  if (NOT DEFINED STANDALONE_${_binary})
+    set(STANDALONE_${_binary} ${STANDALONE})
+  endif (NOT DEFINED STANDALONE_${_binary})
 
-  if (NOT USESYSTEMLIBS_${_binary})
+  if (NOT STANDALONE_${_binary})
     if("${${_binary}_installed}" STREQUAL "" AND EXISTS "${PREBUILD_TRACKING_DIR}/${_binary}_installed")
       file(READ ${PREBUILD_TRACKING_DIR}/${_binary}_installed "${_binary}_installed")
       if(DEBUG_PREBUILT)
@@ -60,7 +60,7 @@ macro (use_prebuilt_binary _binary)
               "Failed to download or unpack prebuilt '${_binary}'."
               " Process returned ${${_binary}_installed}.")
     endif (NOT ${_binary}_installed EQUAL 0)
-  endif (NOT USESYSTEMLIBS_${_binary})
+  endif (NOT STANDALONE_${_binary})
 endmacro (use_prebuilt_binary _binary)
 
 endif(NOT DEFINED ${CMAKE_CURRENT_LIST_FILE}_INCLUDED)

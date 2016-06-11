@@ -24,9 +24,6 @@
  */
 
 #include "linden_common.h"
-#include "llapr.h"
-
-#include "apr_portable.h"
 
 #include "llthread.h"
 #include "llmutex.h"
@@ -34,8 +31,7 @@
 #include "lltimer.h"
 #include "lltrace.h"
 #include "lltracethreadrecorder.h"
-
-#include <chrono>
+#include "llwin32headerslean.h"
 
 
 #ifdef LL_WINDOWS
@@ -121,42 +117,26 @@ void LLThread::runWrapper()
 	mStatus = STOPPED;
 }
 
-LLThread::LLThread(const std::string& name, apr_pool_t *poolp) :
+LLThread::LLThread(const std::string& name) :
 	mPaused(FALSE),
 	mName(name),
 	mStatus(STOPPED),
 	mRecorder(NULL)
 {
-	// Thread creation probably CAN be paranoid about APR being initialized, if necessary
-	if (poolp)
-	{
-		mIsLocalPool = FALSE;
-		mAPRPoolp = poolp;
-	}
-	else
-	{
-		mIsLocalPool = TRUE;
-		apr_pool_create(&mAPRPoolp, NULL); // Create a subpool for this thread
-	}
 	mRunCondition = new LLCondition();
 	mDataLock = new LLMutex();
-	mLocalAPRFilePoolp = NULL;
 }
 
 
 LLThread::~LLThread()
 {
 	shutdown();
-
-	if (mLocalAPRFilePoolp)
-	{
-		delete mLocalAPRFilePoolp;
-		mLocalAPRFilePoolp = NULL;
-	}
 }
 
 void LLThread::shutdown()
 {
+	// Warning!  If you somehow call the thread destructor from itself,
+	// the thread will die in an unclean fashion!
 	if (!isStopped())
 	{
 		// The thread isn't already stopped
@@ -202,12 +182,6 @@ void LLThread::shutdown()
 
 	delete mDataLock;
 	mDataLock = NULL;
-
-	if (mIsLocalPool && mAPRPoolp)
-	{
-		apr_pool_destroy(mAPRPoolp);
-		mAPRPoolp = 0;
-	}
 
 	if (mRecorder)
 	{
