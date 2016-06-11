@@ -1065,6 +1065,7 @@ bool windows_post_minidump_callback(const wchar_t* dump_path,
 	S32 remaining = LLApp::MAX_MINDUMP_PATH_LENGTH;
 	size_t bytesUsed;
 
+	LL_INFOS("MINIDUMPCALLBACK") << "Dump file was generated." << LL_ENDL;
 	bytesUsed = wcstombs(path, dump_path, static_cast<size_t>(remaining));
 	remaining -= bytesUsed;
 	path += bytesUsed;

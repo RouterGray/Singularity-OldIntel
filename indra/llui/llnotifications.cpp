@@ -58,7 +58,7 @@ class LLNotificationHistoryChannel : public LLNotificationChannel
 	LOG_CLASS(LLNotificationHistoryChannel);
 public:
 	LLNotificationHistoryChannel(const std::string& filename) : 
-		LLNotificationChannel("History", "Visible", &historyFilter, LLNotificationComparators::orderByUUID()),
+		LLNotificationChannel("History", "Visible", &historyFilter),
 		mFileName(filename)
 	{
 		connectChanged(boost::bind(&LLNotificationHistoryChannel::historyHandler, this, _1));
@@ -903,25 +903,22 @@ bool LLNotificationChannelBase::updateItem(const LLSD& payload, LLNotificationPt
 /* static */
 LLNotificationChannelPtr LLNotificationChannel::buildChannel(const std::string& name, 
 															 const std::string& parent,
-															 LLNotificationFilter filter, 
-															 LLNotificationComparator comparator)
+															 LLNotificationFilter filter)
 {
 	// note: this is not a leak; notifications are self-registering.
 	// This factory helps to prevent excess deletions by making sure all smart
 	// pointers to notification channels come from the same source
-	new LLNotificationChannel(name, parent, filter, comparator);
+	new LLNotificationChannel(name, parent, filter);
 	return LLNotifications::instance().getChannel(name);
 }
 
 
 LLNotificationChannel::LLNotificationChannel(const std::string& name, 
 											 const std::string& parent,
-											 LLNotificationFilter filter, 
-											 LLNotificationComparator comparator) : 
+											 LLNotificationFilter filter) : 
 LLNotificationChannelBase(filter),
 mName(name),
-mParent(parent),
-mComparator(comparator)
+mParent(parent)
 {
 	// store myself in the channel map
 	LLNotifications::instance().addChannel(LLNotificationChannelPtr(this));
@@ -938,17 +935,6 @@ mComparator(comparator)
 	}
 }
 
-
-void LLNotificationChannel::setComparator(LLNotificationComparator comparator) 
-{ 
-	mComparator = comparator; 
-	LLNotificationSet s2(mComparator);
-	s2.insert(mItems.begin(), mItems.end());
-	mItems.swap(s2);
-	
-	// notify clients that we've been resorted
-	mChanged(LLSD().with("sigtype", "sort")); 
-}
 
 bool LLNotificationChannel::isEmpty() const
 {
@@ -1563,7 +1549,7 @@ LLNotificationPtr LLNotifications::find(const LLUUID& uuid)
 	if (it == mItems.end())
 	{
 		LL_DEBUGS("Notifications") << "Tried to dereference uuid '" << uuid << "' as a notification key but didn't find it." << LL_ENDL;
-		return LLNotificationPtr((LLNotification*)NULL);
+		return LLNotificationPtr();
 	}
 	else
 	{

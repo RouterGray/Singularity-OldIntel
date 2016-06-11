@@ -616,44 +616,17 @@ namespace LLNotificationFilters
 
 namespace LLNotificationComparators
 {
-	typedef enum e_direction { ORDER_DECREASING, ORDER_INCREASING } EDirection;
-
-	// generic order functor that takes method or member variable reference
-	template<typename T>
-	struct orderBy
+	struct orderByUUID
 	{
-		typedef boost::function<T (LLNotificationPtr)> field_t;
-			orderBy(field_t field, EDirection direction = ORDER_INCREASING) : mField(field), mDirection(direction) {}
-		bool operator()(LLNotificationPtr lhs, LLNotificationPtr rhs)
+		bool operator()(LLNotificationPtr lhs, LLNotificationPtr rhs) const
 		{
-			if (mDirection == ORDER_DECREASING)
-			{
-				return mField(lhs) > mField(rhs);
-			}
-			else
-			{
-				return mField(lhs) < mField(rhs);
-			}
+			return lhs->id() < rhs->id();
 		}
-
-		field_t mField;
-		EDirection mDirection;
-	};
-
-	struct orderByUUID : public orderBy<const LLUUID&>
-	{
-		orderByUUID(EDirection direction = ORDER_INCREASING) : orderBy<const LLUUID&>(&LLNotification::id, direction) {}
-	};
-
-	struct orderByDate : public orderBy<const LLDate&>
-	{
-		orderByDate(EDirection direction = ORDER_INCREASING) : orderBy<const LLDate&>(&LLNotification::getDate, direction) {}
 	};
 };
 
 typedef boost::function<bool (LLNotificationPtr)> LLNotificationFilter;
-typedef boost::function<bool (LLNotificationPtr, LLNotificationPtr)> LLNotificationComparator;
-typedef std::set<LLNotificationPtr, LLNotificationComparator> LLNotificationSet;
+typedef std::set<LLNotificationPtr, LLNotificationComparators::orderByUUID> LLNotificationSet;
 typedef std::multimap<std::string, LLNotificationPtr> LLNotificationMap;
 
 // ========================================================
@@ -751,18 +724,13 @@ public:
 	
 	Iterator begin();
 	Iterator end();
-
-	// Channels have a comparator to control sort order;
-	// the default sorts by arrival date
-	void setComparator(LLNotificationComparator comparator);
 	
 	std::string summarize();
 
 	// factory method for constructing these channels; since they're self-registering,
 	// we want to make sure that you can't use new to make them
 	static LLNotificationChannelPtr buildChannel(const std::string& name, const std::string& parent,
-						LLNotificationFilter filter=LLNotificationFilters::includeEverything, 
-						LLNotificationComparator comparator=LLNotificationComparators::orderByUUID());
+						LLNotificationFilter filter=LLNotificationFilters::includeEverything);
 	
 protected:
 	// Notification Channels have a filter, which determines which notifications
@@ -770,13 +738,11 @@ protected:
 	// Channel filters cannot change.
 	// Channels have a protected constructor so you can't make smart pointers that don't 
 	// come from our internal reference; call NotificationChannel::build(args)
-	LLNotificationChannel(const std::string& name, const std::string& parent,
-						  LLNotificationFilter filter, LLNotificationComparator comparator);
+	LLNotificationChannel(const std::string& name, const std::string& parent, LLNotificationFilter filter);
 
 private:
 	std::string mName;
 	std::string mParent;
-	LLNotificationComparator mComparator;
 };
 
 class LLNotificationTemplates :

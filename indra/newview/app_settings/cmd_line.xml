@@ -12,6 +12,14 @@
       <string>CmdLineAgentURI</string>
     </map>
 
+    <key>analyzeperformance</key>
+    <map>
+      <key>desc</key>
+      <string>When used in conjunction with logperformance, analyzes result of log against baseline.</string>
+      <key>map-to</key>
+      <string>AnalyzePerformance</string>
+    </map>
+
     <key>autologin</key>
     <map>
       <key>desc</key>
@@ -137,6 +145,20 @@
       <string>InBandwidth</string>
     </map>
 
+    <key>leap</key>
+    <map>
+      <key>desc</key>
+      <string>command line to run an LLSD Event API Plugin</string>
+      <key>count</key>
+      <integer>1</integer>
+      <!-- you can specify multiple such plugins -->
+      <key>compose</key>
+      <boolean>true</boolean>
+      <key>map-to</key>
+      <string>LeapCommand</string>
+    </map>
+
+
     <key>logfile</key>
     <map>
       <key>count</key>
@@ -175,6 +197,24 @@
       <boolean>true</boolean>
       <key>map-to</key>
       <string>CmdLineLoginURI</string>
+    </map>
+
+    <key>logmetrics</key>
+    <map>
+      <key>desc</key>
+      <string>Log metrics for benchmarking</string>
+      <key>count</key>
+      <integer>1</integer>
+      <key>map-to</key>
+      <string>LogMetrics</string>
+    </map>
+
+    <key>logperformance</key>
+    <map>
+      <key>desc</key>
+      <string>Log performance metrics for benchmarking</string>
+      <key>map-to</key>
+      <string>LogPerformance</string>
     </map>
 
     <key>multiple</key>

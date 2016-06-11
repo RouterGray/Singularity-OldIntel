@@ -51,6 +51,7 @@ void* LLErrorThread::getUserData() const
 }
 
 #if !LL_WINDOWS
+#include <sys/wait.h>
 //
 // Various signal/error handling functions that can't be put into the class
 //

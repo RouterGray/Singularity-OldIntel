@@ -1575,16 +1575,11 @@ bool idle_startup()
 				LLVoiceClient::getInstance()->userAuthorized(name, gAgentID);
 				// create the default proximal channel
 				LLVoiceChannel::initClass();
-				LLStartUp::setStartupState( STATE_WORLD_INIT );
+				LLStartUp::setStartupState( STATE_WORLD_INIT);
+				LLTrace::get_frame_recording().reset();
 			}
 			else
 			{
-				if (gNoRender)
-				{
-					LL_WARNS("AppInit") << "Bad login - missing return values" << LL_ENDL;
-					LL_WARNS("AppInit") << emsg.str() << LL_ENDL;
-					exit(0);
-				}
 				// Bounce back to the login screen.
 				LLSD args;
 				args["ERROR_MESSAGE"] = emsg.str();
@@ -1595,12 +1590,6 @@ bool idle_startup()
 		}
 		else // if(!successful_login)
 		{
-			if (gNoRender)
-			{
-				LL_WARNS("AppInit") << "Failed to login!" << LL_ENDL;
-				LL_WARNS("AppInit") << emsg.str() << LL_ENDL;
-				exit(0);
-			}
 			// Bounce back to the login screen.
 			LLSD args;
 			args["ERROR_MESSAGE"] = emsg.str();

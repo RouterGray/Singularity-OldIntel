@@ -109,6 +109,7 @@
 #include <boost/bind.hpp>
 
 
+#include "llleap.h"
 #include "llcoros.h"
 #if LL_WINDOWS
 	#include "llwindebug.h"
@@ -127,6 +128,7 @@
 #include "lltexturecache.h"
 #include "lltexturefetch.h"
 #include "llimageworker.h"
+#include "llevents.h"
 
 // The files below handle dependencies from cleanup.
 #include "llkeyframemotion.h"
@@ -152,6 +154,7 @@
 #include "llcontainerview.h"
 #include "llhoverview.h"
 
+#include "llsdutil.h"
 #include "llsdserialize.h"
 
 #include "llworld.h"
@@ -200,6 +203,8 @@
 #include "llmachineid.h"
 #include "llmainlooprepeater.h"
 
+#include "llcoproceduremanager.h"
+
 // [RLVa:KB]
 #include "rlvhandler.h"
 // [/RLVa:KB]
@@ -223,6 +228,7 @@
 // viewer.cpp - these are only used in viewer, should be easily moved.
 
 #if LL_DARWIN
+const char * const LL_VERSION_BUNDLE_ID = "com.secondlife.indra.viewer";
 extern void init_apple_menu(const char* product);
 #endif // LL_DARWIN
 
@@ -265,6 +271,7 @@ const F64 FRAME_STALL_THRESHOLD = 1.0;
 
 LLTimer gRenderStartTime;
 LLFrameTimer gForegroundTime;
+LLFrameTimer gLoggedInTime;
 LLTimer gLogoutTimer;
 static const F32 LOGOUT_REQUEST_TIME = 6.f;  // this will be cut short by the LogoutReply msg.
 F32 gLogoutMaxTime = LOGOUT_REQUEST_TIME;
@@ -407,7 +414,6 @@ void idle_afk_check()
 		gAgent.setAFK();
 	}
 }
-
 
 // A callback set in LLAppViewer::init()
 static void ui_audio_callback(const LLUUID& uuid)
@@ -603,6 +609,8 @@ LLAppViewer::LLAppViewer()
 	// we run the "program crashed last time" error handler below.
 	//
 	sInstance = this;
+
+	gLoggedInTime.stop();
 
 	initLogging();
 
@@ -1018,8 +1026,38 @@ bool LLAppViewer::init()
 	LLEnvManagerNew::instance().usePrefs();
 
 	gGLActive = FALSE;
+
+	// Iterate over --leap command-line options. But this is a bit tricky: if
+	// there's only one, it won't be an array at all.
+	LLSD LeapCommand(gSavedSettings.getLLSD("LeapCommand"));
+	LL_DEBUGS("InitInfo") << "LeapCommand: " << LeapCommand << LL_ENDL;
+	if (LeapCommand.isDefined() && ! LeapCommand.isArray())
+	{
+		// If LeapCommand is actually a scalar value, make an array of it.
+		// Have to do it in two steps because LeapCommand.append(LeapCommand)
+		// trashes content! :-P
+		LLSD item(LeapCommand);
+		LeapCommand.append(item);
+	}
+	for (const std::string& leap : llsd::inArray(LeapCommand))
+	{
+		LL_INFOS("InitInfo") << "processing --leap \"" << leap << '"' << LL_ENDL;
+		// We don't have any better description of this plugin than the
+		// user-specified command line. Passing "" causes LLLeap to derive a
+		// description from the command line itself.
+		// Suppress LLLeap::Error exception: trust LLLeap's own logging. We
+		// don't consider any one --leap command mission-critical, so if one
+		// fails, log it, shrug and carry on.
+		LLLeap::create("", leap, false); // exception=false
+	}
 	LLViewerMedia::initClass();
 	LL_INFOS("InitInfo") << "Viewer media initialized." << LL_ENDL ;
+    /// Tell the Coprocedure manager how to discover and store the pool sizes
+    // what I wanted
+    LLCoprocedureManager::getInstance()->setPropertyMethods(
+        boost::bind(&LLControlGroup::getU32, boost::ref(gSavedSettings), _1),
+        boost::bind(&LLControlGroup::declareU32, boost::ref(gSavedSettings), _1, _2, _3, TRUE));
+
 	return true;
 }
 
@@ -1126,27 +1164,34 @@ LLTrace::BlockTimerStatHandle FTM_FRAME("Frame");
 
 bool LLAppViewer::mainLoop()
 {
-	mMainloopTimeout = new LLWatchdogTimeout();
-	// *FIX:Mani - Make this a setting, once new settings exist in this branch.
-	
-	//-------------------------------------------
-	// Run main loop until time to quit
-	//-------------------------------------------
+	LLViewerJoystick* joystick(nullptr);
+#ifdef LL_DARWIN
+	if (!mMainLoopInitialized)
+#endif
+	{
+        LL_INFOS() << "Entering main_loop" << LL_ENDL;
+		mMainloopTimeout = new LLWatchdogTimeout();
 
-	// Create IO Pump to use for HTTP Requests.
-	gServicePump = new LLPumpIO(gAPRPoolp);
-	
-	// Note: this is where gLocalSpeakerMgr and gActiveSpeakerMgr used to be instantiated.
+		//-------------------------------------------
+		// Run main loop until time to quit
+		//-------------------------------------------
 
-	LLVoiceChannel::initClass();
-	LLVoiceClient::getInstance()->init(gServicePump);
+		// Create IO Pump to use for HTTP Requests.
+		gServicePump = new LLPumpIO(gAPRPoolp);
+	
+		// Note: this is where gLocalSpeakerMgr and gActiveSpeakerMgr used to be instantiated.
+
+		LLVoiceChannel::initClass();
+		LLVoiceClient::getInstance()->init(gServicePump);
 				
-	LLTimer frameTimer,idleTimer,periodicRenderingTimer;
-	LLTimer debugTime;
-	LLFrameTimer memCheckTimer;
-	LLViewerJoystick* joystick(LLViewerJoystick::getInstance());
-	joystick->setNeedsReset(true);
+		joystick = LLViewerJoystick::getInstance();
+		joystick->setNeedsReset(true);
 
+#ifdef LL_DARWIN
+		// Ensure that this section of code never gets called again on OS X.
+		mMainLoopInitialized = true;
+#endif
+	}
 	// As we do not (yet) send data on the mainloop LLEventPump that varies
 	// with each frame, no need to instantiate a new LLSD event object each
 	// time. Obviously, if that changes, just instantiate the LLSD at the
@@ -1161,6 +1206,10 @@ bool LLAppViewer::mainLoop()
 	LLSD newFrame;
 
 	BOOL restore_rendering_masks = FALSE;
+
+	LLTimer frameTimer,idleTimer,periodicRenderingTimer;
+	LLTimer debugTime;
+	LLFrameTimer memCheckTimer;
 
 	// Handle messages
 #ifdef LL_DARWIN
@@ -1264,7 +1313,6 @@ bool LLAppViewer::mainLoop()
 					gKeyboard->scanKeyboard();
 					if (gAgent.isCrouching())
 						gAgent.moveUp(-1);
-
 				}
 
 				// Update state based on messages, user input, object idle.
@@ -1297,7 +1345,6 @@ bool LLAppViewer::mainLoop()
 					LLFloaterSnapshot::update(); // take snapshots
 					gGLActive = FALSE;
 				}
-
 			}
 
 			pingMainloopTimeout("Main:Sleep");
@@ -1388,6 +1435,7 @@ bool LLAppViewer::mainLoop()
 						break;
 					}
 				}
+				gMeshRepo.update() ;
 				if ((LLStartUp::getStartupState() >= STATE_CLEANUP) &&
 					(frameTimer.getElapsedTimeF64() > FRAME_STALL_THRESHOLD))
 				{
@@ -1485,6 +1533,16 @@ bool LLAppViewer::cleanup()
 	//ditch LLVOAvatarSelf instance
 	gAgentAvatarp = NULL;
 
+	// workaround for DEV-35406 crash on shutdown
+	LLEventPumps::instance().reset();
+
+	// There used to be an 'if (LLFastTimerView::sAnalyzePerformance)' block
+	// here, completely redundant with the one that occurs later in this same
+	// function. Presumably the duplication was due to an automated merge gone
+	// bad. Not knowing which instance to prefer, we chose to retain the later
+	// one because it happens just after mFastTimerLogThread is deleted. This
+	// comment is in case we guessed wrong, so we can move it here instead.
+
 	// remove any old breakpad minidump files from the log directory
 	if (! isError())
 	{
@@ -1493,6 +1551,25 @@ bool LLAppViewer::cleanup()
 	}
 
 	cleanup_pose_stand();
+
+	{
+		// Kill off LLLeap objects. We can find them all because LLLeap is derived
+		// from LLInstanceTracker. But collect instances first: LLInstanceTracker
+		// specifically forbids adding/deleting instances while iterating.
+		std::vector<LLLeap*> leaps;
+		leaps.reserve(LLLeap::instanceCount());
+		for (LLLeap::instance_iter li(LLLeap::beginInstances()), lend(LLLeap::endInstances());
+			 li != lend; ++li)
+		{
+			leaps.push_back(&*li);
+		}
+		// Okay, now trash them all. We don't have to NULL or erase the entry
+		// in 'leaps' because the whole vector is going away momentarily.
+		for (LLLeap* leap : leaps)
+		{
+			delete leap;
+		}
+	} // destroy 'leaps'
 
 	//flag all elements as needing to be destroyed immediately
 	// to ensure shutdown order
@@ -1619,6 +1696,8 @@ bool LLAppViewer::cleanup()
 	delete gKeyboard;
 	gKeyboard = NULL;
 
+	// Turn off Space Navigator and similar devices
+	LLViewerJoystick::getInstance()->terminate();
 	
 	LL_INFOS() << "Cleaning up Objects" << LL_ENDL;
 	
@@ -1908,7 +1987,7 @@ bool LLAppViewer::initThreads()
 		LLWatchdog::getInstance()->init(watchdog_killer_callback);
 	}
 
-	LLImage::initClass();
+	LLImage::initClass(gSavedSettings.getBOOL("TextureNewByteRange"),gSavedSettings.getS32("TextureReverseByteRange"));
 	
 	LLVFSThread::initClass(enable_threads && false);
 	LLLFSThread::initClass(enable_threads && false);
@@ -2022,7 +2101,6 @@ bool LLAppViewer::initLoggingPortable()
 	LLFile::rename(log_file, old_log_file);
 
 	// Set the log file to Singularity.log
-
 	LLError::logToFile(log_file);
 	if (!duration_log_msg.empty())
 	{
@@ -2406,7 +2484,25 @@ bool LLAppViewer::initConfiguration()
 	{
 		gCrashOnStartup = TRUE;
 	}
+
+	if (gSavedSettings.getBOOL("LogPerformance"))
+	{
+		LLTrace::BlockTimer::sLog = true;
+		LLTrace::BlockTimer::sLogName = std::string("performance");		
+	}
 	
+	std::string test_name(gSavedSettings.getString("LogMetrics"));
+	if (! test_name.empty())
+ 	{
+		LLTrace::BlockTimer::sMetricLog = TRUE;
+		// '--logmetrics' is specified with a named test metric argument so the data gathering is done only on that test
+		// In the absence of argument, every metric would be gathered (makes for a rather slow run and hard to decipher report...)
+		LL_INFOS() << "'--logmetrics' argument : " << test_name << LL_ENDL;
+		LLTrace::BlockTimer::sLogName = test_name;
+	}
+	
+	LLFastTimerView::sAnalyzePerformance = gSavedSettings.getBOOL("AnalyzePerformance");
+
 	if (clp.hasOption("debugsession"))
 	{
 		gDebugSession = TRUE;
@@ -3872,7 +3968,7 @@ static LLTrace::BlockTimerStatHandle FTM_HUD_EFFECTS("HUD Effects");
 void LLAppViewer::idle()
 {
 //LAZY_FT is just temporary.
-#define LAZY_FT(str) static LLTrace::BlockTimerStatHandle ftm(str); LL_RECORD_BLOCK_TIME(ftm)
+#define LAZY_FT(str) //static LLTrace::BlockTimerStatHandle ftm(str); LL_RECORD_BLOCK_TIME(ftm)
 	pingMainloopTimeout("Main:Idle");
 
 	// Update frame timers
@@ -3888,8 +3984,8 @@ void LLAppViewer::idle()
 		LLEventTimer::updateClass();
 	}
 	{
-		LAZY_FT("LLCriticalDamp::updateInterpolants");
-		LLCriticalDamp::updateInterpolants();
+		LAZY_FT("LLSmoothInterpolation::updateInterpolants");
+		LLSmoothInterpolation::updateInterpolants();
 	}
 	{
 		LAZY_FT("LLMortician::updateClass");
@@ -4078,6 +4174,10 @@ void LLAppViewer::idle()
 	// Handle the regular UI idle callbacks as well as
 	// hover callbacks
 	//
+    
+#ifdef LL_DARWIN
+	if (!mQuitRequested)  //MAINT-4243
+#endif
 	{
 // 		LL_RECORD_BLOCK_TIME(FTM_IDLE_CB);
 
@@ -4561,7 +4661,7 @@ void LLAppViewer::idleNetwork()
 		}
 
 		// Handle per-frame message system processing.
-		gMessageSystem->processAcks();
+		gMessageSystem->processAcks(gSavedSettings.getF32("AckCollectTime"));
 
 #ifdef TIME_THROTTLE_MESSAGES
 		if (total_time >= CheckMessagesMaxTime)
@@ -4595,7 +4695,6 @@ void LLAppViewer::idleNetwork()
 			gPrintMessagesThisFrame = FALSE;
 		}
 	}
-
 	LLViewerStats::getInstance()->mNumNewObjectsStat.addValue(gObjectList.mNumNewObjects);
 
 	// Retransmit unacknowledged packets.
@@ -4830,6 +4929,7 @@ void LLAppViewer::pingMainloopTimeout(const std::string& state, F32 secs)
 
 void LLAppViewer::handleLoginComplete()
 {
+	gLoggedInTime.start();
 	initMainloopTimeout("Mainloop Init");
 
 	// Store some data to DebugInfo in case of a freeze.

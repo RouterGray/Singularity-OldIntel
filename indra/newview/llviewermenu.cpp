@@ -1515,6 +1515,8 @@ void init_debug_avatar_menu(LLMenuGL* menu)
 	menu->addChild(new LLMenuItemToggleGL( "Debug Rotation", &LLVOAvatar::sDebugAvatarRotation));
 	menu->addChild(new LLMenuItemCallGL("Dump Attachments", handle_dump_attachments));
 	menu->addChild(new LLMenuItemCallGL("Rebake Textures", handle_rebake_textures));
+	void handle_dump_timers(void*);
+	menu->addChild(new LLMenuItemCallGL("Dump Timers", handle_dump_timers));
 #ifndef LL_RELEASE_FOR_DOWNLOAD
 	menu->addChild(new LLMenuItemCallGL("Debug Avatar Textures", handle_debug_avatar_textures, NULL, NULL, 'A', MASK_SHIFT|MASK_CONTROL|MASK_ALT));
 	menu->addChild(new LLMenuItemCallGL("Dump Local Textures", handle_dump_avatar_local_textures, NULL, NULL, 'M', MASK_SHIFT|MASK_ALT ));	
@@ -7828,6 +7830,11 @@ void handle_dump_avatar_local_textures(void*)
 {
 	if (!isAgentAvatarValid()) return;
 	gAgentAvatarp->dumpLocalTextures();
+}
+
+void handle_dump_timers(void*)
+{
+	LLTrace::BlockTimer::dumpCurTimes();
 }
 
 void handle_debug_avatar_textures(void*)

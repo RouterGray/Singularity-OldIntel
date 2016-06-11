@@ -26,9 +26,15 @@
 #include "linden_common.h"
 
 #include "llcommon.h"
+
+#include "llapr.h"
+#include "llmemory.h"
 #include "llthread.h"
 #include "lltrace.h"
 #include "lltracethreadrecorder.h"
+
+//static
+static BOOL /*LLCommon::*/sAprInitialized = FALSE;
 
 static LLTrace::ThreadRecorder* sMasterThreadRecorder = NULL;
 
@@ -36,6 +42,11 @@ static LLTrace::ThreadRecorder* sMasterThreadRecorder = NULL;
 void LLCommon::initClass()
 {
 	LLMemory::initClass();
+	if (!sAprInitialized)
+	{
+		ll_init_apr();
+		sAprInitialized = TRUE;
+	}
 	LLTimer::initClass();
 	LLThreadSafeRefCount::initThreadSafeRefCount();
 	assert_main_thread();		// Make sure we record the main thread
@@ -54,5 +65,10 @@ void LLCommon::cleanupClass()
 	LLTrace::set_master_thread_recorder(NULL);
 	LLThreadSafeRefCount::cleanupThreadSafeRefCount();
 	LLTimer::cleanupClass();
+	if (sAprInitialized)
+	{
+		ll_cleanup_apr();
+		sAprInitialized = FALSE;
+	}
 	LLMemory::cleanupClass();
 }
