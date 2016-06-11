@@ -358,7 +358,6 @@ with the same filename but different name
   <texture name="radio_inactive_true.tga"	preload="true"/>
   <texture name="resize_handle_bottom_right_blue.tga" preload="true"/>
   <texture name="sm_rounded_corners_simple.tga" scale.left="4" scale.top="4" scale.bottom="4" scale.right="4"/>
-  <texture name="search_btn.png" preload="true"/>
   <texture name="spin_down_in_blue.tga"	preload="true"/>
   <texture name="spin_down_out_blue.tga"	preload="true"/>
   <texture name="spin_up_in_blue.tga"	preload="true"/>
@@ -401,44 +400,4 @@ with the same filename but different name
   <texture name="icn_slide-thumb_dark.tga" scale.left="2" scale.top="5" scale.right="29" scale.bottom="4"/>
   <texture name="map_avatar_you_8.tga"/>
   <texture name="icon_avatar_expand.png" preload="true" />
-  <texture name="skin_thumbnail_darkorange.png" preload="true" />
-  <texture name="Fly_btn_stop.png" preload="true"/>
-  <texture name="Fly_btn_active.png" preload="true"/>
-  <texture name="Fly_btn_disabled.png" preload="true"/>
-  <texture name="communicate_btn_active.png" preload="true"/>
-  <texture name="communicate_btn_pressed.png" preload="true"/>
-  <texture name="mapbg3.tga" preload="true"/>
-  <texture name="inventory_btn.png" preload="true"/>
-  <texture name="create.png" preload="true"/>
-  <texture name="land_floatbg.tga" preload="true"/>
-  <texture name="panel_notes.png" preload="true"/>
-  <texture name="panel_mylatest.png" preload="true"/>
-  <texture name="panel_picks.png" preload="true"/>
-  <texture name="panel_web.png" preload="true"/>
-  <texture name="panel_avatarbio1.png" preload="true"/>
-  <texture name="panel_avatar.png" preload="true"/>
-  <texture name="purchaseimage_bg.tga" preload="true"/>
-  
-  <texture name="skin_thumbnail_default.png" preload="true" />
-  <texture name="skin_thumbnail_silver.png" preload="true" />
-  <texture name="chat_btn_active.png" preload="true"/>
-  <texture name="chat_btn.png" preload="true"/>
-  <texture name="screenshot.png" preload="true"/>
-  <texture name="minimap.png" preload="true"/>
-  <texture name="worldmap.png" preload="true"/>
-  <texture name="tools_floatbg.png" preload="true"/>
-  <texture name="closebox.png" preload="true"/>
-  <texture name="OpenlifeBeta_logo" file_name="openlifegridbetalogo.png" preload="true" />
-  <texture name="3dxcreative32_logo" file_name="3dxcreative32.png" preload="true" />
-  <texture name="login_panel" file_name="loginpane.png" preload="true" />
-  <texture name="connect_btn" file_name="Connect120.png" preload="true" />
-  <texture name="skin_thumbnail_dark.png" preload="true" />
-  <texture name="skin_thumbnail_emerald.png" preload="true" />
-  <texture name="skin_thumbnail_gred.png" preload="true" />
-  <texture name="skin_thumbnail_ruby.png" preload="true" />
-  <texture name="skin_thumbnail_pslgreen.png" preload="true" />
-  <texture name="skin_thumbnail_pslpurple.png" preload="true" />
-  <texture name="skin_thumbnail_saphire.png" preload="true" />
-  <texture name="skin_thumbnail_sapphire.png" preload="true" />
-  <texture name="skin_thumbnail_white_emerald.png" preload="true" />
 </textures>
