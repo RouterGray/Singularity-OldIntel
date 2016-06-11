@@ -79,12 +79,12 @@ void LLDrawPoolAlpha::prerender()
 
 S32 LLDrawPoolAlpha::getNumPostDeferredPasses() 
 { 
-	static const LLCachedControl<bool> render_depth_of_field("RenderDepthOfField");
+	static const LLCachedControl<bool> render_dof("RenderDepthOfField");
 	if (LLPipeline::sImpostorRender)
 	{ //skip depth buffer filling pass when rendering impostors
 		return 1;
 	}
-	else if (render_depth_of_field)
+	else if (render_dof)
 	{
 		return 2; 
 	}
@@ -270,7 +270,8 @@ void LLDrawPoolAlpha::render(S32 pass)
 
 	if (sShowDebugAlpha)
 	{
-		if (LLGLSLShader::sNoFixedFunction)
+		bool shaders = LLGLSLShader::sNoFixedFunction;
+		if (shaders)
 		{
 			gHighlightProgram.bind();
 		}
@@ -290,7 +291,7 @@ void LLDrawPoolAlpha::render(S32 pass)
 		pushBatches(LLRenderPass::PASS_FULLBRIGHT_ALPHA_MASK, LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_TEXCOORD0, FALSE);
 		pushBatches(LLRenderPass::PASS_ALPHA_INVISIBLE, LLVertexBuffer::MAP_VERTEX | LLVertexBuffer::MAP_TEXCOORD0, FALSE);
 
-		if (LLGLSLShader::sNoFixedFunction)
+		if (shaders)
 		{
 			gHighlightProgram.unbind();
 		}
@@ -330,6 +331,9 @@ void LLDrawPoolAlpha::renderAlphaHighlight(U32 mask)
 	}
 }
 
+static LLTrace::BlockTimerStatHandle FTM_RENDER_ALPHA_GROUP_LOOP("Alpha Group");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_ALPHA_PUSH("Alpha Push Verts");
+
 void LLDrawPoolAlpha::renderAlpha(U32 mask, S32 pass)
 {
 	BOOL initialized_lighting = FALSE;
@@ -354,7 +358,6 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, S32 pass)
 
 			bool draw_glow_for_this_partition = !depth_only && mVertexShaderLevel > 0; // no shaders = no glow.
 
-			static LLTrace::BlockTimerStatHandle FTM_RENDER_ALPHA_GROUP_LOOP("Alpha Group");
 			LL_RECORD_BLOCK_TIME(FTM_RENDER_ALPHA_GROUP_LOOP);
 
 			bool disable_cull = is_particle_or_hud_particle;
@@ -368,7 +371,7 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, S32 pass)
 
 				/*if ((params.mVertexBuffer->getTypeMask() & mask) != mask)
 				{ //FIXME!
-					LL_WARNS() << "Missing required components, skipping render batch." << LL_ENDL;
+					LL_WARNS_ONCE() << "Missing required components, skipping render batch." << LL_ENDL;
 					continue;
 				}*/
 
@@ -523,10 +526,8 @@ void LLDrawPoolAlpha::renderAlpha(U32 mask, S32 pass)
 					}
 				}
 
-				static LLTrace::BlockTimerStatHandle FTM_RENDER_ALPHA_PUSH("Alpha Push Verts");
 				{
 					LL_RECORD_BLOCK_TIME(FTM_RENDER_ALPHA_PUSH);
-
 					gGL.blendFunc((LLRender::eBlendFactor) params.mBlendFuncSrc, (LLRender::eBlendFactor) params.mBlendFuncDst, mAlphaSFactor, mAlphaDFactor);
 					// Singu Note: If using shaders, pull the attribute mask from it, else used passed base mask.
 					params.mVertexBuffer->setBuffer(current_shader ? current_shader->mAttributeMask : mask);

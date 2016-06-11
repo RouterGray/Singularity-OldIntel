@@ -3968,7 +3968,7 @@ static LLTrace::BlockTimerStatHandle FTM_HUD_EFFECTS("HUD Effects");
 void LLAppViewer::idle()
 {
 //LAZY_FT is just temporary.
-#define LAZY_FT(str) static LLTrace::BlockTimerStatHandle ftm(str); LL_RECORD_BLOCK_TIME(ftm)
+#define LAZY_FT(str) //static LLTrace::BlockTimerStatHandle ftm(str); LL_RECORD_BLOCK_TIME(ftm)
 	pingMainloopTimeout("Main:Idle");
 
 	// Update frame timers

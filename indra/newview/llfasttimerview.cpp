@@ -472,7 +472,9 @@ void LLFastTimerView::onOpen(/*const LLSD& key*/)
 {
 	setPauseState(false);
 	mRecording.reset();
-	mRecording.appendPeriodicRecording(LLTrace::get_frame_recording());
+	auto& recording(LLTrace::get_frame_recording());
+	if (recording.getNumRecordedPeriods()) // <Singu> This only happens when we're initializing, but it's bad.
+		mRecording.appendPeriodicRecording(recording);
 	for(std::deque<TimerBarRow>::iterator it = mTimerBarRows.begin(), end_it = mTimerBarRows.end();
 		it != end_it; 
 		++it)

@@ -2173,10 +2173,9 @@ BOOL LLViewerObject::isActive() const
 }
 
 
-
+//static LLTrace::BlockTimerStatHandle ftm("Viewer Object");
 void LLViewerObject::idleUpdate(LLAgent &agent, LLWorld &world, const F64 &time)
 {
-	//static LLTrace::BlockTimerStatHandle ftm("Viewer Object");
 	//LL_RECORD_BLOCK_TIME(ftm);
 
 	if (!mDead)

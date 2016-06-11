@@ -3042,14 +3042,16 @@ void LLViewerWindow::moveCursorToCenter()
 // Hover handlers
 //
 
+static LLTrace::BlockTimerStatHandle ftm("Update UI");
+
 // Update UI based on stored mouse position from mouse-move
 // event processing.
 void LLViewerWindow::updateUI()
 {
-	static LLTrace::BlockTimerStatHandle ftm("Update UI");
 	LL_RECORD_BLOCK_TIME(ftm);
 
 	static std::string last_handle_msg;
+
 	// animate layout stacks so we have up to date rect for world view
 	LLLayoutStack::updateClass();
 
@@ -3074,12 +3076,6 @@ void LLViewerWindow::updateUI()
 	}
 
 	updateMouseDelta();
-	
-	if (gNoRender)
-	{
-		return;
-	}
-	
 	updateKeyboardFocus();
 
 	BOOL handled = FALSE;

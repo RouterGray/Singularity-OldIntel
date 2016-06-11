@@ -1455,7 +1455,7 @@ void LLViewerTextureList::updateMaxResidentTexMem(S32Megabytes mem)
 // static
 void LLViewerTextureList::receiveImageHeader(LLMessageSystem *msg, void **user_data)
 {
-	static LLCachedControl<bool> log_texture_traffic(gSavedSettings,"LogTextureNetworkTraffic") ;
+	static LLCachedControl<bool> log_texture_traffic(gSavedSettings,"LogTextureNetworkTraffic", false) ;
 
 	LL_RECORD_BLOCK_TIME(FTM_PROCESS_IMAGES);
 	
@@ -1528,7 +1528,7 @@ void LLViewerTextureList::receiveImageHeader(LLMessageSystem *msg, void **user_d
 // static
 void LLViewerTextureList::receiveImagePacket(LLMessageSystem *msg, void **user_data)
 {
-	static LLCachedControl<bool> log_texture_traffic(gSavedSettings,"LogTextureNetworkTraffic") ;
+	static LLCachedControl<bool> log_texture_traffic(gSavedSettings,"LogTextureNetworkTraffic", false) ;
 
 	LL_RECORD_BLOCK_TIME(FTM_PROCESS_IMAGES);
 	
@@ -1550,6 +1550,7 @@ void LLViewerTextureList::receiveImagePacket(LLMessageSystem *msg, void **user_d
 	{
 		received_size = (U32Bytes)msg->getReceiveSize() ;		
 	}
+
 	gTextureList.sTextureBits += received_size;
 	gTextureList.sTexturePackets++;
 	
