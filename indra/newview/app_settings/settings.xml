@@ -4214,6 +4214,18 @@ This should be as low as possible, but too low may break functionality</string>
     <key>Value</key>
     <real>1.5</real>
   </map>
+
+  <key>CertStore</key>
+    <map>
+      <key>Comment</key>
+      <string>Specifies the Certificate Store for certificate trust verification</string>
+      <key>Persist</key>
+      <integer>1</integer>
+      <key>Type</key>
+      <string>String</string>
+      <key>Value</key>
+      <string>default</string>
+    </map>
     <key>ChatBarStealsFocus</key>
     <map>
       <key>Comment</key>
@@ -6080,6 +6092,28 @@ This should be as low as possible, but too low may break functionality</string>
       <key>Value</key>
       <string>5b53359e-59dd-d8a2-04c3-9e65134da47a</string>
     </map>
+	<key>DefaultFemaleAvatar</key>
+	<map>
+	  <key>Comment</key>
+	  <string>Default Female Avatar</string>
+	  <key>Persist</key>
+	  <integer>1</integer>
+	  <key>Type</key>
+	  <string>String</string>
+	  <key>Value</key>
+	  <string>Female Shape &amp; Outfit</string>
+	</map>
+	<key>DefaultMaleAvatar</key>
+	<map>
+	  <key>Comment</key>
+	  <string>Default Male Avatar</string>
+	  <key>Persist</key>
+	  <integer>1</integer>
+	  <key>Type</key>
+	  <string>String</string>
+	  <key>Value</key>
+	  <string>Male Shape &amp; Outfit</string>
+	</map>
     <key>DefaultObjectNormalTexture</key>
     <map>
       <key>Comment</key>
@@ -9510,6 +9544,28 @@ This should be as low as possible, but too low may break functionality</string>
       <string>S32</string>
       <key>Value</key>
       <integer>0</integer>
+    </map>
+    <key>LeapCommand</key>
+    <map>
+      <key>Comment</key>
+      <string>Zero or more command lines to run LLSD Event API Plugin programs.</string>
+      <key>Persist</key>
+      <integer>0</integer>
+      <key>Type</key>
+      <string>LLSD</string>
+      <key>Value</key>
+      <array />
+    </map>
+    <key>LeapPlaybackEventsCommand</key>
+    <map>
+      <key>Comment</key>
+      <string>Command line to use leap to launch playback of event recordings</string>
+      <key>Persist</key>
+      <integer>0</integer>
+      <key>Type</key>
+      <string>LLSD</string>
+      <key>Value</key>
+      <array/>
     </map>
     <key>LSLFindCaseInsensitivity</key>
     <map>

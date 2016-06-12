@@ -838,6 +838,10 @@ bool LLAppViewer::init()
 	LLUrlAction::setOpenURLExternalCallback(boost::bind(&LLWeb::loadURLExternal, _1, true, LLStringUtil::null));
 	LLUrlAction::setExecuteSLURLCallback(&LLURLDispatcher::dispatchFromTextEditor);
 	
+	LL_INFOS("InitInfo") << "UI initialization is done." << LL_ENDL ;
+
+	/////////////////////////////////////////////////
+
 	LLToolMgr::getInstance(); // Initialize tool manager if not already instantiated
 		
 	/////////////////////////////////////////////////
@@ -1209,7 +1213,6 @@ bool LLAppViewer::mainLoop()
 
 	LLTimer frameTimer,idleTimer,periodicRenderingTimer;
 	LLTimer debugTime;
-	LLFrameTimer memCheckTimer;
 
 	// Handle messages
 #ifdef LL_DARWIN
