@@ -4047,7 +4047,7 @@ bool process_login_success_response(std::string& password, U32& first_sim_size_x
 	std::string agent_appearance_url = response["agent_appearance_service"];
 	if (!agent_appearance_url.empty())
 	{
-		gSavedSettings.setString("AgentAppearanceServiceURL", agent_appearance_url);
+		LLAppearanceMgr::instance().setAppearanceServiceURL(agent_appearance_url);
 	}
 
 	// Override grid info with anything sent in the login response
