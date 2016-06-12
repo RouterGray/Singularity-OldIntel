@@ -1,4 +1,3 @@
-
 /** 
  * @file lldir.cpp
  * @brief implementation of directory utilities base class
@@ -308,7 +307,11 @@ const std::string &LLDir::getOSUserAppDir() const
 
 const std::string &LLDir::getLindenUserDir(bool empty_ok) const
 {
-	llassert(empty_ok || !mLindenUserDir.empty());
+	if (mLindenUserDir.empty())
+	{
+		LL_DEBUGS() << "getLindenUserDir() called early, we don't have the user name yet - returning empty string to caller" << LL_ENDL;
+	}
+
 	return mLindenUserDir;
 }
 
