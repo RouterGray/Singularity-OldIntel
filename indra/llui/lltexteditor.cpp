@@ -362,6 +362,7 @@ LLTextEditor::LLTextEditor(
 	menu->setCanTearOff(FALSE);
 	menu->setVisible(FALSE);
 	mPopupMenuHandle = menu->getHandle();
+	setCommitCallback(boost::bind(&LLTextEditor::setControlValue, this, _2));
 }
 
 
@@ -4819,6 +4820,10 @@ LLView* LLTextEditor::fromXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFactory
 	BOOL hide_scrollbar = FALSE;
 	node->getAttributeBOOL("hide_scrollbar",hide_scrollbar);
 	text_editor->setHideScrollbarForShortDocs(hide_scrollbar);
+
+	BOOL commit_on_focus_lost = FALSE;
+	node->getAttributeBOOL("commit_on_focus_lost",commit_on_focus_lost);
+	text_editor->setCommitOnFocusLost(commit_on_focus_lost);
 
 	text_editor->initFromXML(node, parent);
 
