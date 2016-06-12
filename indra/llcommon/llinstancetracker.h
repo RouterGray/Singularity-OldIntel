@@ -79,6 +79,7 @@ class LLInstanceTracker : public LLInstanceTrackerBase
 {
 	typedef LLInstanceTracker<T, KEY> self_t;
 	typedef typename std::multimap<KEY, T*> InstanceMap;
+	typedef typename InstanceMap::iterator::difference_type difference_type;
 	struct StaticData: public StaticBase
 	{
 		InstanceMap sMap;

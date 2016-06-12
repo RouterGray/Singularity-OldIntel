@@ -27,6 +27,8 @@
 #include "linden_common.h"
 // associated header
 #include "llinstancetracker.h"
+#include "llapr.h"
+
 // STL headers
 // std headers
 // external library headers
