@@ -222,7 +222,7 @@ public:
 	BlockTimer(const BlockTimer& other) {};
 
 private:
-	U64						mStartTime  = getCPUClockCount64();
+	U64						mStartTime = 0;
 	BlockTimerStackRecord	mParentTimerData;
 
 public:
