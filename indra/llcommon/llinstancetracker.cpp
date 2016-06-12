@@ -32,18 +32,18 @@
 // external library headers
 // other Linden headers
 
-//static 
-void * & LLInstanceTrackerBase::getInstances(std::type_info const & info)
+void LLInstanceTrackerBase::StaticBase::incrementDepth()
 {
-	typedef std::map<std::string, void *> InstancesMap;
-	static InstancesMap instances;
+	++sIterationNestDepth;
+}
 
-	// std::map::insert() is just what we want here. You attempt to insert a
-	// (key, value) pair. If the specified key doesn't yet exist, it inserts
-	// the pair and returns a std::pair of (iterator, true). If the specified
-	// key DOES exist, insert() simply returns (iterator, false). One lookup
-	// handles both cases.
-	return instances.insert(InstancesMap::value_type(info.name(),
-													 InstancesMap::mapped_type()))
-		.first->second;
+void LLInstanceTrackerBase::StaticBase::decrementDepth()
+{
+	llassert(sIterationNestDepth);
+	--sIterationNestDepth;
+}
+
+U32 LLInstanceTrackerBase::StaticBase::getDepth()
+{
+	return (U32)sIterationNestDepth.load();
 }

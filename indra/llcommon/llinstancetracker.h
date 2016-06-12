@@ -31,14 +31,8 @@
 #include <map>
 #include <typeinfo>
 
+#include "llatomic.h"
 #include "llstringtable.h"
-#include "llerror.h"			// llassert_always
-#include <boost/utility.hpp>
-#ifndef BOOST_FUNCTION_HPP_INCLUDED
-#include <boost/function.hpp>
-#define BOOST_FUNCTION_HPP_INCLUDED
-#endif
-#include <boost/bind.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 
@@ -47,28 +41,9 @@
  * semantics: one instance per process, rather than one instance per module as
  * sometimes happens with data simply declared static.
  */
-class LL_COMMON_API LLInstanceTrackerBase : public boost::noncopyable
+class LL_COMMON_API LLInstanceTrackerBase
 {
 protected:
-	/// Get a process-unique void* pointer slot for the specified type_info
-	static void * & getInstances(std::type_info const & info);
-
-	/// Find or create a STATICDATA instance for the specified TRACKED class.
-	/// STATICDATA must be default-constructible.
-	template<typename STATICDATA, class TRACKED>
-	static STATICDATA& getStatic()
-	{
-		//Singu note: Don't de-static the instances variable. getInstances is incredibly
-		//expensive. Calling getInstances once and caching the result is sufficient
-		//to avoid the instance-per-module issue noted above.
-		static void *& instances = getInstances(typeid(TRACKED));
-		if (! instances)
-		{
-			instances = new STATICDATA;
-		}
-		return *static_cast<STATICDATA*>(instances);
-	}
-
     /// It's not essential to derive your STATICDATA (for use with
     /// getStatic()) from StaticBase; it's just that both known
     /// implementations do.
@@ -77,25 +52,38 @@ protected:
         StaticBase():
             sIterationNestDepth(0)
         {}
-        S32 sIterationNestDepth;
+
+		void incrementDepth();
+		void decrementDepth();
+		U32 getDepth();
+	private:
+		LLAtomicU32 sIterationNestDepth;
     };
+};
+
+LL_COMMON_API void assert_main_thread();
+
+enum EInstanceTrackerAllowKeyCollisions
+{
+	LLInstanceTrackerErrorOnCollision,
+	LLInstanceTrackerReplaceOnCollision
 };
 
 /// This mix-in class adds support for tracking all instances of the specified class parameter T
 /// The (optional) key associates a value of type KEY with a given instance of T, for quick lookup
 /// If KEY is not provided, then instances are stored in a simple set
-/// @NOTE: see explicit specialization below for default KEY==T* case
-template<typename T, typename KEY = T*>
+/// @NOTE: see explicit specialization below for default KEY==void case
+/// @NOTE: this class is not thread-safe unless used as read-only
+template<typename T, typename KEY = void, EInstanceTrackerAllowKeyCollisions KEY_COLLISION_BEHAVIOR = LLInstanceTrackerErrorOnCollision>
 class LLInstanceTracker : public LLInstanceTrackerBase
 {
-	typedef LLInstanceTracker<T, KEY> MyT;
-	typedef typename std::map<KEY, T*> InstanceMap;
-	typedef typename InstanceMap::iterator::difference_type difference_type;
+	typedef LLInstanceTracker<T, KEY> self_t;
+	typedef typename std::multimap<KEY, T*> InstanceMap;
 	struct StaticData: public StaticBase
 	{
 		InstanceMap sMap;
 	};
-	static StaticData& getStatic() { return LLInstanceTrackerBase::getStatic<StaticData, MyT>(); }
+	static StaticData& getStatic() { static StaticData sData; return sData;}
 	static InstanceMap& getMap_() { return getStatic().sMap; }
 
 public:
@@ -107,12 +95,12 @@ public:
 		instance_iter(const typename InstanceMap::iterator& it)
 		:	mIterator(it)
 		{
-			++getStatic().sIterationNestDepth;
+			getStatic().incrementDepth();
 		}
 
 		~instance_iter()
 		{
-			--getStatic().sIterationNestDepth;
+			getStatic().decrementDepth();
 		}
 
 
@@ -146,18 +134,18 @@ public:
 		key_iter(typename InstanceMap::iterator it)
 			:	mIterator(it)
 		{
-			++getStatic().sIterationNestDepth;
+			getStatic().incrementDepth();
 		}
 
 		key_iter(const key_iter& other)
 			:	mIterator(other.mIterator)
 		{
-			++getStatic().sIterationNestDepth;
+			getStatic().incrementDepth();
 		}
 
 		~key_iter()
 		{
-			--getStatic().sIterationNestDepth;
+			getStatic().decrementDepth();
 		}
 
 
@@ -200,7 +188,10 @@ public:
 		return instance_iter(getMap_().end());
 	}
 
-	static S32 instanceCount() { return getMap_().size(); }
+	static S32 instanceCount() 
+	{ 
+		return getMap_().size(); 
+	}
 
 	static key_iter beginKeys()
 	{
@@ -212,7 +203,7 @@ public:
 	}
 
 protected:
-	LLInstanceTracker(KEY key) 
+	LLInstanceTracker(const KEY& key) 
 	{ 
 		// make sure static data outlives all instances
 		getStatic();
@@ -221,39 +212,73 @@ protected:
 	virtual ~LLInstanceTracker() 
 	{ 
 		// it's unsafe to delete instances of this type while all instances are being iterated over.
-		llassert_always(getStatic().sIterationNestDepth == 0);
+		llassert_always(getStatic().getDepth() == 0);
 		remove_();		
 	}
 	virtual void setKey(KEY key) { remove_(); add_(key); }
 	virtual const KEY& getKey() const { return mInstanceKey; }
 
 private:
-	void add_(KEY key) 
+	LLInstanceTracker( const LLInstanceTracker& );
+	const LLInstanceTracker& operator=( const LLInstanceTracker& );
+
+	void add_(const KEY& key) 
 	{ 
 		mInstanceKey = key; 
-		getMap_()[key] = static_cast<T*>(this); 
+		InstanceMap& map = getMap_();
+		typename InstanceMap::iterator insertion_point_it = map.lower_bound(key);
+		if (insertion_point_it != map.end() 
+			&& insertion_point_it->first == key)
+		{ // found existing entry with that key
+			switch(KEY_COLLISION_BEHAVIOR)
+			{
+				case LLInstanceTrackerErrorOnCollision:
+				{
+					// use assert here instead of LL_ERRS(), otherwise the error will be ignored since this call is made during global object initialization
+					llassert_always_msg(false, "Instance with this same key already exists!");
+					break;
+				}
+				case LLInstanceTrackerReplaceOnCollision:
+				{
+					// replace pointer, but leave key (should have compared equal anyway)
+					insertion_point_it->second = static_cast<T*>(this);
+					break;
+				}
+				default:
+					break;
+			}
+		}
+		else
+		{ // new key
+			map.insert(insertion_point_it, std::make_pair(key, static_cast<T*>(this)));
+		}
 	}
 	void remove_()
 	{
-		getMap_().erase(mInstanceKey);
+		InstanceMap& map = getMap_();
+		typename InstanceMap::iterator iter = map.find(mInstanceKey);
+		if (iter != map.end())
+		{
+			map.erase(iter);
+		}
 	}
 
 private:
 	KEY mInstanceKey;
 };
 
-/// explicit specialization for default case where KEY is T*
+/// explicit specialization for default case where KEY is void
 /// use a simple std::set<T*>
-template<typename T>
-class LLInstanceTracker<T, T*> : public LLInstanceTrackerBase
+template<typename T, EInstanceTrackerAllowKeyCollisions KEY_COLLISION_BEHAVIOR>
+class LLInstanceTracker<T, void, KEY_COLLISION_BEHAVIOR> : public LLInstanceTrackerBase
 {
-	typedef LLInstanceTracker<T, T*> MyT;
+	typedef LLInstanceTracker<T, void> self_t;
 	typedef typename std::set<T*> InstanceSet;
 	struct StaticData: public StaticBase
 	{
 		InstanceSet sSet;
 	};
-	static StaticData& getStatic() { return LLInstanceTrackerBase::getStatic<StaticData, MyT>(); }
+	static StaticData& getStatic() { static StaticData sData; return sData; }
 	static InstanceSet& getSet_() { return getStatic().sSet; }
 
 public:
@@ -280,18 +305,18 @@ public:
 		instance_iter(const typename InstanceSet::iterator& it)
 		:	mIterator(it)
 		{
-			++getStatic().sIterationNestDepth;
+			getStatic().incrementDepth();
 		}
 
 		instance_iter(const instance_iter& other)
 		:	mIterator(other.mIterator)
 		{
-			++getStatic().sIterationNestDepth;
+			getStatic().incrementDepth();
 		}
 
 		~instance_iter()
 		{
-			--getStatic().sIterationNestDepth;
+			getStatic().decrementDepth();
 		}
 
 	private:
@@ -324,7 +349,8 @@ protected:
 	virtual ~LLInstanceTracker()
 	{
 		// it's unsafe to delete instances of this type while all instances are being iterated over.
-		llassert_always(getStatic().sIterationNestDepth == 0);
+		// But exceptions in destructors are unsafe in c++11
+        //llassert_always(getStatic().getDepth() == 0);
 		getSet_().erase(static_cast<T*>(this));
 	}
 
