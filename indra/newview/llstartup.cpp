@@ -1048,6 +1048,8 @@ bool idle_startup()
 		convert_legacy_settings();
 
 		//Default the path if one isn't set.
+		// *NOTE: unable to check variable differ from "InstantMessageLogPath" because it was
+		// provided in pre 2.0 viewer. See EXT-6661
 		if (gSavedPerAccountSettings.getString("InstantMessageLogPath").empty())
 		{
 			const std::string dir = gSavedSettings.getString("InstantMessageLogPathAnyAccount");
@@ -1125,7 +1127,7 @@ bool idle_startup()
 		// their last location, or some URL "-url //sim/x/y[/z]"
 		// All accounts have both a home and a last location, and we don't support
 		// more locations than that.  Choose the appropriate one.  JC
-// [RLVa:KB] - Checked: 2009-07-08 (RLVa-1.0.0e) | Modified: RLVa-0.2.1d
+// [RLVa:KB] - Checked: 2010-04-01 (RLVa-1.2.0c) | Modified: RLVa-0.2.1d
 		#ifndef RLV_EXTENSION_STARTLOCATION
 		if (rlv_handler_t::isEnabled())
 		#else
@@ -1151,16 +1153,14 @@ bool idle_startup()
 
 		gViewerWindow->getWindow()->setCursor(UI_CURSOR_WAIT);
 
-		if (!gNoRender)
-		{
-			init_start_screen(agent_location_id);
-		}
+		init_start_screen(agent_location_id);
 
 		// Display the startup progress bar.
 		gViewerWindow->setShowProgress(!gSavedSettings.getBOOL("AscentDisableLogoutScreens"));
 		gViewerWindow->setProgressCancelButtonVisible(TRUE, LLTrans::getString("Quit"));
 
 		gViewerWindow->revealIntroPanel();
+
 		// Poke the VFS, which could potentially block for a while if
 		// Windows XP is acting up
 		set_startup_status(0.07f, LLTrans::getString("LoginVerifyingCache"), LLStringUtil::null);
@@ -1248,6 +1248,7 @@ bool idle_startup()
 		}
 		auth_method = "login_to_simulator";
 		
+		// Update progress status and the display loop.
 		auth_desc = LLTrans::getString("LoginInProgress");
 		set_startup_status(progress, auth_desc, auth_message);
 		LLStartUp::setStartupState( STATE_XMLRPC_LEGACY_LOGIN ); // XMLRPC
@@ -1678,6 +1679,8 @@ bool idle_startup()
 		LLViewerRegion *regionp = LLWorld::getInstance()->getRegionFromHandle(gFirstSimHandle);
 		LL_INFOS("AppInit") << "Adding initial simulator " << regionp->getOriginGlobal() << LL_ENDL;
 		
+		LL_DEBUGS("CrossingCaps") << "Calling setSeedCapability from init_idle(). Seed cap == "
+		<< gFirstSimSeedCap << LL_ENDL;
 		regionp->setSeedCapability(gFirstSimSeedCap);
 		LL_DEBUGS("AppInit") << "Waiting for seed grant ...." << LL_ENDL;
 		display_startup();
@@ -1768,24 +1771,21 @@ bool idle_startup()
 		LLRect window(0, gViewerWindow->getWindowHeight(), gViewerWindow->getWindowWidth(), 0);
 		gViewerWindow->adjustControlRectanglesForFirstUse(window);
 
-		if (!gNoRender)
+		//Set up cloud rendertypes. Passed argument is unused.
+		handleCloudSettingsChanged(LLSD());
+		display_startup();
+
+		// direct logging to the debug console's line buffer
+		LLError::logToFixedBuffer(gDebugView->mDebugConsolep);
+		display_startup();
+
+		// set initial visibility of debug console
+		gDebugView->mDebugConsolep->setVisible(gSavedSettings.getBOOL("ShowDebugConsole"));
+		display_startup();
+		if (gSavedSettings.getBOOL("ShowDebugStats"))
 		{
-			//Set up cloud rendertypes. Passed argument is unused.
-			handleCloudSettingsChanged(LLSD());
+			LLFloaterStats::showInstance();
 			display_startup();
-			
-			
-			LLError::logToFixedBuffer(gDebugView->mDebugConsolep);
-			display_startup();
-			
-			// set initial visibility of debug console
-			gDebugView->mDebugConsolep->setVisible(gSavedSettings.getBOOL("ShowDebugConsole"));
-			display_startup();
-			if (gSavedSettings.getBOOL("ShowDebugStats"))
-			{
-				LLFloaterStats::showInstance();
-				display_startup();
-			}
 		}
 
 		//
@@ -1828,14 +1828,9 @@ bool idle_startup()
 		//reset statistics
 		LLViewerStats::instance().resetStats();
 
-		if (!gNoRender)
-		{
-			//
-			// Set up all of our statistics UI stuff.
-			//
-			display_startup();
-			init_stat_view();
-		}
+		// Set up all of our statistics UI stuff.
+		display_startup();
+		init_stat_view();
 
 		display_startup();
 		//
@@ -1883,18 +1878,15 @@ bool idle_startup()
 		display_startup();
 
 		// Initialize global class data needed for surfaces (i.e. textures)
-		if (!gNoRender)
-		{
-			LL_DEBUGS("AppInit") << "Initializing sky..." << LL_ENDL;
-			// Initialize all of the viewer object classes for the first time (doing things like texture fetches.
-			LLGLState::checkStates();
-			LLGLState::checkTextureChannels();
+		LL_DEBUGS("AppInit") << "Initializing sky..." << LL_ENDL;
+		// Initialize all of the viewer object classes for the first time (doing things like texture fetches.
+		LLGLState::checkStates();
+		LLGLState::checkTextureChannels();
 
-			gSky.init(initial_sun_direction);
+		gSky.init(initial_sun_direction);
 
-			LLGLState::checkStates();
-			LLGLState::checkTextureChannels();
-		}
+		LLGLState::checkStates();
+		LLGLState::checkTextureChannels();
 
 		display_startup();
 
@@ -1921,7 +1913,7 @@ bool idle_startup()
 			LL_WARNS("AppInit") << "Attempting to connect to simulator with a zero circuit code!" << LL_ENDL;
 		}
 
-		gUseCircuitCallbackCalled = FALSE;
+		gUseCircuitCallbackCalled = false;
 
 		msg->enableCircuit(gFirstSim, TRUE);
 		// now, use the circuit info to tell simulator about us!
@@ -1946,7 +1938,7 @@ bool idle_startup()
 	}
 
 	//---------------------------------------------------------------------
-	// Agent Send
+	// World Wait
 	//---------------------------------------------------------------------
 	if(STATE_WORLD_WAIT == LLStartUp::getStartupState())
 	{
@@ -2100,6 +2092,12 @@ bool idle_startup()
  		}
 		display_startup();
 
+		LLSD inv_basic = response["inventory-basic"];
+ 		if(inv_basic.isDefined())
+ 		{
+			LL_INFOS() << "Basic inventory root folder id is " << inv_basic["folder_id"] << LL_ENDL;
+ 		}
+
 		LLSD buddy_list = response["buddy-list"];
  		if(buddy_list.isDefined())
  		{
@@ -2173,6 +2171,7 @@ bool idle_startup()
 			}
 		}
 		display_startup();
+
 		// Either we want to show tutorial because this is the first login
 		// to a Linden Help Island or the user quit with the tutorial
 		// visible.  JC
@@ -2243,21 +2242,19 @@ bool idle_startup()
 		LL_INFOS() << "Requesting Agent Data" << LL_ENDL;
 		gAgent.sendAgentDataUpdateRequest();
 		display_startup();
-		bool shown_at_exit = gSavedSettings.getBOOL("ShowInventory");
-
 		// Create the inventory views
 		LL_INFOS() << "Creating Inventory Views" << LL_ENDL;
 		LLPanelMainInventory::showAgentInventory();
 		display_startup();
 		
 		// Hide the inventory if it wasn't shown at exit
-		if(!shown_at_exit)
+		if(!gSavedSettings.getBOOL("ShowInventory"))
 		{
 			LLPanelMainInventory::toggleVisibility(NULL);
 		}
 		display_startup();
 
-// [RLVa:KB] - Checked: 2009-11-27 (RLVa-1.1.0f) | Added: RLVa-1.1.0f
+// [RLVa:KB] - Checked: 2010-02-27 (RLVa-1.2.0a) | Added: RLVa-1.1.0f
 		if (rlv_handler_t::isEnabled())
 		{
 			// Regularly process a select subset of retained commands during logon
@@ -2310,6 +2307,8 @@ bool idle_startup()
 		// We're successfully logged in.
 		gSavedSettings.setBOOL("FirstLoginThisInstall", FALSE);
 
+        // *TODO : Uncomment that line once the whole grid migrated to SLM and suppress it from LLAgent::handleTeleportFinished() (llagent.cpp)
+        //check_merchant_status();
 
 		// based on the comments, we've successfully logged in so we can delete the 'forced'
 		// URL that the updater set in settings.ini (in a mostly paranoid fashion)
@@ -2325,95 +2324,70 @@ bool idle_startup()
 	
 		display_startup();
 
-		if (!gNoRender)
+		// JC: Initializing audio requests many sounds for download.
+		init_audio();
+		display_startup();
+
+		// JC: Initialize "active" gestures.  This may also trigger
+		// many gesture downloads, if this is the user's first
+		// time on this machine or -purge has been run.
+		LLSD gesture_options 
+			= LLUserAuth::getInstance()->getResponse("gestures");
+		if (gesture_options.isDefined())
 		{
-			//Now that we're loading the world, initialize the audio engine.
-			init_audio();
-			display_startup();
-
-			// JC: Initialize "active" gestures.  This may also trigger
-			// many gesture downloads, if this is the user's first
-			// time on this machine or -purge has been run.
-			LLSD gesture_options 
-				= LLUserAuth::getInstance()->getResponse("gestures");
-			if (gesture_options.isDefined())
+			LL_DEBUGS("AppInit") << "Gesture Manager loading " << gesture_options.size()
+				<< LL_ENDL;
+			uuid_vec_t item_ids;
+			for(LLSD::array_const_iterator resp_it = gesture_options.beginArray(),
+				end = gesture_options.endArray(); resp_it != end; ++resp_it)
 			{
-				LL_DEBUGS("AppInit") << "Gesture Manager loading " << gesture_options.size()
-					<< LL_ENDL;
-				uuid_vec_t item_ids;
-				for(LLSD::array_const_iterator resp_it = gesture_options.beginArray(),
-					end = gesture_options.endArray(); resp_it != end; ++resp_it)
-				{
-					// If the id is not specifed in the LLSD,
-					// the LLSD operator[]() will return a null LLUUID. 
-					LLUUID item_id = (*resp_it)["item_id"];
-					LLUUID asset_id = (*resp_it)["asset_id"];
+				// If the id is not specifed in the LLSD,
+				// the LLSD operator[]() will return a null LLUUID. 
+				LLUUID item_id = (*resp_it)["item_id"];
+				LLUUID asset_id = (*resp_it)["asset_id"];
 
-					if (item_id.notNull() && asset_id.notNull())
-					{
-						// Could schedule and delay these for later.
-						const BOOL no_inform_server = FALSE;
-						const BOOL no_deactivate_similar = FALSE;
-						LLGestureMgr::instance().activateGestureWithAsset(item_id, asset_id,
-											 no_inform_server,
-											 no_deactivate_similar);
-						// We need to fetch the inventory items for these gestures
-						// so we have the names to populate the UI.
-						item_ids.push_back(item_id);
-					}
+				if (item_id.notNull() && asset_id.notNull())
+				{
+					// Could schedule and delay these for later.
+					const BOOL no_inform_server = FALSE;
+					const BOOL no_deactivate_similar = FALSE;
+					LLGestureMgr::instance().activateGestureWithAsset(item_id, asset_id,
+										 no_inform_server,
+										 no_deactivate_similar);
+					// We need to fetch the inventory items for these gestures
+					// so we have the names to populate the UI.
+					item_ids.push_back(item_id);
 				}
-				// no need to add gesture to inventory observer, it's already made in constructor 
-				LLGestureMgr::instance().setFetchIDs(item_ids);
-				LLGestureMgr::instance().startFetch();
 			}
+			// no need to add gesture to inventory observer, it's already made in constructor 
+			LLGestureMgr::instance().setFetchIDs(item_ids);
+			LLGestureMgr::instance().startFetch();
 		}
 		gDisplaySwapBuffers = TRUE;
 		display_startup();
 
 		if (gSavedSettings.getBOOL("ShowMiniMap"))
-		{
 			LLFloaterMap::showInstance();
-		}
 		if (gSavedSettings.getBOOL("ShowRadar"))
-		{
 			LLFloaterAvatarList::showInstance();
-		}
 		// <edit>
 		else if (gSavedSettings.getBOOL("RadarKeepOpen"))
-		{
 			LLFloaterAvatarList::getInstance()->close();
-		}
 		if (gSavedSettings.getBOOL("SHShowMediaTicker"))
-		{
 			SHFloaterMediaTicker::showInstance();
-		}
 		// </edit>
 		if (gSavedSettings.getBOOL("ShowCameraControls"))
-		{
 			LLFloaterCamera::showInstance();
-		}
 		if (gSavedSettings.getBOOL("ShowMovementControls"))
-		{
 			LLFloaterMove::showInstance();
-		}
-
 		if (gSavedSettings.getBOOL("ShowActiveSpeakers"))
-		{
 			LLFloaterActiveSpeakers::showInstance();
-		}
-
 		if (gSavedSettings.getBOOL("ShowBeaconsFloater"))
-		{
 			LLFloaterBeacons::showInstance();
-		}
 		if (gSavedSettings.getBOOL("ShowAvatarFloater"))
-		{
 			LLFloaterAvatar::showInstance();
-		}
 		if (gSavedSettings.getBOOL("DestinationGuideShown"))
-		{
 			LLFloaterDestinations::showInstance();
-		}
 
 		LLMessageSystem* msg = gMessageSystem;
 		msg->setHandlerFuncFast(_PREHASH_SoundTrigger,				hooked_process_sound_trigger);
@@ -2423,6 +2397,7 @@ bool idle_startup()
 
 		LL_DEBUGS("AppInit") << "Initialization complete" << LL_ENDL;
 
+		LL_DEBUGS("SceneLoadTiming", "Start") << "Scene Load Started " << LL_ENDL;
 		gRenderStartTime.reset();
 		// We're not allowed to call reset() when paused, and we might or might not be paused depending on
 		// whether or not the main window lost focus before we get here (see LLViewerWindow::handleFocusLost).
@@ -2431,8 +2406,7 @@ bool idle_startup()
 		gForegroundTime.unpause();
 		gForegroundTime.reset();
 
-		if (gSavedSettings.getBOOL("FetchInventoryOnLogin")
-			)
+		if (gSavedSettings.getBOOL("FetchInventoryOnLogin"))
 		{
 			// Fetch inventory in the background
 			LLInventoryModelBackgroundFetch::instance().start();
@@ -2658,10 +2632,7 @@ bool idle_startup()
 		}
 
 		// Start the AO now that settings have loaded and login successful -- MC
-		if (!gAOInvTimer)
-		{
-			gAOInvTimer = new AOInvTimer();
-		}
+		if (!gAOInvTimer) gAOInvTimer = new AOInvTimer();
 
 		gViewerWindow->showCursor();
 		gViewerWindow->getWindow()->resetBusyCount();
@@ -2720,10 +2691,6 @@ bool idle_startup()
 		// reset keyboard focus to sane state of pointing at world
 		gFocusMgr.setKeyboardFocus(NULL);
 
-#if 0 // sjb: enable for auto-enabling timer display 
-		gDebugView->mFastTimerView->setVisible(TRUE);
-#endif
-
 		LLAppViewer::instance()->handleLoginComplete();
 
 		display_startup();
@@ -2762,15 +2729,10 @@ std::string LLStartUp::loadPasswordFromDisk()
 	// Only load password if we also intend to save it (otherwise the user
 	// wonders what we're doing behind his back).  JC
 	BOOL remember_password = gSavedSettings.getBOOL("RememberPassword");
-	if (!remember_password)
-	{
-		return std::string("");
-	}
-
-	std::string hashed_password("");
+	if (!remember_password) return LLStringUtil::null;
 
 	// Look for legacy "marker" password from settings.ini
-	hashed_password = gSavedSettings.getString("Marker");
+	std::string hashed_password = gSavedSettings.getString("Marker");
 	if (!hashed_password.empty())
 	{
 		// Stomp the Marker entry.
@@ -2945,7 +2907,6 @@ bool login_alert_status(const LLSD& notification, const LLSD& response)
 }
 
 
-
 void use_circuit_callback(void**, S32 result)
 {
 	// bail if we're quitting.
@@ -3041,7 +3002,8 @@ void register_viewer_callbacks(LLMessageSystem* msg)
 	msg->setHandlerFuncFast(_PREHASH_CoarseLocationUpdate,		LLWorld::processCoarseUpdate, NULL);
 	msg->setHandlerFuncFast(_PREHASH_ReplyTaskInventory, 		LLViewerObject::processTaskInv,	NULL);
 	msg->setHandlerFuncFast(_PREHASH_DerezContainer,			process_derez_container, NULL);
-	msg->setHandlerFuncFast(_PREHASH_ScriptRunningReply, process_script_running_reply);
+	msg->setHandlerFuncFast(_PREHASH_ScriptRunningReply,
+						process_script_running_reply);
 
 	msg->setHandlerFuncFast(_PREHASH_DeRezAck, process_derez_ack);
 
@@ -3150,8 +3112,8 @@ void register_viewer_callbacks(LLMessageSystem* msg)
 	msg->setHandlerFunc("MapLayerReply", LLWorldMap::processMapLayerReply);
 	msg->setHandlerFunc("MapBlockReply", LLWorldMapMessage::processMapBlockReply);
 	msg->setHandlerFunc("MapItemReply", LLWorldMapMessage::processMapItemReply);
-
 	msg->setHandlerFunc("EventInfoReply", LLPanelEvent::processEventInfoReply);
+
 	msg->setHandlerFunc("PickInfoReply", &LLAvatarPropertiesProcessor::processPickInfoReply);
 //	msg->setHandlerFunc("ClassifiedInfoReply", LLPanelClassified::processClassifiedInfoReply);
 	msg->setHandlerFunc("ClassifiedInfoReply", LLAvatarPropertiesProcessor::processClassifiedInfoReply);
@@ -3188,29 +3150,27 @@ void asset_callback_nothing(LLVFS*, const LLUUID&, LLAssetType::EType, void*, S3
 	// nothing
 }
 
-// *HACK: Must match name in Library or agent inventory
-const std::string COMMON_GESTURES_FOLDER = "Common Gestures";
-const std::string MALE_GESTURES_FOLDER = "Male Gestures";
-const std::string FEMALE_GESTURES_FOLDER = "Female Gestures";
-const std::string MALE_OUTFIT_FOLDER = "Male Shape & Outfit";
-const std::string FEMALE_OUTFIT_FOLDER = "Female Shape & Outfit";
 const S32 OPT_CLOSED_WINDOW = -1;
 const S32 OPT_MALE = 0;
 const S32 OPT_FEMALE = 1;
 
 bool callback_choose_gender(const LLSD& notification, const LLSD& response)
 {	
+	
+    // These defaults are returned from the server on login.  They are set in login.xml.                  
+    // If no default is returned from the server, they are retrieved from settings.xml.                   
+	
 	S32 option = LLNotification::getSelectedOption(notification, response);
 	switch(option)
 	{
 	case OPT_MALE:
-		LLStartUp::loadInitialOutfit( MALE_OUTFIT_FOLDER, "male" );
+			LLStartUp::loadInitialOutfit( gSavedSettings.getString("DefaultMaleAvatar"), "male" );
 		break;
 
 	case OPT_FEMALE:
 	case OPT_CLOSED_WINDOW:
 	default:
-		LLStartUp::loadInitialOutfit( FEMALE_OUTFIT_FOLDER, "female" );
+			LLStartUp::loadInitialOutfit( gSavedSettings.getString("DefaultFemaleAvatar"), "female" );
 		break;
 	}
 	return false;
@@ -3402,12 +3362,11 @@ std::string LLStartUp::startupStateToString(EStartupState state)
 		RTNENUM( STATE_WEARABLES_WAIT );
 		RTNENUM( STATE_CLEANUP );
 		RTNENUM( STATE_STARTED );
+	default:
+		return llformat("(state #%d)", state);
 	}
 #undef RTNENUM
-	// Never reached.
-	return llformat("(state #%d)", state);
 }
-
 
 // static
 void LLStartUp::setStartupState( EStartupState state )
@@ -3994,6 +3953,17 @@ bool process_login_success_response(std::string& password, U32& first_sim_size_x
 			gPacificDaylightTime = (flag == "Y");
 		}
 	}
+
+	// set up the voice configuration.  Ultimately, we should pass this up as part of each voice
+	// channel if we need to move to multiple voice servers per grid.
+	LLSD voice_config_info = response["voice-config"];
+	if(voice_config_info.has("VoiceServerType"))
+	{
+		gSavedSettings.setString("VoiceServerType", voice_config_info["VoiceServerType"].asString()); 
+	}
+
+	// Request the map server url
+	// Non-agni grids have a different default location.
 	std::string map_server_url = response["map-server-url"];
 	if(!map_server_url.empty())
 	{
@@ -4011,6 +3981,19 @@ bool process_login_success_response(std::string& password, U32& first_sim_size_x
 	else if(!gHippoGridManager->getConnectedGrid()->isInProductionGrid())
 	{
 		gSavedSettings.setString("WebProfileURL", "https://my-demo.secondlife.com/[AGENT_NAME]");
+	}
+
+	// Default male and female avatars allowing the user to choose their avatar on first login.
+	// These may be passed up by SLE to allow choice of enterprise avatars instead of the standard
+	// "new ruth."  Not to be confused with 'initial-outfit' below 
+	LLSD newuser_config = response["newuser-config"][0];
+	if(newuser_config.has("DefaultFemaleAvatar"))
+	{
+		gSavedSettings.setString("DefaultFemaleAvatar", newuser_config["DefaultFemaleAvatar"].asString()); 		
+	}
+	if(newuser_config.has("DefaultMaleAvatar"))
+	{
+		gSavedSettings.setString("DefaultMaleAvatar", newuser_config["DefaultMaleAvatar"].asString()); 		
 	}
 
 	// Initial outfit for the user.
@@ -4153,6 +4136,8 @@ bool process_login_success_response(std::string& password, U32& first_sim_size_x
 	{
 		success = true;	
 	}
+    LLAppViewer* pApp = LLAppViewer::instance();
+	pApp->writeDebugInfo();     //Write our static data now that we have username, session_id, etc.
 	return success;
 }
 
