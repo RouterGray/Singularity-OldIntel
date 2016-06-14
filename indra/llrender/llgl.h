@@ -120,6 +120,7 @@ public:
 	BOOL mIsATI;
 	BOOL mIsNVIDIA;
 	BOOL mIsIntel;
+	BOOL mIsHD3K;
 	BOOL mIsGF2or4MX;
 	BOOL mIsGF3;
 	BOOL mIsGFFX;

@@ -451,6 +451,7 @@ LLGLManager::LLGLManager() :
 	mIsATI(FALSE),
 	mIsNVIDIA(FALSE),
 	mIsIntel(FALSE),
+	mIsHD3K(FALSE),
 	mIsGF2or4MX(FALSE),
 	mIsGF3(FALSE),
 	mIsGFFX(FALSE),
@@ -606,20 +607,18 @@ bool LLGLManager::initGL()
 		LLImageGL::sCompressTextures = false;
 	}
 	
-#if LL_WINDOWS
-	bool mIsHD3K(false);
-#endif
 	// Trailing space necessary to keep "nVidia Corpor_ati_on" cards
 	// from being recognized as ATI.
-	if (mGLVendor.substr(0,4) == "ATI ")
+	if (mGLVendor.substr(0,4) == "ATI "
+//#if LL_LINUX
+//		// The Mesa-based drivers put this in the Renderer string,
+//		// not the Vendor string.
+//		|| mGLRenderer.find("AMD") != std::string::npos
+//#endif //LL_LINUX
+		)
 	{
 		mGLVendorShort = "ATI";
-		// "mobile" appears to be unused, and this code was causing warnings.
-		//BOOL mobile = FALSE;
-		//if (mGLRenderer.find("MOBILITY") != std::string::npos)
-		//{
-		//	mobile = TRUE;
-		//}
+		// *TODO: Fix this?
 		mIsATI = TRUE;
 
 #if LL_WINDOWS && !LL_MESA_HEADLESS
@@ -734,12 +733,11 @@ bool LLGLManager::initGL()
 	if (mHasVertexShader)
 	{
 		//According to the spec, the resulting value should never be less than 512. We need at least 1024 to use skinned shaders.
-#if LL_WINDOWS
-		if (mIsHD3K)
-			mGLMaxVertexUniformComponents = 4096;
-		else
-#endif
 		glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS_ARB, &mGLMaxVertexUniformComponents);
+		if (mIsHD3K)
+		{
+			mGLMaxVertexUniformComponents = llmax(mGLMaxVertexUniformComponents, 4096);
+		}
 	}
 
 	if (LLRender::sGLCoreProfile)
