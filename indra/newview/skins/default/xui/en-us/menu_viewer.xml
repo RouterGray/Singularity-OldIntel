@@ -1038,10 +1038,10 @@
 			<menu_item_call bottom="-240" enabled="true" height="19" label="Report [SHORT_APP_NAME] Bug..." left="0"
 			     mouse_opaque="true" name="Report [SHORT_APP_NAME] Bug..." width="166">
 				<on_click function="PromptShowURL" name="ReportSinguBug_url"
-						userdata="WebLaunchSinguIssue,http://code.google.com/p/singularity-viewer/issues/entry" />
+						userdata="WebLaunchSinguIssue,https://singularityviewer.atlassian.net/secure/CreateIssue!default.jspa?issuetype=1" />
 			</menu_item_call>
 			<menu_item_call bottom="-240" enabled="true" height="19" label="Request New Feature..." name="Request New Feature..." width="166">
-				<on_click function="PromptShowURL" name="RequestFeature_url" userdata="WebLaunchSinguIssue,http://code.google.com/p/singularity-viewer/issues/entry?template=Feature%20request"/>
+				<on_click function="PromptShowURL" name="RequestFeature_url" userdata="WebLaunchSinguIssue,https://singularityviewer.atlassian.net/secure/CreateIssue!default.jspa?issuetype=2"/>
 			</menu_item_call>
 		</menu>
 		<menu_item_call bottom="-313" enabled="true" height="19" label="About [SHORT_APP_NAME]..." left="0"
