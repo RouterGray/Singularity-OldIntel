@@ -311,18 +311,43 @@ LLSD LLApp::getOptionData(OptionPriority level)
 	return mOptions[level];
 }
 
+#if LL_WINDOWS
+//The following code is needed for 32-bit apps on 64-bit windows to keep it from eating
+//crashes.   It is a lovely undocumented 'feature' in SP1 of Windows 7. An excellent
+//in-depth article on the issue may be found here:  http://randomascii.wordpress.com/2012/07/05/when-even-crashing-doesn-work/
+void EnableCrashingOnCrashes()
+{
+	typedef BOOL (WINAPI *tGetPolicy)(LPDWORD lpFlags);
+	typedef BOOL (WINAPI *tSetPolicy)(DWORD dwFlags);
+	const DWORD EXCEPTION_SWALLOWING = 0x1;
+
+	HMODULE kernel32 = LoadLibraryA("kernel32.dll");
+	tGetPolicy pGetPolicy = (tGetPolicy)GetProcAddress(kernel32,
+		"GetProcessUserModeExceptionPolicy");
+	tSetPolicy pSetPolicy = (tSetPolicy)GetProcAddress(kernel32,
+		"SetProcessUserModeExceptionPolicy");
+	if (pGetPolicy && pSetPolicy)
+	{
+		DWORD dwFlags;
+		if (pGetPolicy(&dwFlags))
+		{
+			// Turn off the filter
+			pSetPolicy(dwFlags & ~EXCEPTION_SWALLOWING);
+		}
+	}
+}
+#endif
+
 void LLApp::setupErrorHandling()
 {
 	// Error handling is done by starting up an error handling thread, which just sleeps and
 	// occasionally checks to see if the app is in an error state, and sees if it needs to be run.
 
 #if LL_WINDOWS
-	// Windows doesn't have the same signal handling mechanisms as UNIX, thus APR doesn't provide
-	// a signal handling thread implementation.
-	// What we do is install an unhandled exception handler, which will try to do the right thing
-	// in the case of an error (generate a minidump)
 
 #if LL_SEND_CRASH_REPORTS
+	EnableCrashingOnCrashes();
+
 	// This sets a callback to handle w32 signals to the console window.
 	// The viewer shouldn't be affected, sicne its a windowed app.
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) ConsoleCtrlHandler, TRUE);
