@@ -3795,69 +3795,6 @@ void RequestAgentUpdateAppearanceResponder::sendRequest()
 	gAgentAvatarp->mLastUpdateRequestCOFVersion = cof_version;
 }
 
-LLSD LLAppearanceMgr::dumpCOF() const
-{
-	LLSD links = LLSD::emptyArray();
-	LLMD5 md5;
-	
-	LLInventoryModel::cat_array_t cat_array;
-	LLInventoryModel::item_array_t item_array;
-	gInventory.collectDescendents(getCOF(),cat_array,item_array,LLInventoryModel::EXCLUDE_TRASH);
-	for (U32 i=0; i<item_array.size(); i++)
-	{
-		const LLViewerInventoryItem* inv_item = item_array.at(i).get();
-		LLSD item;
-		LLUUID item_id(inv_item->getUUID());
-		md5.update((unsigned char*)item_id.mData, 16);
-		item["description"] = inv_item->getActualDescription();
-		md5.update(inv_item->getActualDescription());
-		item["asset_type"] = inv_item->getActualType();
-		LLUUID linked_id(inv_item->getLinkedUUID());
-		item["linked_id"] = linked_id;
-		md5.update((unsigned char*)linked_id.mData, 16);
-
-		if (LLAssetType::AT_LINK == inv_item->getActualType())
-		{
-			const LLViewerInventoryItem* linked_item = inv_item->getLinkedItem();
-			if (NULL == linked_item)
-			{
-				LL_WARNS() << "Broken link for item '" << inv_item->getName()
-						<< "' (" << inv_item->getUUID()
-						<< ") during requestServerAppearanceUpdate" << LL_ENDL;
-				continue;
-			}
-			// Some assets may be 'hidden' and show up as null in the viewer.
-			//if (linked_item->getAssetUUID().isNull())
-			//{
-			//	LL_WARNS() << "Broken link (null asset) for item '" << inv_item->getName()
-			//			<< "' (" << inv_item->getUUID()
-			//			<< ") during requestServerAppearanceUpdate" << LL_ENDL;
-			//	continue;
-			//}
-			LLUUID linked_asset_id(linked_item->getAssetUUID());
-			md5.update((unsigned char*)linked_asset_id.mData, 16);
-			U32 flags = linked_item->getFlags();
-			md5.update(boost::lexical_cast<std::string>(flags));
-		}
-		else if (LLAssetType::AT_LINK_FOLDER != inv_item->getActualType())
-		{
-			LL_WARNS() << "Non-link item '" << inv_item->getName()
-					<< "' (" << inv_item->getUUID()
-					<< ") type " << (S32) inv_item->getActualType()
-					<< " during requestServerAppearanceUpdate" << LL_ENDL;
-			continue;
-		}
-		links.append(item);
-	}
-	LLSD result = LLSD::emptyMap();
-	result["cof_contents"] = links;
-	char cof_md5sum[MD5HEX_STR_SIZE];
-	md5.finalize();
-	md5.hex_digest(cof_md5sum);
-	result["cof_md5sum"] = std::string(cof_md5sum);
-	return result;
-}
-
 void RequestAgentUpdateAppearanceResponder::debugCOF(const LLSD& content)
 {
 	LL_INFOS("Avatar") << "AIS COF, version received: " << content["expected"].asInteger()
@@ -4002,6 +3939,68 @@ void RequestAgentUpdateAppearanceResponder::onFailure()
 }	
 
 
+LLSD LLAppearanceMgr::dumpCOF() const
+{
+	LLSD links = LLSD::emptyArray();
+	LLMD5 md5;
+	
+	LLInventoryModel::cat_array_t cat_array;
+	LLInventoryModel::item_array_t item_array;
+	gInventory.collectDescendents(getCOF(),cat_array,item_array,LLInventoryModel::EXCLUDE_TRASH);
+	for (U32 i=0; i<item_array.size(); i++)
+	{
+		const LLViewerInventoryItem* inv_item = item_array.at(i).get();
+		LLSD item;
+		LLUUID item_id(inv_item->getUUID());
+		md5.update((unsigned char*)item_id.mData, 16);
+		item["description"] = inv_item->getActualDescription();
+		md5.update(inv_item->getActualDescription());
+		item["asset_type"] = inv_item->getActualType();
+		LLUUID linked_id(inv_item->getLinkedUUID());
+		item["linked_id"] = linked_id;
+		md5.update((unsigned char*)linked_id.mData, 16);
+
+		if (LLAssetType::AT_LINK == inv_item->getActualType())
+		{
+			const LLViewerInventoryItem* linked_item = inv_item->getLinkedItem();
+			if (NULL == linked_item)
+			{
+				LL_WARNS() << "Broken link for item '" << inv_item->getName()
+						<< "' (" << inv_item->getUUID()
+						<< ") during requestServerAppearanceUpdate" << LL_ENDL;
+				continue;
+			}
+			// Some assets may be 'hidden' and show up as null in the viewer.
+			//if (linked_item->getAssetUUID().isNull())
+			//{
+			//	LL_WARNS() << "Broken link (null asset) for item '" << inv_item->getName()
+			//			<< "' (" << inv_item->getUUID()
+			//			<< ") during requestServerAppearanceUpdate" << LL_ENDL;
+			//	continue;
+			//}
+			LLUUID linked_asset_id(linked_item->getAssetUUID());
+			md5.update((unsigned char*)linked_asset_id.mData, 16);
+			U32 flags = linked_item->getFlags();
+			md5.update(boost::lexical_cast<std::string>(flags));
+		}
+		else if (LLAssetType::AT_LINK_FOLDER != inv_item->getActualType())
+		{
+			LL_WARNS() << "Non-link item '" << inv_item->getName()
+					<< "' (" << inv_item->getUUID()
+					<< ") type " << (S32) inv_item->getActualType()
+					<< " during requestServerAppearanceUpdate" << LL_ENDL;
+			continue;
+		}
+		links.append(item);
+	}
+	LLSD result = LLSD::emptyMap();
+	result["cof_contents"] = links;
+	char cof_md5sum[MD5HEX_STR_SIZE];
+	md5.finalize();
+	md5.hex_digest(cof_md5sum);
+	result["cof_md5sum"] = std::string(cof_md5sum);
+	return result;
+}
 
 void LLAppearanceMgr::requestServerAppearanceUpdate()
 {
@@ -4124,7 +4123,21 @@ LLUUID LLAppearanceMgr::makeNewOutfitCore(const std::string& new_folder_name, bo
 
 	// First, make a folder in the My Outfits directory.
 	const LLUUID parent_id = gInventory.findCategoryUUIDForType(LLFolderType::FT_MY_OUTFITS);
+	if (AISCommand::isAPIAvailable())
 	{
+		// cap-based category creation was buggy until recently. use
+		// existence of AIS as an indicator the fix is present. Does
+		// not actually use AIS to create the category.
+		inventory_func_type func = boost::bind(&LLAppearanceMgr::onOutfitFolderCreated,this,_1,show_panel);
+		LLUUID folder_id = gInventory.createNewCategory(
+			parent_id,
+			LLFolderType::FT_OUTFIT,
+			new_folder_name,
+			func);
+		return folder_id;
+	}
+	else
+	{		
 		LLUUID folder_id = gInventory.createNewCategory(
 			parent_id,
 			LLFolderType::FT_OUTFIT,
