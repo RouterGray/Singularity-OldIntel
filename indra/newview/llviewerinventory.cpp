@@ -1346,21 +1346,10 @@ void update_inventory_item(
 	const LLSD& updates,
 	LLPointer<LLInventoryCallback> cb)
 {
-// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
-	LLPointer<LLViewerInventoryItem> obj = gInventory.getItem(item_id);
-	LL_DEBUGS(LOG_INV) << "item_id: [" << item_id << "] name " << (obj ? obj->getName() : "(NOT FOUND)") << LL_ENDL;
-	LLPointer<LLViewerInventoryItem> new_item = NULL;
-
-	if (obj)
-	{
-		new_item = new LLViewerInventoryItem(obj);
-		new_item->fromLLSD(updates,false);
-
-		LLInventoryModel::LLCategoryUpdate up(new_item->getParentUUID(), 0);
-		gInventory.accountForUpdate(up);
-		gInventory.updateItem(new_item);
-	}
-// [/SL:KB]
+	//Singu Note: 
+	// There was some rlva-specific code here, however it adversely affected serverside
+	// baking when using AISv3. Its omission looks likeley to be inconsequental, but if that's incorrect
+	// any bugs introduced by its removal are minor compared to non-functional serverside baking.
 
 	bool ais_ran = false;
 	if (AISCommand::isAPIAvailable())
@@ -1368,20 +1357,19 @@ void update_inventory_item(
 		boost::intrusive_ptr<AISCommand> cmd_ptr = new UpdateItemCommand(item_id, updates, cb);
 		ais_ran = cmd_ptr->run_command();
 	}
+
 	if (!ais_ran)
 	{
-//		LLPointer<LLViewerInventoryItem> obj = gInventory.getItem(item_id);
-//		LL_DEBUGS(LOG_INV) << "item_id: [" << item_id << "] name " << (obj ? obj->getName() : "(NOT FOUND)") << LL_ENDL;
-//		if(obj)
-//		{
-//			LLPointer<LLViewerInventoryItem> new_item(new LLViewerInventoryItem);
-//			new_item->copyViewerItem(obj);
-//			new_item->fromLLSD(updates,false);
+		LLPointer<LLViewerInventoryItem> obj = gInventory.getItem(item_id);
+		LL_DEBUGS(LOG_INV) << "item_id: [" << item_id << "] name " << (obj ? obj->getName() : "(NOT FOUND)") << LL_ENDL;
+		LLPointer<LLViewerInventoryItem> new_item = NULL;
 
-// [SL:KB] - Patch: Appearance-AISFilter | Checked: 2015-03-01 (Catznip-3.7)
-		if (new_item)
+		if(obj)
 		{
-// [/SL:KB]
+			LLPointer<LLViewerInventoryItem> new_item(new LLViewerInventoryItem);
+			new_item->copyViewerItem(obj);
+			new_item->fromLLSD(updates,false);
+
 			LLMessageSystem* msg = gMessageSystem;
 			msg->newMessageFast(_PREHASH_UpdateInventoryItem);
 			msg->nextBlockFast(_PREHASH_AgentData);
@@ -1393,9 +1381,10 @@ void update_inventory_item(
 			new_item->packMessage(msg);
 			gAgent.sendReliableMessage();
 
-//			LLInventoryModel::LLCategoryUpdate up(new_item->getParentUUID(), 0);
-//			gInventory.accountForUpdate(up);
-//			gInventory.updateItem(new_item);
+			LLInventoryModel::LLCategoryUpdate up(new_item->getParentUUID(), 0);
+			gInventory.accountForUpdate(up);
+			gInventory.updateItem(new_item);
+
 			if (cb)
 			{
 				cb->fire(item_id);

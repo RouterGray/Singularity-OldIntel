@@ -1122,7 +1122,7 @@ LLInventoryModel::item_array_t* LLInventoryModel::getUnlockedItemArray(const LLU
 // an existing item with the matching id, or it will add the category.
 void LLInventoryModel::updateCategory(const LLViewerInventoryCategory* cat, U32 mask)
 {
-	if(cat->getUUID().isNull())
+	if(!cat || cat->getUUID().isNull())
 	{
 		return;
 	}
@@ -1179,8 +1179,8 @@ void LLInventoryModel::updateCategory(const LLViewerInventoryCategory* cat, U32 
 		}
 
 		// make space in the tree for this category's children.
-		llassert_always(mCategoryLock[LLUUID(new_cat->getUUID())] == false);
-		llassert_always(mItemLock[LLUUID(new_cat->getUUID())] == false);
+		llassert_always(mCategoryLock[new_cat->getUUID()] == false);
+		llassert_always(mItemLock[new_cat->getUUID()] == false);
 		cat_array_t* catsp = new cat_array_t;
 		item_array_t* itemsp = new item_array_t;
 		mParentChildCategoryTree[new_cat->getUUID()] = catsp;
