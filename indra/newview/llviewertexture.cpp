@@ -1002,6 +1002,7 @@ LLViewerFetchedTexture::LLViewerFetchedTexture(const LLUUID& id, FTType f_type, 
 		LL_WARNS() << "Unsupported fetch type " << mFTType << LL_ENDL;
 	}
 	generateGLTexture();
+	mGLTexturep->setNeedsAlphaAndPickMask(TRUE);
 }
 	
 LLViewerFetchedTexture::LLViewerFetchedTexture(const LLImageRaw* raw, FTType f_type, BOOL usemipmaps)
@@ -1009,6 +1010,7 @@ LLViewerFetchedTexture::LLViewerFetchedTexture(const LLImageRaw* raw, FTType f_t
 {
 	init(TRUE) ;
 	mFTType = f_type;
+	mGLTexturep->setNeedsAlphaAndPickMask(TRUE);
 }
 	
 LLViewerFetchedTexture::LLViewerFetchedTexture(const std::string& url, FTType f_type, const LLUUID& id, BOOL usemipmaps)
@@ -3409,7 +3411,9 @@ LLViewerMediaTexture::LLViewerMediaTexture(const LLUUID& id, BOOL usemipmaps, LL
 
 	mGLTexturep->setAllowCompression(false);
 
-	mIsPlaying = FALSE ;
+	mGLTexturep->setNeedsAlphaAndPickMask(FALSE);
+
+	mIsPlaying = FALSE;
 
 	setMediaImpl() ;
 
@@ -3439,6 +3443,7 @@ void LLViewerMediaTexture::reinit(BOOL usemipmaps /* = TRUE */)
 	mUseMipMaps = usemipmaps ;
 	getLastReferencedTimer()->reset() ;
 	mGLTexturep->setUseMipMaps(mUseMipMaps) ;
+	mGLTexturep->setNeedsAlphaAndPickMask(FALSE);
 }
 
 void LLViewerMediaTexture::setUseMipMaps(BOOL mipmap) 
