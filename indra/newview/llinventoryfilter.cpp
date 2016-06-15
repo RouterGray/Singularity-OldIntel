@@ -189,13 +189,11 @@ bool LLInventoryFilter::checkAgainstFilterType(const LLFolderViewItem* item) con
 		{
 			if (object && object->getIsLinkType())
 			{
-				LL_INFOS() << "getIsLinkType" << LL_ENDL;
 				return FALSE;
 			}
 		}
 		else if ((1LL << object_type & mFilterOps.mFilterObjectTypes) == U64(0))
 		{
-			LL_INFOS() << "Filtered type" << LL_ENDL;
 			return FALSE;
 		}
 	}
@@ -207,13 +205,11 @@ bool LLInventoryFilter::checkAgainstFilterType(const LLFolderViewItem* item) con
 	{
 		if (!object)
 		{
-			LL_INFOS() << "UUID type" << LL_ENDL;
 			return FALSE;
 		}
 
 		if (object->getLinkedUUID() != mFilterOps.mFilterUUID)
 		{
-			LL_INFOS() << "getLinkedUUID type" << LL_ENDL;
 			return FALSE;
 		}
 	}
@@ -237,7 +233,6 @@ bool LLInventoryFilter::checkAgainstFilterType(const LLFolderViewItem* item) con
 		if (listener->getCreationDate() < earliest ||
 			listener->getCreationDate() > mFilterOps.mMaxDate)
 		{
-			LL_INFOS() << "FILTERTYPE_DATE type" << LL_ENDL;
 			return FALSE;
 		}
 	}
@@ -251,7 +246,6 @@ bool LLInventoryFilter::checkAgainstFilterType(const LLFolderViewItem* item) con
 		if ((0x1LL << type & mFilterOps.mFilterWearableTypes) == 0)
 		{
 			{
-				LL_INFOS() << "FILTERTYPE_WEARABLE type" << LL_ENDL;
 				return FALSE;
 			}
 		}
@@ -280,7 +274,6 @@ bool LLInventoryFilter::checkAgainstFilterType(const LLFolderViewItem* item) con
 				}
 				if (descendents_actual == 0)
 				{
-					LL_INFOS() << "FILTERTYPE_EMPTYFOLDERS type" << LL_ENDL;
 					return FALSE;
 				}
 			}
@@ -430,27 +423,23 @@ void LLInventoryFilter::setFilterObjectTypes(U64 types)
 	if (types == mFilterOps.mFilterObjectTypes && mFilterOps.mFilterTypes & FILTERTYPE_OBJECT)
 		return;
 	updateFilterTypes(types, mFilterOps.mFilterObjectTypes);
-	LL_INFOS() << "setFilterObjectTypes" << LL_ENDL;
 	mFilterOps.mFilterTypes |= FILTERTYPE_OBJECT;
 }
 
 void LLInventoryFilter::setFilterCategoryTypes(U64 types)
 {
 	updateFilterTypes(types, mFilterOps.mFilterCategoryTypes);
-	LL_INFOS() << "setFilterCategoryTypes" << LL_ENDL;
 	mFilterOps.mFilterTypes |= FILTERTYPE_CATEGORY;
 }
 
 void LLInventoryFilter::setFilterWearableTypes(U64 types)
 {
 	updateFilterTypes(types, mFilterOps.mFilterWearableTypes);
-	LL_INFOS() << "setFilterWearableTypes" << LL_ENDL;
 	mFilterOps.mFilterTypes |= FILTERTYPE_WEARABLE;
 }
 
 void LLInventoryFilter::setFilterEmptySystemFolders()
 {
-	LL_INFOS() << "setFilterEmptySystemFolders" << LL_ENDL;
 	mFilterOps.mFilterTypes |= FILTERTYPE_EMPTYFOLDERS;
 }
 
