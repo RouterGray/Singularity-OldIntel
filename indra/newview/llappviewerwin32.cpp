@@ -55,8 +55,10 @@
 #include "llviewercontrol.h"
 #include "lldxhardware.h"
 
+#ifdef USE_NVAPI
 #include "nvapi/nvapi.h"
 #include "nvapi/NvApiDriverSettings.h"
+#endif
 
 #include <stdlib.h>
 
