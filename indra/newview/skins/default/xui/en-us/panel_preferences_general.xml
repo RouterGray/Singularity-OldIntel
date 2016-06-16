@@ -66,7 +66,7 @@
 		<combo_item name="(Korean)" value="ko">한국어(Korean)*</combo_item>
 	</combo_box>
 	<string name="region_name_prompt">&lt;Type region name&gt;</string>
-	<combo_box bottom="-328" height="18" left="103" name="crash_behavior_combobox" width="115">
+	<combo_box bottom="-328" height="18" left="103" name="crash_behavior_combobox" width="140">
 		<combo_item name="Askbeforesending" value="Ask before sending">Ask before sending</combo_item>
 		<combo_item name="Alwayssend" value="Always send">Always send</combo_item>
 		<combo_item name="Neversend" value="Never send">Never send</combo_item>
