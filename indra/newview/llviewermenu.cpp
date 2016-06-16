@@ -9536,7 +9536,7 @@ void initialize_menus()
 	addMenu(new ListRequestFriendship(), "List.RequestFriendship");
 	addMenu(new ListRequestTeleport(), "List.RequestTeleport");
 	addMenu(new ListShare(), "List.Share");
-	addMenu(new ListShowLog(), "List.ListShowLog");
+	addMenu(new ListShowLog(), "List.ShowLog");
 	addMenu(new ListShowProfile(), "List.ShowProfile");
 	addMenu(new ListShowWebProfile(), "List.ShowWebProfile");
 	addMenu(new ListStartAdhocCall(), "List.StartAdhocCall");
