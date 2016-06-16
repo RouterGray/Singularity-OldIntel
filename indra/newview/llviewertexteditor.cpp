@@ -1672,6 +1672,10 @@ LLView* LLViewerTextEditor::fromXML(LLXMLNodePtr node, LLView *parent, LLUICtrlF
 	text_editor->setParseHTML(parse_html);
 	text_editor->setParseHighlights(TRUE);
 
+	BOOL commit_on_focus_lost = FALSE;
+	node->getAttributeBOOL("commit_on_focus_lost",commit_on_focus_lost);
+	text_editor->setCommitOnFocusLost(commit_on_focus_lost);
+	
 	text_editor->initFromXML(node, parent);
 
 	// add text after all parameters have been set

@@ -4792,44 +4792,6 @@ LLXMLNodePtr LLTextEditor::getXML(bool save_children) const
 	return node;
 }
 
-// static
-LLView* LLTextEditor::fromXML(LLXMLNodePtr node, LLView *parent, LLUICtrlFactory *factory)
-{
-	LLRect rect;
-	createRect(node, rect, parent, LLRect());
-
-	U32 max_text_length = 255;
-	node->getAttributeU32("max_length", max_text_length);
-
-	BOOL allow_embedded_items;
-	node->getAttributeBOOL("embedded_items", allow_embedded_items);
-
-	LLFontGL* font = LLView::selectFont(node);
-
-	std::string text = node->getTextContents().substr(0, max_text_length - 1);
-
-	LLTextEditor* text_editor = new LLTextEditor("text_editor", 
-								rect,
-								max_text_length,
-								text,
-								font,
-								allow_embedded_items);
-
-	text_editor->setTextEditorParameters(node);
-
-	BOOL hide_scrollbar = FALSE;
-	node->getAttributeBOOL("hide_scrollbar",hide_scrollbar);
-	text_editor->setHideScrollbarForShortDocs(hide_scrollbar);
-
-	BOOL commit_on_focus_lost = FALSE;
-	node->getAttributeBOOL("commit_on_focus_lost",commit_on_focus_lost);
-	text_editor->setCommitOnFocusLost(commit_on_focus_lost);
-
-	text_editor->initFromXML(node, parent);
-
-	return text_editor;
-}
-
 void LLTextEditor::setTextEditorParameters(LLXMLNodePtr node)
 {
 	BOOL word_wrap = FALSE;

@@ -76,7 +76,6 @@ public:
 	void	setKeystrokeCallback(const keystroke_signal_t::slot_type& callback);
 
 	virtual LLXMLNodePtr getXML(bool save_children = true) const;
-	static LLView* fromXML(LLXMLNodePtr node, LLView *parent, class LLUICtrlFactory *factory);
 	void    setTextEditorParameters(LLXMLNodePtr node);
 	void	setParseHTML(BOOL parsing) {mParseHTML=parsing;}
 	void	setParseHighlights(BOOL parsing) {mParseHighlights=parsing;}

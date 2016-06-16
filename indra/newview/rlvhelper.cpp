@@ -192,7 +192,7 @@ RlvCommandOptionGeneric::RlvCommandOptionGeneric(const std::string& strOption): 
 	LLWearableType::EType wtType(LLWearableType::WT_INVALID); LLUUID idOption; ERlvAttachGroupType eAttachGroup(RLV_ATTACHGROUP_INVALID);
 	LLViewerJointAttachment* pAttachPt = NULL; LLViewerInventoryCategory* pFolder = NULL;
 
-	if (!(m_fEmpty == strOption.empty()))														// <option> could be an empty string
+	if (!(m_fEmpty = strOption.empty()))														// <option> could be an empty string
 	{
 		if ( ((wtType = LLWearableType::typeNameToType(strOption)) != LLWearableType::WT_INVALID) && (wtType != LLWearableType::WT_NONE) )
 			m_varOption = wtType;																// ... or specify a (valid) clothing layer
