@@ -186,6 +186,9 @@ set(GRID agni CACHE STRING "Target Grid")
 
 set(VIEWER_CHANNEL "Singularity Test" CACHE STRING "Viewer Channel Name")
 
+string(REPLACE " " "" VIEWER_CHANNEL_NOSPACE ${VIEWER_CHANNEL})
+set(VIEWER_CHANNEL_NOSPACE ${VIEWER_CHANNEL_NOSPACE} CACHE STRING "Prefix used for resulting artifacts.")
+
 set(ENABLE_SIGNING OFF CACHE BOOL "Enable signing the viewer")
 set(SIGNING_IDENTITY "" CACHE STRING "Specifies the signing identity to use, if necessary.")
 
